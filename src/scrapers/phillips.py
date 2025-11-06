@@ -12,10 +12,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from src.utils.scraping.scraping import get_standard_chrome_options
 from src.utils.scraping.browser import create_browser
-from util.scrape_display import display_product_result, display_scraping_progress, display_scraping_summary, display_error
-
-# ✅ Fix import issue by modifying sys.path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from src.utils.general.display import display_product_result, display_scraping_progress, display_scraping_summary, display_error
 
 load_dotenv()
 HEADLESS = False
@@ -52,7 +49,7 @@ def save_cookies(driver):
 
 def init_browser(profile_suffix="default", headless=True):
     # Use login-safe Chrome options instead of standard ones
-    from util.scrape_util_fixed import get_login_safe_chrome_options
+    from src.utils.scraping.scraping import get_login_safe_chrome_options
     options = get_login_safe_chrome_options(headless=headless, profile_suffix=profile_suffix)
     
     # Use selenium_profiles directory for phillips with unique suffix

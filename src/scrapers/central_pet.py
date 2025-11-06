@@ -9,7 +9,7 @@ from selenium.webdriver.chrome.options import Options
 from src.utils.scraping.scraping import get_standard_chrome_options
 from src.utils.scraping.scraping import clean_string
 from src.utils.scraping.browser import create_browser
-from util.scrape_display import display_product_result, display_scraping_progress, display_scraping_summary, display_error, display_success, display_warning
+from src.utils.general.display import display_product_result, display_scraping_progress, display_scraping_summary, display_error, display_success, display_warning
 
 HEADLESS = True
 TEST_SKU = "035585499741"  # KONG Pull A Partz Pals Koala SM - test SKU for Central Pet

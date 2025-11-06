@@ -17,8 +17,8 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 # Import classification functions
-from inventory.UI.product_classify_ui import edit_classification_in_batch
-from inventory.UI.classifier import classify_products_batch
+from src.ui.product_classify_ui import edit_classification_in_batch
+from src.core.classification.classifier import classify_products_batch
 
 
 def classify_excel_file():

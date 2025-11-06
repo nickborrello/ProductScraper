@@ -4,7 +4,7 @@ Provides utilities to create new product rows and export them to a ShopSite-comp
 Excel file (same columns used by master.save_incremental_results).
 
 Usage:
-    from inventory.UI.product_creator import create_and_save_products
+    from src.ui.product_creator import create_and_save_products
     products = [ { 'SKU': '123', 'Name': 'Foo', 'Brand': 'Bar', 'Image URLs': ['http://...'], ... } ]
     create_and_save_products(products, site='MySite', output_dir='./output')
 """
@@ -12,7 +12,7 @@ from pathlib import Path
 import os
 import pandas as pd
 from datetime import datetime
-from inventory.UI.product_editor import product_editor_interactive
+from src.ui.product_editor import product_editor_interactive
 
 
 def _map_product_to_shopsite_row(product, date_string):

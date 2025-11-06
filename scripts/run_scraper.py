@@ -15,14 +15,14 @@ from src.core.database_refresh import refresh_database_from_xml
 
 # Conditional imports for core modules
 try:
-    from scrapers.master import ProductScraper
+    from src.scrapers.master import ProductScraper
     PRODUCT_SCRAPER_AVAILABLE = True
 except ImportError:
     PRODUCT_SCRAPER_AVAILABLE = False
     print("⚠️ ProductScraper module not available")
 
 try:
-    from scrapers.discontinued import DiscontinuedChecker
+    from src.scrapers.discontinued import DiscontinuedChecker
     DISCONTINUED_CHECKER_AVAILABLE = True
 except ImportError:
     DISCONTINUED_CHECKER_AVAILABLE = False

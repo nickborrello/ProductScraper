@@ -7,7 +7,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from inventory.UI.product_cross_sell_ui import load_website_dataframe, find_cross_sell_candidates, get_subproduct_skus, calculate_similarity_score
+from src.ui.product_cross_sell_ui import load_website_dataframe, find_cross_sell_candidates, get_subproduct_skus, calculate_similarity_score
 
 # Test product (your example)
 test_product_filled = {

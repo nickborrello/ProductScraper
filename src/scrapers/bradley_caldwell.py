@@ -11,7 +11,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from src.utils.scraping.scraping import clean_string
 from src.utils.scraping.browser import create_browser
-from util.scrape_display import display_product_result, display_scraping_progress, display_scraping_summary, display_error
+from src.utils.general.display import display_product_result, display_scraping_progress, display_scraping_summary, display_error
 
 # Bradley Caldwell can run headless
 HEADLESS = True

@@ -31,7 +31,7 @@ Usage in master.py:
     final_products = assign_cross_sells_batch(reviewed_products)
 """
 
-from inventory.classification.classifier import (
+from src.core.classification.classifier import (
     classify_products_batch,
     classify_single_product,
     find_matching_products_and_recommendations,

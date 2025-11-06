@@ -16,7 +16,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, WebDriverException
 from src.utils.scraping.browser import create_browser
-from util.scrape_display import display_product_result, display_scraping_progress, display_scraping_summary, display_error, display_info
+from src.utils.general.display import display_product_result, display_scraping_progress, display_scraping_summary, display_error, display_info
 
 # Amazon scraper with optimizations for speed
 # - Runs headless for maximum speed (no visual browser window)

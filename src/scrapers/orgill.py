@@ -20,7 +20,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from src.utils.scraping.scraping import clean_string, get_standard_chrome_options
 from src.utils.scraping.browser import create_browser
-from util.scrape_display import display_product_result, display_scraping_progress, display_scraping_summary, display_error
+from src.utils.general.display import display_product_result, display_scraping_progress, display_scraping_summary, display_error
 
 load_dotenv()
 HEADLESS = False
@@ -32,7 +32,7 @@ USER_DATA_DIR = os.path.abspath("selenium_profile")
 
 def init_browser(profile_suffix="default", headless=False):
     # Use login-safe Chrome options instead of standard ones
-    from util.scrape_util_fixed import get_login_safe_chrome_options
+    from src.utils.scraping.scraping import get_login_safe_chrome_options
     chrome_options = get_login_safe_chrome_options(headless=headless, profile_suffix=profile_suffix)
     
     # Disable auto-fill to prevent form pre-population

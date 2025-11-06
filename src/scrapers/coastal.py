@@ -6,7 +6,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service as ChromeService
 from src.utils.scraping.scraping import get_standard_chrome_options
 from src.utils.scraping.browser import create_browser
-from util.scrape_display import display_product_result, display_scraping_progress, display_scraping_summary, display_error
+from src.utils.general.display import display_product_result, display_scraping_progress, display_scraping_summary, display_error
 import os
 import time
 

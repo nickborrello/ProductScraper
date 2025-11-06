@@ -18,7 +18,7 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 # Import classification module (after ensuring project root is first on sys.path)
-from inventory.classification.classifier import classify_products_batch, classify_single_product
+from src.core.classification.classifier import classify_products_batch, classify_single_product
 from UI.product_editor import product_editor_interactive, edit_products_in_batch
 from UI.product_cross_sell_ui import assign_cross_sells_batch
 
@@ -1282,7 +1282,7 @@ class ProductScraper:
         
         if classify_choice == 'y':
             print(f"🤖 Auto-classifying {len(final_products)} products using existing database...")
-            from inventory.classification.classifier import classify_products_batch
+            from src.core.classification.classifier import classify_products_batch
             final_products = classify_products_batch(final_products)
             print(f"✅ Auto-classification complete")
             

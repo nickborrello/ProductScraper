@@ -10,7 +10,7 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 # Import classification module
-from inventory.UI.product_classify_ui import (
+from src.ui.product_classify_ui import (
     get_facet_options_from_db,
     assign_classification_batch,
     assign_classification_single,

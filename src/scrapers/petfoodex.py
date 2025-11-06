@@ -10,7 +10,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from src.utils.scraping.scraping import get_standard_chrome_options
 from src.utils.scraping.browser import create_browser
-from util.scrape_display import display_product_result, display_scraping_progress, display_scraping_summary, display_error
+from src.utils.general.display import display_product_result, display_scraping_progress, display_scraping_summary, display_error
 
 # Ensure project root is in sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -24,7 +24,7 @@ HOME_URL = "https://orders.petfoodexperts.com/"
 
 def init_browser(profile_suffix="default", headless=True):
     # Use login-safe Chrome options instead of standard ones
-    from util.scrape_util_fixed import get_login_safe_chrome_options
+    from src.utils.scraping.scraping import get_login_safe_chrome_options
     chrome_options = get_login_safe_chrome_options(headless=headless, profile_suffix=profile_suffix)
     
     # Use selenium_profiles directory for petfoodex with unique suffix
