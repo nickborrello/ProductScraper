@@ -19,8 +19,8 @@ if PROJECT_ROOT not in sys.path:
 
 # Import classification module (after ensuring project root is first on sys.path)
 from src.core.classification.classifier import classify_products_batch, classify_single_product
-from UI.product_editor import product_editor_interactive, edit_products_in_batch
-from UI.product_cross_sell_ui import assign_cross_sells_batch
+from src.ui.product_editor import product_editor_interactive, edit_products_in_batch
+from src.ui.product_cross_sell_ui import assign_cross_sells_batch
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -268,10 +268,10 @@ class ProductScraper:
             if test_dir not in sys.path:
                 sys.path.insert(0, test_dir)
             
-            import test_scraper_fields
+            from tests.unit.test_scraper_fields import run_granular_tests
             
             print("\n🔬 Running Granular Scraper Field Tests...")
-            results = test_scraper_fields.run_granular_tests()
+            results = run_granular_tests()
             return results
         except ImportError as e:
             print(f"❌ Could not import granular testing module: {e}")
@@ -536,7 +536,7 @@ class ProductScraper:
         """Query the SQLite database directly for existing SKUs."""
         try:
             # Import database path from classification module
-            from UI.product_classify_ui import DB_PATH
+            from src.ui.product_classify_ui import DB_PATH
             import sqlite3
             
             if not DB_PATH.exists():
@@ -1035,7 +1035,7 @@ class ProductScraper:
                     create_choice = 'n'  # Skip manual creation in non-interactive mode
                 if create_choice == 'y':
                     try:
-                        from UI.product_creator_ui import create_new_product_via_editor
+                        from src.ui.product_creator_ui import create_new_product_via_editor
                         created_count = 0
                         for i, sku in enumerate(unfound_skus, 1):
                             result_path = create_new_product_via_editor()
@@ -1264,7 +1264,7 @@ class ProductScraper:
             editor_products.append(editor_product)
         
         # Use the product editor to let user select options (without classification fields)
-        from UI.product_editor import edit_products_in_batch
+        from src.ui.product_editor import edit_products_in_batch
         edited_products = edit_products_in_batch(editor_products)
         
         if edited_products:
@@ -1291,7 +1291,7 @@ class ProductScraper:
             
             if review_choice == 'y':
                 print(f"📋 Opening classification editor for {len(final_products)} final products...")
-                from UI.product_classify_ui import edit_classification_in_batch
+                from src.ui.product_classify_ui import edit_classification_in_batch
                 
                 # Convert products from scraper format to classification UI format
                 classification_products = []
