@@ -1,7 +1,7 @@
 import sqlite3
 from pathlib import Path
 
-DB_PATH = Path('inventory/data/products.db')
+DB_PATH = Path('../data/databases/products.db')
 
 if DB_PATH.exists():
     conn = sqlite3.connect(DB_PATH)

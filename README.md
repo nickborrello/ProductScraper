@@ -1,4 +1,4 @@
-# ProductManager
+# ProductScraper
 
 A comprehensive product data management and scraping tool built with Python. This application scrapes product information from multiple e-commerce sites, manages product databases, and provides both CLI and GUI interfaces for data processing.
 
@@ -6,7 +6,7 @@ A comprehensive product data management and scraping tool built with Python. Thi
 
 ### 🔍 Multi-Site Scraping
 
-- **8 Active Scrapers**: Amazon, Bradley Caldwell, Central Pet, and more
+- **8 Active Scrapers**: Amazon, Bradley Caldwell, Central Pet, Coastal, Orgill, PetFoodEx, Phillips, and more
 - **Automated Data Extraction**: Intelligent parsing of product information
 - **Data Normalization**: Consistent formatting across different sources
 - **Excel Integration**: Smart column mapping for input/output
@@ -35,20 +35,17 @@ A comprehensive product data management and scraping tool built with Python. Thi
 ### Prerequisites
 
 - Python 3.8+
-- Node.js (for GUI components)
+- PyQt6 (for GUI components)
 
 ### Setup
 
 ```bash
 # Clone the repository
-git clone https://github.com/nickborrello/ProductManager.git
-cd ProductManager
+git clone https://github.com/nickborrello/ProductScraper.git
+cd ProductScraper
 
 # Install Python dependencies
 pip install -r requirements.txt
-
-# Install Node.js dependencies (if using GUI)
-npm install
 ```
 
 ## Usage
@@ -56,61 +53,93 @@ npm install
 ### Command Line Interface
 
 ```bash
-# Run the main application
-python main.py
+# Run the main scraping application
+python scripts/run_scraper.py
 
-# Run tests
-python -m pytest test/
+# Check database statistics
+python scripts/check_dataset.py
+
+# Classify products in Excel files
+python scripts/classify_excel.py
 ```
 
 ### Graphical User Interface
 
 ```bash
-# Launch the GUI
-python gui.py
+# Launch the GUI application
+python scripts/run_gui.py
 ```
 
 ### Testing
 
 ```bash
 # Run all tests
-python -m pytest
+python -m pytest tests/
 
 # Run specific test file
-python -m pytest test/test_scrapers.py
+python -m pytest tests/unit/test_scrapers.py
+
+# Run integration tests (makes real network calls)
+python -m pytest tests/integration/ -v
 
 # Test with coverage
-python -m pytest --cov=scrapers
+python -m pytest --cov=src
 ```
 
 ## Project Structure
 
 ```
-ProductManager/
-├── scrapers/          # Web scraping modules
-├── inventory/         # Database and data management
-├── UI/               # User interface components
-├── test/             # Test suites
-├── util/             # Utility functions
-├── main.py           # CLI entry point
-├── gui.py            # GUI entry point
-└── requirements.txt  # Python dependencies
+ProductScraper/
+├── src/                    # Main source code
+│   ├── core/              # Business logic and database
+│   │   ├── classification/ # Product classification system
+│   │   └── database_import.py
+│   ├── scrapers/          # Web scraping modules
+│   │   ├── amazon.py
+│   │   ├── bradley_caldwell.py
+│   │   └── master.py      # Main scraping orchestrator
+│   ├── ui/                # User interface components
+│   │   ├── product_editor.py
+│   │   ├── product_classify_ui.py
+│   │   └── product_cross_sell_ui.py
+│   └── utils/             # Utility functions
+│       ├── scraping/      # Scraping utilities
+│       ├── images/        # Image processing
+│       └── files/         # File operations
+├── scripts/               # Executable entry points
+│   ├── run_scraper.py     # CLI application
+│   ├── run_gui.py         # GUI application
+│   ├── check_dataset.py   # Database statistics
+│   └── classify_excel.py  # Excel classification tool
+├── tests/                 # Test suites
+│   ├── unit/             # Unit tests
+│   ├── integration/      # Integration tests
+│   └── fixtures/         # Test data
+├── data/                  # Data files and databases
+│   ├── databases/        # SQLite databases
+│   ├── input/            # Input Excel files
+│   ├── output/           # Generated output files
+│   ├── images/           # Downloaded product images
+│   └── exports/          # Export files
+├── docs/                  # Documentation
+└── requirements.txt      # Python dependencies
 ```
 
 ## Configuration
 
-Create a `.env` file for sensitive configuration:
+The application uses environment-based configuration. Sensitive settings can be configured through environment variables or a `.env` file:
 
 ```env
 # Database settings
-DATABASE_URL=sqlite:///products.db
-
-# API keys and credentials
-# Add your scraper-specific credentials here
+DATABASE_PATH=data/databases/products.db
 
 # Scraping settings
 HEADLESS=true
 TIMEOUT=30
+USER_AGENT=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
+
+# Browser profiles
+BROWSER_PROFILE_DIR=data/browser_profiles/
 ```
 
 ## Safety & Best Practices
@@ -118,9 +147,26 @@ TIMEOUT=30
 ⚠️ **Important**: This tool accesses live e-commerce data
 
 - **Test First**: Always test with small batches using SKU `035585499741`
-- **Rate Limiting**: Respect website terms of service
+- **Rate Limiting**: Respect website terms of service and robots.txt
 - **Data Privacy**: Handle customer data responsibly
 - **Environment Variables**: Never commit credentials to version control
+- **Browser Profiles**: Use separate profiles for different sites to avoid conflicts
+
+## Development
+
+### Adding New Scrapers
+
+1. Create a new scraper in `src/scrapers/`
+2. Follow the existing pattern with proper error handling
+3. Add unit tests in `tests/unit/`
+4. Update the scraper discovery in `src/scrapers/master.py`
+
+### Code Quality
+
+- Use type hints and docstrings
+- Follow PEP 8 style guidelines
+- Add comprehensive error handling
+- Write tests for new functionality
 
 ## Contributing
 

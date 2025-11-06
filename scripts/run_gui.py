@@ -13,6 +13,12 @@ from PyQt6.QtWidgets import (
     QMessageBox,
 )
 
+# Ensure project root is on sys.path so we can import from scripts
+import os
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
 # Conditional import for core logic to ensure GUI is runnable even if main fails.
 try:
     from scripts.run_scraper import run_scraping, run_discontinued_check, run_db_refresh, run_scraper_tests
