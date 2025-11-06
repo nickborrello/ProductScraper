@@ -25,9 +25,9 @@ from UI.product_cross_sell_ui import assign_cross_sells_batch
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from util.scrape_util import create_fileName, create_html, clean_brand, full_name, get_standard_chrome_options
-from util.image_util import download_image
-from util.xlsx2xls import convert_xlsx_to_xls_with_excel
+from src.utils.scraping.scraping import create_fileName, create_html, clean_brand, full_name, get_standard_chrome_options
+from src.utils.images.processing import download_image
+from src.utils.files.excel import convert_xlsx_to_xls_with_excel
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 

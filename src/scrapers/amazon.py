@@ -7,7 +7,7 @@ import sys
 if __name__ == "__main__":
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from util.scrape_util import clean_string
+from src.utils.scraping.scraping import clean_string
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
@@ -15,7 +15,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, WebDriverException
-from util.browser_util import create_browser
+from src.utils.scraping.browser import create_browser
 from util.scrape_display import display_product_result, display_scraping_progress, display_scraping_summary, display_error, display_info
 
 # Amazon scraper with optimizations for speed
@@ -32,7 +32,7 @@ USE_OPTIMIZED_BROWSER = True  # Set to False if you need images for debugging
 
 def init_browser(profile_suffix="default", headless=True):
     """Initialize Chrome browser for Amazon scraping with proper profile management."""
-    from util.scrape_util import get_standard_chrome_options
+    from src.utils.scraping.scraping import get_standard_chrome_options
     chrome_options = get_standard_chrome_options(headless=headless, profile_suffix=profile_suffix)
     
     # Use selenium_profiles directory for Amazon with unique suffix

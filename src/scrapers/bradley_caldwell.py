@@ -9,8 +9,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
-from util.scrape_util import clean_string
-from util.browser_util import create_browser
+from src.utils.scraping.scraping import clean_string
+from src.utils.scraping.browser import create_browser
 from util.scrape_display import display_product_result, display_scraping_progress, display_scraping_summary, display_error
 
 # Bradley Caldwell can run headless

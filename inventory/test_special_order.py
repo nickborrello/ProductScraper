@@ -1,4 +1,4 @@
-from field_mapping import map_shopsite_fields
+from src.core.field_mapping import map_shopsite_fields
 
 # Test Special_Order scenarios
 test_cases = [

@@ -12,8 +12,8 @@ import pathlib
 project_root = pathlib.Path(__file__).resolve().parents[1]
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
-from util.scrape_util import get_standard_chrome_options, clean_string
-from util.browser_util import create_browser
+from src.utils.scraping.scraping import get_standard_chrome_options, clean_string
+from src.utils.scraping.browser import create_browser
 
 HEADLESS = True
 TEST_SKU = "3002770745"  # KONG Pull A Partz Pals Koala SM - test SKU for Mazuri

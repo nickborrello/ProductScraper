@@ -10,7 +10,7 @@ from selenium.webdriver.support import expected_conditions as EC
 import undetected_chromedriver as uc
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from util.scrape_util import clean_string
+from src.utils.scraping.scraping import clean_string
 
 def init_chewy_browser():
     options = uc.ChromeOptions()

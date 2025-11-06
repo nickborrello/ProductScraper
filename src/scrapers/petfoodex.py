@@ -8,8 +8,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
-from util.scrape_util import get_standard_chrome_options
-from util.browser_util import create_browser
+from src.utils.scraping.scraping import get_standard_chrome_options
+from src.utils.scraping.browser import create_browser
 from util.scrape_display import display_product_result, display_scraping_progress, display_scraping_summary, display_error
 
 # Ensure project root is in sys.path

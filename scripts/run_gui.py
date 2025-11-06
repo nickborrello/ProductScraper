@@ -15,7 +15,7 @@ from PyQt6.QtWidgets import (
 
 # Conditional import for core logic to ensure GUI is runnable even if main fails.
 try:
-    from main import run_scraping, run_discontinued_check, run_db_refresh, run_scraper_tests
+    from scripts.run_scraper import run_scraping, run_discontinued_check, run_db_refresh, run_scraper_tests
 except ImportError as e:
     print(f"Error importing from main: {e}")
     # Provide dummy functions if the import fails, so the GUI can still load.

@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch, call
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
-from main import run_scraping, run_discontinued_check, run_db_refresh
+from scripts.run_scraper import run_scraping, run_discontinued_check, run_db_refresh
 
 # --- Test Fixtures ---
 

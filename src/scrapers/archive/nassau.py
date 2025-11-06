@@ -2,8 +2,8 @@ import re
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from util.scrape_util import clean_string
-from util.browser_util import create_browser
+from src.utils.scraping.scraping import clean_string
+from src.utils.scraping.browser import create_browser
 from util.scrape_display import display_product_result, display_scraping_progress, display_scraping_summary, display_error
 import time
 

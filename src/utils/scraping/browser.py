@@ -8,7 +8,7 @@ import time
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.chrome.options import Options
-from util.scrape_util import get_standard_chrome_options
+from src.utils.scraping.scraping import get_standard_chrome_options
 
 
 class ScraperBrowser:

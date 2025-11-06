@@ -7,7 +7,7 @@ from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from util.scrape_util import get_standard_chrome_options
+from src.utils.scraping.scraping import get_standard_chrome_options
 
 from scrapers.bradley_caldwell import scrape_bradley_caldwell
 from scrapers.central_pet import scrape_central

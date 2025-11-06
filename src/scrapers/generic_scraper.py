@@ -31,8 +31,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
-from util.scrape_util import clean_string
-from util.browser_util import create_browser
+from src.utils.scraping.scraping import clean_string
+from src.utils.scraping.browser import create_browser
 
 # Google Search API would be ideal, but for demo purposes using Selenium
 GOOGLE_SEARCH_URL = "https://www.google.com/search?q={}+product"
