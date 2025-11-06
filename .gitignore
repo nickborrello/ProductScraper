@@ -4,6 +4,7 @@ cookies/*.pkl
 # Browser profiles and temporary data
 browser_profiles/
 selenium_profiles/
+data/browser_profiles/
 
 # Python cache
 __pycache__/
@@ -12,6 +13,8 @@ __pycache__/
 
 # Environment variables
 .env
+.env.local
+.env.*.local
 
 # IDE files
 .vscode/
@@ -34,4 +37,11 @@ Thumbs.db
 *.log
 
 # Database and large data files
-inventory/data
+data/
+inventory/  # Legacy inventory folder if it still exists
+
+# Sensitive configuration files
+config/secrets.json
+config/credentials.json
+*.key
+*.pem
