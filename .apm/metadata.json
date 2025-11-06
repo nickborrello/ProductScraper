@@ -1,0 +1,10 @@
+{
+  "cliVersion": "0.5.1",
+  "templateVersion": "v0.5.1+templates.1",
+  "assistants": [
+    "GitHub Copilot",
+    "Gemini CLI"
+  ],
+  "installedAt": "2025-11-06T17:13:41.960Z",
+  "lastUpdated": "2025-11-06T18:03:21.114Z"
+}

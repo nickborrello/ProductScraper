@@ -1,0 +1,115 @@
+# Field mapping configuration for ShopSite XML import
+# Maps ShopSite XML fields to the specific fields needed by the product editor
+
+# Core product fields that the editor ACTUALLY uses (optimized for performance)
+EDITOR_FIELD_MAPPING = {
+    # Editor Field -> List of possible ShopSite field names (in priority order)
+    'Name': ['Name'],
+    'Brand': ['ProductField16', 'Brand'],
+    'Weight': ['Weight'],
+    'Special_Order': ['ProductField11'],
+    'Category': ['ProductField24'],
+    'Product_Type': ['ProductField25'],
+    'Product_On_Pages': ['ProductOnPages', 'Product On Pages'],
+    'Graphic': ['Graphic'],  # Main product image
+    'MoreInfoImage1': ['MoreInfoImage1'],
+    'MoreInfoImage2': ['MoreInfoImage2'],
+    'MoreInfoImage3': ['MoreInfoImage3'],
+    'MoreInfoImage4': ['MoreInfoImage4'],
+    'MoreInfoImage5': ['MoreInfoImage5'],
+    'MoreInfoImage6': ['MoreInfoImage6'],
+}
+
+# Fields to always include (even if empty) for database integrity
+REQUIRED_FIELDS = [
+    'Name', 'Brand', 'Weight',  # Special_Order removed - only store when "yes"
+    'Category', 'Product_Type', 'Product_On_Pages',
+    'Graphic'
+]
+
+# Image-related fields (for collecting all product images)
+IMAGE_FIELDS = [
+    'Graphic', 'MoreInfoImage1', 'MoreInfoImage2', 'MoreInfoImage3',
+    'MoreInfoImage4', 'MoreInfoImage5', 'MoreInfoImage6', 'MoreInfoImage7',
+    'MoreInfoImage8', 'MoreInfoImage9', 'MoreInfoImage10'
+]
+
+def map_shopsite_fields(product_data):
+    """
+    Map ShopSite XML fields to editor format, keeping only relevant fields.
+
+    Args:
+        product_data: Dict of all ShopSite fields from XML
+
+    Returns:
+        Dict with only the mapped fields needed by the editor
+    """
+    mapped_product = {}
+
+    # Map each editor field from possible ShopSite field names
+    for editor_field, shopsite_fields in EDITOR_FIELD_MAPPING.items():
+        value = None
+        for shopsite_field in shopsite_fields:
+            if shopsite_field in product_data and product_data[shopsite_field]:
+                value = product_data[shopsite_field]
+                break
+
+        # Special handling for Product_On_Pages - ensure "|" separator
+        if editor_field == 'Product_On_Pages' and value:
+            # Split by comma and rejoin with "|" to standardize separator
+            pages = [page.strip() for page in str(value).split(',') if page.strip()]
+            value = '|'.join(pages)
+
+        # Special handling for Special_Order
+        if editor_field == 'Special_Order':
+            # Check if the field exists in the source data (even if empty)
+            field_exists = any(shopsite_field in product_data for shopsite_field in shopsite_fields)
+            if field_exists:
+                raw_value = product_data.get(shopsite_fields[0], '')  # Get the actual value
+                if str(raw_value).lower().strip() == 'yes':
+                    mapped_product[editor_field] = 'yes'
+                else:
+                    # Store as empty string if it was blank in source
+                    mapped_product[editor_field] = ''
+            # Skip if field doesn't exist at all
+            continue
+
+        # Ensure we have a value for required fields
+        if editor_field in REQUIRED_FIELDS and value is None:
+            value = ''
+
+        if value is not None:
+            mapped_product[editor_field] = value
+
+    # Collect all available images
+    images = []
+    for img_field in IMAGE_FIELDS:
+        img_url = product_data.get(img_field, '').strip()
+        if img_url and img_url.lower() != 'none':
+            images.append(img_url)
+
+    if images:
+        mapped_product['Image_URLs'] = images
+
+    return mapped_product
+
+def should_include_field(field_name):
+    """
+    Check if a ShopSite field should be included in the mapped data.
+
+    Args:
+        field_name: ShopSite field name
+
+    Returns:
+        bool: True if field should be included
+    """
+    # Include if it's in our mapping
+    for shopsite_fields in EDITOR_FIELD_MAPPING.values():
+        if field_name in shopsite_fields:
+            return True
+
+    # Include if it's an image field
+    if field_name in IMAGE_FIELDS:
+        return True
+
+    return False

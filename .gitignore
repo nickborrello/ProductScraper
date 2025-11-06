@@ -1,0 +1,37 @@
+# Cookie files (login sessions)
+cookies/*.pkl
+
+# Browser profiles and temporary data
+browser_profiles/
+selenium_profiles/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment variables
+.env
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*~
+
+# Excel temporary files
+~$*.xlsx
+~$*.xls
+
+# Log files
+*.log
+
+# Database and large data files
+inventory/data
