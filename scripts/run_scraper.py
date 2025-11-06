@@ -1,9 +1,15 @@
 import os
 import sys
 import subprocess
-import tkinter as tk
-from tkinter import filedialog
 import pandas as pd
+
+# Try to import PyQt6 for GUI file dialogs, fall back to text-based if not available
+try:
+    from PyQt6.QtWidgets import QApplication, QFileDialog
+    from PyQt6.QtCore import QCoreApplication
+    QT_AVAILABLE = True
+except ImportError:
+    QT_AVAILABLE = False
 
 # Ensure project root is on sys.path
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -14,24 +20,29 @@ from src.core.database_import import import_from_shopsite_xml
 from src.core.database_refresh import refresh_database_from_xml
 
 # Conditional imports for core modules
+print("🔧 Checking module availability...")
 try:
     from src.scrapers.master import ProductScraper
     PRODUCT_SCRAPER_AVAILABLE = True
-except ImportError:
+    print("✅ ProductScraper module loaded")
+except ImportError as e:
     PRODUCT_SCRAPER_AVAILABLE = False
-    print("⚠️ ProductScraper module not available")
+    print(f"❌ ProductScraper module not available: {e}")
 
 try:
     from src.scrapers.discontinued import DiscontinuedChecker
     DISCONTINUED_CHECKER_AVAILABLE = True
-except ImportError:
+    print("✅ DiscontinuedChecker module loaded")
+except ImportError as e:
     DISCONTINUED_CHECKER_AVAILABLE = False
-    print("⚠️ DiscontinuedChecker module not available")
+    print(f"❌ DiscontinuedChecker module not available: {e}")
+print("🔧 Module check complete")
 
 # --- Core Logic Functions ---
 
 def run_scraping(file_path, progress_callback=None, log_callback=None, interactive=True):
     """Handles the entire scraping process for a given file."""
+    print(f"🚀 run_scraping called with file: {file_path}")
     log = log_callback if log_callback else print
 
     if not PRODUCT_SCRAPER_AVAILABLE:
@@ -243,19 +254,89 @@ def validate_excel_columns(file_path, log_callback=None):
     except Exception as e:
         return False, f"❌ Error validating Excel file: {e}"
 def select_excel_file():
-    """Opens a dialog to select an Excel file."""
-    root = tk.Tk()
-    root.withdraw()
-    file_path = filedialog.askopenfilename(title="Select Excel File", filetypes=[("Excel Files", "*.xlsx")])
-    root.destroy()
-    return file_path
+    """Select an Excel file using GUI dialog if available, otherwise text-based."""
+    if QT_AVAILABLE:
+        try:
+            print("🖼️ Using PyQt6 file dialog...")
+            # Create a minimal QApplication if one doesn't exist
+            app = QApplication.instance()
+            if app is None:
+                app = QApplication(sys.argv)
+            
+            file_path, _ = QFileDialog.getOpenFileName(
+                None,
+                "Select Excel File",
+                os.path.join(PROJECT_ROOT, "data", "input"),
+                "Excel Files (*.xlsx *.xls);;All Files (*)"
+            )
+            
+            # Don't quit the app if it was created just for this dialog
+            if app and len(app.allWidgets()) == 0:
+                app.quit()
+            
+            print(f"📁 Dialog result: '{file_path}'")
+            return file_path if file_path else None
+        except Exception as e:
+            print(f"❌ PyQt6 dialog failed: {e}")
+            print("💡 Falling back to text-based file selection...")
+            return select_excel_file_text()
+    else:
+        print("💡 Using text-based file selection (PyQt6 not available)")
+        return select_excel_file_text()
+
+def select_excel_file_text():
+    """Text-based file selection fallback when GUI is not available."""
+    input_dir = os.path.join(PROJECT_ROOT, "data", "input")
+    print(f"📁 Looking for Excel files in: {input_dir}")
+    
+    # List available Excel files
+    if os.path.exists(input_dir):
+        excel_files = [f for f in os.listdir(input_dir) if f.endswith(('.xlsx', '.xls'))]
+        if excel_files:
+            print("� Available Excel files:")
+            for i, file in enumerate(excel_files, 1):
+                print(f"  {i}. {file}")
+            print("  0. Enter custom path")
+            
+            while True:
+                try:
+                    choice = input("➤ Select file number or enter custom path: ").strip()
+                    if choice == "0":
+                        file_path = input("➤ Enter full path to Excel file: ").strip()
+                        if file_path and os.path.exists(file_path):
+                            return file_path
+                        else:
+                            print("❌ File not found. Try again.")
+                    elif choice.isdigit() and 1 <= int(choice) <= len(excel_files):
+                        file_path = os.path.join(input_dir, excel_files[int(choice) - 1])
+                        return file_path
+                    else:
+                        print("❌ Invalid choice. Try again.")
+                except KeyboardInterrupt:
+                    return None
+        else:
+            print("❌ No Excel files found in input directory.")
+    else:
+        print(f"❌ Input directory not found: {input_dir}")
+    
+    # Fallback to manual path entry
+    while True:
+        try:
+            file_path = input("➤ Enter full path to Excel file (or press Enter to cancel): ").strip()
+            if not file_path:
+                return None
+            if os.path.exists(file_path):
+                return file_path
+            else:
+                print("❌ File not found. Try again.")
+        except KeyboardInterrupt:
+            return None
 
 def run_scraper_tests(run_integration=False, log_callback=None, progress_callback=None):
     """Run pytest on scraper tests and stream results."""
     log = log_callback if log_callback else print
     
-    PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
-    test_file = os.path.join(PROJECT_ROOT, "test", "test_scrapers.py")
+    test_file = os.path.join(PROJECT_ROOT, "tests", "unit", "test_scrapers.py")
     
     if not os.path.exists(test_file):
         log("❌ Test file not found")
@@ -336,9 +417,14 @@ def main_cli():
 
         for option in selected:
             if option == "1":
+                print("🔍 Opening file selection dialog...")
                 file_path = select_excel_file()
+                print(f"📁 File selection result: '{file_path}'")
                 if file_path:
+                    print(f"✅ File selected: {os.path.basename(file_path)}")
                     run_scraping(file_path)
+                else:
+                    print("❌ No file selected or dialog cancelled")
             elif option == "2":
                 file_path = select_excel_file()
                 if file_path:
