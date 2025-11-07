@@ -45,7 +45,11 @@ git clone https://github.com/nickborrello/ProductScraper.git
 cd ProductScraper
 
 # Install Python dependencies
-pip install -r requirements.txt
+pip install python-dotenv PyQt6 requests selenium pandas sqlalchemy
+
+# Set up environment configuration
+cp .env.example .env
+# Edit .env with your actual credentials
 ```
 
 ## Usage
@@ -130,17 +134,38 @@ ProductScraper/
 
 The application uses environment-based configuration. Sensitive settings can be configured through environment variables or a `.env` file:
 
+1. Copy `.env.example` to `.env`
+2. Fill in your actual credentials and settings
+3. The application will automatically load variables from `.env`
+
+### Required Environment Variables
+
+```env
+# Scraper Credentials (required for respective scrapers)
+PETFOOD_USERNAME=your_username
+PETFOOD_PASSWORD=your_password
+PHILLIPS_USERNAME=your_username
+PHILLIPS_PASSWORD=your_password
+ORGILL_USERNAME=your_username
+ORGILL_PASSWORD=your_password
+
+# ShopSite API Credentials (required for database sync)
+SHOPSITE_CLIENT_ID=your_client_id
+SHOPSITE_SECRET_KEY=your_secret_key
+SHOPSITE_AUTHORIZATION_CODE=your_auth_code
+SHOPSITE_AUTH_URL=https://yourstore.shopsite.com/xml/
+```
+
+### Optional Environment Variables
+
 ```env
 # Database settings
 DATABASE_PATH=data/databases/products.db
 
 # Scraping settings
-HEADLESS=true
-TIMEOUT=30
-USER_AGENT=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
-
-# Browser profiles
-BROWSER_PROFILE_DIR=data/browser_profiles/
+DEBUG=false
+SELENIUM_HEADLESS=true
+SELENIUM_TIMEOUT=30
 ```
 
 ## Safety & Best Practices
