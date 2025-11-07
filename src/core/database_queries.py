@@ -11,7 +11,9 @@ class ProductDatabase:
     def __init__(self, db_path: str = None):
         if db_path is None:
             script_dir = os.path.dirname(os.path.abspath(__file__))
-            db_path = os.path.join(script_dir, "data", "products.db")
+            # Go up two levels from src/core/ to project root, then into data/databases/
+            project_root = os.path.dirname(os.path.dirname(script_dir))
+            db_path = os.path.join(project_root, "data", "databases", "products.db")
 
         self.db_path = db_path
         self.conn = None
@@ -36,13 +38,12 @@ class ProductDatabase:
         return cursor.fetchone()[0]
 
     def get_sample_fields(self) -> List[str]:
-        """Get list of available fields from a sample product"""
-        cursor = self.conn.execute('SELECT extra_data FROM products LIMIT 1')
-        row = cursor.fetchone()
-        if row and row[0]:
-            data = json.loads(row[0])
-            return list(data.keys())
-        return []
+        """Get list of available fields from database schema"""
+        # Get column names from the database schema
+        cursor = self.conn.execute("PRAGMA table_info(products)")
+        columns_info = cursor.fetchall()
+        # Return column names, excluding 'id' and 'last_updated'
+        return [row[1] for row in columns_info if row[1] not in ['id', 'last_updated']]
 
     def query_products(self, sql_query: str, limit: int = 50) -> List[Dict[str, Any]]:
         """
@@ -61,13 +62,7 @@ class ProductDatabase:
             for row in cursor.fetchall():
                 product = dict(zip(columns, row))
 
-                # Parse extra_data JSON if present
-                if 'extra_data' in product and product['extra_data']:
-                    try:
-                        product['extra_data'] = json.loads(product['extra_data'])
-                    except json.JSONDecodeError:
-                        pass
-
+                # No extra_data JSON parsing needed for current schema
                 results.append(product)
 
             return results
@@ -79,17 +74,35 @@ class ProductDatabase:
         """
         Search for products where a specific field contains a value
         """
-        # Build JSON query for extra_data field
-        json_query = f"SELECT * FROM products WHERE json_extract(extra_data, '$.{field}') LIKE ? LIMIT {limit}"
-        cursor = self.conn.execute(json_query, (f'%{value}%',))
+        # For the current schema, search in the appropriate column
+        # Map common field names to database column names
+        column_mapping = {
+            'SKU': 'SKU',
+            'Name': 'Name',
+            'Price': 'Price',
+            'Images': 'Images',
+            'Weight': 'Weight',
+            'Brand': 'Brand',
+            'Special_Order': 'Special_Order',
+            'Category': 'Category',
+            'Product_Type': 'Product_Type',
+            'Product_On_Pages': 'Product_On_Pages',
+            'Product_Cross_Sell': 'Product_Cross_Sell',
+            'ProductDisabled': 'ProductDisabled'
+        }
+
+        # Use the mapped column name, or the field name directly if not mapped
+        column_name = column_mapping.get(field, field)
+
+        # Build query for the specific column
+        query = f"SELECT * FROM products WHERE {column_name} LIKE ? LIMIT {limit}"
+        cursor = self.conn.execute(query, (f'%{value}%',))
 
         columns = [desc[0] for desc in cursor.description]
         results = []
 
         for row in cursor.fetchall():
             product = dict(zip(columns, row))
-            if 'extra_data' in product and product['extra_data']:
-                product['extra_data'] = json.loads(product['extra_data'])
             results.append(product)
 
         return results
@@ -112,8 +125,8 @@ def main():
         print("\n" + "=" * 50)
         print("Query Examples:")
         print("1. Search by name: 'Name' contains 'dog'")
-        print("2. Custom SQL: SELECT * FROM products WHERE sku LIKE '2028%'")
-        print("3. Count by category: SELECT json_extract(extra_data, '$.Category') as cat, COUNT(*) FROM products GROUP BY cat")
+        print("2. Custom SQL: SELECT * FROM products WHERE SKU LIKE '2028%'")
+        print("3. Count by category: SELECT Category, COUNT(*) FROM products WHERE Category IS NOT NULL GROUP BY Category")
         print("=" * 50)
 
         while True:
@@ -141,7 +154,7 @@ def main():
                     print(f"❌ Error: {e}")
 
             elif choice == '2':
-                print("Enter SQL query (products table has: id, sku, name, price, description, category, inventory, weight, image_url, extra_data)")
+                print("Enter SQL query (products table has: id, SKU, Name, Price, Images, Weight, Brand, Special_Order, Category, Product_Type, Product_On_Pages, Product_Cross_Sell, ProductDisabled, last_updated)")
                 query = input("SQL> ").strip()
                 if query:
                     try:
@@ -156,18 +169,17 @@ def main():
 
             elif choice == '3':
                 print("\n📋 Field Examples:")
-                sample = db.query_products("SELECT extra_data FROM products LIMIT 1")[0]
-                if 'extra_data' in sample:
-                    data = sample['extra_data']
-                    examples = [
-                        ('Name', data.get('Name', 'N/A')),
-                        ('Price', data.get('Price', 'N/A')),
-                        ('SKU', data.get('SKU', 'N/A')),
-                        ('Category', data.get('Category', 'N/A')),
-                        ('ProductDescription', data.get('ProductDescription', 'N/A')[:100] + '...'),
-                    ]
-                    for field, value in examples:
-                        print(f"  {field}: {value}")
+                sample = db.query_products("SELECT * FROM products LIMIT 1")[0]
+                examples = [
+                    ('SKU', sample.get('SKU', 'N/A')),
+                    ('Name', sample.get('Name', 'N/A')),
+                    ('Price', sample.get('Price', 'N/A')),
+                    ('Brand', sample.get('Brand', 'N/A')),
+                    ('Category', sample.get('Category', 'N/A')),
+                    ('Weight', sample.get('Weight', 'N/A')),
+                ]
+                for field, value in examples:
+                    print(f"  {field}: {value}")
 
             elif choice == '4':
                 break

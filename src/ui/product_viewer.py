@@ -3,23 +3,127 @@ import json
 from pathlib import Path
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+# Add project root to path for imports
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(os.path.dirname(current_dir))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QLineEdit, QPushButton, QTableWidget, QTableWidgetItem, QHeaderView,
-    QMessageBox, QAbstractItemView, QComboBox, QCheckBox
+    QMessageBox, QAbstractItemView, QComboBox, QCheckBox, QGroupBox
 )
 from PyQt6.QtCore import Qt
-from UI.product_editor import edit_products_in_batch
+try:
+    # Try relative import first (when run as part of package)
+    from .product_editor import edit_products_in_batch
+except ImportError:
+    try:
+        # Try absolute import from src.ui (when run as standalone script)
+        from src.ui.product_editor import edit_products_in_batch
+    except ImportError:
+        # Last resort - import from current directory
+        from product_editor import edit_products_in_batch
 
-# Database path
-DB_PATH = Path(__file__).parent.parent / "data" / "products.db"
+# Database path - find it relative to project root
+# Find project root by looking for main.py
+current_path = Path(__file__).parent
+project_root = current_path
+while project_root.parent != project_root:  # Not at filesystem root
+    if (project_root / "main.py").exists():
+        break
+    project_root = project_root.parent
+
+DB_PATH = project_root / "data" / "databases" / "products.db"
 
 class ProductViewer(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Product Database Viewer")
-        self.setGeometry(100, 100, 1200, 800)
+        self.setWindowTitle("Product Database Viewer - Professional Edition")
+        self.setGeometry(100, 100, 1400, 900)
+        self.setStyleSheet("""
+            QMainWindow {
+                background-color: #1e1e1e;
+                color: #ffffff;
+            }
+            QTableWidget {
+                background-color: #2d2d2d;
+                color: #ffffff;
+                border: 1px solid #3e3e3e;
+                border-radius: 4px;
+                gridline-color: #4a4a4a;
+            }
+            QTableWidget::item {
+                padding: 5px;
+                border-bottom: 1px solid #4a4a4a;
+            }
+            QTableWidget::item:selected {
+                background-color: #4a4a4a;
+            }
+            QHeaderView::section {
+                background-color: #343a40;
+                color: #ffffff;
+                padding: 8px;
+                border: 1px solid #495057;
+                font-weight: bold;
+            }
+            QLineEdit {
+                background-color: #2d2d2d;
+                color: #ffffff;
+                border: 1px solid #4a4a4a;
+                border-radius: 4px;
+                padding: 6px;
+                font-size: 12px;
+            }
+            QLineEdit:focus {
+                border: 1px solid #2196F3;
+            }
+            QCheckBox {
+                color: #ffffff;
+                font-size: 12px;
+            }
+            QCheckBox::indicator {
+                width: 16px;
+                height: 16px;
+                background-color: #2d2d2d;
+                border: 1px solid #4a4a4a;
+                border-radius: 3px;
+            }
+            QCheckBox::indicator:checked {
+                background-color: #2196F3;
+                border: 1px solid #2196F3;
+            }
+            QComboBox {
+                background-color: #2d2d2d;
+                color: #ffffff;
+                border: 1px solid #4a4a4a;
+                border-radius: 4px;
+                padding: 4px;
+                min-width: 80px;
+            }
+            QComboBox::drop-down {
+                border: none;
+            }
+            QComboBox::down-arrow {
+                image: none;
+                border-left: 4px solid transparent;
+                border-right: 4px solid transparent;
+                border-top: 4px solid #ffffff;
+                margin-right: 8px;
+            }
+            QComboBox QAbstractItemView {
+                background-color: #2d2d2d;
+                color: #ffffff;
+                border: 1px solid #4a4a4a;
+                selection-background-color: #4a4a4a;
+            }
+            QLabel {
+                color: #ffffff;
+                font-size: 12px;
+            }
+        """)
 
         # Database connection
         self.conn = None
@@ -51,12 +155,35 @@ class ProductViewer(QMainWindow):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         layout = QVBoxLayout(central_widget)
+        layout.setSpacing(10)
+        layout.setContentsMargins(15, 15, 15, 15)
 
-        # Top frame for search and controls
-        search_layout = QHBoxLayout()
+        # Search and Filter Card
+        search_card = QGroupBox("🔍 Search & Filter")
+        search_card.setStyleSheet("""
+            QGroupBox {
+                font-weight: bold;
+                border: 2px solid #4a4a4a;
+                border-radius: 8px;
+                margin-top: 1ex;
+                background-color: #2d2d2d;
+                color: #ffffff;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 10px 0 10px;
+                color: #ffffff;
+                font-size: 14px;
+            }
+        """)
+        search_layout = QHBoxLayout(search_card)
+        search_layout.setSpacing(10)
+        search_layout.setContentsMargins(15, 15, 15, 15)
 
         search_layout.addWidget(QLabel("Search:"))
         self.search_input = QLineEdit()
+        self.search_input.setPlaceholderText("Search by SKU, brand, or product name...")
         self.search_input.textChanged.connect(self.on_search_change)
         search_layout.addWidget(self.search_input)
 
@@ -72,54 +199,257 @@ class ProductViewer(QMainWindow):
         self.page_size_combo.currentTextChanged.connect(self.on_page_size_change)
         search_layout.addWidget(self.page_size_combo)
 
-        layout.addLayout(search_layout)
+        layout.addWidget(search_card)
+
+        # Products Table Card
+        table_card = QGroupBox("📊 Product Database")
+        table_card.setStyleSheet("""
+            QGroupBox {
+                font-weight: bold;
+                border: 2px solid #4a4a4a;
+                border-radius: 8px;
+                margin-top: 1ex;
+                background-color: #2d2d2d;
+                color: #ffffff;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 10px 0 10px;
+                color: #ffffff;
+                font-size: 14px;
+            }
+        """)
+        table_layout = QVBoxLayout(table_card)
+        table_layout.setContentsMargins(15, 15, 15, 15)
 
         # Table
         self.table = QTableWidget()
         self.table.setColumnCount(5)
         self.table.setHorizontalHeaderLabels(["Select", "SKU", "Brand", "Product Name", "Disabled"])
-        self.table.horizontalHeader().setStretchLastSection(True)
         self.table.setAlternatingRowColors(True)
         self.table.cellClicked.connect(self.on_table_click)
-        layout.addWidget(self.table)
+        
+        # Set column widths and resize modes
+        self.table.setColumnWidth(0, 60)  # Select checkbox column - small
+        self.table.setColumnWidth(2, 150)  # Brand column - wider
+        self.table.setColumnWidth(4, 80)  # Disabled column - fixed width
+        
+        # Set Product Name column to stretch
+        header = self.table.horizontalHeader()
+        if header is not None:
+            header.setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)
+        
+        table_layout.addWidget(self.table)
 
-        # Action buttons
-        button_layout = QHBoxLayout()
-        self.edit_button = QPushButton("Edit Selected")
+        layout.addWidget(table_card)
+
+        # Action Buttons Card
+        action_card = QGroupBox("⚡ Actions")
+        action_card.setStyleSheet("""
+            QGroupBox {
+                font-weight: bold;
+                border: 2px solid #4a4a4a;
+                border-radius: 8px;
+                margin-top: 1ex;
+                background-color: #2d2d2d;
+                color: #ffffff;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 10px 0 10px;
+                color: #ffffff;
+                font-size: 14px;
+            }
+        """)
+        button_layout = QHBoxLayout(action_card)
+        button_layout.setSpacing(10)
+        button_layout.setContentsMargins(15, 15, 15, 15)
+
+        self.edit_button = QPushButton("✏️ Edit Selected")
+        self.edit_button.setStyleSheet("""
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 10px 20px;
+                font-size: 12px;
+                font-weight: bold;
+                min-width: 120px;
+            }
+            QPushButton:hover {
+                background-color: #45a049;
+            }
+            QPushButton:pressed {
+                background-color: #3d8b40;
+            }
+            QPushButton:disabled {
+                background-color: #666666;
+                color: #999999;
+            }
+        """)
         self.edit_button.clicked.connect(self.edit_selected_products)
         self.edit_button.setEnabled(False)
         button_layout.addWidget(self.edit_button)
 
-        self.select_all_button = QPushButton("Select All")
+        self.select_all_button = QPushButton("☑️ Select All")
+        self.select_all_button.setStyleSheet("""
+            QPushButton {
+                background-color: #2196F3;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 10px 20px;
+                font-size: 12px;
+                font-weight: bold;
+                min-width: 100px;
+            }
+            QPushButton:hover {
+                background-color: #1976D2;
+            }
+            QPushButton:pressed {
+                background-color: #1565C0;
+            }
+        """)
         self.select_all_button.clicked.connect(self.select_all_visible)
         button_layout.addWidget(self.select_all_button)
 
-        self.clear_selection_button = QPushButton("Clear Selection")
+        self.clear_selection_button = QPushButton("🗑️ Clear Selection")
+        self.clear_selection_button.setStyleSheet("""
+            QPushButton {
+                background-color: #dc3545;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 10px 20px;
+                font-size: 12px;
+                font-weight: bold;
+                min-width: 120px;
+            }
+            QPushButton:hover {
+                background-color: #c82333;
+            }
+            QPushButton:pressed {
+                background-color: #bd2130;
+            }
+        """)
         self.clear_selection_button.clicked.connect(self.clear_selection)
         button_layout.addWidget(self.clear_selection_button)
 
-        layout.addLayout(button_layout)
+        button_layout.addStretch()
+        layout.addWidget(action_card)
 
-        # Pagination
-        pagination_layout = QHBoxLayout()
+        # Pagination Card
+        pagination_card = QGroupBox("📄 Navigation")
+        pagination_card.setStyleSheet("""
+            QGroupBox {
+                font-weight: bold;
+                border: 2px solid #4a4a4a;
+                border-radius: 8px;
+                margin-top: 1ex;
+                background-color: #2d2d2d;
+                color: #ffffff;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 10px 0 10px;
+                color: #ffffff;
+                font-size: 14px;
+            }
+        """)
+        pagination_layout = QHBoxLayout(pagination_card)
+        pagination_layout.setSpacing(10)
+        pagination_layout.setContentsMargins(15, 15, 15, 15)
+
         self.prev_button = QPushButton("◀ Previous")
+        self.prev_button.setStyleSheet("""
+            QPushButton {
+                background-color: #6c757d;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 8px 16px;
+                font-size: 12px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #5a6268;
+            }
+            QPushButton:pressed {
+                background-color: #545b62;
+            }
+            QPushButton:disabled {
+                background-color: #495057;
+                color: #6c757d;
+            }
+        """)
         self.prev_button.clicked.connect(self.prev_page)
         self.prev_button.setEnabled(False)
         pagination_layout.addWidget(self.prev_button)
 
         self.page_label = QLabel("Page 1 of 1")
+        self.page_label.setStyleSheet("font-weight: bold; font-size: 14px;")
         pagination_layout.addWidget(self.page_label)
 
         self.next_button = QPushButton("Next ▶")
+        self.next_button.setStyleSheet("""
+            QPushButton {
+                background-color: #6c757d;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 8px 16px;
+                font-size: 12px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #5a6268;
+            }
+            QPushButton:pressed {
+                background-color: #545b62;
+            }
+            QPushButton:disabled {
+                background-color: #495057;
+                color: #6c757d;
+            }
+        """)
         self.next_button.clicked.connect(self.next_page)
         self.next_button.setEnabled(False)
         pagination_layout.addWidget(self.next_button)
 
-        layout.addLayout(pagination_layout)
+        pagination_layout.addStretch()
+        layout.addWidget(pagination_card)
 
-        # Status
+        # Status Card
+        status_card = QGroupBox("📊 Status")
+        status_card.setStyleSheet("""
+            QGroupBox {
+                font-weight: bold;
+                border: 2px solid #4a4a4a;
+                border-radius: 8px;
+                margin-top: 1ex;
+                background-color: #2d2d2d;
+                color: #ffffff;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 10px 0 10px;
+                color: #ffffff;
+                font-size: 14px;
+            }
+        """)
+        status_layout = QVBoxLayout(status_card)
+        status_layout.setContentsMargins(15, 15, 15, 15)
+
         self.status_label = QLabel("")
-        layout.addWidget(self.status_label)
+        self.status_label.setStyleSheet("font-size: 12px; color: #cccccc;")
+        status_layout.addWidget(self.status_label)
+
+        layout.addWidget(status_card)
 
     def on_search_change(self):
         """Handle search input changes."""
@@ -141,6 +471,10 @@ class ProductViewer(QMainWindow):
 
     def load_products(self):
         """Load products from database with current filters."""
+        if self.conn is None:
+            QMessageBox.critical(self, "Error", "Database connection not available")
+            return
+        
         try:
             cursor = self.conn.cursor()
 
@@ -208,9 +542,11 @@ class ProductViewer(QMainWindow):
     def on_table_click(self, row, col):
         """Handle table click events."""
         if col == 0:  # Select column
-            sku = self.table.item(row, 1).text()
-            self.toggle_selection(sku)
-            self.update_table_display()
+            item = self.table.item(row, 1)
+            if item is not None:
+                sku = item.text()
+                self.toggle_selection(sku)
+                self.update_table_display()
 
     def toggle_selection(self, sku):
         """Toggle selection state of a product."""
@@ -222,15 +558,21 @@ class ProductViewer(QMainWindow):
     def update_table_display(self):
         """Update table display for selections."""
         for row in range(self.table.rowCount()):
-            sku = self.table.item(row, 1).text()
-            is_selected = "☑" if sku in self.selected_products else "☐"
-            self.table.item(row, 0).setText(is_selected)
+            item = self.table.item(row, 1)
+            if item is not None:
+                sku = item.text()
+                is_selected = "☑" if sku in self.selected_products else "☐"
+                select_item = self.table.item(row, 0)
+                if select_item is not None:
+                    select_item.setText(is_selected)
 
     def select_all_visible(self):
         """Select all products currently visible in the table."""
         for row in range(self.table.rowCount()):
-            sku = self.table.item(row, 1).text()
-            self.selected_products.add(sku)
+            item = self.table.item(row, 1)
+            if item is not None:
+                sku = item.text()
+                self.selected_products.add(sku)
         self.update_table_display()
         self.update_edit_button()
 
@@ -318,6 +660,9 @@ class ProductViewer(QMainWindow):
         if not skus:
             return []
         
+        if self.conn is None:
+            return []
+        
         try:
             # Ensure UTF-8 handling
             self.conn.text_factory = str
@@ -373,11 +718,14 @@ def main():
     app = QApplication.instance()
     if app is None:
         app = QApplication([])
+        standalone = True
+    else:
+        standalone = False
 
     window = ProductViewer()
     window.show()
 
-    if app.instance() is None or not app.instance().topLevelWidgets():
+    if standalone:
         app.exec()
 
 if __name__ == "__main__":

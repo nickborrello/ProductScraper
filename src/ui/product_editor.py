@@ -15,20 +15,38 @@ from io import BytesIO
 from PIL import Image, ImageQt
 
 # Handle import for shopsite_constants
-from . import shopsite_constants
+try:
+    # Try relative import first (when run as part of package)
+    from . import shopsite_constants
+except ImportError:
+    try:
+        # Try absolute import from src.ui (when run as standalone script)
+        from src.ui import shopsite_constants
+    except ImportError:
+        # Last resort - import from current directory
+        import shopsite_constants
+
 SHOPSITE_PAGES = shopsite_constants.SHOPSITE_PAGES
 
 import sys
 
 # Database path instead of Excel
-DB_PATH = Path(__file__).parent.parent / "data" / "products.db"
+# Find project root by looking for main.py
+current_path = Path(__file__).parent
+project_root = current_path
+while project_root.parent != project_root:  # Not at filesystem root
+    if (project_root / "main.py").exists():
+        break
+    project_root = project_root.parent
+
+DB_PATH = project_root / "data" / "databases" / "products.db"
 
 RECOMMEND_COLS = []
 
 # Cache for facet options to avoid repeated database queries
 _facet_cache = {
-    'category_product_types': None,
-    'product_on_pages_options': None,
+    'category_product_types': {},
+    'product_on_pages_options': [],
     'cache_timestamp': None
 }
 CACHE_DURATION_SECONDS = 300  # 5 minutes
@@ -37,8 +55,8 @@ def clear_facet_cache():
     """Clear the facet options cache, forcing fresh database queries on next access."""
     global _facet_cache
     _facet_cache = {
-        'category_product_types': None,
-        'product_on_pages_options': None,
+        'category_product_types': {},
+        'product_on_pages_options': [],
         'cache_timestamp': None
     }
 
@@ -63,7 +81,8 @@ def get_facet_options_from_db(force_refresh=False):
     )
 
     if cache_valid and _facet_cache['category_product_types'] is not None:
-        print(f"DEBUG: Using cached facet options (age: {current_time - _facet_cache['cache_timestamp']:.1f}s)")
+        age = current_time - _facet_cache['cache_timestamp']  # type: ignore
+        print(f"DEBUG: Using cached facet options (age: {age:.1f}s)")
         return _facet_cache['category_product_types'], _facet_cache['product_on_pages_options']
 
     print(f"DEBUG: Querying database for facet options (cache {'expired' if _facet_cache['cache_timestamp'] else 'empty'} or force_refresh={force_refresh})")
@@ -256,14 +275,16 @@ class ThumbnailLabel(QLabel):
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.setStyleSheet("border: 1px solid gray;")
 
-    def mousePressEvent(self, event):
-        if event.button() == Qt.MouseButton.LeftButton:
+    def mousePressEvent(self, ev):  # type: ignore[union-attr]
+        if ev and ev.button() == Qt.MouseButton.LeftButton:
             self.clicked.emit(self.index)
-        super().mousePressEvent(event)
+        super().mousePressEvent(ev)
 
 
 class ProductEditor(QMainWindow):
     """PyQt-based product editor with modern UI."""
+
+    finished = pyqtSignal()  # Signal emitted when editing is finished
 
     def __init__(self, products_list):
         super().__init__()
@@ -281,9 +302,8 @@ class ProductEditor(QMainWindow):
         self.setGeometry(100, 100, 1600, 1000)
 
         self.cancelled = False
-        self.finished = pyqtSignal()
 
-        # Create central widget with modern layout
+        # Create central widget
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
 
@@ -532,7 +552,7 @@ class ProductEditor(QMainWindow):
 
             # Use QNetworkAccessManager to download the image
             from PyQt6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
-            from PyQt6.QtCore import QEventLoop, QUrl
+            from PyQt6.QtCore import QEventLoop, QUrl, QTimer
 
             # Create network manager
             manager = QNetworkAccessManager()
@@ -544,14 +564,28 @@ class ProductEditor(QMainWindow):
             # Download synchronously
             loop = QEventLoop()
             reply = manager.get(request)
+            assert reply is not None, "Failed to create network reply"
 
             def on_finished():
                 loop.quit()
 
             reply.finished.connect(on_finished)
 
+            # Add timeout to prevent hanging
+            timer = QTimer()
+            timer.timeout.connect(loop.quit)
+            timer.setSingleShot(True)
+            timer.start(30000)  # 30 seconds timeout
+
             # Start the download
             loop.exec()
+
+            # Stop the timer
+            timer.stop()
+
+            # Check if request finished
+            if not reply.isFinished():
+                raise ValueError("Network request timed out")
 
             if reply.error() != QNetworkReply.NetworkError.NoError:
                 raise ValueError(f"Network error: {reply.errorString()}")
@@ -1081,9 +1115,11 @@ class ProductEditor(QMainWindow):
         # Setup image source buttons
         # Clear existing buttons
         for i in reversed(range(self.image_buttons_layout.count())):
-            widget = self.image_buttons_layout.itemAt(i).widget()
-            if widget:
-                widget.setParent(None)
+            item = self.image_buttons_layout.itemAt(i)
+            if item:
+                widget = item.widget()
+                if widget:
+                    widget.setParent(None)
 
         # Create buttons for each site
         self.image_source_buttons = {}
@@ -1177,9 +1213,11 @@ class ProductEditor(QMainWindow):
         try:
             # Clear existing image
             for i in reversed(range(self.image_layout.count())):
-                widget = self.image_layout.itemAt(i).widget()
-                if widget:
-                    widget.setParent(None)
+                item = self.image_layout.itemAt(i)
+                if item:
+                    widget = item.widget()
+                    if widget:
+                        widget.setParent(None)
 
             if self.current_images and 0 <= self.current_image_index < len(self.current_images):
                 img_url = self.current_images[self.current_image_index]
@@ -1235,10 +1273,14 @@ class ProductEditor(QMainWindow):
     def display_scaled_image(self):
         """Display the current image scaled to fit the viewport while maintaining aspect ratio."""
         if self.original_pixmap and not self.original_pixmap.isNull():
-            viewport_size = self.image_scroll.viewport().size()
-            if viewport_size.width() > 0 and viewport_size.height() > 0:
-                scaled_pixmap = self.original_pixmap.scaled(viewport_size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
-                self.image_label.setPixmap(scaled_pixmap)
+            viewport = self.image_scroll.viewport()
+            if viewport:
+                viewport_size = viewport.size()
+                if viewport_size.width() > 0 and viewport_size.height() > 0:
+                    scaled_pixmap = self.original_pixmap.scaled(viewport_size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                    self.image_label.setPixmap(scaled_pixmap)
+                else:
+                    self.image_label.setPixmap(self.original_pixmap)
             else:
                 self.image_label.setPixmap(self.original_pixmap)
         # For no image or error cases, the label already has text set
@@ -1463,18 +1505,20 @@ class ProductEditor(QMainWindow):
             self.close()
             self.finished.emit()
 
-    def resizeEvent(self, event):
+    def resizeEvent(self, a0):
         """Handle window resize to rescale the current image."""
-        super().resizeEvent(event)
+        super().resizeEvent(a0)
         self.display_scaled_image()
 
     def create_thumbnails(self):
         """Create thumbnail images for the current image batch."""
         # Clear existing thumbnails
         for i in reversed(range(self.thumbnail_layout.count())):
-            widget = self.thumbnail_layout.itemAt(i).widget()
-            if widget:
-                widget.setParent(None)
+            item = self.thumbnail_layout.itemAt(i)
+            if item:
+                widget = item.widget()
+                if widget:
+                    widget.setParent(None)
 
         # Limit thumbnail creation to prevent overwhelming the system
         max_thumbnails = min(len(self.current_images), 10)  # Limit to 10 thumbnails max
@@ -1513,12 +1557,14 @@ class ProductEditor(QMainWindow):
     def update_thumbnail_styles(self):
         """Update thumbnail border styles to highlight current image."""
         for i in range(self.thumbnail_layout.count()):
-            thumbnail = self.thumbnail_layout.itemAt(i).widget()
-            if isinstance(thumbnail, ThumbnailLabel):
-                if thumbnail.index == self.current_image_index:
-                    thumbnail.setStyleSheet("border: 2px solid #4CAF50; background-color: #e8f5e8;")
-                else:
-                    thumbnail.setStyleSheet("border: 1px solid gray;")
+            item = self.thumbnail_layout.itemAt(i)
+            if item:
+                thumbnail = item.widget()
+                if isinstance(thumbnail, ThumbnailLabel):
+                    if thumbnail.index == self.current_image_index:
+                        thumbnail.setStyleSheet("border: 2px solid #4CAF50; background-color: #e8f5e8;")
+                    else:
+                        thumbnail.setStyleSheet("border: 1px solid gray;")
 
     def on_thumbnail_clicked(self, index):
         """Handle thumbnail click to switch to that image."""
@@ -1737,7 +1783,7 @@ def edit_products_in_batch(products_or_skus, auto_close_seconds=None):
     if auto_close_seconds is not None:
         def auto_close():
             print(f"Auto-closing editor after {auto_close_seconds} seconds for testing...")
-            editor.close()
+            editor.finish_editing()  # Use finish_editing instead of close to emit finished signal
         QTimer.singleShot(auto_close_seconds * 1000, auto_close)
 
     # Use QEventLoop to wait for editor to close (works in both standalone and embedded modes)
@@ -1778,18 +1824,17 @@ def test_product_editor_data_handling():
     """Test function to validate product data handling without opening GUI."""
     print("Testing product editor data handling...")
 
-    # Test data
-    mock_product = {
-        'SKU': 'TEST123',
-        'Name': 'Test Product Name',
-        'Brand': 'Test Brand',
-        'Price': '29.99',  # Add price for regular product test
-        'Weight': '2.5',
-        'Image URLs': ['https://tse2.mm.bing.net/th/id/OIP.amm3ZIOTM2TuVcP-wu96gwHaHa?cb=12&rs=1&pid=ImgDetMain&o=7&rm=3', 'https://tse2.mm.bing.net/th/id/OIP.amm3ZIOTM2TuVcP-wu96gwHaHa?cb=12&rs=1&pid=ImgDetMain&o=7&rm=3', 'https://m.media-amazon.com/images/I/41uSFWZrsGL._AC_SL1500_.jpg'],
-        'Special Order': 'yes',
-        'Product Disabled': 'uncheck'
-    }
+    # Load test data from config file
+    config_path = project_root / "src" / "config" / "test_data.json"
+    try:
+        with open(config_path, 'r') as f:
+            test_data = json.load(f)
+    except Exception as e:
+        print(f"Error loading test data: {e}")
+        return
 
+    # Test data
+    mock_product = test_data["mock_product"]
     sku_string = "035585256153"
 
     print("1. Testing edit_products_in_batch with product data list...")
@@ -1836,39 +1881,7 @@ def test_product_editor_data_handling():
         print(f"   ❌ Error: {e}")
 
     print("5. Testing edit_products_in_batch with consolidated product data...")
-    mock_consolidated_product = {
-        'SKU': 'TEST456',
-        'Name': '',  # Empty - editor uses _consolidated_data arrays
-        'Brand': '',  # Empty - editor uses _consolidated_data arrays
-        'Weight': '',  # Empty - editor uses _consolidated_data arrays
-        'Image URLs': [],  # Empty - editor uses _consolidated_data arrays
-        'Special Order': '',  # Empty - editor uses _consolidated_data arrays
-        'Product Disabled': '',  # Empty - editor uses _consolidated_data arrays
-        'input_name': 'Original Dog Food Name',  # Original name from input file
-        'input_price': '19.99',  # Original price from input file
-        '_consolidated_data': {
-            'name_by_site': {
-                'Amazon': 'Purina Dog Chow 50lb',
-                'Bradley Caldwell': 'Purina Dog Food 50lb',
-                'Orgill': 'Purina Puppy Chow 30lb',
-                'Input': 'Original Dog Food Name'
-            },
-            'brand_by_site': {
-                'Amazon': 'Purina',
-                'Bradley Caldwell': 'Purina',
-                'Orgill': 'Purina'
-            },
-            'weight_by_site': {
-                'Amazon': '50 LB',
-                'Bradley Caldwell': '50 LB',
-                'Orgill': '30 LB'
-            },
-            'images_by_site': {
-                'Amazon': ['https://m.media-amazon.com/images/I/41uSFWZrsGL._AC_SL1500_.jpg', 'flowers/resized/mums-12-inch_medium.jpg'],
-                'Bradley Caldwell': ['url2.jpg']
-            }
-        }
-    }
+    mock_consolidated_product = test_data["mock_consolidated_product"]
     try:
         products_or_skus = [mock_consolidated_product]
         if products_or_skus and isinstance(products_or_skus[0], str):
@@ -1923,69 +1936,18 @@ if __name__ == "__main__":
     print("GUI TESTS (now running)")
     print("="*50)
 
-    # Test with consolidated data to see combo boxes
-    mock_consolidated_product = {
-        'SKU': 'TEST456',
-        'Name': 'Purina Dog Chow 50lb',  # Default to first option
-        'Brand': 'Purina',  # Default to first option
-        'Weight': '50',  # Default to first option
-        'Image URLs': [],  # Empty - editor uses _consolidated_data arrays
-        'Special Order': 'no',  # Default to first option
-        'Product Disabled': 'uncheck',  # Default to first option
-        'input_name': 'Original Dog Food Name',  # Original name from input file
-        'input_price': '19.99',  # Original price from input file
-        '_consolidated_data': {
-            'name_by_site': {
-                'Amazon': 'Purina Dog Chow 50lb',
-                'Bradley Caldwell': 'Purina Dog Food 50lb',
-                'Orgill': 'Purina Puppy Chow 30lb',
-            },
-            'brand_by_site': {
-                'Amazon': 'Purina',
-                'Bradley Caldwell': 'Purina',
-                'Orgill': 'Purina'
-            },
-            'weight_by_site': {
-                'Amazon': '50 LB',
-                'Bradley Caldwell': '50 LB',
-                'Orgill': '30 LB'
-            },
-            'images_by_site': {
-                'Amazon': ['https://m.media-amazon.com/images/I/41uSFWZrsGL._AC_SL1500_.jpg', 'open-farm/resized/open-farm-rawmix-open-prairie-ancient-grains-dog-kibble-35-lb_medium.jpg'],
-                'Bradley Caldwell': ['flowers/resized/mums-12-inch_medium.jpg']
-            }
-        }
-    }
+    # Load test data from config file
+    config_path = project_root / "src" / "config" / "test_data.json"
+    try:
+        with open(config_path, 'r') as f:
+            test_data = json.load(f)
+    except Exception as e:
+        print(f"Error loading test data: {e}")
+        exit(1)
 
-    mock_consolidated_product2 = {
-        'SKU': 'TEST789',
-        'Name': '',  # Default to first option
-        'Brand': '',  # Default to first option
-        'Weight': '',  # Default to first option
-        'Image URLs': [],  # Empty - editor defaults to first batch
-        'Special Order': 'yes',  # Default to first option
-        'Product Disabled': 'uncheck',  # Default to first option
-        'input_name': 'Another Original Cat Food Name',  # Original name from input file
-        'input_price': '25.99',  # Original price from input file
-        '_consolidated_data': {
-            'name_by_site': {
-                'Amazon': 'Whiskas Cat Food 10lb',
-                'Petco': 'Whiskas Tuna Flavor 10lb',
-            },
-            'brand_by_site': {
-                'Amazon': 'Whiskas',
-                'Petco': 'Whiskas'
-            },
-            'weight_by_site': {
-                'Amazon': '10 LB',
-                'Petco': '10 LB'
-            },
-            'images_by_site': {
-                'Amazon': ['cats/cat1.jpg'],
-                'Petco': ['cats/cat2.jpg']
-            }
-        }
-    }
+    # Test with consolidated data to see combo boxes
+    mock_consolidated_product = test_data["mock_consolidated_product"]
+    mock_consolidated_product2 = test_data["mock_consolidated_product2"]
 
     print("Running GUI test with multiple consolidated products (should show combo boxes and navigation)...")
     result = edit_products_in_batch([mock_consolidated_product, mock_consolidated_product2], auto_close_seconds=3)

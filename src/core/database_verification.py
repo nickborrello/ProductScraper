@@ -1,7 +1,7 @@
 import sqlite3
 import json
 
-conn = sqlite3.connect('data/products.db')
+conn = sqlite3.connect('data/databases/products.db')
 cursor = conn.cursor()
 
 # Check our test product

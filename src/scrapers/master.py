@@ -730,85 +730,42 @@ class ProductScraper:
             print(f"❌ Error saving to Excel file {site_file_path}: {e}")
 
     def convert_input_file_to_new_format(self, input_path):
+        """Convert legacy input file formats to current format (only for column renaming, no file modification)."""
         try:
             df = pd.read_excel(input_path, dtype=str)
-            # Rename SKU_NO to SKU
-            if 'SKU_NO' in df.columns:
-                df['SKU'] = df['SKU_NO'].astype(str)
-            # Combine DESCRIPTION1 and DESCRIPTION2 into Name
-            if 'DESCRIPTION1' in df.columns and 'DESCRIPTION2' in df.columns:
-                df['Name'] = df['DESCRIPTION1'].astype(str) + ' ' + df['DESCRIPTION2'].astype(str)
-            elif 'DESCRIPTION1' in df.columns:
-                df['Name'] = df['DESCRIPTION1'].astype(str)
-            elif 'DESCRIPTION2' in df.columns:
-                df['Name'] = df['DESCRIPTION2'].astype(str)
-            # Rename LIST_PRICE to Price
-            if 'LIST_PRICE' in df.columns:
-                df['Price'] = df['LIST_PRICE']
-
-            # Ensure all required columns exist
-            required_cols = ['SKU', 'Name', 'Price', 'Brand', 'Weight', 'Image URLs']
-            added_cols = []
-            for col in required_cols:
-                if col not in df.columns:
-                    df[col] = ''
-                    added_cols.append(col)
-            if added_cols:
-                print(f"✅ Added missing columns: {', '.join(added_cols)}")
-            # Only keep required columns (in order)
-            df = df[required_cols]
             
-            # Try to overwrite the original file
-            try:
-                df.to_excel(input_path, index=False)
-                print(f"✅ Converted input file format: {os.path.basename(input_path)}")
-                return True
-            except PermissionError as pe:
-                print(f"❌ Cannot save to {os.path.basename(input_path)} - file is open in Excel or another program, or marked as read-only")
+            # Only do column renaming for legacy formats - don't add columns or save back
+            modified = False
+            
+            # Rename SKU_NO to SKU
+            if 'SKU_NO' in df.columns and 'SKU' not in df.columns:
+                df['SKU'] = df['SKU_NO'].astype(str)
+                modified = True
                 
-                # Check if file is read-only
-                import stat
-                try:
-                    file_stat = os.stat(input_path)
-                    if file_stat.st_mode & stat.S_IWRITE == 0:
-                        print("� File is marked as read-only")
-                        try:
-                            # Try to remove read-only attribute
-                            os.chmod(input_path, stat.S_IWRITE | stat.S_IREAD)
-                            print("✅ Removed read-only attribute")
-                            # Try saving again
-                            df.to_excel(input_path, index=False)
-                            print(f"✅ Successfully saved after removing read-only: {os.path.basename(input_path)}")
-                            return True
-                        except Exception:
-                            print("❌ Could not remove read-only attribute")
-                except Exception:
-                    pass
+            # Combine DESCRIPTION1 and DESCRIPTION2 into Name
+            if 'DESCRIPTION1' in df.columns and 'DESCRIPTION2' in df.columns and 'Name' not in df.columns:
+                df['Name'] = df['DESCRIPTION1'].astype(str) + ' ' + df['DESCRIPTION2'].astype(str)
+                modified = True
+            elif 'DESCRIPTION1' in df.columns and 'Name' not in df.columns:
+                df['Name'] = df['DESCRIPTION1'].astype(str)
+                modified = True
+            elif 'DESCRIPTION2' in df.columns and 'Name' not in df.columns:
+                df['Name'] = df['DESCRIPTION2'].astype(str)
+                modified = True
                 
-                print("💡 Please close the file in Excel and/or remove read-only attribute, then try again")
-                if not hasattr(self, 'interactive') or self.interactive:
-                    retry = input("🔄 Close the file/remove read-only and press Enter to retry, or press any key to continue: ").strip()
-                    if retry == "":
-                        # User pressed Enter, try again
-                        try:
-                            df.to_excel(input_path, index=False)
-                            print(f"✅ Successfully saved after retry: {os.path.basename(input_path)}")
-                            return True
-                        except PermissionError:
-                            print("❌ Still cannot save - proceeding with current file format")
-                            return False
-                    else:
-                        print("ℹ️ Proceeding with current file format")
-                        return False
-                else:
-                    print("ℹ️ Proceeding with current file format (non-interactive mode)")
-                    return False
-            except Exception as e:
-                print(f"❌ Error saving converted file: {e}")
-                return False
+            # Rename LIST_PRICE to Price
+            if 'LIST_PRICE' in df.columns and 'Price' not in df.columns:
+                df['Price'] = df['LIST_PRICE']
+                modified = True
+            
+            if modified:
+                print(f"✅ Converted legacy column names in {os.path.basename(input_path)}")
+            
+            # Don't add extra columns or save back to input file
+            return True
                 
         except Exception as e:
-            print(f"❌ Error converting input file format: {e}")
+            print(f"❌ Error checking input file format: {e}")
             return False
 
     def prompt_for_input_spreadsheet_tk():

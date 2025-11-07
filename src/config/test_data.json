@@ -1,0 +1,86 @@
+{
+  "mock_product": {
+    "SKU": "TEST123",
+    "Name": "Sample Product Name",
+    "Brand": "Sample Brand",
+    "Price": "29.99",
+    "Weight": "2.5",
+    "Image URLs": [
+      "https://example.com/image1.jpg",
+      "https://example.com/image2.jpg",
+      "https://example.com/image3.jpg"
+    ],
+    "Special Order": "yes",
+    "Product Disabled": "uncheck"
+  },
+  "mock_consolidated_product": {
+    "SKU": "TEST456",
+    "Name": "",
+    "Brand": "",
+    "Weight": "",
+    "Image URLs": [],
+    "Special Order": "",
+    "Product Disabled": "",
+    "input_name": "Original Sample Food Name",
+    "input_price": "19.99",
+    "_consolidated_data": {
+      "name_by_site": {
+        "Amazon": "Sample Dog Food 50lb",
+        "Bradley Caldwell": "Sample Dog Food 50lb",
+        "Orgill": "Sample Puppy Food 30lb"
+      },
+      "brand_by_site": {
+        "Amazon": "Sample Brand",
+        "Bradley Caldwell": "Sample Brand",
+        "Orgill": "Sample Brand"
+      },
+      "weight_by_site": {
+        "Amazon": "50 LB",
+        "Bradley Caldwell": "50 LB",
+        "Orgill": "30 LB"
+      },
+      "images_by_site": {
+        "Amazon": [
+          "https://example.com/sample_image1.jpg",
+          "https://example.com/sample_image2.jpg"
+        ],
+        "Bradley Caldwell": [
+          "https://example.com/sample_image3.jpg"
+        ]
+      }
+    }
+  },
+  "mock_consolidated_product2": {
+    "SKU": "TEST789",
+    "Name": "",
+    "Brand": "",
+    "Weight": "",
+    "Image URLs": [],
+    "Special Order": "yes",
+    "Product Disabled": "uncheck",
+    "input_name": "Another Original Sample Food Name",
+    "input_price": "25.99",
+    "_consolidated_data": {
+      "name_by_site": {
+        "Amazon": "Sample Cat Food 10lb",
+        "Petco": "Sample Tuna Flavor 10lb"
+      },
+      "brand_by_site": {
+        "Amazon": "Sample Brand",
+        "Petco": "Sample Brand"
+      },
+      "weight_by_site": {
+        "Amazon": "10 LB",
+        "Petco": "10 LB"
+      },
+      "images_by_site": {
+        "Amazon": [
+          "https://example.com/cat_image1.jpg"
+        ],
+        "Petco": [
+          "https://example.com/cat_image2.jpg"
+        ]
+      }
+    }
+  }
+}

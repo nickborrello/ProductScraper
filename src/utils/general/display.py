@@ -10,7 +10,7 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional
 
 
-def display_product_result(product: Dict[str, Any], index: Optional[int] = None, total: Optional[int] = None) -> None:
+def display_product_result(product: Dict[str, Any], index: Optional[int] = None, total: Optional[int] = None, log_callback: Optional[callable] = None) -> None:
     """
     Display a single product result in a standardized format.
 
@@ -18,7 +18,10 @@ def display_product_result(product: Dict[str, Any], index: Optional[int] = None,
         product: Dictionary containing product information
         index: Current product index (1-based) for progress display
         total: Total number of products being scraped
+        log_callback: Optional callback function for logging (defaults to print)
     """
+    output = log_callback if log_callback else print
+    
     if index is not None and total is not None:
         progress = f"[{index}/{total}] "
     else:
@@ -32,20 +35,20 @@ def display_product_result(product: Dict[str, Any], index: Optional[int] = None,
     if len(name) > 60:
         name = name[:57] + "..."
 
-    print(f"📦 {progress}SKU: {sku}")
-    print(f"   🏷️  Brand: {brand}")
-    print(f"   📝 Name: {name}")
+    output(f"📦 {progress}SKU: {sku}")
+    output(f"   🏷️  Brand: {brand}")
+    output(f"   📝 Name: {name}")
 
     # Show key fields
     weight = product.get('Weight', 'N/A')
     if weight and weight != 'N/A':
-        print(f"   ⚖️  Weight: {weight}")
+        output(f"   ⚖️  Weight: {weight}")
 
     images = product.get('Image URLs', [])
     if images:
-        print(f"   🖼️  Images: {len(images)} found")
+        output(f"   🖼️  Images: {len(images)} found")
     else:
-        print("   🖼️  Images: None found")
+        output("   🖼️  Images: None found")
 
     # Show flags if any
     flagged = product.get('flagged', False)
@@ -64,15 +67,15 @@ def display_product_result(product: Dict[str, Any], index: Optional[int] = None,
         
         if missing_items:
             missing_str = ', '.join(missing_items)
-            print(f"   ⚠️  FLAGGED: Missing {missing_str}")
+            output(f"   ⚠️  FLAGGED: Missing {missing_str}")
         else:
-            print("   ⚠️  FLAGGED: Missing data or images")
+            output("   ⚠️  FLAGGED: Missing data or images")
 
-    print()  # Empty line for spacing
-    print()  # Extra buffer between products
+    output()  # Empty line for spacing
+    output()  # Extra buffer between products
 
 
-def display_scraping_progress(current: int, total: int, start_time: float, scraper_name: str = "Scraper") -> None:
+def display_scraping_progress(current: int, total: int, start_time: float, scraper_name: str = "Scraper", log_callback: Optional[callable] = None) -> None:
     """
     Display scraping progress with timing information.
 
@@ -81,7 +84,10 @@ def display_scraping_progress(current: int, total: int, start_time: float, scrap
         total: Total number of products to scrape
         start_time: Time when scraping started (from time.time())
         scraper_name: Name of the scraper for display
+        log_callback: Optional callback function for logging (defaults to print)
     """
+    output = log_callback if log_callback else print
+    
     elapsed = time.time() - start_time
     rate = current / elapsed if elapsed > 0 else 0
     remaining = total - current
@@ -90,15 +96,15 @@ def display_scraping_progress(current: int, total: int, start_time: float, scrap
     # Show progress at start, every few items for small lists, every 10th for large lists, and at end
     if current == 1:
         progress_pct = (current / total) * 100
-        print(f"🔄 {scraper_name}: {current}/{total} products ({progress_pct:.1f}%) | "
+        output(f"🔄 {scraper_name}: {current}/{total} products ({progress_pct:.1f}%) | "
               f"Rate: {rate:.1f}/sec | ETA: {eta:.0f}s")
     elif total <= 10 or current % max(1, total // 10) == 0 or current == total:
         progress_pct = (current / total) * 100
-        print(f"🔄 {scraper_name}: {current}/{total} products ({progress_pct:.1f}%) | "
+        output(f"🔄 {scraper_name}: {current}/{total} products ({progress_pct:.1f}%) | "
               f"Rate: {rate:.1f}/sec | ETA: {eta:.0f}s")
 
     if current == total:
-        print(f"✅ {scraper_name}: Scraping completed!")
+        output(f"✅ {scraper_name}: Scraping completed!")
 
 
 # Global flag to suppress summary output during testing
@@ -109,7 +115,7 @@ def set_suppress_summary(suppress: bool):
     global _SUPPRESS_SUMMARY
     _SUPPRESS_SUMMARY = suppress
 
-def display_scraping_summary(products: List[Dict[str, Any]], start_time: float, scraper_name: str = "Scraper", quiet: bool = False) -> None:
+def display_scraping_summary(products: List[Dict[str, Any]], start_time: float, scraper_name: str = "Scraper", quiet: bool = False, log_callback: Optional[callable] = None) -> None:
     """
     Display a summary of scraping results.
 
@@ -118,7 +124,10 @@ def display_scraping_summary(products: List[Dict[str, Any]], start_time: float, 
         start_time: Time when scraping started (from time.time())
         scraper_name: Name of the scraper for display
         quiet: If True, suppress the summary output (useful for testing)
+        log_callback: Optional callback function for logging (defaults to print)
     """
+    output = log_callback if log_callback else print
+    
     if quiet or _SUPPRESS_SUMMARY:
         return
         
@@ -126,72 +135,81 @@ def display_scraping_summary(products: List[Dict[str, Any]], start_time: float, 
     successful = len([p for p in products if p])
     failed = len(products) - successful
 
-    print(f"\n📊 {scraper_name} Summary:")
-    print(f"   ⏱️  Total time: {total_time:.1f} seconds")
-    print(f"   ✅ Successful: {successful} products")
-    print(f"   ❌ Failed: {failed} products")
+    output(f"\n📊 {scraper_name} Summary:")
+    output(f"   ⏱️  Total time: {total_time:.1f} seconds")
+    output(f"   ✅ Successful: {successful} products")
+    output(f"   ❌ Failed: {failed} products")
 
     if successful > 0:
         rate = successful / total_time
-        print(f"   📈 Rate: {rate:.1f} products/second")
+        output(f"   📈 Rate: {rate:.1f} products/second")
 
         # Show flagged products
         flagged = [p for p in products if p and p.get('flagged', False)]
         if flagged:
-            print(f"   ⚠️  Flagged: {len(flagged)} products (missing data/images)")
+            output(f"   ⚠️  Flagged: {len(flagged)} products (missing data/images)")
 
         # Show image statistics
         total_images = sum(len(p.get('Image URLs', [])) for p in products if p)
         avg_images = total_images / successful if successful > 0 else 0
-        print(f"   🖼️  Total images: {total_images} (avg: {avg_images:.1f} per product)")
+        output(f"   🖼️  Total images: {total_images} (avg: {avg_images:.1f} per product)")
 
-    print()
+    output()
 
 
-def display_error(message: str, sku: Optional[str] = None) -> None:
+def display_error(message: str, sku: Optional[str] = None, log_callback: Optional[callable] = None) -> None:
     """
     Display an error message in a standardized format.
 
     Args:
         message: Error message to display
         sku: SKU/UPC that caused the error (optional)
+        log_callback: Optional callback function for logging (defaults to print)
     """
-    if sku:
-        print(f"❌ Error processing {sku}: {message}")
-    else:
-        print(f"❌ Error: {message}")
+    output = log_callback if log_callback else print
     
-    print()  # Add spacing after error messages
+    if sku:
+        output(f"❌ Error processing {sku}: {message}")
+    else:
+        output(f"❌ Error: {message}")
+    
+    output()  # Add spacing after error messages
 
 
-def display_info(message: str) -> None:
+def display_info(message: str, log_callback: Optional[callable] = None) -> None:
     """
     Display an informational message.
 
     Args:
         message: Information message to display
+        log_callback: Optional callback function for logging (defaults to print)
     """
-    print(f"ℹ️  {message}")
+    output = log_callback if log_callback else print
+    output(f"ℹ️  {message}")
 
 
-def display_success(message: str) -> None:
+def display_success(message: str, log_callback: Optional[callable] = None) -> None:
     """
     Display a success message.
 
     Args:
         message: Success message to display
+        log_callback: Optional callback function for logging (defaults to print)
     """
-    print(f"✅ {message}")
+    output = log_callback if log_callback else print
+    output(f"✅ {message}")
 
 
-def display_warning(message: str) -> None:
+def display_warning(message: str, log_callback: Optional[callable] = None) -> None:
     """
     Display a warning message.
 
     Args:
         message: Warning message to display
+        log_callback: Optional callback function for logging (defaults to print)
     """
-    print(f"⚠️  {message}")
+    output = log_callback if log_callback else print
+    output(f"⚠️  {message}")
 
 
 # Example usage and testing

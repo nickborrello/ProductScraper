@@ -117,7 +117,7 @@ def init_browser_optimized(profile_suffix="default", headless=True):
     service = Service(log_path=os.devnull)
     return webdriver.Chrome(service=service, options=chrome_options)
 
-def scrape_amazon(skus):
+def scrape_amazon(skus, log_callback=None):
     """Scrape Amazon products for multiple SKUs."""
     products = []
     start_time = time.time()
@@ -132,7 +132,7 @@ def scrape_amazon(skus):
     
     with browser_context as driver:
         if driver is None:
-            display_error("Could not create browser for Amazon")
+            display_error("Could not create browser for Amazon", log_callback=log_callback)
             return products
 
         for i, sku in enumerate(skus, 1):
@@ -147,14 +147,14 @@ def scrape_amazon(skus):
                 time.sleep(1)  # Reduced from 2 seconds
 
     successful_products = [p for p in products if p]
-    display_scraping_summary(successful_products, start_time, "Amazon")
+    display_scraping_summary(successful_products, start_time, "Amazon", log_callback=log_callback)
 
     return products
 
 def scrape_single_product(UPC_or_ASIN, driver, max_retries=0):
     """Scrape a single Amazon product with improved automation and error handling."""
     if driver is None:
-        display_error("WebDriver instance is None. Cannot scrape product.")
+        display_error("WebDriver instance is None. Cannot scrape product.", log_callback=log_callback)
         return None
 
     product_info = {"SKU": UPC_or_ASIN}
@@ -196,7 +196,7 @@ def scrape_single_product(UPC_or_ASIN, driver, max_retries=0):
                 return None
 
         except Exception as e:
-            display_error(f"Error on attempt {attempt + 1}: {str(e)}", UPC_or_ASIN)
+            display_error(f"Error on attempt {attempt + 1}: {str(e)}", UPC_or_ASIN, log_callback=log_callback)
             if attempt < max_retries:
                 time.sleep(1)  # Reduced from 2 seconds
                 continue
@@ -243,7 +243,7 @@ def _is_product_page(driver):
         return True
 
     except Exception as e:
-        display_error(f"Error checking if product page: {e}")
+        display_error(f"Error checking if product page: {e}", log_callback=log_callback)
         return False
 
 
@@ -329,7 +329,7 @@ def _has_no_search_results(driver):
         return False
 
     except Exception as e:
-        display_error(f"Error checking for no results: {e}")
+        display_error(f"Error checking for no results: {e}", log_callback=log_callback)
         return False
 
 
@@ -373,7 +373,7 @@ def _click_first_search_result(driver):
         # display_info("No organic search results found - all results appear to be sponsored")  # Removed verbose debug message
         return False
     except Exception as e:
-        display_error(f"Error clicking search result: {e}")
+        display_error(f"Error clicking search result: {e}", log_callback=log_callback)
         return False
 
 
@@ -387,7 +387,7 @@ def _extract_product_data(driver, product_info):
             )
             product_info["Name"] = clean_string(title_element.text)
         except TimeoutException:
-            display_error("Could not find product title")
+            display_error("Could not find product title", log_callback=log_callback)
             product_info["Name"] = "N/A"
 
         # Extract and verify SKU/UPC/ASIN
@@ -398,7 +398,7 @@ def _extract_product_data(driver, product_info):
         page_contains_searched_sku = _page_contains_sku(driver, searched_sku)
         
         if actual_sku and actual_sku != searched_sku and not page_contains_searched_sku:
-            display_error(f"SKU mismatch! Searched for {searched_sku} but found product with SKU {actual_sku} and searched SKU not found on page")
+            display_error(f"SKU mismatch! Searched for {searched_sku} but found product with SKU {actual_sku} and searched SKU not found on page", log_callback=log_callback)
             return None  # Reject this product - wrong SKU
         elif page_contains_searched_sku:
             # Keep the searched SKU since we found it on the page

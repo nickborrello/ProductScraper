@@ -43,7 +43,7 @@ except ImportError:
         SHOPSITE_PAGES = []
 
 # Database path
-DB_PATH = Path(__file__).parent.parent / "data" / "products.db"
+DB_PATH = Path(__file__).parent.parent / "data" / "databases" / "products.db"
 
 # Cache for facet options to avoid repeated database queries
 _facet_cache = {
@@ -476,10 +476,23 @@ class MultiSelectWidget(QWidget):
         search_layout = QHBoxLayout()
         search_label = QLabel(f"Search {self.label}:")
         search_label.setFont(QFont("Arial", 12, QFont.Weight.Bold))
+        search_label.setStyleSheet("color: #ffffff;")
         search_layout.addWidget(search_label)
 
         self.search_edit = QLineEdit()
         self.search_edit.setFont(QFont("Arial", 12))
+        self.search_edit.setStyleSheet("""
+            QLineEdit {
+                background-color: #2d2d2d;
+                color: #ffffff;
+                border: 1px solid #4a4a4a;
+                border-radius: 4px;
+                padding: 4px;
+            }
+            QLineEdit:focus {
+                border: 1px solid #2196F3;
+            }
+        """)
         self.search_edit.textChanged.connect(self.filter_options)
         search_layout.addWidget(self.search_edit)
 
@@ -489,6 +502,7 @@ class MultiSelectWidget(QWidget):
         # Available options section
         available_label = QLabel(f"Available {self.label}:")
         available_label.setFont(QFont("Arial", 12, QFont.Weight.Bold))
+        available_label.setStyleSheet("color: #ffffff;")
         layout.addWidget(available_label)
 
         self.available_scroll = QScrollArea()
@@ -496,6 +510,13 @@ class MultiSelectWidget(QWidget):
         self.available_scroll.setMinimumHeight(200)
         self.available_scroll.setMaximumHeight(300)
         self.available_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.available_scroll.setStyleSheet("""
+            QScrollArea {
+                background-color: #2d2d2d;
+                border: 1px solid #4a4a4a;
+                border-radius: 4px;
+            }
+        """)
 
         available_widget = QWidget()
         self.available_layout = QVBoxLayout(available_widget)
@@ -506,6 +527,7 @@ class MultiSelectWidget(QWidget):
         # Selected options section
         selected_label = QLabel(f"Selected {self.label}:")
         selected_label.setFont(QFont("Arial", 12, QFont.Weight.Bold))
+        selected_label.setStyleSheet("color: #ffffff;")
         layout.addWidget(selected_label)
 
         self.selected_scroll = QScrollArea()
@@ -513,6 +535,13 @@ class MultiSelectWidget(QWidget):
         self.selected_scroll.setMinimumHeight(200)
         self.selected_scroll.setMaximumHeight(300)
         self.selected_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.selected_scroll.setStyleSheet("""
+            QScrollArea {
+                background-color: #2d2d2d;
+                border: 1px solid #4a4a4a;
+                border-radius: 4px;
+            }
+        """)
 
         selected_widget = QWidget()
         self.selected_layout = QVBoxLayout(selected_widget)
@@ -578,7 +607,7 @@ class MultiSelectWidget(QWidget):
 
 class ClassificationEditorWindow(QMainWindow):
     """PyQt6 main window for batch classification editing."""
-    
+
     finished = pyqtSignal()  # Signal emitted when window closes
 
     def __init__(self, products_list, category_options, all_product_types, product_on_pages_options, category_product_types):
@@ -590,7 +619,75 @@ class ClassificationEditorWindow(QMainWindow):
         self.category_product_types = category_product_types
         self.current_index = 0
         self.multi_select_widgets = {}
-        
+
+        # Apply dark theme styling
+        self.setStyleSheet("""
+            QMainWindow {
+                background-color: #1e1e1e;
+                color: #ffffff;
+            }
+            QFrame {
+                background-color: #2d2d2d;
+                border: 1px solid #4a4a4a;
+                border-radius: 8px;
+                color: #ffffff;
+            }
+            QLabel {
+                color: #ffffff;
+                font-size: 12px;
+            }
+            QLineEdit {
+                background-color: #2d2d2d;
+                color: #ffffff;
+                border: 1px solid #4a4a4a;
+                border-radius: 4px;
+                padding: 6px;
+                font-size: 12px;
+            }
+            QLineEdit:focus {
+                border: 1px solid #2196F3;
+            }
+            QCheckBox {
+                color: #ffffff;
+                font-size: 12px;
+            }
+            QCheckBox::indicator {
+                width: 16px;
+                height: 16px;
+                background-color: #2d2d2d;
+                border: 1px solid #4a4a4a;
+                border-radius: 3px;
+            }
+            QCheckBox::indicator:checked {
+                background-color: #2196F3;
+                border: 1px solid #2196F3;
+            }
+            QScrollArea {
+                background-color: #2d2d2d;
+                border: 1px solid #4a4a4a;
+                border-radius: 4px;
+            }
+            QScrollBar:vertical {
+                background-color: #2d2d2d;
+                width: 12px;
+                border-radius: 6px;
+            }
+            QScrollBar::handle:vertical {
+                background-color: #4a4a4a;
+                border-radius: 6px;
+                min-height: 20px;
+            }
+            QScrollBar::handle:vertical:hover {
+                background-color: #5a5a5a;
+            }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                background: none;
+            }
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+                background: none;
+            }
+        """)
+
         # Network manager for image downloading
         self.network_manager = QNetworkAccessManager()
         self.network_manager.finished.connect(self.on_image_download_finished)
@@ -662,7 +759,7 @@ class ClassificationEditorWindow(QMainWindow):
             reply.deleteLater()
 
     def setup_ui(self):
-        self.setWindowTitle(f"Batch Classification Editor - {len(self.products_list)} Products")
+        self.setWindowTitle(f"Batch Classification Editor - Professional Edition - {len(self.products_list)} Products")
 
         # Create central widget
         central_widget = QWidget()
@@ -687,36 +784,54 @@ class ClassificationEditorWindow(QMainWindow):
 
     def setup_product_info_panel(self, parent_splitter):
         """Setup the product information panel on the left side."""
-        info_widget = QWidget()
-        info_layout = QVBoxLayout(info_widget)
+        # Product Information Card
+        info_card = QGroupBox("📦 Product Information")
+        info_card.setStyleSheet("""
+            QGroupBox {
+                font-weight: bold;
+                border: 2px solid #4a4a4a;
+                border-radius: 8px;
+                margin-top: 1ex;
+                background-color: #2d2d2d;
+                color: #ffffff;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 10px 0 10px;
+                color: #ffffff;
+                font-size: 14px;
+            }
+        """)
+        info_layout = QVBoxLayout(info_card)
+        info_layout.setSpacing(10)
+        info_layout.setContentsMargins(15, 15, 15, 15)
 
         # Product header
         header_frame = QFrame()
         header_frame.setFrameStyle(QFrame.Shape.Box)
         header_frame.setStyleSheet("""
             QFrame {
-                background-color: #f8f9fa;
-                border: 2px solid #dee2e6;
-                border-radius: 8px;
+                background-color: #343a40;
+                border: 1px solid #495057;
+                border-radius: 6px;
+                padding: 10px;
             }
         """)
-        header_frame.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
         header_layout = QVBoxLayout(header_frame)
 
         # Product title
         self.product_name_label = QLabel("")
         self.product_name_label.setFont(QFont("Arial", 16, QFont.Weight.Bold))
-        self.product_name_label.setStyleSheet("color: #2c3e50; margin: 5px;")
+        self.product_name_label.setStyleSheet("color: #ffffff; margin: 5px;")
         self.product_name_label.setWordWrap(True)
-        self.product_name_label.setMaximumWidth(290)
-        self.product_name_label.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         self.product_name_label.setAlignment(Qt.AlignmentFlag.AlignTop)
         header_layout.addWidget(self.product_name_label)
 
         # SKU
         self.product_sku_label = QLabel("")
         self.product_sku_label.setFont(QFont("Arial", 12, QFont.Weight.Normal, True))
-        self.product_sku_label.setStyleSheet("color: #7f8c8d; margin: 5px;")
+        self.product_sku_label.setStyleSheet("color: #cccccc; margin: 5px;")
         self.product_sku_label.setWordWrap(True)
         self.product_sku_label.setAlignment(Qt.AlignmentFlag.AlignTop)
         header_layout.addWidget(self.product_sku_label)
@@ -728,9 +843,10 @@ class ClassificationEditorWindow(QMainWindow):
         details_frame.setFrameStyle(QFrame.Shape.Box)
         details_frame.setStyleSheet("""
             QFrame {
-                background-color: #ffffff;
-                border: 1px solid #e9ecef;
-                border-radius: 5px;
+                background-color: #2d2d2d;
+                border: 1px solid #4a4a4a;
+                border-radius: 6px;
+                padding: 10px;
             }
         """)
         details_layout = QVBoxLayout(details_frame)
@@ -752,13 +868,13 @@ class ClassificationEditorWindow(QMainWindow):
             # Label
             label = QLabel(label_text)
             label.setFont(QFont("Arial", 11, QFont.Weight.Bold))
-            label.setStyleSheet("color: #495057;")
+            label.setStyleSheet("color: #ffffff;")
             grid_layout.addWidget(label, i, 0, Qt.AlignmentFlag.AlignTop)
 
             # Value
             value_label = QLabel("")
             value_label.setFont(QFont("Arial", 11))
-            value_label.setStyleSheet("color: #212529;")
+            value_label.setStyleSheet("color: #cccccc;")
             value_label.setWordWrap(True)
             value_label.setAlignment(Qt.AlignmentFlag.AlignTop)
             grid_layout.addWidget(value_label, i, 1)
@@ -772,16 +888,17 @@ class ClassificationEditorWindow(QMainWindow):
         image_frame.setFrameStyle(QFrame.Shape.Box)
         image_frame.setStyleSheet("""
             QFrame {
-                background-color: #f8f9fa;
-                border: 1px solid #dee2e6;
-                border-radius: 5px;
+                background-color: #2d2d2d;
+                border: 1px solid #4a4a4a;
+                border-radius: 6px;
+                padding: 10px;
             }
         """)
         image_layout = QVBoxLayout(image_frame)
 
         image_label = QLabel("Product Image:")
         image_label.setFont(QFont("Arial", 11, QFont.Weight.Bold))
-        image_label.setStyleSheet("color: #495057;")
+        image_label.setStyleSheet("color: #ffffff;")
         image_label.setAlignment(Qt.AlignmentFlag.AlignTop)
         image_layout.addWidget(image_label)
 
@@ -790,10 +907,10 @@ class ClassificationEditorWindow(QMainWindow):
         self.image_display.setFixedSize(280, 280)
         self.image_display.setStyleSheet("""
             QLabel {
-                background-color: #e9ecef;
-                border: 2px dashed #adb5bd;
+                background-color: #343a40;
+                border: 2px dashed #6c757d;
                 border-radius: 5px;
-                color: #6c757d;
+                color: #adb5bd;
                 font-size: 12px;
             }
         """)
@@ -805,32 +922,56 @@ class ClassificationEditorWindow(QMainWindow):
         # Add stretch to push everything to top
         info_layout.addStretch()
 
-        parent_splitter.addWidget(info_widget)
+        parent_splitter.addWidget(info_card)
 
     def setup_classification_panel(self, parent_splitter):
         """Setup the classification panel on the right side."""
-        classification_widget = QWidget()
-        classification_layout = QVBoxLayout(classification_widget)
+        # Classification Card
+        classification_card = QGroupBox("🏷️ Product Classification")
+        classification_card.setStyleSheet("""
+            QGroupBox {
+                font-weight: bold;
+                border: 2px solid #4a4a4a;
+                border-radius: 8px;
+                margin-top: 1ex;
+                background-color: #2d2d2d;
+                color: #ffffff;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 10px 0 10px;
+                color: #ffffff;
+                font-size: 14px;
+            }
+        """)
+        classification_layout = QVBoxLayout(classification_card)
+        classification_layout.setContentsMargins(15, 15, 15, 15)
 
         # Classification selection area - horizontal splitter for three columns
         selection_splitter = QSplitter(Qt.Orientation.Horizontal)
 
         # Category section
-        category_frame = QFrame()
-        category_frame.setFrameStyle(QFrame.Shape.Box)
+        category_frame = QGroupBox("📁 Category")
         category_frame.setStyleSheet("""
-            QFrame {
-                background-color: #ffffff;
-                border: 1px solid #e9ecef;
-                border-radius: 5px;
+            QGroupBox {
+                font-weight: bold;
+                border: 1px solid #4a4a4a;
+                border-radius: 6px;
+                margin-top: 0.5ex;
+                background-color: #343a40;
+                color: #ffffff;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 5px 0 5px;
+                color: #ffffff;
+                font-size: 12px;
             }
         """)
         category_layout = QVBoxLayout(category_frame)
-
-        category_label = QLabel("📁 Category")
-        category_label.setFont(QFont("Arial", 14, QFont.Weight.Bold))
-        category_label.setStyleSheet("color: #2c3e50; margin-bottom: 5px;")
-        category_layout.addWidget(category_label)
+        category_layout.setContentsMargins(10, 10, 10, 10)
 
         self.category_multi_select = MultiSelectWidget("Category", self.category_options)
         self.category_multi_select.selection_changed.connect(self.on_category_changed)
@@ -838,42 +979,52 @@ class ClassificationEditorWindow(QMainWindow):
         selection_splitter.addWidget(category_frame)
 
         # Product Type section
-        type_frame = QFrame()
-        type_frame.setFrameStyle(QFrame.Shape.Box)
+        type_frame = QGroupBox("🏷️ Product Type")
         type_frame.setStyleSheet("""
-            QFrame {
-                background-color: #ffffff;
-                border: 1px solid #e9ecef;
-                border-radius: 5px;
+            QGroupBox {
+                font-weight: bold;
+                border: 1px solid #4a4a4a;
+                border-radius: 6px;
+                margin-top: 0.5ex;
+                background-color: #343a40;
+                color: #ffffff;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 5px 0 5px;
+                color: #ffffff;
+                font-size: 12px;
             }
         """)
         type_layout = QVBoxLayout(type_frame)
-
-        type_label = QLabel("🏷️ Product Type")
-        type_label.setFont(QFont("Arial", 14, QFont.Weight.Bold))
-        type_label.setStyleSheet("color: #2c3e50; margin-bottom: 5px;")
-        type_layout.addWidget(type_label)
+        type_layout.setContentsMargins(10, 10, 10, 10)
 
         self.type_multi_select = MultiSelectWidget("Product Type", self.all_product_types)
         type_layout.addWidget(self.type_multi_select)
         selection_splitter.addWidget(type_frame)
 
         # Product On Pages section
-        pages_frame = QFrame()
-        pages_frame.setFrameStyle(QFrame.Shape.Box)
+        pages_frame = QGroupBox("📄 Product On Pages")
         pages_frame.setStyleSheet("""
-            QFrame {
-                background-color: #ffffff;
-                border: 1px solid #e9ecef;
-                border-radius: 5px;
+            QGroupBox {
+                font-weight: bold;
+                border: 1px solid #4a4a4a;
+                border-radius: 6px;
+                margin-top: 0.5ex;
+                background-color: #343a40;
+                color: #ffffff;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 5px 0 5px;
+                color: #ffffff;
+                font-size: 12px;
             }
         """)
         pages_layout = QVBoxLayout(pages_frame)
-
-        pages_label = QLabel("📄 Product On Pages")
-        pages_label.setFont(QFont("Arial", 14, QFont.Weight.Bold))
-        pages_label.setStyleSheet("color: #2c3e50; margin-bottom: 5px;")
-        pages_layout.addWidget(pages_label)
+        pages_layout.setContentsMargins(10, 10, 10, 10)
 
         self.pages_multi_select = MultiSelectWidget("Product On Pages", self.product_on_pages_options)
         pages_layout.addWidget(self.pages_multi_select)
@@ -889,19 +1040,31 @@ class ClassificationEditorWindow(QMainWindow):
             "Product On Pages": self.pages_multi_select
         }
 
-        parent_splitter.addWidget(classification_widget)
+        parent_splitter.addWidget(classification_card)
 
     def setup_navigation_bar(self, parent_layout):
         """Setup the navigation bar at the bottom."""
-        nav_widget = QWidget()
-        nav_widget.setFixedHeight(70)
-        nav_widget.setStyleSheet("""
-            QWidget {
-                background-color: #343a40;
-                border-top: 2px solid #495057;
+        # Navigation Card
+        nav_card = QGroupBox("🧭 Navigation & Actions")
+        nav_card.setStyleSheet("""
+            QGroupBox {
+                font-weight: bold;
+                border: 2px solid #4a4a4a;
+                border-radius: 8px;
+                margin-top: 1ex;
+                background-color: #2d2d2d;
+                color: #ffffff;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 10px 0 10px;
+                color: #ffffff;
+                font-size: 14px;
             }
         """)
-
+        nav_widget = QWidget()
+        nav_widget.setFixedHeight(70)
         nav_layout = QHBoxLayout(nav_widget)
         nav_layout.setContentsMargins(20, 10, 20, 10)
 
@@ -917,7 +1080,7 @@ class ClassificationEditorWindow(QMainWindow):
 
         self.product_count_label = QLabel("")
         self.product_count_label.setFont(QFont("Arial", 10))
-        self.product_count_label.setStyleSheet("color: #adb5bd;")
+        self.product_count_label.setStyleSheet("color: #cccccc;")
         progress_layout.addWidget(self.product_count_label)
 
         nav_layout.addWidget(progress_widget)
@@ -967,7 +1130,7 @@ class ClassificationEditorWindow(QMainWindow):
                 background-color: #545b62;
             }
             QPushButton:disabled {
-                background-color: #adb5bd;
+                background-color: #495057;
                 color: #6c757d;
             }
         """)
@@ -992,7 +1155,7 @@ class ClassificationEditorWindow(QMainWindow):
                 background-color: #004085;
             }
             QPushButton:disabled {
-                background-color: #adb5bd;
+                background-color: #495057;
                 color: #6c757d;
             }
         """)
@@ -1021,7 +1184,8 @@ class ClassificationEditorWindow(QMainWindow):
         button_layout.addWidget(self.finish_button)
 
         nav_layout.addLayout(button_layout)
-        parent_layout.addWidget(nav_widget)
+        nav_card.setLayout(nav_layout)
+        parent_layout.addWidget(nav_card)
 
     def normalize_selections(self, selections, available_options):
         """Normalize selections from string or list format, handling comma/pipe separators."""

@@ -29,7 +29,7 @@ CROSS_SELL_FIELD = "Product Cross Sell"
 MAX_CROSS_SELLS = 4
 # Database path - Adjusted for the new location: UI/product_cross_sell_ui.py
 # It needs to go up two levels (UI, ProductScraper) and then into data
-DB_PATH = Path(__file__).parent.parent.parent / "data" / "products.db"
+DB_PATH = Path(__file__).parent.parent.parent / "data" / "databases" / "products.db"
 
 
 def assign_cross_sells_batch(products_list):
@@ -86,11 +86,24 @@ class MultiSelectWidget(QWidget):
         available_layout = QHBoxLayout()
         available_label = QLabel(f"Available {self.label}:")
         available_label.setFont(QFont("Arial", 12, QFont.Weight.Bold))
+        available_label.setStyleSheet("color: #ffffff;")
         available_layout.addWidget(available_label)
 
         self.search_edit = QLineEdit()
         self.search_edit.setFont(QFont("Arial", 12))
         self.search_edit.setPlaceholderText("Search...")
+        self.search_edit.setStyleSheet("""
+            QLineEdit {
+                background-color: #2d2d2d;
+                color: #ffffff;
+                border: 1px solid #4a4a4a;
+                border-radius: 4px;
+                padding: 4px;
+            }
+            QLineEdit:focus {
+                border: 1px solid #2196F3;
+            }
+        """)
         self.search_edit.textChanged.connect(self.filter_options)
         available_layout.addWidget(self.search_edit)
 
@@ -100,6 +113,13 @@ class MultiSelectWidget(QWidget):
         self.available_scroll = QScrollArea()
         self.available_scroll.setWidgetResizable(True)
         self.available_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.available_scroll.setStyleSheet("""
+            QScrollArea {
+                background-color: #2d2d2d;
+                border: 1px solid #4a4a4a;
+                border-radius: 4px;
+            }
+        """)
 
         available_widget = QWidget()
         self.available_layout = QVBoxLayout(available_widget)
@@ -110,11 +130,19 @@ class MultiSelectWidget(QWidget):
         # Selected options section
         selected_label = QLabel(f"Selected {self.label}:")
         selected_label.setFont(QFont("Arial", 12, QFont.Weight.Bold))
+        selected_label.setStyleSheet("color: #ffffff;")
         layout.addWidget(selected_label)
 
         self.selected_scroll = QScrollArea()
         self.selected_scroll.setWidgetResizable(True)
         self.selected_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.selected_scroll.setStyleSheet("""
+            QScrollArea {
+                background-color: #2d2d2d;
+                border: 1px solid #4a4a4a;
+                border-radius: 4px;
+            }
+        """)
 
         selected_widget = QWidget()
         self.selected_layout = QVBoxLayout(selected_widget)
@@ -183,7 +211,7 @@ class MultiSelectWidget(QWidget):
 
 class CrossSellEditorWindow(QMainWindow):
     """PyQt6 main window for batch cross-sell editing using database filtering."""
-    
+
     finished = pyqtSignal()  # Signal emitted when window closes
 
     def __init__(self, products_list):
@@ -192,17 +220,99 @@ class CrossSellEditorWindow(QMainWindow):
         self.current_index = 0
         self.selected_cross_sells = [set() for _ in products_list]
         self.current_candidates = []  # Store current candidates for selected bar
-        
+
+        # Apply dark theme styling
+        self.setStyleSheet("""
+            QMainWindow {
+                background-color: #1e1e1e;
+                color: #ffffff;
+            }
+            QGroupBox {
+                font-weight: bold;
+                border: 2px solid #4a4a4a;
+                border-radius: 8px;
+                margin-top: 1ex;
+                background-color: #2d2d2d;
+                color: #ffffff;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 10px 0 10px;
+                color: #ffffff;
+                font-size: 14px;
+            }
+            QFrame {
+                background-color: #2d2d2d;
+                border: 1px solid #4a4a4a;
+                border-radius: 6px;
+                color: #ffffff;
+            }
+            QLabel {
+                color: #ffffff;
+                font-size: 12px;
+            }
+            QLineEdit {
+                background-color: #2d2d2d;
+                color: #ffffff;
+                border: 1px solid #4a4a4a;
+                border-radius: 4px;
+                padding: 4px;
+            }
+            QLineEdit:focus {
+                border: 1px solid #2196F3;
+            }
+            QCheckBox {
+                color: #ffffff;
+                font-size: 12px;
+            }
+            QCheckBox::indicator {
+                width: 16px;
+                height: 16px;
+                background-color: #2d2d2d;
+                border: 1px solid #4a4a4a;
+                border-radius: 3px;
+            }
+            QCheckBox::indicator:checked {
+                background-color: #2196F3;
+                border: 1px solid #2196F3;
+            }
+            QScrollArea {
+                background-color: #2d2d2d;
+                border: 1px solid #4a4a4a;
+                border-radius: 4px;
+            }
+            QScrollBar:vertical {
+                background-color: #2d2d2d;
+                width: 12px;
+                border-radius: 6px;
+            }
+            QScrollBar::handle:vertical {
+                background-color: #4a4a4a;
+                border-radius: 6px;
+                min-height: 20px;
+            }
+            QScrollBar::handle:vertical:hover {
+                background-color: #5a5a5a;
+            }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                background: none;
+            }
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+                background: none;
+            }
+        """)
+
         # Get all available options from database
         self.all_categories, self.all_product_types, self.all_pages = get_facet_options_from_db()
-        
+
         # Network manager for image downloading
         self.network_manager = QNetworkAccessManager()
         self.network_manager.finished.connect(self.on_image_download_finished)
-        
+
         # Image cache
         self.image_cache = {}
-        
+
         self.setup_ui()
         self.load_product_into_ui(0)
         self.showMaximized()
@@ -236,7 +346,7 @@ class CrossSellEditorWindow(QMainWindow):
             reply.deleteLater()
 
     def setup_ui(self):
-        self.setWindowTitle(f"Batch Cross-Sell Editor - {len(self.products_list)} Products")
+        self.setWindowTitle(f"Batch Cross-Sell Editor - Professional Edition - {len(self.products_list)} Products")
         self.setMinimumSize(1200, 800)
 
         # Create central widget
@@ -262,56 +372,162 @@ class CrossSellEditorWindow(QMainWindow):
 
     def setup_filter_panel(self, parent_splitter):
         """Setup the filter panel on the left side."""
-        filter_widget = QWidget()
-        filter_layout = QVBoxLayout(filter_widget)
-
-        # Filter controls
-        filters_group = QGroupBox("Filters")
-        filters_layout = QVBoxLayout(filters_group)
+        # Filter Panel Card
+        filter_card = QGroupBox("🔍 Filter Panel")
+        filter_card.setStyleSheet("""
+            QGroupBox {
+                font-weight: bold;
+                border: 2px solid #4a4a4a;
+                border-radius: 8px;
+                margin-top: 1ex;
+                background-color: #2d2d2d;
+                color: #ffffff;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 10px 0 10px;
+                color: #ffffff;
+                font-size: 14px;
+            }
+        """)
+        filter_layout = QVBoxLayout(filter_card)
+        filter_layout.setSpacing(10)
+        filter_layout.setContentsMargins(15, 15, 15, 15)
 
         # Category filter
-        category_group = QGroupBox("Categories")
+        category_group = QGroupBox("📁 Categories")
+        category_group.setStyleSheet("""
+            QGroupBox {
+                font-weight: bold;
+                border: 1px solid #4a4a4a;
+                border-radius: 6px;
+                margin-top: 0.5ex;
+                background-color: #343a40;
+                color: #ffffff;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 5px 0 5px;
+                color: #ffffff;
+                font-size: 12px;
+            }
+        """)
         category_layout = QVBoxLayout(category_group)
+        category_layout.setContentsMargins(10, 10, 10, 10)
         self.category_multi_select = MultiSelectWidget("Categories", self.all_categories)
         self.category_multi_select.selection_changed.connect(self.on_filters_changed)
         category_layout.addWidget(self.category_multi_select)
-        filters_layout.addWidget(category_group)
+        filter_layout.addWidget(category_group)
 
         # Product Type filter
-        type_group = QGroupBox("Product Types")
+        type_group = QGroupBox("🏷️ Product Types")
+        type_group.setStyleSheet("""
+            QGroupBox {
+                font-weight: bold;
+                border: 1px solid #4a4a4a;
+                border-radius: 6px;
+                margin-top: 0.5ex;
+                background-color: #343a40;
+                color: #ffffff;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 5px 0 5px;
+                color: #ffffff;
+                font-size: 12px;
+            }
+        """)
         type_layout = QVBoxLayout(type_group)
+        type_layout.setContentsMargins(10, 10, 10, 10)
         self.type_multi_select = MultiSelectWidget("Product Types", self.all_product_types)
         self.type_multi_select.selection_changed.connect(self.on_filters_changed)
         type_layout.addWidget(self.type_multi_select)
-        filters_layout.addWidget(type_group)
+        filter_layout.addWidget(type_group)
 
         # Pages filter
-        pages_group = QGroupBox("Pages")
+        pages_group = QGroupBox("📄 Pages")
+        pages_group.setStyleSheet("""
+            QGroupBox {
+                font-weight: bold;
+                border: 1px solid #4a4a4a;
+                border-radius: 6px;
+                margin-top: 0.5ex;
+                background-color: #343a40;
+                color: #ffffff;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 5px 0 5px;
+                color: #ffffff;
+                font-size: 12px;
+            }
+        """)
         pages_layout = QVBoxLayout(pages_group)
+        pages_layout.setContentsMargins(10, 10, 10, 10)
         self.pages_multi_select = MultiSelectWidget("Pages", self.all_pages)
         self.pages_multi_select.selection_changed.connect(self.on_filters_changed)
         pages_layout.addWidget(self.pages_multi_select)
-        filters_layout.addWidget(pages_group)
+        filter_layout.addWidget(pages_group)
 
         # Apply filters button
         self.apply_filters_button = QPushButton("🔍 Apply Filters")
         self.apply_filters_button.setFont(QFont("Arial", 12, QFont.Weight.Bold))
+        self.apply_filters_button.setStyleSheet("""
+            QPushButton {
+                background-color: #2196F3;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 10px 20px;
+                font-size: 12px;
+                font-weight: bold;
+                min-width: 120px;
+            }
+            QPushButton:hover {
+                background-color: #1976D2;
+            }
+            QPushButton:pressed {
+                background-color: #1565C0;
+            }
+        """)
         self.apply_filters_button.clicked.connect(self.apply_filters)
-        filters_layout.addWidget(self.apply_filters_button)
+        filter_layout.addWidget(self.apply_filters_button)
 
-        filter_layout.addWidget(filters_group)
         filter_layout.addStretch()
-
-        parent_splitter.addWidget(filter_widget)
+        parent_splitter.addWidget(filter_card)
 
     def setup_candidates_panel(self, parent_splitter):
         """Setup the candidates panel on the right side."""
-        candidates_widget = QWidget()
-        candidates_layout = QVBoxLayout(candidates_widget)
+        # Candidates Panel Card
+        candidates_card = QGroupBox("🔗 Cross-Sell Candidates")
+        candidates_card.setStyleSheet("""
+            QGroupBox {
+                font-weight: bold;
+                border: 2px solid #4a4a4a;
+                border-radius: 8px;
+                margin-top: 1ex;
+                background-color: #2d2d2d;
+                color: #ffffff;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 10px 0 10px;
+                color: #ffffff;
+                font-size: 14px;
+            }
+        """)
+        candidates_layout = QVBoxLayout(candidates_card)
+        candidates_layout.setContentsMargins(15, 15, 15, 15)
 
         # Header
         self.candidates_header = QLabel("Cross-Sell Candidates")
         self.candidates_header.setFont(QFont("Arial", 16, QFont.Weight.Bold))
+        self.candidates_header.setStyleSheet("color: #ffffff; margin-bottom: 10px;")
         self.candidates_header.setAlignment(Qt.AlignmentFlag.AlignCenter)
         candidates_layout.addWidget(self.candidates_header)
 
@@ -319,45 +535,89 @@ class CrossSellEditorWindow(QMainWindow):
         self.candidates_scroll = QScrollArea()
         self.candidates_scroll.setWidgetResizable(True)
         self.candidates_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        
+        self.candidates_scroll.setStyleSheet("""
+            QScrollArea {
+                background-color: #343a40;
+                border: 1px solid #4a4a4a;
+                border-radius: 6px;
+            }
+        """)
+
         self.candidates_grid_widget = QWidget()
         self.candidates_grid_layout = QGridLayout(self.candidates_grid_widget)
         self.candidates_scroll.setWidget(self.candidates_grid_widget)
         candidates_layout.addWidget(self.candidates_scroll)
 
         # Selected cross-sells bar
-        selected_group = QGroupBox("Selected Cross-Sells")
+        selected_group = QGroupBox("✅ Selected Cross-Sells")
+        selected_group.setStyleSheet("""
+            QGroupBox {
+                font-weight: bold;
+                border: 1px solid #4a4a4a;
+                border-radius: 6px;
+                margin-top: 0.5ex;
+                background-color: #343a40;
+                color: #ffffff;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 5px 0 5px;
+                color: #ffffff;
+                font-size: 12px;
+            }
+        """)
         selected_layout = QVBoxLayout(selected_group)
-        
+        selected_layout.setContentsMargins(10, 10, 10, 10)
+
         self.selected_scroll = QScrollArea()
         self.selected_scroll.setWidgetResizable(True)
         self.selected_scroll.setMinimumHeight(200)
         self.selected_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.selected_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.selected_scroll.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-        
+        self.selected_scroll.setStyleSheet("""
+            QScrollArea {
+                background-color: #2d2d2d;
+                border: 1px solid #4a4a4a;
+                border-radius: 4px;
+            }
+        """)
+
         self.selected_bar_widget = QWidget()
         self.selected_bar_layout = QHBoxLayout(self.selected_bar_widget)
         self.selected_bar_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.selected_bar_layout.setSpacing(8)  # Add gap between cards
         self.selected_scroll.setWidget(self.selected_bar_widget)
         selected_layout.addWidget(self.selected_scroll)
-        
+
         candidates_layout.addWidget(selected_group)
 
-        parent_splitter.addWidget(candidates_widget)
+        parent_splitter.addWidget(candidates_card)
 
     def setup_navigation_bar(self, parent_layout):
         """Setup the navigation bar at the bottom."""
-        nav_widget = QWidget()
-        nav_widget.setFixedHeight(70)
-        nav_widget.setStyleSheet("""
-            QWidget {
-                background-color: #343a40;
-                border-top: 2px solid #495057;
+        # Navigation Card
+        nav_card = QGroupBox("🧭 Navigation & Actions")
+        nav_card.setStyleSheet("""
+            QGroupBox {
+                font-weight: bold;
+                border: 2px solid #4a4a4a;
+                border-radius: 8px;
+                margin-top: 1ex;
+                background-color: #2d2d2d;
+                color: #ffffff;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 10px 0 10px;
+                color: #ffffff;
+                font-size: 14px;
             }
         """)
-
+        nav_widget = QWidget()
+        nav_widget.setFixedHeight(70)
         nav_layout = QHBoxLayout(nav_widget)
         nav_layout.setContentsMargins(20, 10, 20, 10)
 
@@ -373,7 +633,7 @@ class CrossSellEditorWindow(QMainWindow):
 
         self.product_info_label_bottom = QLabel("")
         self.product_info_label_bottom.setFont(QFont("Arial", 12))
-        self.product_info_label_bottom.setStyleSheet("color: #adb5bd;")
+        self.product_info_label_bottom.setStyleSheet("color: #cccccc;")
         self.product_info_label_bottom.setWordWrap(True)
         progress_layout.addWidget(self.product_info_label_bottom)
 
@@ -445,7 +705,7 @@ class CrossSellEditorWindow(QMainWindow):
                 background-color: #545b62;
             }
             QPushButton:disabled {
-                background-color: #adb5bd;
+                background-color: #495057;
                 color: #6c757d;
             }
         """)
@@ -470,7 +730,7 @@ class CrossSellEditorWindow(QMainWindow):
                 background-color: #004085;
             }
             QPushButton:disabled {
-                background-color: #adb5bd;
+                background-color: #495057;
                 color: #6c757d;
             }
         """)
@@ -499,7 +759,8 @@ class CrossSellEditorWindow(QMainWindow):
         button_layout.addWidget(self.finish_button)
 
         nav_layout.addLayout(button_layout)
-        parent_layout.addWidget(nav_widget)
+        nav_card.setLayout(nav_layout)
+        parent_layout.addWidget(nav_card)
 
     def load_product_into_ui(self, idx):
         """Load product data into the UI."""

@@ -1,7 +1,7 @@
 import sqlite3
 import json
 
-conn = sqlite3.connect('data/products.db')
+conn = sqlite3.connect('data/databases/products.db')
 cursor = conn.cursor()
 cursor.execute("SELECT * FROM products WHERE sku = '035585499741'")
 row = cursor.fetchone()

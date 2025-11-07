@@ -21,7 +21,7 @@ from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QObject
 from PyQt6.QtGui import QFont, QPalette, QColor
 
 # Database path
-DB_PATH = Path(__file__).parent.parent / "data" / "products.db"
+DB_PATH = Path(__file__).parent.parent / "data" / "databases" / "products.db"
 
 # Cache for facet options to avoid repeated database queries
 _facet_cache = {

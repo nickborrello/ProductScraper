@@ -1,7 +1,11 @@
 import sqlite3
+import os
 from pathlib import Path
 
-DB_PATH = Path('../data/databases/products.db')
+# Get the project root (parent of scripts directory)
+SCRIPT_DIR = Path(__file__).parent
+PROJECT_ROOT = SCRIPT_DIR.parent
+DB_PATH = PROJECT_ROOT / 'data' / 'databases' / 'products.db'
 
 if DB_PATH.exists():
     conn = sqlite3.connect(DB_PATH)
@@ -17,10 +21,20 @@ if DB_PATH.exists():
         ''')
         stats = cursor.fetchone()
 
-        print(f'Total products: {stats[0]}')
-        print(f'With Category: {stats[1]} ({stats[1]/stats[0]*100:.1f}%)')
-        print(f'With Product Type: {stats[2]} ({stats[2]/stats[0]*100:.1f}%)')
-        print(f'With Product On Pages: {stats[3]} ({stats[3]/stats[0]*100:.1f}%)')
+        total = stats[0] or 0
+        has_category = stats[1] or 0
+        has_type = stats[2] or 0
+        has_pages = stats[3] or 0
+        
+        print(f'Total products: {total}')
+        if total > 0:
+            print(f'With Category: {has_category} ({has_category/total*100:.1f}%)')
+            print(f'With Product Type: {has_type} ({has_type/total*100:.1f}%)')
+            print(f'With Product On Pages: {has_pages} ({has_pages/total*100:.1f}%)')
+        else:
+            print('With Category: 0 (0.0%)')
+            print('With Product Type: 0 (0.0%)')
+            print('With Product On Pages: 0 (0.0%)')
 
         # Check unique categories and types
         cursor = conn.execute('SELECT Category FROM products WHERE Category IS NOT NULL AND Category != ""')

@@ -231,7 +231,7 @@ def save_dataframe_to_database(df: pd.DataFrame, db_path: str = None, clear_exis
     try:
         if db_path is None:
             script_dir = os.path.dirname(os.path.abspath(__file__))
-            db_path = os.path.join(script_dir, "data", "products.db")
+            db_path = os.path.join(script_dir, "data", "databases", "products.db")
 
         os.makedirs(os.path.dirname(db_path), exist_ok=True)
 
