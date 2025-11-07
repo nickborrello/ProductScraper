@@ -106,7 +106,7 @@ def run_scraping(file_path, progress_callback=None, log_callback=None, interacti
         progress_callback.emit(90)
     log("✅ Product scraping completed!")
 
-def run_discontinued_check(file_path, progress_callback=None, log_callback=None):
+def run_discontinued_check(file_path, progress_callback=None, log_callback=None, editor_callback=None):
     """Runs the discontinued product check."""
     log = log_callback if log_callback else print
 
@@ -130,7 +130,7 @@ def run_discontinued_check(file_path, progress_callback=None, log_callback=None)
     log("✅ Discontinued products check completed!")
 
 
-def run_db_refresh(progress_callback=None, log_callback=None):
+def run_db_refresh(progress_callback=None, log_callback=None, editor_callback=None):
     """Processes the downloaded XML and refreshes the database, with callbacks."""
     log = log_callback if log_callback else print
     
@@ -162,20 +162,25 @@ def run_db_refresh(progress_callback=None, log_callback=None):
         raise
 
 
-def run_shopsite_xml_download():
+def run_shopsite_xml_download(progress_callback=None, log_callback=None, editor_callback=None):
     """Downloads and saves XML from ShopSite."""
-    # Suppress prints when called from GUI
-    if not is_gui_mode:
-        print("🌐 Downloading XML from ShopSite...")
+    log = log_callback if log_callback else print
+    
+    log("🌐 Downloading XML from ShopSite...")
+    if progress_callback:
+        progress_callback.emit(10)
+    
     try:
         success, message = import_from_shopsite_xml(save_excel=True, save_to_db=False)
-        if not is_gui_mode:
-            print(message)
-        if success and not is_gui_mode:
-            print("💡 XML downloaded. Use option 5 to process it into the database.")
+        log(message)
+        if success:
+            log("💡 XML downloaded. Use 'Refresh from XML' to process it into the database.")
+        if progress_callback:
+            progress_callback.emit(100)
     except Exception as e:
-        if not is_gui_mode:
-            print(f"❌ ShopSite XML download failed: {e}")
+        log(f"❌ ShopSite XML download failed: {e}")
+        # The worker's error signal will catch this
+        raise
 
 def run_xml_to_db_processing():
     """Processes the downloaded XML and refreshes the database."""
@@ -381,7 +386,7 @@ def select_excel_file_text():
         except KeyboardInterrupt:
             return None
 
-def run_scraper_integration_tests(log_callback=None, progress_callback=None):
+def run_scraper_integration_tests(log_callback=None, progress_callback=None, editor_callback=None):
     """Run integration tests for all scrapers with known working products.
 
     This function tests every scraper with a product we know works on that site,
