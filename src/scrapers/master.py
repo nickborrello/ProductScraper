@@ -863,15 +863,8 @@ class ProductScraper:
             removed_count = original_count - filtered_count
             
             if removed_count > 0:
-                self.log_callback(f"🗑️ Removed {removed_count} existing products from input file")
+                self.log_callback(f"🗑️ Removed {removed_count} existing products from processing queue")
                 self.log_callback(f"📊 Remaining products to scrape: {filtered_count}")
-                
-                # Save the filtered dataframe back to the input file
-                try:
-                    df.to_excel(self.file_path, index=False)
-                    self.log_callback(f"💾 Updated input file: {self.file_path}")
-                except Exception as e:
-                    self.log_callback(f"⚠️ Could not update input file: {e}")
             else:
                 self.log_callback("✅ No existing products found - all products are new")
         else:
@@ -887,13 +880,6 @@ class ProductScraper:
             if invalid_count > 0:
                 self.log_callback(f"🗑️ Removed {invalid_count} SKUs with invalid format (must be exactly 12 digits, no letters)")
                 self.log_callback(f"📊 Remaining valid SKUs to scrape: {filtered_count}")
-                
-                # Save the filtered dataframe back to the input file
-                try:
-                    df.to_excel(self.file_path, index=False)
-                    self.log_callback(f"💾 Updated input file: {self.file_path}")
-                except Exception as e:
-                    self.log_callback(f"⚠️ Could not update input file: {e}")
             else:
                 self.log_callback("✅ All SKUs have valid format (12 digits)")
         
