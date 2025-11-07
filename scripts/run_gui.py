@@ -346,6 +346,12 @@ class MainWindow(QMainWindow):
         # View Menu
         view_menu = menubar.addMenu("&View")
         
+        settings_action = QAction("⚙️ Settings", self)
+        settings_action.triggered.connect(self.open_settings)
+        view_menu.addAction(settings_action)
+        
+        view_menu.addSeparator()
+        
         clear_logs_action = QAction("🗑️ Clear Logs", self)
         clear_logs_action.setShortcut("Ctrl+L")
         clear_logs_action.triggered.connect(self.clear_logs)
@@ -678,6 +684,19 @@ class MainWindow(QMainWindow):
         except Exception as e:
             self.log_message(f"Failed to open product viewer: {e}", "ERROR")
             QMessageBox.critical(self, "Error", f"Failed to open product viewer:\n{e}")
+    
+    def open_settings(self):
+        """Open the settings dialog"""
+        try:
+            from src.ui.settings_dialog import SettingsDialog
+            dialog = SettingsDialog(self)
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                self.log_message("Settings updated", "SUCCESS")
+                # Update database stats in case database path changed
+                self.update_database_stats()
+        except Exception as e:
+            self.log_message(f"Failed to open settings: {e}", "ERROR")
+            QMessageBox.critical(self, "Error", f"Failed to open settings:\n{e}")
     
     def show_database_statistics(self):
         """Show database statistics dialog"""

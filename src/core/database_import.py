@@ -16,23 +16,27 @@ except ImportError:
     # Fallback for standalone execution
     from field_mapping import map_shopsite_fields, REQUIRED_FIELDS
 
+# Import settings manager
+try:
+    from .settings_manager import SettingsManager
+except ImportError:
+    # Fallback for standalone execution
+    from settings_manager import SettingsManager
+
 # Load environment variables
 load_dotenv()
+
+# Initialize settings manager
+settings = SettingsManager()
 
 # Set up logging (per project guidelines)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # ShopSite XML Download configuration
 SHOPSITE_CONFIG = {
-    'client_id': os.getenv('SHOPSITE_CLIENT_ID'),
-    'secret_key': os.getenv('SHOPSITE_SECRET_KEY'),
-    'auth_code': os.getenv('SHOPSITE_AUTHORIZATION_CODE'),
-    'auth_url': os.getenv('SHOPSITE_AUTH_URL'),
+    **settings.shopsite_credentials,
     'xml_url': 'https://www.baystatepet.com/cgi-baystatepet/bo/db_xml.cgi',
     'version': '14.0',  # Latest XML version for products
-    # Fallback to basic auth if OAuth not available
-    'username': os.getenv('SHOPSITE_USERNAME'),
-    'password': os.getenv('SHOPSITE_PASSWORD')
 }
 
 def get_product_count(db_path: str) -> int:
@@ -111,15 +115,9 @@ def print_column_statistics(stats: Dict[str, int], total_products: int):
 
 # ShopSite XML Download configuration
 SHOPSITE_CONFIG = {
-    'client_id': os.getenv('SHOPSITE_CLIENT_ID'),
-    'secret_key': os.getenv('SHOPSITE_SECRET_KEY'),
-    'auth_code': os.getenv('SHOPSITE_AUTHORIZATION_CODE'),
-    'auth_url': os.getenv('SHOPSITE_AUTH_URL'),
+    **settings.shopsite_credentials,
     'xml_url': 'https://www.baystatepet.com/cgi-baystatepet/bo/db_xml.cgi',
     'version': '14.0',  # Latest XML version for products
-    # Fallback to basic auth if OAuth not available
-    'username': os.getenv('SHOPSITE_USERNAME'),
-    'password': os.getenv('SHOPSITE_PASSWORD')
 }
 
 class ShopSiteXMLClient:

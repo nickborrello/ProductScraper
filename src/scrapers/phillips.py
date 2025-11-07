@@ -13,6 +13,7 @@ from selenium.webdriver.chrome.options import Options
 from src.utils.scraping.scraping import get_standard_chrome_options
 from src.utils.scraping.browser import create_browser
 from src.utils.general.display import display_product_result, display_scraping_progress, display_scraping_summary, display_error
+from src.core.settings_manager import settings
 
 load_dotenv()
 HEADLESS = False
@@ -80,11 +81,11 @@ def login(driver):
 
     WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.ID, "emailField"))
-    ).send_keys(os.getenv("PHILLIPS_USERNAME"))
+    ).send_keys(settings.phillips_credentials[0])
 
     WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.ID, "passwordField"))
-    ).send_keys(os.getenv("PHILLIPS_PASSWORD"))
+    ).send_keys(settings.phillips_credentials[1])
 
     WebDriverWait(driver, 10).until(
         EC.element_to_be_clickable((By.ID, "send2Dsk"))

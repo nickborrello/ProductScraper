@@ -11,6 +11,7 @@ from selenium.webdriver.chrome.service import Service
 from src.utils.scraping.scraping import get_standard_chrome_options
 from src.utils.scraping.browser import create_browser
 from src.utils.general.display import display_product_result, display_scraping_progress, display_scraping_summary, display_error
+from src.core.settings_manager import settings
 
 # Ensure project root is in sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -120,12 +121,11 @@ def login(driver):
     driver.get(LOGIN_URL)
     time.sleep(3)  # Let page load
 
-    username = os.getenv("PETFOOD_USERNAME")
-    password = os.getenv("PETFOOD_PASSWORD")
+    username, password = settings.petfood_credentials
 
     if not username or not password:
-        print("❌ Missing PETFOOD_USERNAME or PETFOOD_PASSWORD environment variables")
-        raise ValueError("PETFOOD_USERNAME or PETFOOD_PASSWORD not set in .env")
+        print("❌ Missing PetFood credentials in settings")
+        raise ValueError("PetFood credentials not configured in settings")
 
     print("📝 Filling login form...")
     try:

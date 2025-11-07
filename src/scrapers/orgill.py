@@ -21,8 +21,10 @@ from selenium.webdriver.chrome.options import Options
 from src.utils.scraping.scraping import clean_string, get_standard_chrome_options
 from src.utils.scraping.browser import create_browser
 from src.utils.general.display import display_product_result, display_scraping_progress, display_scraping_summary, display_error
+from src.core.settings_manager import SettingsManager
 
 load_dotenv()
+settings = SettingsManager()
 HEADLESS = False
 TEST_SKU = "755625011305" 
 LOGIN_URL = 'https://www.orgill.com/index.aspx?tab=8'
@@ -71,7 +73,7 @@ def login(driver):
         EC.presence_of_element_located((By.ID, "cphMainContent_ctl00_loginOrgillxs_UserName"))
     )
     driver.execute_script("arguments[0].value = '';", username_field)
-    username_field.send_keys(os.getenv("ORGILL_USERNAME"))
+    username_field.send_keys(settings.orgill_credentials[0])
     print("Orgill: Username entered")
 
     print("Orgill: Waiting for password field...")
@@ -79,7 +81,7 @@ def login(driver):
         EC.presence_of_element_located((By.ID, "cphMainContent_ctl00_loginOrgillxs_Password"))
     )
     driver.execute_script("arguments[0].value = '';", password_field)
-    password_field.send_keys(os.getenv("ORGILL_PASSWORD"))
+    password_field.send_keys(settings.orgill_credentials[1])
     print("Orgill: Password entered")
 
     # Handle multiple types of cookie consent banners
