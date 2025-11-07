@@ -569,13 +569,7 @@ class ProductScraper:
         try:
             # Use combined output file instead of site-specific files
             from pathlib import Path
-            project_root = Path(__file__).parent
-            while project_root.parent != project_root:
-                if (project_root / "main.py").exists():
-                    break
-                project_root = project_root.parent
-            
-            output_dir = project_root / "data" / "spreadsheets"
+            output_dir = Path(PROJECT_ROOT) / "data" / "spreadsheets"
             combined_file_path = output_dir / 'products.xlsx'
             
             if os.path.exists(combined_file_path):
@@ -659,7 +653,7 @@ class ProductScraper:
             
             # Clean up old temporary browser profiles (older than 1 hour)
             try:
-                profile_dirs = glob.glob("data/selenium_profiles/*_*_*")  # Match the timestamp pattern
+                profile_dirs = glob.glob("data/browser_profiles/*_*_*")  # Match the timestamp pattern
                 one_hour_ago = datetime.now().timestamp() * 1000 - (60 * 60 * 1000)  # 1 hour ago in milliseconds
                 
                 for profile_dir in profile_dirs:
@@ -679,7 +673,7 @@ class ProductScraper:
             
             # Clean up old selenium profiles with timestamp patterns
             try:
-                selenium_dirs = glob.glob("data/selenium_profiles/*_*_*")
+                selenium_dirs = glob.glob("data/browser_profiles/*_*_*")
                 for selenium_dir in selenium_dirs:
                     try:
                         # Check if directory is old (not accessed in last hour)
@@ -721,13 +715,7 @@ class ProductScraper:
     def save_incremental_results(self, new_row, source_site):
         # Save to data/spreadsheets/ instead of src/scrapers/output/
         from pathlib import Path
-        project_root = Path(__file__).parent
-        while project_root.parent != project_root:
-            if (project_root / "main.py").exists():
-                break
-            project_root = project_root.parent
-        
-        output_dir = project_root / "data" / "spreadsheets"
+        output_dir = Path(PROJECT_ROOT) / "data" / "spreadsheets"
         output_dir.mkdir(parents=True, exist_ok=True)
         # Use single combined output file instead of site-specific files
         site_file_path = output_dir / 'products.xlsx'
@@ -833,7 +821,7 @@ class ProductScraper:
             return False
 
     def prompt_for_input_spreadsheet_tk(self):
-        input_dir = os.path.join(os.path.dirname(__file__), "input")
+        input_dir = os.path.join(PROJECT_ROOT, "data", "input")
         root = tk.Tk()
         root.withdraw()
         file_path = filedialog.askopenfilename(

@@ -31,7 +31,7 @@ def init_browser(profile_suffix="default", headless=True):
     chrome_options = get_standard_chrome_options(headless=headless, profile_suffix=profile_suffix)
     
     # Use selenium_profiles directory for petfoodex with unique suffix
-    user_data_dir = os.path.join(PROJECT_ROOT, "data", "selenium_profiles", f"petfoodex_{profile_suffix}")
+    user_data_dir = os.path.join(PROJECT_ROOT, "data", "browser_profiles", f"petfoodex_{profile_suffix}")
     os.makedirs(user_data_dir, exist_ok=True)
     chrome_options.add_argument(f"--user-data-dir={user_data_dir}")
     
@@ -42,7 +42,10 @@ def init_browser(profile_suffix="default", headless=True):
 def load_cookies(driver):
     try:
         import pickle
-        with open("cookies/petfoodex_cookies.pkl", "rb") as f:
+        cookie_path = os.path.join(PROJECT_ROOT, "data", "cookies", "petfoodex_cookies.pkl")
+        if not os.path.exists(cookie_path):
+            return
+        with open(cookie_path, "rb") as f:
             cookies = pickle.load(f)
             for cookie in cookies:
                 try:
@@ -56,9 +59,10 @@ def save_cookies(driver, log_callback=None):
     try:
         import pickle
         import os
-        os.makedirs("cookies", exist_ok=True)
+        cookie_dir = os.path.join(PROJECT_ROOT, "data", "cookies")
+        os.makedirs(cookie_dir, exist_ok=True)
         cookies = driver.get_cookies()
-        with open("cookies/petfoodex_cookies.pkl", "wb") as f:
+        with open(os.path.join(cookie_dir, "petfoodex_cookies.pkl"), "wb") as f:
             pickle.dump(cookies, f)
     except Exception as e:
         warning_msg = f"⚠️ Failed to save cookies: {e}"

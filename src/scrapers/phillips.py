@@ -30,7 +30,10 @@ SEARCH_URL_TEMPLATE = "https://shop.phillipspet.com/ccrz__ProductList?cartID=&op
 def load_cookies(driver):
     try:
         import pickle
-        with open("cookies/phillips_cookies.pkl", "rb") as f:
+        cookie_path = os.path.join(PROJECT_ROOT, "data", "cookies", "phillips_cookies.pkl")
+        if not os.path.exists(cookie_path):
+            return
+        with open(cookie_path, "rb") as f:
             cookies = pickle.load(f)
             for cookie in cookies:
                 try:
@@ -43,8 +46,10 @@ def load_cookies(driver):
 def save_cookies(driver):
     try:
         import pickle
+        cookie_dir = os.path.join(PROJECT_ROOT, "data", "cookies")
+        os.makedirs(cookie_dir, exist_ok=True)
         cookies = driver.get_cookies()
-        with open("cookies/phillips_cookies.pkl", "wb") as f:
+        with open(os.path.join(cookie_dir, "phillips_cookies.pkl"), "wb") as f:
             pickle.dump(cookies, f)
     except:
         pass
@@ -55,7 +60,7 @@ def init_browser(profile_suffix="default", headless=True):
     options = get_standard_chrome_options(headless=headless, profile_suffix=profile_suffix)
     
     # Use selenium_profiles directory for phillips with unique suffix
-    user_data_dir = os.path.join(PROJECT_ROOT, "data", "selenium_profiles", f"phillips_{profile_suffix}")
+    user_data_dir = os.path.join(PROJECT_ROOT, "data", "browser_profiles", f"phillips_{profile_suffix}")
     os.makedirs(user_data_dir, exist_ok=True)
     options.add_argument(f"--user-data-dir={user_data_dir}")
     

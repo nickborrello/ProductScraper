@@ -15,10 +15,12 @@ from scrapers.orgill import scrape_orgill, login as login_orgill, is_logged_in a
 from scrapers.phillips import scrape_phillips, login as login_phillips, is_logged_in as is_logged_in_phillips
 from scrapers.petfoodex import scrape_petfood_experts, login as login_petfood, is_logged_in as is_logged_in_petfood
 
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 class DiscontinuedChecker:
     def __init__(self, input_file, output_file="discontinued_remaining.xlsx"):
         self.input_file = input_file
-        self.output_file = output_file
+        self.output_file = os.path.join(PROJECT_ROOT, "data", "spreadsheets", "discontinued_remaining.xlsx")
 
         self.site_scrapers = {
             "Bradley Caldwell": scrape_bradley_caldwell,
@@ -65,7 +67,7 @@ class DiscontinuedChecker:
             return petfood_init_browser(profile_suffix=unique_profile, headless=False)
         else:
             options = get_standard_chrome_options(headless=True, profile_suffix=unique_profile)
-            user_data_dir = os.path.abspath(f"data/selenium_profiles/{unique_profile}")
+            user_data_dir = os.path.join(PROJECT_ROOT, "data", "browser_profiles", unique_profile)
             os.makedirs(user_data_dir, exist_ok=True)
             options.add_argument(f"--user-data-dir={user_data_dir}")
             return webdriver.Chrome(options=options)

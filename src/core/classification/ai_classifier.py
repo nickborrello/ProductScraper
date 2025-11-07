@@ -19,7 +19,7 @@ import re
 from collections import Counter
 
 # Database and model paths
-DB_PATH = Path(__file__).parent.parent / "data" / "databases" / "products.db"
+DB_PATH = Path(__file__).parent.parent.parent.parent / "data" / "databases" / "products.db"
 MODEL_DIR = Path(__file__).parent / "models"
 MODEL_DIR.mkdir(exist_ok=True)
 

@@ -28,15 +28,11 @@ except ImportError:
         from product_editor import edit_products_in_batch
 
 # Database path - find it relative to project root
-# Find project root by looking for main.py
-current_path = Path(__file__).parent
-project_root = current_path
-while project_root.parent != project_root:  # Not at filesystem root
-    if (project_root / "main.py").exists():
-        break
-    project_root = project_root.parent
+from pathlib import Path
+import os
 
-DB_PATH = project_root / "data" / "databases" / "products.db"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+DB_PATH = Path(PROJECT_ROOT) / "data" / "databases" / "products.db"
 
 class ProductViewer(QMainWindow):
     def __init__(self):

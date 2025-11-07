@@ -138,7 +138,7 @@ def run_db_refresh(progress_callback=None, log_callback=None):
     if progress_callback:
         progress_callback.emit(10)
 
-    xml_path = os.path.join(PROJECT_ROOT, "inventory", "data", "shopsite_products_cleaned.xml")
+    xml_path = os.path.join(PROJECT_ROOT, "data", "databases", "shopsite_products_cleaned.xml")
     
     if not os.path.exists(xml_path):
         log(f"❌ XML file not found: {xml_path}")
@@ -180,8 +180,7 @@ def run_shopsite_xml_download():
 def run_xml_to_db_processing():
     """Processes the downloaded XML and refreshes the database."""
     if not is_gui_mode:
-        print("💾 Processing XML file to database...")
-    xml_path = os.path.join(PROJECT_ROOT, "inventory", "data", "shopsite_products_cleaned.xml")
+        xml_path = os.path.join(PROJECT_ROOT, "data", "databases", "shopsite_products_cleaned.xml")
     
     if not os.path.exists(xml_path):
         if not is_gui_mode:
@@ -204,7 +203,7 @@ def run_product_viewer():
     if not is_gui_mode:
         print("🖼️ Opening Product Database Viewer...")
     try:
-        viewer_path = os.path.join(PROJECT_ROOT, "inventory", "classify", "product_viewer.py")
+        viewer_path = os.path.join(PROJECT_ROOT, "src", "ui", "product_viewer.py")
         result = subprocess.run([sys.executable, viewer_path], capture_output=True, text=True, cwd=PROJECT_ROOT)
         if result.returncode != 0 and result.stderr:
             if not is_gui_mode:

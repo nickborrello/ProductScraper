@@ -29,8 +29,6 @@ HEADLESS = False
 TEST_SKU = "755625011305" 
 LOGIN_URL = 'https://www.orgill.com/index.aspx?tab=8'
 BASE_SEARCH_URL = 'https://www.orgill.com/SearchResultN.aspx?ddlhQ={SKU}'
-PRODUCTS_FILE = "./spreadsheets/done/orgill.xlsx"
-USER_DATA_DIR = os.path.abspath("selenium_profile")
 
 def init_browser(profile_suffix="default", headless=False):
     # Use standard Chrome options
@@ -42,7 +40,7 @@ def init_browser(profile_suffix="default", headless=False):
     chrome_options.add_argument("--disable-features=Autofill")
     
     # Use selenium_profiles directory for orgill with unique suffix
-    user_data_dir = os.path.join(PROJECT_ROOT, "data", "selenium_profiles", f"orgill_{profile_suffix}")
+    user_data_dir = os.path.join(PROJECT_ROOT, "data", "browser_profiles", f"orgill_{profile_suffix}")
     os.makedirs(user_data_dir, exist_ok=True)
     chrome_options.add_argument(f"--user-data-dir={user_data_dir}")
     
@@ -182,7 +180,10 @@ def login(driver, log_callback=None):
 
 def load_cookies(driver):
     try:
-        with open("cookies/orgill_cookies.pkl", "rb") as f:
+        cookie_path = os.path.join(PROJECT_ROOT, "data", "cookies", "orgill_cookies.pkl")
+        if not os.path.exists(cookie_path):
+            return
+        with open(cookie_path, "rb") as f:
             cookies = pickle.load(f)
             for cookie in cookies:
                 try:
@@ -195,7 +196,9 @@ def load_cookies(driver):
 def save_cookies(driver):
     try:
         cookies = driver.get_cookies()
-        with open("cookies/orgill_cookies.pkl", "wb") as f:
+        cookie_dir = os.path.join(PROJECT_ROOT, "data", "cookies")
+        os.makedirs(cookie_dir, exist_ok=True)
+        with open(os.path.join(cookie_dir, "orgill_cookies.pkl"), "wb") as f:
             pickle.dump(cookies, f)
     except:
         pass

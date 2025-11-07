@@ -15,9 +15,9 @@ class ShopSiteDatabase:
 
     def __init__(self, db_path: str = None):
         if db_path is None:
-            # Default to data/databases/products.db relative to this script's directory
             script_dir = os.path.dirname(os.path.abspath(__file__))
-            db_path = os.path.join(script_dir, "data", "databases", "products.db")
+            project_root = os.path.dirname(os.path.dirname(script_dir))
+            db_path = os.path.join(project_root, "data", "databases", "products.db")
         self.db_path = db_path
         self.ensure_database()
 

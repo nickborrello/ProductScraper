@@ -5,7 +5,7 @@ from unittest.mock import patch, MagicMock, call
 import tkinter as tk
 
 # Add project root to path
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
@@ -71,7 +71,7 @@ class TestClassification:
         product = sample_products[0].copy()
 
         # Mock the edit_classification_in_batch function
-        with patch('inventory.UI.product_classify_ui.edit_classification_in_batch') as mock_edit:
+        with patch('src.ui.product_classify_ui.edit_classification_in_batch') as mock_edit:
             mock_edit.return_value = [product]
 
             result = assign_classification_single(product)
@@ -84,7 +84,7 @@ class TestClassification:
         products = sample_products.copy()
 
         # Mock the edit_classification_in_batch function
-        with patch('inventory.UI.product_classify_ui.edit_classification_in_batch') as mock_edit:
+        with patch('src.ui.product_classify_ui.edit_classification_in_batch') as mock_edit:
             mock_edit.return_value = products
 
             result = assign_classification_batch(products)
@@ -208,7 +208,7 @@ class TestClassification:
         single_parsed = [c.strip() for c in single_str.split('|') if c.strip()]
         assert single_parsed == ['Dog Food']
 
-    @patch('inventory.classify.classification.edit_classification_in_batch')
+    @patch('src.ui.product_classify_ui.edit_classification_in_batch')
     def test_batch_processing_with_mixed_data(self, mock_edit, sample_products):
         """Test batch processing with products having different classification states."""
         # Mix of classified and unclassified products

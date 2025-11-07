@@ -41,7 +41,7 @@ def init_browser(profile_suffix="default", headless=True):
     chrome_options = get_standard_chrome_options(headless=headless, profile_suffix=profile_suffix)
     
     # Use selenium_profiles directory for Amazon with unique suffix
-    user_data_dir = os.path.join(PROJECT_ROOT, "data", "selenium_profiles", f"Amazon_{profile_suffix}")
+    user_data_dir = os.path.join(PROJECT_ROOT, "data", "browser_profiles", f"Amazon_{profile_suffix}")
     os.makedirs(user_data_dir, exist_ok=True)
     chrome_options.add_argument(f"--user-data-dir={user_data_dir}")
     
@@ -107,7 +107,7 @@ def get_amazon_optimized_options(profile_suffix="default", headless=True):
     
     # Profile directory
     if profile_suffix:
-        profile_dir = os.path.join(PROJECT_ROOT, "data", "selenium_profiles", f"Amazon_optimized_{profile_suffix}")
+        profile_dir = os.path.join(PROJECT_ROOT, "data", "browser_profiles", f"Amazon_optimized_{profile_suffix}")
         if not os.path.exists(profile_dir):
             os.makedirs(profile_dir, exist_ok=True)
         options.add_argument(f"--user-data-dir={profile_dir}")

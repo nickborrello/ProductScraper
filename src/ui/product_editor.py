@@ -24,14 +24,11 @@ except ImportError:
 SHOPSITE_PAGES = shopsite_constants.SHOPSITE_PAGES
 
 # Database setup
-current_path = Path(__file__).parent
-project_root = current_path
-while project_root.parent != project_root:
-    if (project_root / "main.py").exists():
-        break
-    project_root = project_root.parent
+from pathlib import Path
+import os
 
-DB_PATH = project_root / "data" / "databases" / "products.db"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+DB_PATH = Path(PROJECT_ROOT) / "data" / "databases" / "products.db"
 
 
 class ImageDialog(QDialog):

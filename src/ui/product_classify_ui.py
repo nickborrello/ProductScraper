@@ -25,19 +25,19 @@ from PyQt6.QtGui import QFont, QPalette, QColor
 
 # Import local options
 try:
-    from .shopsite_pages import SHOPSITE_PAGES
+    from .shopsite_constants import SHOPSITE_PAGES
 except ImportError:
     # Handle case when run as standalone script
     import sys
     import os
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    shopsite_pages_path = os.path.join(current_dir, 'shopsite_pages.py')
-    if os.path.exists(shopsite_pages_path):
+    shopsite_constants_path = os.path.join(current_dir, 'shopsite_constants.py')
+    if os.path.exists(shopsite_constants_path):
         import importlib.util
-        spec = importlib.util.spec_from_file_location("shopsite_pages", shopsite_pages_path)
-        shopsite_pages_module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(shopsite_pages_module)
-        SHOPSITE_PAGES = shopsite_pages_module.SHOPSITE_PAGES
+        spec = importlib.util.spec_from_file_location("shopsite_constants", shopsite_constants_path)
+        shopsite_constants_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(shopsite_constants_module)
+        SHOPSITE_PAGES = shopsite_constants_module.SHOPSITE_PAGES
     else:
         # Fallback if file doesn't exist
         SHOPSITE_PAGES = []

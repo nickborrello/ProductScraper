@@ -7,6 +7,8 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import time
 
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
 PLACEHOLDER_URL = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFUAfyVe3Easiycyh3isP9wDQTYuSmGPsPQvLIJdEYvQ_DsFq5Ez2Nh_QjiS3oZ3B8ZPfK9cZQyIStmQMV1lDPLw"
 
 def sanitize_filename(filename):
@@ -50,7 +52,7 @@ def process_image(content, img_name):
     new_img.save(img_name, "JPEG", quality=95)
 
 def download_image(img_url, subdir, file_name, idx):
-    folder_path = os.path.join("scrapers", "images", subdir)
+    folder_path = os.path.join(PROJECT_ROOT, "data", "images", subdir)
     os.makedirs(folder_path, exist_ok=True)
 
     sanitized_file_name = sanitize_filename(file_name)

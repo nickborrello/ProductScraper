@@ -11,7 +11,7 @@ from pathlib import Path
 # Database path
 # Adjusted DB_PATH for the new location: inventory/classification/cross_sell_logic.py
 # It needs to go up three levels (classification, inventory, ProductScraper) and then into data
-DB_PATH = Path(__file__).parent.parent.parent / "data" / "databases" / "products.db"
+DB_PATH = Path(__file__).parent.parent.parent.parent / "data" / "databases" / "products.db"
 
 def get_facet_options_from_db():
     """

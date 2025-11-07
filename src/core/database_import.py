@@ -9,6 +9,9 @@ from typing import Tuple, Optional, Dict
 from dotenv import load_dotenv
 from datetime import datetime
 
+# Define project root
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 # Import field mapping configuration
 try:
     from .field_mapping import map_shopsite_fields, REQUIRED_FIELDS
@@ -206,7 +209,7 @@ class ShopSiteXMLClient:
                 logging.info(f"✅ Products XML downloaded successfully ({len(full_content)} characters)")
                 
                 # Save raw XML to file for debugging and backup
-                xml_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "shopsite_products_raw.xml")
+                xml_file_path = os.path.join(PROJECT_ROOT, "data", "databases", "shopsite_products_raw.xml")
                 os.makedirs(os.path.dirname(xml_file_path), exist_ok=True)
                 try:
                     with open(xml_file_path, 'w', encoding='utf-8') as f:
@@ -228,8 +231,7 @@ def save_dataframe_to_database(df: pd.DataFrame, db_path: str = None, clear_exis
     """Save DataFrame directly to SQLite database."""
     try:
         if db_path is None:
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            db_path = os.path.join(script_dir, "data", "databases", "products.db")
+            db_path = os.path.join(PROJECT_ROOT, "data", "databases", "products.db")
 
         os.makedirs(os.path.dirname(db_path), exist_ok=True)
 
@@ -424,7 +426,7 @@ def parse_xml_to_dataframe(xml_content: str) -> Optional[pd.DataFrame]:
             # Continue with what we have
 
         # Save cleaned XML for debugging
-        cleaned_xml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "shopsite_products_cleaned.xml")
+        cleaned_xml_path = os.path.join(PROJECT_ROOT, "data", "databases", "shopsite_products_cleaned.xml")
         try:
             with open(cleaned_xml_path, 'w', encoding='utf-8') as f:
                 f.write(xml_content)
@@ -502,7 +504,7 @@ def parse_xml_to_dataframe(xml_content: str) -> Optional[pd.DataFrame]:
                 logging.error(f"{marker}Line {i}: {lines[i-1][:200]}{'...' if len(lines[i-1]) > 200 else ''}")
         
         # Save the problematic XML for manual inspection
-        error_xml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "shopsite_error_debug.xml")
+        error_xml_path = os.path.join(PROJECT_ROOT, "data", "databases", "shopsite_error_debug.xml")
         try:
             with open(error_xml_path, 'w', encoding='utf-8') as f:
                 f.write(xml_content)
@@ -552,7 +554,7 @@ def import_from_shopsite_xml(save_excel: bool = True, save_to_db: bool = False) 
     results = []
 
     if save_excel:
-        output_path = "inventory/data/website.xlsx"
+        output_path = os.path.join(PROJECT_ROOT, "data", "spreadsheets", "website.xlsx")
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         try:
             df.to_excel(output_path, index=False)
@@ -594,8 +596,7 @@ def import_from_saved_xml(xml_file_path: str = None, save_to_db: bool = True) ->
         save_to_db: Whether to save to database
     """
     if xml_file_path is None:
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        xml_file_path = os.path.join(script_dir, "data", "shopsite_products_cleaned.xml")
+        xml_file_path = os.path.join(PROJECT_ROOT, "data", "databases", "shopsite_products_cleaned.xml")
 
     if not os.path.exists(xml_file_path):
         return False, f"❌ XML file not found: {xml_file_path}"

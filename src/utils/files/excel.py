@@ -5,6 +5,8 @@ import shutil
 import os
 import sys
 
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
 gen_py_cache = os.path.join(os.getenv("LOCALAPPDATA"), "Temp", "gen_py")
 if os.path.exists(gen_py_cache):
     print(f"🧹 Detected corrupted COM cache. Removing: {gen_py_cache}")
@@ -14,7 +16,7 @@ import win32com.client  # now safe to import
 
 def convert_xlsx_to_xls_with_excel():
     # Use the new data/spreadsheets directory instead of scrapers/output
-    folder = os.path.abspath("./data/spreadsheets")
+    folder = os.path.join(PROJECT_ROOT, "data", "spreadsheets")
     
     # Check if output folder exists
     if not os.path.exists(folder):

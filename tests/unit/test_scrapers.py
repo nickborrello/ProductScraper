@@ -6,7 +6,7 @@ import glob
 from unittest.mock import patch, MagicMock
 
 # Add project root to path
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
@@ -22,7 +22,7 @@ class TestScrapers:
     @pytest.fixture(scope="class")
     def scraper_modules(self):
         """Discover all scraper modules dynamically."""
-        scrapers_dir = os.path.join(PROJECT_ROOT, "scrapers")
+        scrapers_dir = os.path.join(PROJECT_ROOT, "src", "scrapers")
         scraper_files = glob.glob(os.path.join(scrapers_dir, "*.py"))
         scraper_files = [f for f in scraper_files if not f.endswith("__init__.py")]
 

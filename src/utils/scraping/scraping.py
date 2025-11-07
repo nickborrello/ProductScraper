@@ -84,7 +84,7 @@ def get_standard_chrome_options(headless=True, profile_suffix="default"):
                 break
             project_root = os.path.dirname(project_root)
         
-        profile_dir = os.path.join(project_root, "data", "selenium_profiles", profile_suffix.replace(" ", "_"))
+        profile_dir = os.path.join(project_root, "data", "browser_profiles", profile_suffix.replace(" ", "_"))
         if not os.path.exists(profile_dir):
             os.makedirs(profile_dir, exist_ok=True)
         options.add_argument(f"--user-data-dir={profile_dir}")

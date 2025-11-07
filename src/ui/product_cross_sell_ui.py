@@ -29,7 +29,7 @@ CROSS_SELL_FIELD = "Product Cross Sell"
 MAX_CROSS_SELLS = 4
 # Database path - Adjusted for the new location: UI/product_cross_sell_ui.py
 # It needs to go up two levels (UI, ProductScraper) and then into data
-DB_PATH = Path(__file__).parent.parent.parent / "data" / "databases" / "products.db"
+DB_PATH = Path(__file__).parent.parent.parent.parent / "data" / "databases" / "products.db"
 
 
 def assign_cross_sells_batch(products_list):

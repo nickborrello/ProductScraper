@@ -34,12 +34,12 @@ def classify_excel_file():
     root = tk.Tk()
     root.withdraw()  # Hide the main window
 
-    # Default to output directory
-    output_dir = Path(__file__).parent / "scrapers" / "output"
-    output_dir.mkdir(exist_ok=True)
+    # Default to spreadsheets directory
+    spreadsheets_dir = Path(PROJECT_ROOT) / "data" / "spreadsheets"
+    spreadsheets_dir.mkdir(exist_ok=True)
 
     file_path = filedialog.askopenfilename(
-        initialdir=str(output_dir),
+        initialdir=str(spreadsheets_dir),
         title="Select Excel file to classify",
         filetypes=[("Excel files", "*.xlsx *.xls"), ("All files", "*.*")]
     )
