@@ -291,6 +291,10 @@ class MainWindow(QMainWindow):
         # Initial status
         self.log_message("Application started successfully", "SUCCESS")
         self.update_database_stats()
+        
+        # Disable buttons that need redoing
+        self.check_discontinued_btn.setEnabled(False)
+        self.classify_btn.setEnabled(False)
 
     def create_menu_bar(self):
         """Create the menu bar with all application menus"""
@@ -346,16 +350,19 @@ class MainWindow(QMainWindow):
         # View Menu
         view_menu = menubar.addMenu("&View")
         
-        settings_action = QAction("⚙️ Settings", self)
-        settings_action.triggered.connect(self.open_settings)
-        view_menu.addAction(settings_action)
-        
         view_menu.addSeparator()
         
         clear_logs_action = QAction("🗑️ Clear Logs", self)
         clear_logs_action.setShortcut("Ctrl+L")
         clear_logs_action.triggered.connect(self.clear_logs)
         view_menu.addAction(clear_logs_action)
+        
+        # Settings Menu
+        settings_menu = menubar.addMenu("&Settings")
+        
+        settings_action = QAction("⚙️ Settings", self)
+        settings_action.triggered.connect(self.open_settings)
+        settings_menu.addAction(settings_action)
         
         # Help Menu
         help_menu = menubar.addMenu("&Help")
