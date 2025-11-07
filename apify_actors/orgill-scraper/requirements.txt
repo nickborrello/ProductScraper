@@ -1,11 +1,8 @@
-# Feel free to add your Python dependencies below. For formatting guidelines, see:
-# https://pip.pypa.io/en/latest/reference/requirements-file-format/
-
-apify >= 1.6.0
-beautifulsoup4 >= 4.12.0
+apify==3.0.4
+beautifulsoup4==4.12.2
 httpx
 types-beautifulsoup4
-selenium >= 4.15.0
-tenacity >= 8.2.0  # For retry logic
-fake-useragent >= 1.4.0  # For user agent rotation
-psutil >= 5.9.0  # For memory monitoring
+selenium==4.15.2
+tenacity>=8.2.0
+fake-useragent>=1.4.0
+psutil>=5.9.0
