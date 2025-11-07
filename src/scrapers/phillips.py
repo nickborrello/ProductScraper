@@ -53,7 +53,7 @@ def init_browser(profile_suffix="default", headless=True):
     options = get_login_safe_chrome_options(headless=headless, profile_suffix=profile_suffix)
     
     # Use selenium_profiles directory for phillips with unique suffix
-    user_data_dir = os.path.abspath(f"selenium_profiles/phillips_{profile_suffix}")
+    user_data_dir = os.path.abspath(f"data/selenium_profiles/phillips_{profile_suffix}")
     os.makedirs(user_data_dir, exist_ok=True)
     options.add_argument(f"--user-data-dir={user_data_dir}")
     

@@ -65,7 +65,7 @@ class DiscontinuedChecker:
             return petfood_init_browser(profile_suffix=unique_profile, headless=False)
         else:
             options = get_standard_chrome_options(headless=True, profile_suffix=unique_profile)
-            user_data_dir = os.path.abspath(f"selenium_profiles/{unique_profile}")
+            user_data_dir = os.path.abspath(f"data/selenium_profiles/{unique_profile}")
             os.makedirs(user_data_dir, exist_ok=True)
             options.add_argument(f"--user-data-dir={user_data_dir}")
             return webdriver.Chrome(options=options)

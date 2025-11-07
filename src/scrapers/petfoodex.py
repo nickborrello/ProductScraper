@@ -28,7 +28,7 @@ def init_browser(profile_suffix="default", headless=True):
     chrome_options = get_login_safe_chrome_options(headless=headless, profile_suffix=profile_suffix)
     
     # Use selenium_profiles directory for petfoodex with unique suffix
-    user_data_dir = os.path.abspath(f"selenium_profiles/petfoodex_{profile_suffix}")
+    user_data_dir = os.path.abspath(f"data/selenium_profiles/petfoodex_{profile_suffix}")
     os.makedirs(user_data_dir, exist_ok=True)
     chrome_options.add_argument(f"--user-data-dir={user_data_dir}")
     

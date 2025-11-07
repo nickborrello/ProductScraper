@@ -623,7 +623,7 @@ class ProductScraper:
             
             # Clean up old selenium profiles with timestamp patterns
             try:
-                selenium_dirs = glob.glob("selenium_profiles/*_*_*")
+                selenium_dirs = glob.glob("data/selenium_profiles/*_*_*")
                 for selenium_dir in selenium_dirs:
                     try:
                         # Check if directory is old (not accessed in last hour)

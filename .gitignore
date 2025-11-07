@@ -45,4 +45,4 @@ config/credentials.json
 *.pem
 
 # Browser profiles (Selenium automation)
-selenium_profiles/
+data/selenium_profiles/

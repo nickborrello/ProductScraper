@@ -40,7 +40,7 @@ def init_browser(profile_suffix="default", headless=False):
     chrome_options.add_argument("--disable-features=Autofill")
     
     # Use selenium_profiles directory for orgill with unique suffix
-    user_data_dir = os.path.abspath(f"selenium_profiles/orgill_{profile_suffix}")
+    user_data_dir = os.path.abspath(f"data/selenium_profiles/orgill_{profile_suffix}")
     os.makedirs(user_data_dir, exist_ok=True)
     chrome_options.add_argument(f"--user-data-dir={user_data_dir}")
     
