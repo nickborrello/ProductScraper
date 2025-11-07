@@ -578,6 +578,8 @@ class MultiSelectWidget(QWidget):
 
 class ClassificationEditorWindow(QMainWindow):
     """PyQt6 main window for batch classification editing."""
+    
+    finished = pyqtSignal()  # Signal emitted when window closes
 
     def __init__(self, products_list, category_options, all_product_types, product_on_pages_options, category_product_types):
         super().__init__()
@@ -1190,6 +1192,11 @@ class ClassificationEditorWindow(QMainWindow):
         print(f"💾 Products reviewed: {self.current_index + 1}")
         print(f"🤖 Products with auto-classifications only: {len(self.products_list) - (self.current_index + 1)}")
         self.close()
+    
+    def closeEvent(self, event):
+        """Emit finished signal when window closes."""
+        self.finished.emit()
+        super().closeEvent(event)
 
     def cancel(self):
         reply = QMessageBox.question(
@@ -1288,8 +1295,11 @@ def edit_classification_in_batch(products_list):
     window = ClassificationEditorWindow(products_list, CATEGORY_OPTIONS, ALL_PRODUCT_TYPES, PRODUCT_ON_PAGES_OPTIONS, CATEGORY_PRODUCT_TYPES)
     window.showMaximized()
 
-    # Start the event loop
-    app.exec()
+    # Use QEventLoop to wait for window closure (works with existing QApplication)
+    from PyQt6.QtCore import QEventLoop
+    loop = QEventLoop()
+    window.finished.connect(loop.quit)
+    loop.exec()
 
     # Return the updated products list
     return window.get_products_list()
@@ -1359,7 +1369,7 @@ if __name__ == "__main__":
     window = ClassificationEditorWindow(demo_products, CATEGORY_OPTIONS, ALL_PRODUCT_TYPES, PRODUCT_ON_PAGES_OPTIONS, CATEGORY_PRODUCT_TYPES)
     window.showMaximized()
 
-    # Start the event loop
+    # Start the event loop (standalone mode)
     app.exec()
 
     results = window.get_products_list()

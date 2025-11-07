@@ -1719,10 +1719,15 @@ def edit_products_in_batch(products_or_skus, auto_close_seconds=None):
         print("EDITOR DEBUG: No products loaded")
         return None
 
-    # Create QApplication if it doesn't exist
+    # Ensure QApplication exists (don't create a new one if it exists)
     app = QApplication.instance()
     if app is None:
+        # Only create QApplication if running standalone
         app = QApplication(sys.argv)
+        standalone = True
+    else:
+        # Running within existing application (like main GUI)
+        standalone = False
 
     # Create and show the editor
     editor = ProductEditor(products_list)
@@ -1735,16 +1740,18 @@ def edit_products_in_batch(products_or_skus, auto_close_seconds=None):
             editor.close()
         QTimer.singleShot(auto_close_seconds * 1000, auto_close)
 
-    # Check if event loop is already running
-    if QApplication.instance() and len(QApplication.instance().topLevelWidgets()) > 0:
-        # Event loop is running, use QEventLoop to wait
-        from PyQt6.QtCore import QEventLoop
-        loop = QEventLoop()
-        editor.finished.connect(loop.quit)
+    # Use QEventLoop to wait for editor to close (works in both standalone and embedded modes)
+    from PyQt6.QtCore import QEventLoop
+    loop = QEventLoop()
+    editor.finished.connect(loop.quit)
+    
+    # If standalone mode and no other windows, also start the main event loop
+    if standalone:
+        # Start main event loop in separate thread to allow QEventLoop to work
         loop.exec()
     else:
-        # No event loop running, start one
-        app.exec()
+        # Embedded mode - just run the local event loop
+        loop.exec()
 
     # Return the edited products if not cancelled
     if editor.cancelled:

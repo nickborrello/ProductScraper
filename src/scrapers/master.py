@@ -246,9 +246,11 @@ def discover_scrapers():
     return scraping_options, headless_settings
 
 class ProductScraper:
-    def __init__(self, file_path, interactive=True):
+    def __init__(self, file_path, interactive=True, selected_sites=None, log_callback=None):
         self.file_path = file_path
         self.interactive = interactive
+        self.selected_sites = selected_sites
+        self.log_callback = log_callback or print
         
         # Dynamically discover and load scraper modules
         self.scraping_options, self.headless_settings = discover_scrapers()
@@ -842,7 +844,7 @@ class ProductScraper:
         df = df[required_cols]
 
         # Check for existing products in database and filter them out
-        print("🔍 Checking for existing products in database...")
+        self.log_callback("🔍 Checking for existing products in database...")
         existing_skus = self.get_existing_skus_from_database()
         if existing_skus:
             original_count = len(df)
@@ -852,19 +854,19 @@ class ProductScraper:
             removed_count = original_count - filtered_count
             
             if removed_count > 0:
-                print(f"🗑️ Removed {removed_count} existing products from input file")
-                print(f"📊 Remaining products to scrape: {filtered_count}")
+                self.log_callback(f"🗑️ Removed {removed_count} existing products from input file")
+                self.log_callback(f"📊 Remaining products to scrape: {filtered_count}")
                 
                 # Save the filtered dataframe back to the input file
                 try:
                     df.to_excel(self.file_path, index=False)
-                    print(f"💾 Updated input file: {self.file_path}")
+                    self.log_callback(f"💾 Updated input file: {self.file_path}")
                 except Exception as e:
-                    print(f"⚠️ Could not update input file: {e}")
+                    self.log_callback(f"⚠️ Could not update input file: {e}")
             else:
-                print("✅ No existing products found - all products are new")
+                self.log_callback("✅ No existing products found - all products are new")
         else:
-            print("ℹ️ No existing database found - processing all products")
+            self.log_callback("ℹ️ No existing database found - processing all products")
         
         # Filter out SKUs that are not 12 characters long or contain non-numeric characters (invalid for accurate scraping)
         if not df.empty:
@@ -874,22 +876,22 @@ class ProductScraper:
             invalid_count = original_count - filtered_count
             
             if invalid_count > 0:
-                print(f"🗑️ Removed {invalid_count} SKUs with invalid format (must be exactly 12 digits, no letters)")
-                print(f"📊 Remaining valid SKUs to scrape: {filtered_count}")
+                self.log_callback(f"🗑️ Removed {invalid_count} SKUs with invalid format (must be exactly 12 digits, no letters)")
+                self.log_callback(f"📊 Remaining valid SKUs to scrape: {filtered_count}")
                 
                 # Save the filtered dataframe back to the input file
                 try:
                     df.to_excel(self.file_path, index=False)
-                    print(f"💾 Updated input file: {self.file_path}")
+                    self.log_callback(f"💾 Updated input file: {self.file_path}")
                 except Exception as e:
-                    print(f"⚠️ Could not update input file: {e}")
+                    self.log_callback(f"⚠️ Could not update input file: {e}")
             else:
-                print("✅ All SKUs have valid format (12 digits)")
+                self.log_callback("✅ All SKUs have valid format (12 digits)")
         
         # If no products remain after filtering, exit early
         if df.empty:
-            print("🎉 All products in input file already exist in database or have invalid SKUs!")
-            print("📁 No scraping needed.")
+            self.log_callback("🎉 All products in input file already exist in database or have invalid SKUs!")
+            self.log_callback("📁 No scraping needed.")
             return
         
         # Initialize tracking for completed sites
@@ -920,11 +922,15 @@ class ProductScraper:
         if not self.interactive:
             scrape_all_mode = True
         while True:
-            print("\n" + "="*70)
-            print("🔄 CONTINUOUS SCRAPING MODE")
-            print("="*70)
+            self.log_callback("\n" + "="*70)
+            self.log_callback("🔄 CONTINUOUS SCRAPING MODE")
+            self.log_callback("="*70)
             # Ask user for the scraping order, showing completed sites
-            scraping_sites = self.get_scraping_order(completed_sites)
+            if self.selected_sites:
+                scraping_sites = self.selected_sites
+                self.selected_sites = None  # Use only once
+            else:
+                scraping_sites = self.get_scraping_order(completed_sites)
             # Check if user wants to finish
             if scraping_sites is None:
                 break
@@ -966,7 +972,7 @@ class ProductScraper:
                 self.progress_tracker.complete_site()
             
             # Add newline after progress display
-            print()
+            self.log_callback("")
             
             total_sites_processed = len(scraping_sites)
             iteration_end_time = datetime.now()
@@ -980,7 +986,6 @@ class ProductScraper:
         # CONSOLIDATION PHASE: Merge data from multiple sites and present options to user
         if all_collected_products:
             # Add final newline after all scraping progress
-            print()
             consolidated_products = self.consolidate_products_by_sku(all_collected_products, rows)
             
             if consolidated_products:
@@ -1090,7 +1095,7 @@ class ProductScraper:
                 # Single product returned, wrap in list
                 scraped_products = [scraped_products] if scraped_products.get('Name') else []
             elif not isinstance(scraped_products, list):
-                print(f"⚠️ {site}: Scraper returned unexpected type: {type(scraped_products)}")
+                self.log_callback(f"⚠️ {site}: Scraper returned unexpected type: {type(scraped_products)}")
                 scraped_products = []
 
             # Filter out invalid products and ensure required fields
@@ -1107,13 +1112,13 @@ class ProductScraper:
             # Update progress with completion status
             self.progress_tracker.update_sku_progress(len(skus_to_process), f"Found {len(valid_products)} products")
 
-            print(f"✅ {site}: Scraper returned {len(valid_products)} valid products")
+            self.log_callback(f"✅ {site}: Scraper returned {len(valid_products)} valid products")
 
             if not valid_products:
                 return []
 
             # Return raw product data for consolidation (classification happens later)
-            print(f"📦 Preparing {len(valid_products)} products for consolidation...")
+            self.log_callback(f"📦 Preparing {len(valid_products)} products for consolidation...")
             site_results = []
             for product_info in valid_products:
                 sku = product_info.get('SKU', 'Unknown')
@@ -1130,7 +1135,7 @@ class ProductScraper:
         except Exception as e:
             # Update progress with error status
             self.progress_tracker.update_sku_progress(len(skus_to_process), f"Error: {str(e)[:50]}")
-            print(f"❌ Error processing {site}: {e}")
+            self.log_callback(f"❌ Error processing {site}: {e}")
             return []
 
     def consolidate_products_by_sku(self, all_products, rows):
@@ -1153,7 +1158,7 @@ class ProductScraper:
         
         consolidated = {}
         
-        print(f"🔄 Consolidating {len(products_by_sku)} SKUs from scraped data...")
+        self.log_callback(f"🔄 Consolidating {len(products_by_sku)} SKUs from scraped data...")
         
         for sku, product_list in products_by_sku.items():
             
@@ -1219,7 +1224,7 @@ class ProductScraper:
             # print(f"📊 Consolidated {sku}:")
             # print()
         
-        print(f"✅ Consolidation complete for {len(consolidated)} SKUs")
+        self.log_callback(f"✅ Consolidation complete for {len(consolidated)} SKUs")
         return consolidated
 
     def edit_consolidated_products(self, consolidated_products):
@@ -1237,7 +1242,7 @@ class ProductScraper:
         # Convert consolidated data to format expected by product editor
         editor_products = []
         
-        print(f"🎯 Preparing {len(consolidated_products)} SKUs for editing...")
+        self.log_callback(f"🎯 Preparing {len(consolidated_products)} SKUs for editing...")
         
         for sku, product_data in consolidated_products.items():
             
@@ -1268,10 +1273,10 @@ class ProductScraper:
         edited_products = edit_products_in_batch(editor_products)
         
         if edited_products:
-            print(f"✅ User edited {len(edited_products)} products")
+            self.log_callback(f"✅ User edited {len(edited_products)} products")
             return edited_products
         else:
-            print("❌ User cancelled editing")
+            self.log_callback("❌ User cancelled editing")
             return []
 
     def save_final_products(self, final_products, rows):
@@ -1281,16 +1286,16 @@ class ProductScraper:
         classify_choice = 'y' if not self.interactive else input(f"\n🤖 Auto-classify {len(final_products)} products using existing database? (y/n): ").strip().lower()
         
         if classify_choice == 'y':
-            print(f"🤖 Auto-classifying {len(final_products)} products using existing database...")
+            self.log_callback(f"🤖 Auto-classifying {len(final_products)} products using existing database...")
             from src.core.classification.classifier import classify_products_batch
             final_products = classify_products_batch(final_products)
-            print(f"✅ Auto-classification complete")
+            self.log_callback(f"✅ Auto-classification complete")
             
             # Ask if user wants to review/edit classifications
             review_choice = 'n' if not self.interactive else input(f"\n📋 Open classification editor to review/edit {len(final_products)} products? (y/n): ").strip().lower()
             
             if review_choice == 'y':
-                print(f"📋 Opening classification editor for {len(final_products)} final products...")
+                self.log_callback(f"📋 Opening classification editor for {len(final_products)} final products...")
                 from src.ui.product_classify_ui import edit_classification_in_batch
                 
                 # Convert products from scraper format to classification UI format
@@ -1316,26 +1321,26 @@ class ProductScraper:
                 
                 final_products = edit_classification_in_batch(classification_products)
                 if final_products is None:
-                    print("❌ User cancelled classification - aborting save")
+                    self.log_callback("❌ User cancelled classification - aborting save")
                     return
-                print(f"✅ Classification review complete")
+                self.log_callback(f"✅ Classification review complete")
             else:
-                print("ℹ️ Skipping classification review")
+                self.log_callback("ℹ️ Skipping classification review")
         else:
-            print("ℹ️ Skipping auto-classification")
+            self.log_callback("ℹ️ Skipping auto-classification")
         
         # Ask if user wants to assign cross-sells
         cross_sell_choice = 'y' if not self.interactive else input(f"\n🔗 Assign cross-sells for {len(final_products)} products? (y/n): ").strip().lower()
         
         if cross_sell_choice == 'y':
-            print(f"🔗 Assigning cross-sells for {len(final_products)} products...")
+            self.log_callback(f"🔗 Assigning cross-sells for {len(final_products)} products...")
             final_products = assign_cross_sells_batch(final_products)
-            print(f"✅ Cross-sell assignment complete")
+            self.log_callback(f"✅ Cross-sell assignment complete")
         else:
-            print("ℹ️ Skipping cross-sell assignment")
+            self.log_callback("ℹ️ Skipping cross-sell assignment")
         
         # Proceed with saving products
-        print(f"\n💾 Saving {len(final_products)} products to database...")
+        self.log_callback(f"\n💾 Saving {len(final_products)} products to database...")
         
         for product_info in final_products:
             sku = product_info.get('SKU', 'Unknown')
@@ -1350,7 +1355,7 @@ class ProductScraper:
             image_urls = product_info.get('Image URLs', [])
             weight = product_info.get('Weight', 'N/A')
             image_count = len([url for url in image_urls if url])
-            print(f"📦 SKU: {sku} | Name: {full_product_name} | Weight: {weight} | Images: {image_count}")
+            self.log_callback(f"📦 SKU: {sku} | Name: {full_product_name} | Weight: {weight} | Images: {image_count}")
 
             if image_urls:
                 self.download_images(brand, file_name, image_urls, source_site)
@@ -1389,4 +1394,4 @@ class ProductScraper:
 
             self.save_incremental_results(new_row, source_site)
         
-        print(f"✅ Successfully saved {len(final_products)} products!")
+        self.log_callback(f"✅ Successfully saved {len(final_products)} products!")

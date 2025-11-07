@@ -20,6 +20,7 @@ from src.core.database_import import import_from_shopsite_xml
 from src.core.database_refresh import refresh_database_from_xml
 
 # Conditional imports for core modules
+log = print  # Default log function
 print("🔧 Checking module availability...")
 try:
     from src.scrapers.master import ProductScraper
@@ -40,10 +41,10 @@ print("🔧 Module check complete")
 
 # --- Core Logic Functions ---
 
-def run_scraping(file_path, progress_callback=None, log_callback=None, interactive=True):
+def run_scraping(file_path, progress_callback=None, log_callback=None, interactive=True, selected_sites=None):
     """Handles the entire scraping process for a given file."""
-    print(f"🚀 run_scraping called with file: {file_path}")
     log = log_callback if log_callback else print
+    log(f"🚀 run_scraping called with file: {file_path}")
 
     if not PRODUCT_SCRAPER_AVAILABLE:
         log("❌ ProductScraper module not available. Please check your installation.")
@@ -81,7 +82,7 @@ def run_scraping(file_path, progress_callback=None, log_callback=None, interacti
 
     # Run scraper
     log("🚀 Starting scraper...")
-    scraper = ProductScraper(file_path, interactive=interactive)
+    scraper = ProductScraper(file_path, interactive=interactive, selected_sites=selected_sites, log_callback=log_callback)
     if progress_callback:
         progress_callback.emit(40)
     scraper.run()
@@ -388,65 +389,8 @@ def run_scraper_tests(run_integration=False, log_callback=None, progress_callbac
         log(f"❌ Error running tests: {e}")
         return False
 
-# --- CLI Entrypoint ---
 
-def main_cli():
-    """The main command-line interface loop."""
-    options = {
-        "1": "Scrape products from Excel", "2": "Check discontinued products",
-        "3": "Assign cross-sell (DEPRECATED)", "4": "Download XML from ShopSite",
-        "5": "Process XML to Database", "6": "View/Edit Products in DB",
-        "7": "Run scraper tests", "8": "Run granular field tests", "9": "Exit"
-    }
-
-    print("🚀 Welcome to ProductScraper!")
-    while True:
-        print(f"\n{'='*20} MAIN MENU {'='*20}")
-        for key, desc in options.items():
-            print(f"  {key}. {desc}")
-        print("=" * 50)
-
-        choice = input("➤ Enter your choice(s) separated by commas: ").strip()
-        selected = [x.strip() for x in choice.split(',') if x.strip().isdigit()]
-
-        if not selected:
-            print("⚠️ Invalid input. Please enter numbers.")
-            continue
-        if "9" in selected:
-            break
-
-        for option in selected:
-            if option == "1":
-                print("🔍 Opening file selection dialog...")
-                file_path = select_excel_file()
-                print(f"📁 File selection result: '{file_path}'")
-                if file_path:
-                    print(f"✅ File selected: {os.path.basename(file_path)}")
-                    run_scraping(file_path)
-                else:
-                    print("❌ No file selected or dialog cancelled")
-            elif option == "2":
-                file_path = select_excel_file()
-                if file_path:
-                    run_discontinued_check(file_path)
-            elif option == "3":
-                print("❌ Cross-sell assignment is deprecated. Use SQLite queries.")
-            elif option == "4":
-                run_shopsite_xml_download()
-            elif option == "5":
-                run_xml_to_db_processing()
-            elif option == "6":
-                run_product_viewer()
-            elif option == "7":
-                run_scraper_tests_from_main()
-            elif option == "8":
-                run_granular_field_tests_from_main()
-            else:
-                print(f"❌ Invalid option: {option}")
-        
-        input("\n➤ Press Enter to return to the main menu...")
-
-    print("\n👋 Thank you for using ProductScraper!")
-
-if __name__ == "__main__":
-    main_cli()
+# ===================================
+# Core logic functions remain above
+# CLI code removed - use main.py for GUI
+# ===================================

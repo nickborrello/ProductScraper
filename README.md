@@ -50,25 +50,26 @@ pip install -r requirements.txt
 
 ## Usage
 
-### Command Line Interface
+### Desktop Application (Recommended)
 
-```bash
-# Run the main scraping application
-python scripts/run_scraper.py
-
-# Check database statistics
-python scripts/check_dataset.py
-
-# Classify products in Excel files
-python scripts/classify_excel.py
-```
-
-### Graphical User Interface
+The ProductScraper now features a modern, professional desktop application interface:
 
 ```bash
 # Launch the GUI application
-python scripts/run_gui.py
+python main.py
 ```
+
+**Features:**
+- 🎨 Modern, intuitive interface with organized action cards
+- 📊 Real-time status updates and database statistics
+- 📋 Professional log viewer with color-coded messages
+- ⚡ All operations accessible through menu bar and buttons
+- 💾 Progress tracking for all operations
+
+**Available Operations:**
+- **Scraping Operations**: Start scraping, check discontinued products
+- **Database Management**: Refresh from XML, download XML, view/edit products, database statistics
+- **Tools**: Classify Excel files, run automated tests
 
 ### Testing
 

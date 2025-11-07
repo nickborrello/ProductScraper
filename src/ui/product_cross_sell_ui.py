@@ -183,6 +183,8 @@ class MultiSelectWidget(QWidget):
 
 class CrossSellEditorWindow(QMainWindow):
     """PyQt6 main window for batch cross-sell editing using database filtering."""
+    
+    finished = pyqtSignal()  # Signal emitted when window closes
 
     def __init__(self, products_list):
         super().__init__()
@@ -837,6 +839,11 @@ class CrossSellEditorWindow(QMainWindow):
             product[CROSS_SELL_FIELD] = "|".join(self.selected_cross_sells[idx])
         
         self.close()
+    
+    def closeEvent(self, event):
+        """Emit finished signal when window closes."""
+        self.finished.emit()
+        super().closeEvent(event)
 
     def cancel(self):
         reply = QMessageBox.question(
@@ -869,8 +876,11 @@ def edit_cross_sells_in_batch(products_list):
     window = CrossSellEditorWindow(products_list)
     window.show()
 
-    # Start the event loop
-    app.exec()
+    # Use QEventLoop to wait for window closure
+    from PyQt6.QtCore import QEventLoop
+    loop = QEventLoop()
+    window.finished.connect(loop.quit)
+    loop.exec()
 
     # Return the updated products list
     return window.get_products_list()
