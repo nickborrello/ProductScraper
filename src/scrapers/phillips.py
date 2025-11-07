@@ -98,7 +98,7 @@ def login(driver):
     # Save cookies after successful login
     save_cookies(driver)
 
-def scrape_phillips(skus, browser=None, log_callback=None):
+def scrape_phillips(skus, browser=None, log_callback=None, progress_tracker=None):
     """Scrape Phillips products for multiple SKUs."""
     if not skus:
         return []
@@ -147,6 +147,10 @@ def scrape_phillips(skus, browser=None, log_callback=None):
                 products.append(None)
             
             display_scraping_progress(i, len(skus), start_time, "Phillips", log_callback=log_callback)
+            
+            # Update progress tracker if provided
+            if progress_tracker:
+                progress_tracker.update_sku_progress(i, f"Processed {sku}", 1 if product_info else 0)
     
     finally:
         # Only quit browser if we created it ourselves

@@ -14,7 +14,7 @@ from src.utils.general.display import display_product_result, display_scraping_p
 HEADLESS = True
 TEST_SKU = "035585499741"  # KONG Pull A Partz Pals Koala SM - test SKU for Central Pet
 
-def scrape_central(skus, log_callback=None):
+def scrape_central(skus, log_callback=None, progress_tracker=None):
     """Scrape Central Pet products for multiple SKUs."""
     products = []
     start_time = time.time()
@@ -36,6 +36,10 @@ def scrape_central(skus, log_callback=None):
             
             # Show progress
             display_scraping_progress(i, len(skus), start_time, "Central Pet", log_callback=log_callback)
+            
+            # Update progress tracker if provided
+            if progress_tracker:
+                progress_tracker.update_sku_progress(i, f"Processed {sku}", 1 if product_info else 0)
     
     # Display final summary
     successful_products = [p for p in products if p]

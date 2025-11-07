@@ -24,7 +24,7 @@ def log_error(message, log_callback=None):
     else:
         print(f"Error: {message}")
 
-def scrape_mazuri(skus, log_callback=None):
+def scrape_mazuri(skus, log_callback=None, progress_tracker=None):
     """Scrape Mazuri products for multiple SKUs."""
     products = []
     
@@ -33,7 +33,7 @@ def scrape_mazuri(skus, log_callback=None):
             log_error("Could not create browser for Mazuri", log_callback=log_callback)
             return products
             
-        for sku in skus:
+        for i, sku in enumerate(skus, 1):
             product_info = scrape_single_product(sku, driver, log_callback=log_callback)
             if product_info:
                 # Handle both single product dict and list of product dicts
@@ -41,6 +41,10 @@ def scrape_mazuri(skus, log_callback=None):
                     products.extend(product_info)
                 else:
                     products.append(product_info)
+            
+            # Update progress tracker if provided
+            if progress_tracker:
+                progress_tracker.update_sku_progress(i, f"Processed {sku}", 1 if product_info else 0)
                 
     return products
 

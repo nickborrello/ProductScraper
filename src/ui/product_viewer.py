@@ -654,6 +654,8 @@ class ProductViewer(QMainWindow):
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to edit products: {e}")
+            import traceback
+            traceback.print_exc()
 
     def load_products_data(self, skus):
         """Load product data from database for the given SKUs."""

@@ -41,6 +41,13 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
+# Detect if running in GUI mode (when main.py is executed)
+try:
+    import __main__
+    is_gui_mode = hasattr(__main__, '__file__') and 'main.py' in __main__.__file__
+except:
+    is_gui_mode = False
+
 # Conditional import for core logic to ensure GUI is runnable even if main fails.
 try:
     from scripts.run_scraper import (
@@ -51,38 +58,45 @@ try:
         run_shopsite_xml_download
     )
 except ImportError as e:
-    print(f"Error importing from main: {e}")
+    if not is_gui_mode:
+        print(f"Error importing from main: {e}")
     # Provide dummy functions if the import fails, so the GUI can still load.
     def run_scraping(*args, **kwargs):
         """Dummy function for scraping if import fails."""
         log_callback = kwargs.get("log_callback")
         if log_callback:
             log_callback("Error: Scraping logic not found.")
-        print("Error: Scraping logic not found.")
+        if not is_gui_mode:
+            print("Error: Scraping logic not found.")
     def run_discontinued_check(*args, **kwargs):
         """Dummy function for discontinued check if import fails."""
         log_callback = kwargs.get("log_callback")
         if log_callback:
             log_callback("Error: Discontinued check logic not found.")
-        print("Error: Discontinued check logic not found.")
+        if not is_gui_mode:
+            print("Error: Discontinued check logic not found.")
     def run_db_refresh(*args, **kwargs):
         """Dummy function for DB refresh if import fails."""
         log_callback = kwargs.get("log_callback")
         if log_callback:
             log_callback("Error: DB refresh logic not found.")
-        print("Error: DB refresh logic not found.")
-    def run_scraper_tests(*args, **kwargs):
+        if not is_gui_mode:
+            print("Error: DB refresh logic not found.")
+    def run_scraper_tests(*args, **kwargs) -> bool:
         """Dummy function for scraper tests if import fails."""
         log_callback = kwargs.get("log_callback")
         if log_callback:
             log_callback("Error: Scraper test logic not found.")
-        print("Error: Scraper test logic not found.")
+        if not is_gui_mode:
+            print("Error: Scraper test logic not found.")
+        return False
     def run_shopsite_xml_download(*args, **kwargs):
         """Dummy function for XML download if import fails."""
         log_callback = kwargs.get("log_callback")
         if log_callback:
             log_callback("Error: XML download logic not found.")
-        print("Error: XML download logic not found.")
+        if not is_gui_mode:
+            print("Error: XML download logic not found.")
 
 
 class WorkerSignals(QObject):
@@ -95,6 +109,7 @@ class WorkerSignals(QObject):
     - result: object
     - progress: int
     - log: str
+    - request_editor_sync: list (products to edit - blocks until editor closes)
     """
 
     finished = pyqtSignal()
@@ -102,6 +117,7 @@ class WorkerSignals(QObject):
     result = pyqtSignal(object)
     progress = pyqtSignal(int)
     log = pyqtSignal(str)
+    request_editor_sync = pyqtSignal(list, object)  # products_list, result_container
 
 
 class Worker(QThread):
@@ -127,6 +143,35 @@ class Worker(QThread):
         # Inject progress and log callbacks into the target function's kwargs
         self.kwargs["progress_callback"] = self.signals.progress
         self.kwargs["log_callback"] = self.signals.log.emit
+        self.kwargs["editor_callback"] = self._request_editor_sync  # Inject sync editor callback
+    
+    def _request_editor_sync(self, products_list):
+        """Request editor on main thread and wait for result (synchronous from worker's perspective)"""
+        from PyQt6.QtCore import QEventLoop
+        
+        # Create container for result
+        result_container = {'result': None, 'done': False}
+        
+        # Emit signal to main thread with products and result container
+        self.signals.request_editor_sync.emit(products_list, result_container)
+        
+        # Wait for main thread to complete
+        loop = QEventLoop()
+        
+        # Poll until done
+        from PyQt6.QtCore import QTimer
+        def check_done():
+            if result_container['done']:
+                loop.quit()
+        
+        timer = QTimer()
+        timer.timeout.connect(check_done)
+        timer.start(100)  # Check every 100ms
+        
+        loop.exec()  # Block until done
+        timer.stop()
+        
+        return result_container['result']
 
     def run(self):
         """
@@ -224,9 +269,9 @@ class ActionCard(QGroupBox):
             }
         """)
         
-        self.layout = QVBoxLayout()
-        self.layout.setSpacing(8)
-        self.setLayout(self.layout)
+        self._layout = QVBoxLayout()
+        self._layout.setSpacing(8)
+        self.setLayout(self._layout)
     
     def add_button(self, text, callback, tooltip="", icon=""):
         """Add a styled button to the card"""
@@ -256,7 +301,7 @@ class ActionCard(QGroupBox):
             }
         """)
         button.clicked.connect(callback)
-        self.layout.addWidget(button)
+        self._layout.addWidget(button)
         return button
 
 
@@ -299,9 +344,13 @@ class MainWindow(QMainWindow):
     def create_menu_bar(self):
         """Create the menu bar with all application menus"""
         menubar = self.menuBar()
+        if menubar is None:
+            return
         
         # File Menu
         file_menu = menubar.addMenu("&File")
+        if file_menu is None:
+            return
         
         open_action = QAction("📂 Open Excel File...", self)
         open_action.setShortcut("Ctrl+O")
@@ -317,6 +366,8 @@ class MainWindow(QMainWindow):
         
         # Database Menu
         db_menu = menubar.addMenu("&Database")
+        if db_menu is None:
+            return
         
         view_products_action = QAction("👁️ View/Edit Products", self)
         view_products_action.triggered.connect(self.open_product_viewer)
@@ -338,6 +389,8 @@ class MainWindow(QMainWindow):
         
         # Tools Menu
         tools_menu = menubar.addMenu("&Tools")
+        if tools_menu is None:
+            return
         
         classify_action = QAction("🏷️ Classify Excel File", self)
         classify_action.triggered.connect(self.classify_excel_file)
@@ -349,6 +402,8 @@ class MainWindow(QMainWindow):
         
         # View Menu
         view_menu = menubar.addMenu("&View")
+        if view_menu is None:
+            return
         
         view_menu.addSeparator()
         
@@ -359,6 +414,8 @@ class MainWindow(QMainWindow):
         
         # Settings Menu
         settings_menu = menubar.addMenu("&Settings")
+        if settings_menu is None:
+            return
         
         settings_action = QAction("⚙️ Settings", self)
         settings_action.triggered.connect(self.open_settings)
@@ -366,6 +423,8 @@ class MainWindow(QMainWindow):
         
         # Help Menu
         help_menu = menubar.addMenu("&Help")
+        if help_menu is None:
+            return
         
         about_action = QAction("ℹ️ About", self)
         about_action.triggered.connect(self.show_about_dialog)
@@ -610,12 +669,15 @@ class MainWindow(QMainWindow):
     
     def create_status_bar(self):
         """Create the status bar at the bottom"""
-        self.statusBar().showMessage("Ready")
+        status_bar = self.statusBar()
+        if status_bar is None:
+            return
+        status_bar.showMessage("Ready")
         
         # Add database info to status bar
         self.status_db_label = QLabel("Database: Loading...")
         self.status_db_label.setStyleSheet("color: #ffffff;")
-        self.statusBar().addPermanentWidget(self.status_db_label)
+        status_bar.addPermanentWidget(self.status_db_label)
     
     def _set_buttons_enabled(self, enabled):
         """Enable or disable all action buttons to prevent concurrent runs"""
@@ -636,9 +698,36 @@ class MainWindow(QMainWindow):
         self.worker.signals.progress.connect(self.update_progress)
         self.worker.signals.error.connect(self.handle_error)
         self.worker.signals.finished.connect(self.worker_finished)
+        self.worker.signals.request_editor_sync.connect(self.open_editor_on_main_thread_sync)  # Connect sync editor signal
 
         # Start the worker thread
         self.worker.start()
+    
+    def open_editor_on_main_thread_sync(self, products_list, result_container):
+        """Open the product editor on the main GUI thread (called via signal from worker) - synchronous"""
+        self.log_message(f"📝 Opening product editor for {len(products_list)} products...", "INFO")
+        
+        try:
+            from src.ui.product_editor import edit_products_in_batch
+            
+            # Open editor - this runs on the main thread so it's safe
+            edited_products = edit_products_in_batch(products_list)
+            
+            if edited_products:
+                self.log_message(f"✅ User edited {len(edited_products)} products", "SUCCESS")
+                result_container['result'] = edited_products
+            else:
+                self.log_message("❌ User cancelled editing", "WARNING")
+                result_container['result'] = None
+                    
+        except Exception as e:
+            self.log_message(f"❌ Error opening product editor: {e}", "ERROR")
+            import traceback
+            traceback.print_exc()
+            result_container['result'] = None
+        
+        # Mark as done so worker thread can continue
+        result_container['done'] = True
 
     def start_scraping(self):
         """Open file dialog and start scraping process"""
@@ -913,7 +1002,7 @@ class MainWindow(QMainWindow):
             selected_sites = []
             for i in range(list_widget.count()):
                 item = list_widget.item(i)
-                if item.checkState() == Qt.CheckState.Checked:
+                if item is not None and item.checkState() == Qt.CheckState.Checked:
                     selected_sites.append(item.text())
             return selected_sites
         else:
@@ -923,7 +1012,9 @@ class MainWindow(QMainWindow):
         """Set all sites checked or unchecked"""
         state = Qt.CheckState.Checked if checked else Qt.CheckState.Unchecked
         for i in range(list_widget.count()):
-            list_widget.item(i).setCheckState(state)
+            item = list_widget.item(i)
+            if item is not None:
+                item.setCheckState(state)
 
     def select_excel_file(self):
         """Open file dialog to select Excel file"""
@@ -961,7 +1052,9 @@ class MainWindow(QMainWindow):
         
         # Also update status bar for important messages
         if level in ["ERROR", "SUCCESS"]:
-            self.statusBar().showMessage(message, 5000)
+            status_bar = self.statusBar()
+            if status_bar is not None:
+                status_bar.showMessage(message, 5000)
 
     def update_progress(self, value):
         """Update the progress bar value"""

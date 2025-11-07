@@ -74,9 +74,17 @@ def get_standard_chrome_options(headless=True, profile_suffix="default"):
     # User agent
     options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
     
-    # Profile directory
+    # Profile directory - store in data/selenium_profiles
     if profile_suffix:
-        profile_dir = os.path.abspath(os.path.join("browser_profiles", profile_suffix.replace(" ", "_")))
+        # Find project root (where main.py is)
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = current_dir
+        while project_root != os.path.dirname(project_root):
+            if os.path.exists(os.path.join(project_root, 'main.py')):
+                break
+            project_root = os.path.dirname(project_root)
+        
+        profile_dir = os.path.join(project_root, "data", "selenium_profiles", profile_suffix.replace(" ", "_"))
         if not os.path.exists(profile_dir):
             os.makedirs(profile_dir, exist_ok=True)
         options.add_argument(f"--user-data-dir={profile_dir}")

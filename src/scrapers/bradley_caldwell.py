@@ -20,7 +20,7 @@ TEST_SKU = "791611038437"  # SKU that previously had empty brand
 def wait_for_element(driver, by, selector, timeout=15):
     return WebDriverWait(driver, timeout).until(EC.presence_of_element_located((by, selector)))
 
-def scrape_bradley_caldwell(skus, log_callback=None):
+def scrape_bradley_caldwell(skus, log_callback=None, progress_tracker=None):
     """
     Scrape Bradley Caldwell for multiple SKUs.
 
@@ -47,6 +47,10 @@ def scrape_bradley_caldwell(skus, log_callback=None):
                 products.append(None)
             
             display_scraping_progress(i, len(skus), start_time, "Bradley Caldwell", log_callback=log_callback)
+            
+            # Update progress tracker if provided
+            if progress_tracker:
+                progress_tracker.update_sku_progress(i, f"Processed {sku}", 1 if product_info else 0)
     
     successful_products = [p for p in products if p]
     display_scraping_summary(successful_products, start_time, "Bradley Caldwell", log_callback=log_callback)

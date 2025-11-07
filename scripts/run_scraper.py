@@ -21,27 +21,43 @@ from src.core.database_refresh import refresh_database_from_xml
 
 # Conditional imports for core modules
 log = print  # Default log function
-print("🔧 Checking module availability...")
+
+# Only print module availability in non-GUI mode
+try:
+    import __main__
+    is_gui_mode = hasattr(__main__, '__file__') and 'main.py' in __main__.__file__
+except:
+    is_gui_mode = False
+
+if not is_gui_mode:
+    print("🔧 Checking module availability...")
+
 try:
     from src.scrapers.master import ProductScraper
     PRODUCT_SCRAPER_AVAILABLE = True
-    print("✅ ProductScraper module loaded")
+    if not is_gui_mode:
+        print("✅ ProductScraper module loaded")
 except ImportError as e:
     PRODUCT_SCRAPER_AVAILABLE = False
-    print(f"❌ ProductScraper module not available: {e}")
+    if not is_gui_mode:
+        print(f"❌ ProductScraper module not available: {e}")
 
 try:
     from src.scrapers.discontinued import DiscontinuedChecker
     DISCONTINUED_CHECKER_AVAILABLE = True
-    print("✅ DiscontinuedChecker module loaded")
+    if not is_gui_mode:
+        print("✅ DiscontinuedChecker module loaded")
 except ImportError as e:
     DISCONTINUED_CHECKER_AVAILABLE = False
-    print(f"❌ DiscontinuedChecker module not available: {e}")
-print("🔧 Module check complete")
+    if not is_gui_mode:
+        print(f"❌ DiscontinuedChecker module not available: {e}")
+
+if not is_gui_mode:
+    print("🔧 Module check complete")
 
 # --- Core Logic Functions ---
 
-def run_scraping(file_path, progress_callback=None, log_callback=None, interactive=True, selected_sites=None):
+def run_scraping(file_path, progress_callback=None, log_callback=None, interactive=True, selected_sites=None, editor_callback=None):
     """Handles the entire scraping process for a given file."""
     log = log_callback if log_callback else print
     log(f"🚀 run_scraping called with file: {file_path}")
@@ -82,7 +98,7 @@ def run_scraping(file_path, progress_callback=None, log_callback=None, interacti
 
     # Run scraper
     log("🚀 Starting scraper...")
-    scraper = ProductScraper(file_path, interactive=interactive, selected_sites=selected_sites, log_callback=log_callback)
+    scraper = ProductScraper(file_path, interactive=interactive, selected_sites=selected_sites, log_callback=log_callback, progress_callback=progress_callback, editor_callback=editor_callback)
     if progress_callback:
         progress_callback.emit(40)
     scraper.run()
@@ -148,67 +164,86 @@ def run_db_refresh(progress_callback=None, log_callback=None):
 
 def run_shopsite_xml_download():
     """Downloads and saves XML from ShopSite."""
-    print("🌐 Downloading XML from ShopSite...")
+    # Suppress prints when called from GUI
+    if not is_gui_mode:
+        print("🌐 Downloading XML from ShopSite...")
     try:
         success, message = import_from_shopsite_xml(save_excel=True, save_to_db=False)
-        print(message)
-        if success:
+        if not is_gui_mode:
+            print(message)
+        if success and not is_gui_mode:
             print("💡 XML downloaded. Use option 5 to process it into the database.")
     except Exception as e:
-        print(f"❌ ShopSite XML download failed: {e}")
+        if not is_gui_mode:
+            print(f"❌ ShopSite XML download failed: {e}")
 
 def run_xml_to_db_processing():
     """Processes the downloaded XML and refreshes the database."""
-    print("💾 Processing XML file to database...")
+    if not is_gui_mode:
+        print("💾 Processing XML file to database...")
     xml_path = os.path.join(PROJECT_ROOT, "inventory", "data", "shopsite_products_cleaned.xml")
     
     if not os.path.exists(xml_path):
-        print(f"❌ XML file not found: {xml_path}")
-        print("💡 Download XML from ShopSite first (Option 4).")
+        if not is_gui_mode:
+            print(f"❌ XML file not found: {xml_path}")
+            print("💡 Download XML from ShopSite first (Option 4).")
         return
 
     try:
         success, message = refresh_database_from_xml(xml_path)
-        print(message)
-        if success:
+        if not is_gui_mode:
+            print(message)
+        if success and not is_gui_mode:
             print("💡 Database updated successfully.")
     except Exception as e:
-        print(f"❌ XML processing failed: {e}")
+        if not is_gui_mode:
+            print(f"❌ XML processing failed: {e}")
 
 def run_product_viewer():
     """Opens the product database viewer GUI."""
-    print("🖼️ Opening Product Database Viewer...")
+    if not is_gui_mode:
+        print("🖼️ Opening Product Database Viewer...")
     try:
         viewer_path = os.path.join(PROJECT_ROOT, "inventory", "classify", "product_viewer.py")
         result = subprocess.run([sys.executable, viewer_path], capture_output=True, text=True, cwd=PROJECT_ROOT)
         if result.returncode != 0 and result.stderr:
-            print(f"❌ Viewer Error: {result.stderr}")
+            if not is_gui_mode:
+                print(f"❌ Viewer Error: {result.stderr}")
         else:
-            print("✅ Product viewer closed.")
+            if not is_gui_mode:
+                print("✅ Product viewer closed.")
     except Exception as e:
-        print(f"❌ Error opening product viewer: {e}")
+        if not is_gui_mode:
+            print(f"❌ Error opening product viewer: {e}")
 
 def run_scraper_tests_from_main():
     """Runs scraper tests via pytest."""
-    print("🧪 Running scraper tests...")
+    if not is_gui_mode:
+        print("🧪 Running scraper tests...")
     run_scraper_tests() # This function is already defined in the global scope
-    print("✅ Scraper tests completed!")
+    if not is_gui_mode:
+        print("✅ Scraper tests completed!")
 
 def run_granular_field_tests_from_main():
     """Runs granular field tests for the scraper."""
     if not PRODUCT_SCRAPER_AVAILABLE:
-        print("❌ ProductScraper module not available.")
+        if not is_gui_mode:
+            print("❌ ProductScraper module not available.")
         return
     
-    print("🔬 Running granular field tests...")
+    if not is_gui_mode:
+        print("🔬 Running granular field tests...")
     try:
         scraper = ProductScraper("")  # Path not needed for these tests
         if scraper.run_granular_field_tests():
-            print("✅ Granular field tests completed!")
+            if not is_gui_mode:
+                print("✅ Granular field tests completed!")
         else:
-            print("❌ Granular tests failed or were cancelled.")
+            if not is_gui_mode:
+                print("❌ Granular tests failed or were cancelled.")
     except Exception as e:
-        print(f"❌ Error during granular tests: {e}")
+        if not is_gui_mode:
+            print(f"❌ Error during granular tests: {e}")
 
 # --- Helper & Utility Functions ---
 
@@ -234,7 +269,8 @@ def validate_excel_columns(file_path, log_callback=None):
             for variant in variants:
                 if variant in df.columns and standard not in df.columns:
                     df.rename(columns={variant: standard}, inplace=True)
-                    log(f"📋 Mapped column {variant} -> {standard}")
+                    if log_callback:
+                        log(f"📋 Mapped column {variant} -> {standard}")
 
         missing_required = [col for col in required_cols if col not in df.columns]
         if missing_required:
@@ -249,7 +285,8 @@ def validate_excel_columns(file_path, log_callback=None):
             for col in missing_optional:
                 df[col] = ''
             df.to_excel(file_path, index=False)
-            log(f"✅ Added optional columns: {', '.join(missing_optional)}")
+            if log_callback:
+                log(f"✅ Added optional columns: {', '.join(missing_optional)}")
         
         return True, "✅ Excel file validation passed."
     except Exception as e:
@@ -258,7 +295,9 @@ def select_excel_file():
     """Select an Excel file using GUI dialog if available, otherwise text-based."""
     if QT_AVAILABLE:
         try:
-            print("🖼️ Using PyQt6 file dialog...")
+            # Suppress prints when called from GUI
+            if not is_gui_mode:
+                print("🖼️ Using PyQt6 file dialog...")
             # Create a minimal QApplication if one doesn't exist
             app = QApplication.instance()
             if app is None:
@@ -275,29 +314,34 @@ def select_excel_file():
             if app and len(app.allWidgets()) == 0:
                 app.quit()
             
-            print(f"📁 Dialog result: '{file_path}'")
+            if not is_gui_mode:
+                print(f"📁 Dialog result: '{file_path}'")
             return file_path if file_path else None
         except Exception as e:
-            print(f"❌ PyQt6 dialog failed: {e}")
-            print("💡 Falling back to text-based file selection...")
+            if not is_gui_mode:
+                print(f"❌ PyQt6 dialog failed: {e}")
+                print("💡 Falling back to text-based file selection...")
             return select_excel_file_text()
     else:
-        print("💡 Using text-based file selection (PyQt6 not available)")
+        if not is_gui_mode:
+            print("💡 Using text-based file selection (PyQt6 not available)")
         return select_excel_file_text()
 
 def select_excel_file_text():
     """Text-based file selection fallback when GUI is not available."""
     input_dir = os.path.join(PROJECT_ROOT, "data", "input")
-    print(f"📁 Looking for Excel files in: {input_dir}")
+    if not is_gui_mode:
+        print(f"📁 Looking for Excel files in: {input_dir}")
     
     # List available Excel files
     if os.path.exists(input_dir):
         excel_files = [f for f in os.listdir(input_dir) if f.endswith(('.xlsx', '.xls'))]
         if excel_files:
-            print("� Available Excel files:")
-            for i, file in enumerate(excel_files, 1):
-                print(f"  {i}. {file}")
-            print("  0. Enter custom path")
+            if not is_gui_mode:
+                print("📁 Available Excel files:")
+                for i, file in enumerate(excel_files, 1):
+                    print(f"  {i}. {file}")
+                print("  0. Enter custom path")
             
             while True:
                 try:
@@ -307,18 +351,22 @@ def select_excel_file_text():
                         if file_path and os.path.exists(file_path):
                             return file_path
                         else:
-                            print("❌ File not found. Try again.")
+                            if not is_gui_mode:
+                                print("❌ File not found. Try again.")
                     elif choice.isdigit() and 1 <= int(choice) <= len(excel_files):
                         file_path = os.path.join(input_dir, excel_files[int(choice) - 1])
                         return file_path
                     else:
-                        print("❌ Invalid choice. Try again.")
+                        if not is_gui_mode:
+                            print("❌ Invalid choice. Try again.")
                 except KeyboardInterrupt:
                     return None
         else:
-            print("❌ No Excel files found in input directory.")
+            if not is_gui_mode:
+                print("❌ No Excel files found in input directory.")
     else:
-        print(f"❌ Input directory not found: {input_dir}")
+        if not is_gui_mode:
+            print(f"❌ Input directory not found: {input_dir}")
     
     # Fallback to manual path entry
     while True:
@@ -329,7 +377,8 @@ def select_excel_file_text():
             if os.path.exists(file_path):
                 return file_path
             else:
-                print("❌ File not found. Try again.")
+                if not is_gui_mode:
+                    print("❌ File not found. Try again.")
         except KeyboardInterrupt:
             return None
 

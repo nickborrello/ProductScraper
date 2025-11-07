@@ -7,10 +7,10 @@ This utility helps with debugging, progress tracking, and consistent output form
 
 import time
 from datetime import datetime
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Callable
 
 
-def display_product_result(product: Dict[str, Any], index: Optional[int] = None, total: Optional[int] = None, log_callback: Optional[callable] = None) -> None:
+def display_product_result(product: Dict[str, Any], index: Optional[int] = None, total: Optional[int] = None, log_callback: Optional[Callable[[str], None]] = None) -> None:
     """
     Display a single product result in a standardized format.
 
@@ -71,11 +71,11 @@ def display_product_result(product: Dict[str, Any], index: Optional[int] = None,
         else:
             output("   ⚠️  FLAGGED: Missing data or images")
 
-    output()  # Empty line for spacing
-    output()  # Extra buffer between products
+    output("")  # Empty line for spacing
+    output("")  # Extra buffer between products
 
 
-def display_scraping_progress(current: int, total: int, start_time: float, scraper_name: str = "Scraper", log_callback: Optional[callable] = None) -> None:
+def display_scraping_progress(current: int, total: int, start_time: float, scraper_name: str = "Scraper", log_callback: Optional[Callable[[str], None]] = None) -> None:
     """
     Display scraping progress with timing information.
 
@@ -115,7 +115,7 @@ def set_suppress_summary(suppress: bool):
     global _SUPPRESS_SUMMARY
     _SUPPRESS_SUMMARY = suppress
 
-def display_scraping_summary(products: List[Dict[str, Any]], start_time: float, scraper_name: str = "Scraper", quiet: bool = False, log_callback: Optional[callable] = None) -> None:
+def display_scraping_summary(products: List[Dict[str, Any]], start_time: float, scraper_name: str = "Scraper", quiet: bool = False, log_callback: Optional[Callable[[str], None]] = None) -> None:
     """
     Display a summary of scraping results.
 
@@ -154,10 +154,10 @@ def display_scraping_summary(products: List[Dict[str, Any]], start_time: float, 
         avg_images = total_images / successful if successful > 0 else 0
         output(f"   🖼️  Total images: {total_images} (avg: {avg_images:.1f} per product)")
 
-    output()
+    output("")
 
 
-def display_error(message: str, sku: Optional[str] = None, log_callback: Optional[callable] = None) -> None:
+def display_error(message: str, sku: Optional[str] = None, log_callback: Optional[Callable[[str], None]] = None) -> None:
     """
     Display an error message in a standardized format.
 
@@ -173,10 +173,10 @@ def display_error(message: str, sku: Optional[str] = None, log_callback: Optiona
     else:
         output(f"❌ Error: {message}")
     
-    output()  # Add spacing after error messages
+    output("")  # Add spacing after error messages
 
 
-def display_info(message: str, log_callback: Optional[callable] = None) -> None:
+def display_info(message: str, log_callback: Optional[Callable[[str], None]] = None) -> None:
     """
     Display an informational message.
 
@@ -188,7 +188,7 @@ def display_info(message: str, log_callback: Optional[callable] = None) -> None:
     output(f"ℹ️  {message}")
 
 
-def display_success(message: str, log_callback: Optional[callable] = None) -> None:
+def display_success(message: str, log_callback: Optional[Callable[[str], None]] = None) -> None:
     """
     Display a success message.
 
@@ -200,7 +200,7 @@ def display_success(message: str, log_callback: Optional[callable] = None) -> No
     output(f"✅ {message}")
 
 
-def display_warning(message: str, log_callback: Optional[callable] = None) -> None:
+def display_warning(message: str, log_callback: Optional[Callable[[str], None]] = None) -> None:
     """
     Display a warning message.
 

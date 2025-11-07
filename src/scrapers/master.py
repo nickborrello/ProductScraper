@@ -34,7 +34,7 @@ from selenium.webdriver.chrome.options import Options
 class ScrapingProgressTracker:
     """Tracks and displays persistent progress bars for scraping operations."""
     
-    def __init__(self):
+    def __init__(self, progress_callback=None, log_callback=None):
         self.start_time = time.time()
         self.last_update_time = self.start_time
         self.current_site = ""
@@ -42,14 +42,22 @@ class ScrapingProgressTracker:
         self.completed_sites = 0
         self.current_sku_index = 0
         self.total_skus_current_site = 0
+        self.total_input_skus = 0
+        self.total_processed_skus = 0
+        self.progress_callback = progress_callback
+        self.log_callback = log_callback
         
-    def start_overall_progress(self, total_sites, current_site_name=""):
+    def start_overall_progress(self, total_sites, total_input_skus):
         """Initialize overall progress tracking."""
         self.total_sites = total_sites
+        self.total_input_skus = total_input_skus
         self.completed_sites = 0
-        self.current_site = current_site_name
+        self.total_processed_skus = 0
+        self.current_site = ""
         self.start_time = time.time()
         self.last_update_time = self.start_time
+        
+        # Don't emit 0% here - start_site_progress will do it
         
     def start_site_progress(self, site_name, total_skus):
         """Start tracking progress for a specific site."""
@@ -58,24 +66,61 @@ class ScrapingProgressTracker:
         self.current_sku_index = 0
         self.last_update_time = time.time()
         
-    def update_sku_progress(self, sku_index, status_message=""):
+        # Reset GUI progress bar to 0% for new site
+        if self.progress_callback:
+            if hasattr(self.progress_callback, 'emit'):
+                self.progress_callback.emit(0)
+            else:
+                self.progress_callback(0)
+        
+    def update_sku_progress(self, sku_index, status_message="", scraped_count=0):
         """Update progress for current SKU within site."""
         self.current_sku_index = sku_index
+        if scraped_count > 0:
+            self.total_processed_skus += scraped_count
+        else:
+            # If no scraped_count provided, assume we're processing one SKU
+            self.total_processed_skus = max(self.total_processed_skus, sku_index)
+        
+        # Update GUI progress bar if callback provided
+        if self.progress_callback:
+            # Calculate progress as: current SKU / total SKUs for current site
+            site_progress = min(int(round((self.current_sku_index / self.total_skus_current_site) * 100)), 100) if self.total_skus_current_site > 0 else 0
+            # Handle both PyQt signals (with emit method) and regular callbacks
+            if hasattr(self.progress_callback, 'emit'):
+                self.progress_callback.emit(site_progress)
+            else:
+                self.progress_callback(site_progress)
+        
         self._display_progress(status_message)
         
     def complete_site(self):
         """Mark current site as completed."""
         self.completed_sites += 1
+        
+        # Update GUI progress bar if callback provided
+        if self.progress_callback:
+            # Set to 100% when site is completed
+            if hasattr(self.progress_callback, 'emit'):
+                self.progress_callback.emit(100)
+            else:
+                self.progress_callback(100)
+        
         self._display_progress("Site completed")
         
     def _display_progress(self, status_message=""):
         """Display the persistent progress bar."""
+        # Suppress terminal output in GUI mode (when log_callback is not the print function)
+        if self.log_callback is not print:
+            return
+            
         elapsed = time.time() - self.start_time
         
-        # Calculate overall progress
-        overall_progress = 0.0
-        if self.total_sites > 0:
-            overall_progress = self.completed_sites / self.total_sites
+        # Calculate progress as: processed SKUs / total input SKUs
+        if self.total_input_skus > 0:
+            overall_progress = min(self.total_processed_skus / self.total_input_skus, 1.0)
+        else:
+            overall_progress = 0.0
         overall_percent = overall_progress * 100
             
         # Calculate site progress
@@ -112,7 +157,7 @@ class ScrapingProgressTracker:
         site_bar = "█" * site_filled + "░" * (bar_width - site_filled)
         
         # Display progress on new line instead of using carriage return
-        progress_line = (f"🔄 Overall: [{overall_bar}] {overall_percent:.1f}% ({self.completed_sites}/{self.total_sites} sites){eta_str} | "
+        progress_line = (f"🔄 Overall: [{overall_bar}] {overall_percent:.1f}% ({self.total_processed_skus}/{self.total_input_skus} SKUs){eta_str} | "
                         f"Site: [{site_bar}] {site_percent:.1f}% ({self.current_sku_index}/{self.total_skus_current_site} SKUs) | "
                         f"Time: {elapsed_str} | {self.current_site}")
         
@@ -248,11 +293,13 @@ def discover_scrapers():
     return scraping_options, headless_settings
 
 class ProductScraper:
-    def __init__(self, file_path, interactive=True, selected_sites=None, log_callback=None):
+    def __init__(self, file_path, interactive=True, selected_sites=None, log_callback=None, progress_callback=None, editor_callback=None):
         self.file_path = file_path
         self.interactive = interactive
         self.selected_sites = selected_sites
         self.log_callback = log_callback or print
+        self.progress_callback = progress_callback
+        self.editor_callback = editor_callback  # Callback to request editor on main thread
         
         # Dynamically discover and load scraper modules
         self.scraping_options, self.headless_settings = discover_scrapers()
@@ -261,7 +308,7 @@ class ProductScraper:
         self.all_found_products = {}  # SKU -> list of product results
         
         # Initialize progress tracker
-        self.progress_tracker = ScrapingProgressTracker()
+        self.progress_tracker = ScrapingProgressTracker(progress_callback, log_callback)
 
     def run_granular_field_tests(self):
         """Run granular field-level tests for all scrapers to identify specific failures."""
@@ -521,8 +568,15 @@ class ProductScraper:
     def load_existing_skus(self, site):
         try:
             # Use combined output file instead of site-specific files
-            output_dir = os.path.join(os.path.dirname(__file__), "output")
-            combined_file_path = os.path.join(output_dir, 'products.xlsx')
+            from pathlib import Path
+            project_root = Path(__file__).parent
+            while project_root.parent != project_root:
+                if (project_root / "main.py").exists():
+                    break
+                project_root = project_root.parent
+            
+            output_dir = project_root / "data" / "spreadsheets"
+            combined_file_path = output_dir / 'products.xlsx'
             
             if os.path.exists(combined_file_path):
                 try:
@@ -578,7 +632,7 @@ class ProductScraper:
             import glob
             import shutil
             # Remove any browser_profiles with timestamp pattern (no thread ID)
-            profile_pattern = os.path.join("browser_profiles", "*_*")
+            profile_pattern = os.path.join("data/browser_profiles", "*_*")
             temp_profiles = glob.glob(profile_pattern)
             cleaned_count = 0
             for profile_dir in temp_profiles:
@@ -605,7 +659,7 @@ class ProductScraper:
             
             # Clean up old temporary browser profiles (older than 1 hour)
             try:
-                profile_dirs = glob.glob("browser_profiles/*_*_*")  # Match the timestamp pattern
+                profile_dirs = glob.glob("data/selenium_profiles/*_*_*")  # Match the timestamp pattern
                 one_hour_ago = datetime.now().timestamp() * 1000 - (60 * 60 * 1000)  # 1 hour ago in milliseconds
                 
                 for profile_dir in profile_dirs:
@@ -665,10 +719,18 @@ class ProductScraper:
             pass
 
     def save_incremental_results(self, new_row, source_site):
-        output_dir = os.path.join(os.path.dirname(__file__), "output")
-        os.makedirs(output_dir, exist_ok=True)
+        # Save to data/spreadsheets/ instead of src/scrapers/output/
+        from pathlib import Path
+        project_root = Path(__file__).parent
+        while project_root.parent != project_root:
+            if (project_root / "main.py").exists():
+                break
+            project_root = project_root.parent
+        
+        output_dir = project_root / "data" / "spreadsheets"
+        output_dir.mkdir(parents=True, exist_ok=True)
         # Use single combined output file instead of site-specific files
-        site_file_path = os.path.join(output_dir, 'products.xlsx')
+        site_file_path = output_dir / 'products.xlsx'
         try:
             # Map new user-friendly column names to old ShopSite column names for Excel output
             shopsite_row = new_row.copy()
@@ -903,7 +965,7 @@ class ProductScraper:
                 scrape_all_mode = True
             
             # Initialize progress tracking for this batch
-            self.progress_tracker.start_overall_progress(len(scraping_sites))
+            self.progress_tracker.start_overall_progress(len(scraping_sites), len(rows))
             
             # Re-calculate SKUs to process for selected sites (in case data changed)
             current_existing_skus = {site: self.load_existing_skus(site) for site in scraping_sites}
@@ -1045,7 +1107,7 @@ class ProductScraper:
 
         try:
             # NEW ARCHITECTURE: Call scraper with SKU array
-            scraped_products = scraping_function(skus_to_process, log_callback=self.log_callback)
+            scraped_products = scraping_function(skus_to_process, log_callback=self.log_callback, progress_tracker=self.progress_tracker)
 
             # Handle different return types
             if scraped_products is None:
@@ -1060,16 +1122,16 @@ class ProductScraper:
             # Filter out invalid products and ensure required fields
             valid_products = []
             for product in scraped_products:
-                if isinstance(product, dict) and product.get('Name'):
-                    # Ensure required fields exist
-                    required_fields = ["Name", "SKU", "Price", "Weight", "Image URLs"]
-                    for field in required_fields:
-                        if field not in product:
-                            product[field] = [] if field == "Image URLs" else ""
-                    valid_products.append(product)
-
-            # Update progress with completion status
-            self.progress_tracker.update_sku_progress(len(skus_to_process), f"Found {len(valid_products)} products")
+                if isinstance(product, dict):
+                    name = product.get('Name', '').strip()
+                    # Reject products with invalid/empty names
+                    if name and name not in ['N/A', 'Unknown', '', 'None']:
+                        # Ensure required fields exist
+                        required_fields = ["Name", "SKU", "Price", "Weight", "Image URLs"]
+                        for field in required_fields:
+                            if field not in product:
+                                product[field] = [] if field == "Image URLs" else ""
+                        valid_products.append(product)
 
             self.log_callback(f"✅ {site}: Scraper returned {len(valid_products)} valid products")
 
@@ -1205,6 +1267,12 @@ class ProductScraper:
         
         for sku, product_data in consolidated_products.items():
             
+            # Convert _by_site dicts to _options arrays for the editor
+            name_options = list(product_data.get('name_by_site', {}).values())
+            brand_options = list(product_data.get('brand_by_site', {}).values())
+            weight_options = list(product_data.get('weight_by_site', {}).values())
+            images_by_site = product_data.get('images_by_site', {})
+            
             # Create a product dict for the editor with all options
             editor_product = {
                 'SKU': sku,
@@ -1222,14 +1290,68 @@ class ProductScraper:
                 # Add metadata for the editor
                 'input_name': product_data.get('input_name', ''),  # Original input name for display only
                 'input_price': product_data.get('input_price', ''),  # Original input price for display only
-                '_consolidated_data': product_data
+                '_consolidated_data': {
+                    'name_options': name_options,
+                    'brand_options': brand_options,
+                    'weight_options': weight_options,
+                    'images_by_site': images_by_site,
+                    'price_options': [product_data.get('input_price', '')]
+                }
             }
             
             editor_products.append(editor_product)
         
-        # Use the product editor to let user select options (without classification fields)
-        from src.ui.product_editor import edit_products_in_batch
-        edited_products = edit_products_in_batch(editor_products)
+        # In non-interactive mode (GUI), use callback to open editor on main thread
+        # Interactive mode (terminal) opens the product editor directly
+        if not self.interactive:
+            if self.editor_callback:
+                # Call callback - it will block until editor closes (synchronous)
+                self.log_callback(f"📝 Requesting product editor for {len(editor_products)} products...")
+                edited_products = self.editor_callback(editor_products)
+                
+                if edited_products:
+                    self.log_callback(f"✅ User edited {len(edited_products)} products")
+                    return edited_products
+                else:
+                    self.log_callback("❌ User cancelled editing")
+                    return []
+            else:
+                # No editor callback available, auto-select first options
+                self.log_callback(f"🤖 Auto-selecting best options for {len(editor_products)} products (no editor callback)...")
+                
+                final_products = []
+                for product in editor_products:
+                    cons_data = product['_consolidated_data']
+                    
+                    # Select first option for each field
+                    product['Brand'] = cons_data.get('brand_options', [''])[0]
+                    product['Name'] = cons_data.get('name_options', [''])[0]
+                    product['Weight'] = cons_data.get('weight_options', [''])[0]
+                    
+                    # Select first image set
+                    images_by_site = cons_data.get('images_by_site', {})
+                    if images_by_site:
+                        first_site = list(images_by_site.keys())[0]
+                        product['Image URLs'] = images_by_site[first_site]
+                    else:
+                        product['Image URLs'] = []
+                    
+                    final_products.append(product)
+                
+                self.log_callback(f"✅ Auto-selected options for {len(final_products)} products")
+                return final_products
+        
+        # Interactive mode - open the product editor directly (terminal mode)
+        self.log_callback("📝 Opening product editor for manual selection...")
+        try:
+            from src.ui.product_editor import edit_products_in_batch
+            edited_products = edit_products_in_batch(editor_products)
+        except Exception as e:
+            import traceback
+            error_msg = f"Failed to open product editor:\n\n{str(e)}\n\n{traceback.format_exc()}"
+            self.log_callback(f"❌ Error opening product editor: {str(e)}")
+            print(f"DEBUG: {error_msg}")
+            return []
         
         if edited_products:
             self.log_callback(f"✅ User edited {len(edited_products)} products")
@@ -1288,15 +1410,9 @@ class ProductScraper:
         else:
             self.log_callback("ℹ️ Skipping auto-classification")
         
-        # Ask if user wants to assign cross-sells
-        cross_sell_choice = 'y' if not self.interactive else input(f"\n🔗 Assign cross-sells for {len(final_products)} products? (y/n): ").strip().lower()
-        
-        if cross_sell_choice == 'y':
-            self.log_callback(f"🔗 Assigning cross-sells for {len(final_products)} products...")
-            final_products = assign_cross_sells_batch(final_products)
-            self.log_callback(f"✅ Cross-sell assignment complete")
-        else:
-            self.log_callback("ℹ️ Skipping cross-sell assignment")
+        # Cross-sell assignment disabled for now
+        # TODO: Re-enable cross-sell assignment after fixing UI issues
+        self.log_callback("ℹ️ Skipping cross-sell assignment (disabled)")
         
         # Proceed with saving products
         self.log_callback(f"\n💾 Saving {len(final_products)} products to database...")

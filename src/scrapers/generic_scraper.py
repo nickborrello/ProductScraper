@@ -208,11 +208,11 @@ def generic_product_scraper(url, sku):
 
         return product_info
 
-def scrape_generic(skus, log_callback=None):
+def scrape_generic(skus, log_callback=None, progress_tracker=None):
     """Main function for generic scraping workflow."""
     products = []
 
-    for sku in skus:
+    for i, sku in enumerate(skus, 1):
         if log_callback:
             log_callback(f"\n🎯 Processing SKU: {sku}")
         else:
@@ -230,6 +230,10 @@ def scrape_generic(skus, log_callback=None):
             else:
                 print(f"⏭️ Skipping SKU: {sku}")
             products.append(None)
+            
+            # Update progress tracker if provided
+            if progress_tracker:
+                progress_tracker.update_sku_progress(i, f"Processed {sku}", 0)
             continue
 
         # Step 3: Scrape the selected page
@@ -241,12 +245,20 @@ def scrape_generic(skus, log_callback=None):
                 log_callback(f"✅ Successfully scraped: {product_info['Name']}")
             else:
                 print(f"✅ Successfully scraped: {product_info['Name']}")
+            
+            # Update progress tracker if provided
+            if progress_tracker:
+                progress_tracker.update_sku_progress(i, f"Processed {sku}", 1)
         else:
             if log_callback:
                 log_callback(f"❌ Failed to extract product data from selected page")
             else:
                 print(f"❌ Failed to extract product data from selected page")
             products.append(None)
+            
+            # Update progress tracker if provided
+            if progress_tracker:
+                progress_tracker.update_sku_progress(i, f"Processed {sku}", 0)
 
     return products
 

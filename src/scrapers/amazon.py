@@ -122,7 +122,7 @@ def init_browser_optimized(profile_suffix="default", headless=True):
     service = Service(log_path=os.devnull)
     return webdriver.Chrome(service=service, options=chrome_options)
 
-def scrape_amazon(skus, log_callback=None):
+def scrape_amazon(skus, log_callback=None, progress_tracker=None):
     """Scrape Amazon products for multiple SKUs."""
     products = []
     start_time = time.time()
@@ -144,8 +144,15 @@ def scrape_amazon(skus, log_callback=None):
             product_info = scrape_single_product(sku, driver, log_callback=log_callback)
             if product_info:
                 products.append(product_info)
+                display_product_result(product_info, i, len(skus), log_callback=log_callback)
             else:
-                products.append(None)  # Keep None for failed products to maintain index alignment
+                products.append(None)
+
+            display_scraping_progress(i, len(skus), start_time, "Amazon", log_callback=log_callback)
+
+            # Update progress tracker if provided
+            if progress_tracker:
+                progress_tracker.update_sku_progress(i, f"Processed {sku}", 1 if product_info else 0)
 
             # Reduced delay between products for optimized scraping
             if i < len(skus):
@@ -187,7 +194,7 @@ def scrape_single_product(UPC_or_ASIN, driver, max_retries=0, log_callback=None)
                     time.sleep(1)  # Reduced from 2 seconds
 
                     # Verify we actually landed on a product page
-                    if _is_product_page(driver):
+                    if _is_product_page(driver, log_callback=log_callback):
                         return _extract_product_data(driver, product_info, log_callback=log_callback)
                     else:
                         return None  # Not a real product page
@@ -211,7 +218,7 @@ def scrape_single_product(UPC_or_ASIN, driver, max_retries=0, log_callback=None)
     return None
 
 
-def _is_product_page(driver):
+def _is_product_page(driver, log_callback=None):
     """Check if the current page is a real product detail page (not sponsored/generic content)."""
     try:
         current_url = driver.current_url
@@ -433,9 +440,6 @@ def _extract_product_data(driver, product_info, log_callback=None):
             any(value == 'N/A' for value in product_info.values() if isinstance(value, str)) or
             not product_info.get('Image URLs')
         )
-
-        # Display the complete product result after all data is extracted
-        display_product_result(product_info, log_callback, None)
 
         return product_info
 

@@ -13,7 +13,8 @@ if os.path.exists(gen_py_cache):
 import win32com.client  # now safe to import
 
 def convert_xlsx_to_xls_with_excel():
-    folder = os.path.abspath("./scrapers/output")
+    # Use the new data/spreadsheets directory instead of scrapers/output
+    folder = os.path.abspath("./data/spreadsheets")
     
     # Check if output folder exists
     if not os.path.exists(folder):

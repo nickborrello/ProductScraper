@@ -28,7 +28,7 @@ def clean_string(s):
     s = re.sub(r'\s{2,}', ' ', s)
     return s.strip()
 
-def scrape_coastal_pet(skus, log_callback=None):
+def scrape_coastal_pet(skus, log_callback=None, progress_tracker=None):
     """Scrape Coastal Pet products for multiple SKUs."""
     if not skus:
         return []
@@ -50,6 +50,10 @@ def scrape_coastal_pet(skus, log_callback=None):
                 products.append(None)
             
             display_scraping_progress(i, len(skus), start_time, "Coastal Pet")
+            
+            # Update progress tracker if provided
+            if progress_tracker:
+                progress_tracker.update_sku_progress(i, f"Processed {sku}", 1 if product_info else 0)
     
     successful_products = [p for p in products if p]
     display_scraping_summary(successful_products, start_time, "Coastal Pet", log_callback=log_callback)
