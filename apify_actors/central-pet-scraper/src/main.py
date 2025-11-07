@@ -1,4 +1,4 @@
-"""Amazon Product Scraper Actor"""
+"""Central Pet Product Scraper Actor"""
 
 from __future__ import annotations
 
@@ -22,10 +22,16 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 
+# Central Pet scraper configuration
+HEADLESS = True  # Set to False only if CAPTCHA solving requires visible browser
+TEST_SKU = "035585499741"  # KONG Pull A Partz Pals Koala SM - test SKU for Central Pet
+
+
 def create_driver(proxy_url=None) -> webdriver.Chrome:
     """Create Chrome driver with enhanced anti-detection measures and proxy support."""
     options = Options()
-    options.add_argument("--headless")
+    if HEADLESS:
+        options.add_argument("--headless")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
@@ -141,7 +147,7 @@ class DataValidator:
     def validate_product_data(product: dict[str, Any] | None) -> dict[str, Any]:
         """Validate and clean product data."""
         if not product:
-            return {"valid": False, "errors": ["No product data"], "data": None}
+            return {"valid": False, "errors": ["No product data"], "data": None, "completeness_score": 0.0, "quality_score": 0.0}
 
         errors = []
         cleaned_data = {}
@@ -173,13 +179,13 @@ class DataValidator:
         elif len(images) == 0:
             errors.append("No product images found")
         else:
-            # Validate image URLs
+            # Validate image URLs - be more permissive for Central Pet
             valid_images = []
             for img_url in images:
-                if isinstance(img_url, str) and img_url.startswith("http") and "amazon.com" in img_url:
+                if isinstance(img_url, str) and img_url.startswith("http"):
                     valid_images.append(img_url)
             if len(valid_images) == 0:
-                errors.append("No valid Amazon image URLs found")
+                errors.append("No valid image URLs found")
             else:
                 cleaned_data["Image URLs"] = valid_images[:5]  # Limit to 5 images
 
@@ -595,12 +601,12 @@ proxy_manager = ProxyManager()
 
 
 class CaptchaDetector:
-    """Advanced CAPTCHA detection and handling for Amazon."""
+    """Advanced CAPTCHA detection and handling for Central Pet."""
 
     def __init__(self):
         self.captcha_patterns = {
-            # Amazon CAPTCHA indicators
-            "amazon_captcha": [
+            # Central Pet CAPTCHA indicators
+            "central_pet_captcha": [
                 "enter the characters you see",
                 "type the characters",
                 "prove you are human",
@@ -617,7 +623,7 @@ class CaptchaDetector:
             ],
             # Blocking indicators
             "blocking_indicators": [
-                "to discuss automated access to amazon",
+                "to discuss automated access to centralpet",
                 "your account has been temporarily restricted",
                 "we need to verify that you're not a robot",
                 "please solve this puzzle"
@@ -632,12 +638,12 @@ class CaptchaDetector:
             page_text = driver.page_source.lower()
             current_url = driver.current_url.lower()
 
-            # Check for Amazon CAPTCHA patterns
-            for pattern in self.captcha_patterns["amazon_captcha"]:
+            # Check for Central Pet CAPTCHA patterns
+            for pattern in self.captcha_patterns["central_pet_captcha"]:
                 if pattern in page_text:
                     return {
                         "detected": True,
-                        "type": "amazon_text_captcha",
+                        "type": "central_pet_text_captcha",
                         "pattern": pattern,
                         "confidence": 0.9,
                         "action_required": "solve_text_captcha"
@@ -650,7 +656,7 @@ class CaptchaDetector:
                     if elements:
                         return {
                             "detected": True,
-                            "type": "amazon_form_captcha",
+                            "type": "central_pet_form_captcha",
                             "selector": selector,
                             "confidence": 0.95,
                             "action_required": "solve_form_captcha"
@@ -1201,76 +1207,98 @@ def clean_string(text: str) -> str:
 
 
 def extract_product_data(driver: webdriver.Chrome, sku: str) -> dict[str, Any] | None:
-    """Extract product data from Amazon page."""
+    """Extract product data from Central Pet page."""
     product_info = {"SKU": sku}
 
     try:
-        # Extract title
+        # Brand extraction
         try:
-            title_element = WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.ID, "productTitle"))
-            )
-            product_info["Name"] = clean_string(title_element.text)
-        except TimeoutException:
-            product_info["Name"] = "N/A"
+            brand_elements = driver.find_elements(By.CSS_SELECTOR, "a[ng-if='vm.product.brand.detailPagePath']")
+            if brand_elements:
+                brand_name = brand_elements[0].get_attribute('title') or brand_elements[0].text
+                product_info['Brand'] = brand_name.strip() if brand_name else 'No brand found'
+            else:
+                product_info['Brand'] = 'No brand found'
+        except Exception as e:
+            Actor.log.error(f"Error extracting brand for SKU {sku}: {e}")
+            product_info['Brand'] = 'N/A'
 
-        # Extract brand
+        # Name extraction
         try:
-            brand_element = driver.find_element(By.ID, "bylineInfo")
-            product_info["Brand"] = clean_string(brand_element.text).replace("Visit the", "").replace("Brand:", "").strip()
-        except NoSuchElementException:
-            product_info["Brand"] = "Unknown"
-
-        # Extract images
-        image_urls = []
-        try:
-            img_elements = driver.find_elements(By.CSS_SELECTOR, "#altImages img")
-            for img in img_elements[:5]:  # Limit to 5 images
-                src = img.get_attribute("src")
-                if src and "amazon.com" in src:
-                    # Convert to high res
-                    high_res = re.sub(r'\._AC_[^.]+\.jpg', '._AC_SL1500_.jpg', src)
-                    image_urls.append(high_res)
+            name_element = driver.find_element(By.ID, "tst_productDetail_erpDescription")
+            product_info['Name'] = clean_string(name_element.text) if name_element else 'No name found'
         except Exception:
-            pass
-        product_info["Image URLs"] = image_urls
+            Actor.log.error(f"Error extracting name for SKU {sku}")
+            product_info['Name'] = 'N/A'
 
-        # Extract weight
-        weight = "N/A"
+        # Short description extraction
         try:
-            # Look in product details table - try multiple selectors
-            detail_rows = []
-            try:
-                detail_rows = driver.find_elements(By.CSS_SELECTOR, "#productDetails_detailBullets_sections1 tr")
-            except:
-                try:
-                    detail_rows = driver.find_elements(By.CSS_SELECTOR, "#prodDetails tr")
-                except:
-                    detail_rows = driver.find_elements(By.CSS_SELECTOR, ".prodDetTable tr")
-            
-            for row in detail_rows:
-                if "weight" in row.text.lower():
-                    weight_match = re.search(r'(\d+(?:\.\d+)?)\s*(lbs?|ounces?|oz|g|kg)', row.text, re.I)
-                    if weight_match:
-                        value = float(weight_match.group(1))
-                        unit = weight_match.group(2).lower()
-                        if unit in ['oz', 'ounces']:
-                            value /= 16
-                        elif unit in ['g', 'gram']:
-                            value /= 453.592
-                        elif unit in ['kg']:
-                            value *= 2.20462
-                        weight = f"{value:.2f}"
-                        break
+            short_description_element = driver.find_element(By.ID, "tst_productDetail_shortDescription")
+            product_info['Short Description'] = short_description_element.text if short_description_element else 'No short description found'
         except Exception:
-            pass
-        product_info["Weight"] = weight
+            product_info['Short Description'] = ''
 
-        return product_info
+        # Combine and clean name
+        combined_name = f"{product_info['Brand']} {product_info['Name']} {product_info.get('Short Description', '')}"
+        if product_info['Brand'].lower() in combined_name.lower():
+            combined_name = combined_name.replace(product_info['Brand'], '').strip()
+        
+        # Remove unwanted suffixes and format name
+        import re
+        name_clean = combined_name.strip()
+        
+        # Remove 'One Size' and 'Assorted' (case-insensitive, only at end, with optional spacing)
+        name_clean = re.sub(r'\s+(one\s+size|assorted)\s*$', '', name_clean, flags=re.IGNORECASE)
+        
+        # Replace 'pk' (case-insensitive, as a word) with 'Pack'
+        name_clean = re.sub(r'\bpk\b', 'Pack', name_clean, flags=re.IGNORECASE)
+        
+        product_info['Name'] = clean_string(name_clean)
+
+        # Weight extraction
+        try:
+            weight_element = driver.find_element(By.XPATH, "//div[@class='specification-container']//li[strong[contains(text(), 'Product Gross Weight')]]/span")
+            weight_text = driver.execute_script("return arguments[0].innerHTML;", weight_element).strip()
+            product_info['Weight'] = f"{float(weight_text.replace('lb', '').strip()):.2f}" if weight_text else 'N/A'
+        except Exception as e:
+            Actor.log.error(f"Error extracting weight for SKU {sku}: {e}")
+            product_info['Weight'] = 'N/A'
+
+        # Image extraction
+        product_info['Image URLs'] = []
+        try:
+            thumbnails = driver.find_elements(By.CSS_SELECTOR, "li[id^='tst_productDetailPage_mainThumbnail']")
+            if thumbnails:
+                for thumbnail in thumbnails:
+                    driver.execute_script("arguments[0].scrollIntoView();", thumbnail)
+                    driver.execute_script("arguments[0].click();", thumbnail)
+                    main_image_element = driver.find_element(By.ID, "mainProductImage")
+                    main_image_url = main_image_element.get_attribute('ng-src')
+                    if main_image_url and main_image_url not in product_info['Image URLs']:
+                        product_info['Image URLs'].append(main_image_url)
+            else:
+                main_image_element = driver.find_element(By.ID, "mainProductImage")
+                main_image_url = main_image_element.get_attribute('ng-src')
+                if main_image_url:
+                    product_info['Image URLs'].append(main_image_url)
+        except Exception as e:
+            Actor.log.error(f"Error extracting images for SKU {sku}: {e}")
+            product_info['Image URLs'] = []
 
     except Exception as e:
         Actor.log.error(f"Error extracting data for {sku}: {e}")
         return None
+
+    # Check for critical missing data - return None if essential fields are missing
+    critical_fields_missing = (
+        any(value == 'N/A' for value in product_info.values() if isinstance(value, str)) or
+        not product_info.get('Image URLs')
+    )
+
+    if critical_fields_missing:
+        return None
+
+    return product_info
 
 
 @retry(
@@ -1279,43 +1307,50 @@ def extract_product_data(driver: webdriver.Chrome, sku: str) -> dict[str, Any] |
     retry=retry_if_exception_type((TimeoutException, NoSuchElementException))
 )
 def scrape_single_product(driver: webdriver.Chrome, sku: str) -> dict[str, Any] | None:
-    """Scrape a single Amazon product with CAPTCHA handling."""
+    """Scrape a single Central Pet product with CAPTCHA handling."""
     try:
-        # Try direct ASIN URL
-        if len(sku) == 10 and sku.isalnum():
-            url = f"https://www.amazon.com/dp/{sku}"
-        else:
-            url = f"https://www.amazon.com/s?k={sku}"
+        # Search URL for Central Pet
+        search_url = f"https://www.centralpet.com/Search?criteria={sku}"
 
-        driver.get(url)
-        time.sleep(2)
+        driver.get(search_url)
 
         # Check for CAPTCHA immediately after loading
         if not captcha_detector.handle_captcha(driver):
-            Actor.log.error(f"🚫 CAPTCHA blocking detected for SKU {sku}")
+            Actor.log.error(f"CAPTCHA blocking detected for SKU {sku}")
             return None
 
-        # Check if product page
-        if "/dp/" not in driver.current_url:
-            # Try to click first result
-            try:
-                first_result = WebDriverWait(driver, 5).until(
-                    EC.element_to_be_clickable((By.CSS_SELECTOR, "div[data-component-type='s-search-result'] a"))
+        # Accept cookie/terms if present (fast, no sleep)
+        try:
+            WebDriverWait(driver, 3).until(
+                EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Accept')]"))
+            ).click()
+        except Exception:
+            pass
+
+        # Wait for either product detail or no-results message (short timeout)
+        try:
+            WebDriverWait(driver, 6).until(
+                EC.any_of(
+                    EC.presence_of_element_located((By.ID, "tst_productDetail_erpDescription")),
+                    EC.presence_of_element_located((By.CSS_SELECTOR, "span.no-results-found"))
                 )
-                first_result.click()
-                time.sleep(2)
+            )
+        except Exception:
+            Actor.log.error(f"Timeout waiting for product or no-results message for SKU: {sku}")
+            return None
 
-                # Check for CAPTCHA after clicking
-                if not captcha_detector.handle_captcha(driver):
-                    Actor.log.error(f"🚫 CAPTCHA blocking detected after search for SKU {sku}")
+        # Robust no-results detection
+        try:
+            no_results_elements = driver.find_elements(By.CSS_SELECTOR, "span.no-results-found")
+            for elem in no_results_elements:
+                if "No results found for" in elem.text:
+                    Actor.log.info(f"Product not found for SKU: {sku}")
                     return None
+        except Exception:
+            pass
 
-            except TimeoutException:
-                return None
-
-        # Final CAPTCHA check before extraction
-        if not captcha_detector.handle_captcha(driver):
-            Actor.log.error(f"🚫 CAPTCHA blocking detected before extraction for SKU {sku}")
+        if "No results found for" in driver.page_source:
+            Actor.log.info(f"Product not found for SKU: {sku}")
             return None
 
         return extract_product_data(driver, sku)
@@ -1353,7 +1388,7 @@ async def main() -> None:
             Actor.log.error("No SKUs provided in input")
             return
 
-        Actor.log.info(f"Starting Amazon scraping for {len(skus)} SKUs")
+        Actor.log.info(f"Starting Central Pet scraping for {len(skus)} SKUs")
 
         # Run scraping in thread pool since Selenium is sync
         products = await asyncio.get_event_loop().run_in_executor(None, scrape_products, skus)
@@ -1452,7 +1487,7 @@ def main_local():
     import json
 
     # Default test SKUs
-    skus = ["035585499741"]
+    skus = [TEST_SKU]
 
     # Check command line arguments
     if len(sys.argv) > 1:
@@ -1466,7 +1501,7 @@ def main_local():
         except json.JSONDecodeError:
             print("Invalid JSON input, using default SKUs")
 
-    print(f"Starting local Amazon scraping for {len(skus)} SKUs: {skus}")
+    print(f"Starting local Central Pet scraping for {len(skus)} SKUs: {skus}")
 
     products = scrape_products(skus)
     valid_products = [p for p in products if p]

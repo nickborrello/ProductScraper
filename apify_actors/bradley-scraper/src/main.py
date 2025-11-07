@@ -1,4 +1,4 @@
-"""Amazon Product Scraper Actor"""
+"""Bradley Caldwell Product Scraper Actor"""
 
 from __future__ import annotations
 
@@ -22,10 +22,16 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 
+# Bradley Caldwell scraper configuration
+HEADLESS = True  # Set to False only if CAPTCHA solving requires visible browser
+TEST_SKU = "791611038437"  # Bradley Caldwell SKU that previously had empty brand
+
+
 def create_driver(proxy_url=None) -> webdriver.Chrome:
     """Create Chrome driver with enhanced anti-detection measures and proxy support."""
     options = Options()
-    options.add_argument("--headless")
+    if HEADLESS:
+        options.add_argument("--headless")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
@@ -176,10 +182,10 @@ class DataValidator:
             # Validate image URLs
             valid_images = []
             for img_url in images:
-                if isinstance(img_url, str) and img_url.startswith("http") and "amazon.com" in img_url:
+                if isinstance(img_url, str) and img_url.startswith("http") and "bradleycaldwell.com" in img_url:
                     valid_images.append(img_url)
             if len(valid_images) == 0:
-                errors.append("No valid Amazon image URLs found")
+                errors.append("No valid Bradley Caldwell image URLs found")
             else:
                 cleaned_data["Image URLs"] = valid_images[:5]  # Limit to 5 images
 
@@ -595,12 +601,12 @@ proxy_manager = ProxyManager()
 
 
 class CaptchaDetector:
-    """Advanced CAPTCHA detection and handling for Amazon."""
+    """Advanced CAPTCHA detection and handling for Bradley Caldwell."""
 
     def __init__(self):
         self.captcha_patterns = {
-            # Amazon CAPTCHA indicators
-            "amazon_captcha": [
+            # Bradley Caldwell CAPTCHA indicators
+            "bradley_captcha": [
                 "enter the characters you see",
                 "type the characters",
                 "prove you are human",
@@ -617,7 +623,7 @@ class CaptchaDetector:
             ],
             # Blocking indicators
             "blocking_indicators": [
-                "to discuss automated access to amazon",
+                "to discuss automated access to bradleycaldwell",
                 "your account has been temporarily restricted",
                 "we need to verify that you're not a robot",
                 "please solve this puzzle"
@@ -632,12 +638,12 @@ class CaptchaDetector:
             page_text = driver.page_source.lower()
             current_url = driver.current_url.lower()
 
-            # Check for Amazon CAPTCHA patterns
-            for pattern in self.captcha_patterns["amazon_captcha"]:
+            # Check for Bradley Caldwell CAPTCHA patterns
+            for pattern in self.captcha_patterns["bradley_captcha"]:
                 if pattern in page_text:
                     return {
                         "detected": True,
-                        "type": "amazon_text_captcha",
+                        "type": "bradley_captcha",
                         "pattern": pattern,
                         "confidence": 0.9,
                         "action_required": "solve_text_captcha"
@@ -650,7 +656,7 @@ class CaptchaDetector:
                     if elements:
                         return {
                             "detected": True,
-                            "type": "amazon_form_captcha",
+                            "type": "bradley_form_captcha",
                             "selector": selector,
                             "confidence": 0.95,
                             "action_required": "solve_form_captcha"
@@ -1201,76 +1207,168 @@ def clean_string(text: str) -> str:
 
 
 def extract_product_data(driver: webdriver.Chrome, sku: str) -> dict[str, Any] | None:
-    """Extract product data from Amazon page."""
+    """Extract product data from Bradley Caldwell page."""
     product_info = {"SKU": sku}
 
     try:
         # Extract title
         try:
-            title_element = WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.ID, "productTitle"))
+            name_element = WebDriverWait(driver, 15).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "h1.product-name"))
             )
-            product_info["Name"] = clean_string(title_element.text)
+            # Wait a bit for JavaScript to potentially update the content
+            WebDriverWait(driver, 5).until(lambda d: d.execute_script("return document.readyState") == "complete")
+            time.sleep(2)  # Give extra time for dynamic content to load
+
+            product_info['Name'] = clean_string(name_element.text)
         except TimeoutException:
-            product_info["Name"] = "N/A"
+            Actor.log.error(f"Product name element not found within 15s for SKU: {sku}")
+            product_info['Name'] = ''  # Return empty instead of trying alternatives
 
-        # Extract brand
-        try:
-            brand_element = driver.find_element(By.ID, "bylineInfo")
-            product_info["Brand"] = clean_string(brand_element.text).replace("Visit the", "").replace("Brand:", "").strip()
-        except NoSuchElementException:
-            product_info["Brand"] = "Unknown"
+        # Try multiple selectors for brand extraction with shorter timeout
+        brand_found = False
+        brand_selectors = [
+            "//div[@class='product-brand']/a",
+            "//div[contains(@class, 'product-brand')]//a",
+            "//span[@class='product-brand']",
+            "//div[@class='product-brand']",
+            "//a[contains(@href, '/brand/')]",
+            "//span[contains(@class, 'brand')]",
+            "//div[contains(@class, 'brand')]"
+        ]
 
-        # Extract images
-        image_urls = []
-        try:
-            img_elements = driver.find_elements(By.CSS_SELECTOR, "#altImages img")
-            for img in img_elements[:5]:  # Limit to 5 images
-                src = img.get_attribute("src")
-                if src and "amazon.com" in src:
-                    # Convert to high res
-                    high_res = re.sub(r'\._AC_[^.]+\.jpg', '._AC_SL1500_.jpg', src)
-                    image_urls.append(high_res)
-        except Exception:
-            pass
-        product_info["Image URLs"] = image_urls
+        for selector in brand_selectors:
+            try:
+                brand_element = WebDriverWait(driver, 3).until(  # Reduced to 3 seconds for optional elements
+                    EC.presence_of_element_located((By.XPATH, selector))
+                )
+                brand_name = clean_string(brand_element.text)
+                if brand_name and len(brand_name.strip()) > 0:
+                    product_info['Brand'] = brand_name
+                    brand_found = True
+                    break
+            except (TimeoutException, NoSuchElementException):
+                continue
+
+        if not brand_found:
+            # Try to extract brand from product details table
+            try:
+                brand_table_element = WebDriverWait(driver, 3).until(  # Reduced timeout
+                    EC.presence_of_element_located((By.XPATH, "//table[contains(@class, 'table')]//tr[td/strong[text()='Brand']]/td[2]"))
+                )
+                brand_name = clean_string(brand_table_element.text)
+                if brand_name and len(brand_name.strip()) > 0:
+                    product_info['Brand'] = brand_name
+                    brand_found = True
+            except (TimeoutException, NoSuchElementException):
+                pass
+
+        if not brand_found:
+            product_info['Brand'] = ''  # Return empty if not found
+
+        # If brand was found and is in the name, remove it
+        if brand_found and product_info['Brand']:
+            brand_name = product_info['Brand']
+            if brand_name.lower() in product_info['Name'].lower():
+                product_info['Name'] = clean_string(product_info['Name'].replace(brand_name, ''))
+
+        # Build complete product name from base name + color/size with shorter timeouts
+        # Only add color/size if we have a base name
+        if product_info['Name']:
+            name_parts = [product_info['Name']]
+
+            try:
+                color_element = WebDriverWait(driver, 3).until(  # Reduced timeout for optional elements
+                    EC.presence_of_element_located((By.XPATH, "//span[@data-bind='text: colorDesc']"))
+                )
+                color_desc = clean_string(color_element.text)
+                if color_desc:
+                    name_parts.append(color_desc)
+            except (TimeoutException, NoSuchElementException):
+                pass
+
+            try:
+                size_element = WebDriverWait(driver, 3).until(  # Reduced timeout for optional elements
+                    EC.presence_of_element_located((By.XPATH, "//span[@data-bind='text: sizeDesc']"))
+                )
+                size_desc = clean_string(size_element.text)
+                if size_desc:
+                    name_parts.append(size_desc)
+            except (TimeoutException, NoSuchElementException):
+                pass
+
+            product_info['Name'] = ' '.join(name_parts)
+        # If no base name found, leave it empty (don't include just color/size)
 
         # Extract weight
-        weight = "N/A"
         try:
-            # Look in product details table - try multiple selectors
-            detail_rows = []
-            try:
-                detail_rows = driver.find_elements(By.CSS_SELECTOR, "#productDetails_detailBullets_sections1 tr")
-            except:
-                try:
-                    detail_rows = driver.find_elements(By.CSS_SELECTOR, "#prodDetails tr")
-                except:
-                    detail_rows = driver.find_elements(By.CSS_SELECTOR, ".prodDetTable tr")
-            
-            for row in detail_rows:
-                if "weight" in row.text.lower():
-                    weight_match = re.search(r'(\d+(?:\.\d+)?)\s*(lbs?|ounces?|oz|g|kg)', row.text, re.I)
-                    if weight_match:
-                        value = float(weight_match.group(1))
-                        unit = weight_match.group(2).lower()
-                        if unit in ['oz', 'ounces']:
-                            value /= 16
-                        elif unit in ['g', 'gram']:
-                            value /= 453.592
-                        elif unit in ['kg']:
-                            value *= 2.20462
-                        weight = f"{value:.2f}"
-                        break
-        except Exception:
-            pass
-        product_info["Weight"] = weight
+            weight_element = WebDriverWait(driver, 3).until(  # Reduced timeout for optional weight
+                EC.presence_of_element_located((By.XPATH, "//table[contains(@class, 'table')]//tr[td/strong[text()='Weight']]/td[2]"))
+            )
+            weight_html = weight_element.get_attribute('innerHTML')
+            if weight_html:
+                match = re.search(r'(\d*\.?\d+)\s*(lbs?|kg|oz)?', weight_html, re.IGNORECASE)
+                if match:
+                    product_info['Weight'] = f"{match.group(1)} {match.group(2) or ''}".strip()
+                else:
+                    product_info['Weight'] = ''  # Return empty if not parseable
+            else:
+                product_info['Weight'] = ''  # Return empty if no HTML content
+        except (TimeoutException, NoSuchElementException):
+            product_info['Weight'] = ''  # Return empty if not found
 
-        return product_info
+        # Extract images from desktop and mobile carousels
+        try:
+            WebDriverWait(driver, 5).until(lambda d: d.execute_script("return document.readyState") == "complete")
+            time.sleep(1)
+
+            image_urls = set()
+
+            # Desktop thumbnails
+            try:
+                desktop_thumbs = WebDriverWait(driver, 3).until(
+                    lambda d: d.find_elements(By.CSS_SELECTOR, "#main-slider-desktop a[href*='/ccstore/v1/images']")
+                )
+                for el in desktop_thumbs:
+                    href = el.get_attribute("href")
+                    if href:
+                        if href.startswith("/ccstore"):
+                            href = "https://www.bradleycaldwell.com" + href
+                        image_urls.add(href)
+            except (TimeoutException, NoSuchElementException):
+                pass
+
+            # Mobile thumbnails
+            try:
+                mobile_thumbs = WebDriverWait(driver, 3).until(
+                    lambda d: d.find_elements(By.CSS_SELECTOR, "#main-slider-mobile a[href*='/ccstore/v1/images']")
+                )
+                for el in mobile_thumbs:
+                    href = el.get_attribute("href")
+                    if href:
+                        if href.startswith("/ccstore"):
+                            href = "https://www.bradleycaldwell.com" + href
+                        image_urls.add(href)
+            except (TimeoutException, NoSuchElementException):
+                pass
+
+            product_info['Image URLs'] = list(image_urls)
+
+        except Exception as e:
+            product_info['Image URLs'] = []
+            Actor.log.error(f"Image fetch failed: {e}")
 
     except Exception as e:
         Actor.log.error(f"Error extracting data for {sku}: {e}")
         return None
+
+    # Check for critical missing data - only discard if no images found
+    critical_fields_missing = not product_info.get('Image URLs')
+
+    if critical_fields_missing:
+        return None
+
+    return product_info
 
 
 @retry(
@@ -1279,43 +1377,41 @@ def extract_product_data(driver: webdriver.Chrome, sku: str) -> dict[str, Any] |
     retry=retry_if_exception_type((TimeoutException, NoSuchElementException))
 )
 def scrape_single_product(driver: webdriver.Chrome, sku: str) -> dict[str, Any] | None:
-    """Scrape a single Amazon product with CAPTCHA handling."""
+    """Scrape a single Bradley Caldwell product with CAPTCHA handling."""
     try:
-        # Try direct ASIN URL
-        if len(sku) == 10 and sku.isalnum():
-            url = f"https://www.amazon.com/dp/{sku}"
-        else:
-            url = f"https://www.amazon.com/s?k={sku}"
+        # Search URL for Bradley Caldwell
+        search_url = f"https://www.bradleycaldwell.com/searchresults?Ntk=All|product.active%7C&Ntt=*{sku}*&Nty=1&No=0&Nrpp=12&Rdm=323&searchType=simple&type=search"
 
-        driver.get(url)
-        time.sleep(2)
+        driver.get(search_url)
 
         # Check for CAPTCHA immediately after loading
         if not captcha_detector.handle_captcha(driver):
-            Actor.log.error(f"🚫 CAPTCHA blocking detected for SKU {sku}")
+            Actor.log.error(f"CAPTCHA blocking detected for SKU {sku}")
             return None
 
-        # Check if product page
-        if "/dp/" not in driver.current_url:
-            # Try to click first result
-            try:
-                first_result = WebDriverWait(driver, 5).until(
-                    EC.element_to_be_clickable((By.CSS_SELECTOR, "div[data-component-type='s-search-result'] a"))
+        try:
+            WebDriverWait(driver, 20).until(
+                EC.any_of(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, "h1.product-name")),
+                    EC.presence_of_element_located((By.XPATH, "//h2[contains(text(), 'No products were found.')]"))
                 )
-                first_result.click()
-                time.sleep(2)
+            )
+        except TimeoutException:
+            Actor.log.error(f"Timeout: Product page failed to load within 20s for SKU: {sku}")
+            return None
 
-                # Check for CAPTCHA after clicking
-                if not captcha_detector.handle_captcha(driver):
-                    Actor.log.error(f"🚫 CAPTCHA blocking detected after search for SKU {sku}")
-                    return None
-
-            except TimeoutException:
+        # Check if product was not found
+        try:
+            not_found = driver.find_element(By.XPATH, "//h2[contains(text(), 'No products were found.')]")
+            if not_found:
+                Actor.log.info(f"Product not found for SKU: {sku}")
                 return None
+        except NoSuchElementException:
+            pass  # Product found, continue
 
         # Final CAPTCHA check before extraction
         if not captcha_detector.handle_captcha(driver):
-            Actor.log.error(f"🚫 CAPTCHA blocking detected before extraction for SKU {sku}")
+            Actor.log.error(f"CAPTCHA blocking detected before extraction for SKU {sku}")
             return None
 
         return extract_product_data(driver, sku)
@@ -1353,7 +1449,7 @@ async def main() -> None:
             Actor.log.error("No SKUs provided in input")
             return
 
-        Actor.log.info(f"Starting Amazon scraping for {len(skus)} SKUs")
+        Actor.log.info(f"Starting Bradley Caldwell scraping for {len(skus)} SKUs")
 
         # Run scraping in thread pool since Selenium is sync
         products = await asyncio.get_event_loop().run_in_executor(None, scrape_products, skus)
@@ -1452,7 +1548,7 @@ def main_local():
     import json
 
     # Default test SKUs
-    skus = ["035585499741"]
+    skus = [TEST_SKU]
 
     # Check command line arguments
     if len(sys.argv) > 1:
@@ -1466,7 +1562,7 @@ def main_local():
         except json.JSONDecodeError:
             print("Invalid JSON input, using default SKUs")
 
-    print(f"Starting local Amazon scraping for {len(skus)} SKUs: {skus}")
+    print(f"Starting local Bradley Caldwell scraping for {len(skus)} SKUs: {skus}")
 
     products = scrape_products(skus)
     valid_products = [p for p in products if p]
