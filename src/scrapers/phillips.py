@@ -15,16 +15,17 @@ from src.utils.scraping.browser import create_browser
 from src.utils.general.display import display_product_result, display_scraping_progress, display_scraping_summary, display_error
 from src.core.settings_manager import settings
 
+# Ensure project root is on sys.path
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
 load_dotenv()
 HEADLESS = False
 TEST_SKU = "035585499741"  # KONG Pull A Partz Pals Koala SM - test SKU for Phillips
 LOGIN_URL = "https://shop.phillipspet.com/ccrz__CCSiteLogin"
 HOME_URL = "https://shop.phillipspet.com/"
 SEARCH_URL_TEMPLATE = "https://shop.phillipspet.com/ccrz__ProductList?cartID=&operation=quickSearch&searchText={}&portalUser=&store=DefaultStore&cclcl=en_US"
-
-def load_cookies(driver):
-    # Cookie loading removed - no longer necessary
-    pass
 
 def load_cookies(driver):
     try:
@@ -49,12 +50,12 @@ def save_cookies(driver):
         pass
 
 def init_browser(profile_suffix="default", headless=True):
-    # Use login-safe Chrome options instead of standard ones
-    from src.utils.scraping.scraping import get_login_safe_chrome_options
-    options = get_login_safe_chrome_options(headless=headless, profile_suffix=profile_suffix)
+    # Use standard Chrome options
+    from src.utils.scraping.scraping import get_standard_chrome_options
+    options = get_standard_chrome_options(headless=headless, profile_suffix=profile_suffix)
     
     # Use selenium_profiles directory for phillips with unique suffix
-    user_data_dir = os.path.abspath(f"data/selenium_profiles/phillips_{profile_suffix}")
+    user_data_dir = os.path.join(PROJECT_ROOT, "data", "selenium_profiles", f"phillips_{profile_suffix}")
     os.makedirs(user_data_dir, exist_ok=True)
     options.add_argument(f"--user-data-dir={user_data_dir}")
     
@@ -97,7 +98,7 @@ def login(driver):
     # Save cookies after successful login
     save_cookies(driver)
 
-def scrape_phillips(skus, browser=None):
+def scrape_phillips(skus, browser=None, log_callback=None):
     """Scrape Phillips products for multiple SKUs."""
     if not skus:
         return []
@@ -108,32 +109,44 @@ def scrape_phillips(skus, browser=None):
     # Use provided browser or create a new one
     if browser is not None:
         driver = browser
-        print("✅ Phillips: Using provided browser for scraping.")
+        if log_callback:
+            log_callback("✅ Phillips: Using provided browser for scraping.")
+        else:
+            print("✅ Phillips: Using provided browser for scraping.")
     else:
         driver = create_browser("Phillips", headless=HEADLESS)
         if driver is None:
-            display_error("Could not create browser for Phillips")
+            display_error("Could not create browser for Phillips", log_callback=log_callback)
             return products
-        print("🌐 Phillips: Created new browser for scraping.")
+        if log_callback:
+            log_callback("🌐 Phillips: Created new browser for scraping.")
+        else:
+            print("🌐 Phillips: Created new browser for scraping.")
     
     try:
         # Handle login if required (only if we created our own browser)
         if browser is None:
             if not is_logged_in(driver):
-                print("🔐 Phillips: Logging in...")
+                if log_callback:
+                    log_callback("🔐 Phillips: Logging in...")
+                else:
+                    print("🔐 Phillips: Logging in...")
                 login(driver)
             else:
-                print("✅ Phillips: Already logged in.")
-                
+                if log_callback:
+                    log_callback("✅ Phillips: Already logged in.")
+                else:
+                    print("✅ Phillips: Already logged in.")
+                    
         for i, sku in enumerate(skus, 1):
             product_info = scrape_single_product(sku, driver)
             if product_info:
                 products.append(product_info)
-                display_product_result(product_info, i, len(skus))
+                display_product_result(product_info, i, len(skus), log_callback=log_callback)
             else:
                 products.append(None)
             
-            display_scraping_progress(i, len(skus), start_time, "Phillips")
+            display_scraping_progress(i, len(skus), start_time, "Phillips", log_callback=log_callback)
     
     finally:
         # Only quit browser if we created it ourselves
@@ -144,13 +157,17 @@ def scrape_phillips(skus, browser=None):
                 pass
     
     successful_products = [p for p in products if p]
-    display_scraping_summary(successful_products, start_time, "Phillips")
+    display_scraping_summary(successful_products, start_time, "Phillips", log_callback=log_callback)
                 
     return products
 
-def scrape_single_product(SKU, driver):
+def scrape_single_product(SKU, driver, log_callback=None):
     if driver is None:
-        print("❌ Error: WebDriver instance is None. Cannot scrape product.")
+        error_msg = "❌ Error: WebDriver instance is None. Cannot scrape product."
+        if log_callback:
+            log_callback(error_msg)
+        else:
+            print(error_msg)
         return None
     product_info = {
         'SKU': SKU,
@@ -165,7 +182,7 @@ def scrape_single_product(SKU, driver):
         driver.get(search_url)
 
         if SEARCH_URL_TEMPLATE.split("?")[0] not in driver.current_url:
-            display_error("Navigation to search URL failed. Aborting.")
+            display_error("Navigation to search URL failed. Aborting.", log_callback=log_callback)
             return None
 
         # Wait for either product results or empty state message
@@ -208,14 +225,14 @@ def scrape_single_product(SKU, driver):
 
                     return product_info
             except Exception as e:
-                display_error(f"Error in product block: {e}")
+                display_error(f"Error in product block: {e}", log_callback=log_callback)
                 continue
 
-        display_error(f"No exact UPC match for SKU {SKU}, products loaded but skipped.")
+        display_error(f"No exact UPC match for SKU {SKU}, products loaded but skipped.", log_callback=log_callback)
         return None
 
     except Exception as e:
-        display_error(f"Exception while searching for SKU {SKU}: {e}")
+        display_error(f"Exception while searching for SKU {SKU}: {e}", log_callback=log_callback)
         return None
 
 if __name__ == "__main__":

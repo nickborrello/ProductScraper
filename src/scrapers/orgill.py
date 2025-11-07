@@ -4,7 +4,7 @@ import os
 import sys
 
 # Ensure project root is on sys.path before importing local packages
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
@@ -33,16 +33,16 @@ PRODUCTS_FILE = "./spreadsheets/done/orgill.xlsx"
 USER_DATA_DIR = os.path.abspath("selenium_profile")
 
 def init_browser(profile_suffix="default", headless=False):
-    # Use login-safe Chrome options instead of standard ones
-    from src.utils.scraping.scraping import get_login_safe_chrome_options
-    chrome_options = get_login_safe_chrome_options(headless=headless, profile_suffix=profile_suffix)
+    # Use standard Chrome options
+    from src.utils.scraping.scraping import get_standard_chrome_options
+    chrome_options = get_standard_chrome_options(headless=headless, profile_suffix=profile_suffix)
     
     # Disable auto-fill to prevent form pre-population
     chrome_options.add_argument("--disable-blink-features=Autofill")
     chrome_options.add_argument("--disable-features=Autofill")
     
     # Use selenium_profiles directory for orgill with unique suffix
-    user_data_dir = os.path.abspath(f"data/selenium_profiles/orgill_{profile_suffix}")
+    user_data_dir = os.path.join(PROJECT_ROOT, "data", "selenium_profiles", f"orgill_{profile_suffix}")
     os.makedirs(user_data_dir, exist_ok=True)
     chrome_options.add_argument(f"--user-data-dir={user_data_dir}")
     
@@ -64,25 +64,40 @@ def is_logged_in(driver):
         print(f"Orgill: Error checking Sign Out link on homepage: {e}")
     return False
 
-def login(driver):
-    print("Orgill: Navigating to login page...")
+def login(driver, log_callback=None):
+    if log_callback:
+        log_callback("Orgill: Navigating to login page...")
+    else:
+        print("Orgill: Navigating to login page...")
     driver.get(LOGIN_URL)
     
-    print("Orgill: Waiting for username field...")
+    if log_callback:
+        log_callback("Orgill: Waiting for username field...")
+    else:
+        print("Orgill: Waiting for username field...")
     username_field = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.ID, "cphMainContent_ctl00_loginOrgillxs_UserName"))
     )
     driver.execute_script("arguments[0].value = '';", username_field)
     username_field.send_keys(settings.orgill_credentials[0])
-    print("Orgill: Username entered")
+    if log_callback:
+        log_callback("Orgill: Username entered")
+    else:
+        print("Orgill: Username entered")
 
-    print("Orgill: Waiting for password field...")
+    if log_callback:
+        log_callback("Orgill: Waiting for password field...")
+    else:
+        print("Orgill: Waiting for password field...")
     password_field = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.ID, "cphMainContent_ctl00_loginOrgillxs_Password"))
     )
     driver.execute_script("arguments[0].value = '';", password_field)
     password_field.send_keys(settings.orgill_credentials[1])
-    print("Orgill: Password entered")
+    if log_callback:
+        log_callback("Orgill: Password entered")
+    else:
+        print("Orgill: Password entered")
 
     # Handle multiple types of cookie consent banners
     print("Orgill: Handling cookie consent banners...")
@@ -185,7 +200,7 @@ def save_cookies(driver):
     except:
         pass
 
-def scrape_orgill(skus, browser=None):
+def scrape_orgill(skus, browser=None, log_callback=None):
     """Scrape Orgill products for multiple SKUs."""
     if not skus:
         return []
@@ -199,7 +214,7 @@ def scrape_orgill(skus, browser=None):
     else:
         driver = create_browser("Orgill", headless=HEADLESS)
         if driver is None:
-            display_error("Could not create browser for Orgill")
+            display_error("Could not create browser for Orgill", log_callback=log_callback)
             return products
     
     try:
@@ -207,11 +222,11 @@ def scrape_orgill(skus, browser=None):
         if browser is None:
             load_cookies(driver)
             if not is_logged_in(driver):
-                login(driver)
+                login(driver, log_callback=log_callback)
                 save_cookies(driver)
             
         for i, sku in enumerate(skus, 1):
-            product_info = scrape_single_product(sku, driver)
+            product_info = scrape_single_product(sku, driver, log_callback=log_callback)
             if product_info:
                 products.append(product_info)
                 display_product_result(product_info, i, len(skus))
@@ -228,13 +243,13 @@ def scrape_orgill(skus, browser=None):
                 pass
     
     successful_products = [p for p in products if p]
-    display_scraping_summary(successful_products, start_time, "Orgill")
+    display_scraping_summary(successful_products, start_time, "Orgill", log_callback=log_callback)
                 
     return products
 
-def scrape_single_product(SKU, driver):
+def scrape_single_product(SKU, driver, log_callback=None):
     if driver is None:
-        display_error("WebDriver instance is None. Cannot scrape product.")
+        display_error("WebDriver instance is None. Cannot scrape product.", log_callback=log_callback)
         return None
     product_info = {
         'SKU': SKU,
@@ -287,7 +302,10 @@ def scrape_single_product(SKU, driver):
                 return None
             elif content_count > 1:
                 # Multiple results - not a single product page
-                print(f"Orgill: Search for SKU {SKU} returned {content_count} results, skipping")
+                if log_callback:
+                    log_callback(f"Orgill: Search for SKU {SKU} returned {content_count} results, skipping")
+                else:
+                    print(f"Orgill: Search for SKU {SKU} returned {content_count} results, skipping")
                 return None
             # If content_count == 1, this shouldn't happen since it redirects to product page
             # but if it does, we can proceed with extraction
@@ -322,7 +340,7 @@ def scrape_single_product(SKU, driver):
             vendor_element = driver.find_element(By.ID, "cphMainContent_ctl00_lblVendorName")
             product_info['Brand'] = clean_string(vendor_element.text)
         except Exception as e:
-            display_error(f"Error extracting brand: {e}")
+            display_error(f"Error extracting brand: {e}", log_callback=log_callback)
 
         # If brand was found and is in the name, remove it
         if product_info.get('Brand') and product_info.get('Name') and product_info['Name'] != 'N/A':
@@ -403,7 +421,7 @@ def scrape_single_product(SKU, driver):
                 if img_url and img_url not in product_info['Image URLs']:
                     product_info['Image URLs'].append(img_url)
         except Exception as e:
-            display_error(f"Error extracting images: {e}")
+            display_error(f"Error extracting images: {e}", log_callback=log_callback)
 
         # After performing the search for the SKU
         try:
@@ -428,7 +446,7 @@ def scrape_single_product(SKU, driver):
 
         return product_info
     except Exception as e:
-        display_error(f"Error processing SKU {SKU}: {e}")
+        display_error(f"Error processing SKU {SKU}: {e}", log_callback=log_callback)
         return None
 
 # --- TEST BLOCK FOR DEBUGGING ---

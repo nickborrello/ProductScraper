@@ -3,6 +3,11 @@ import re
 import time
 import sys
 
+# Ensure project root is on sys.path
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
 # Add parent directory to path when running as script
 if __name__ == "__main__":
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -36,7 +41,7 @@ def init_browser(profile_suffix="default", headless=True):
     chrome_options = get_standard_chrome_options(headless=headless, profile_suffix=profile_suffix)
     
     # Use selenium_profiles directory for Amazon with unique suffix
-    user_data_dir = os.path.abspath(f"data/selenium_profiles/Amazon_{profile_suffix}")
+    user_data_dir = os.path.join(PROJECT_ROOT, "data", "selenium_profiles", f"Amazon_{profile_suffix}")
     os.makedirs(user_data_dir, exist_ok=True)
     chrome_options.add_argument(f"--user-data-dir={user_data_dir}")
     
@@ -102,7 +107,7 @@ def get_amazon_optimized_options(profile_suffix="default", headless=True):
     
     # Profile directory
     if profile_suffix:
-        profile_dir = os.path.abspath(os.path.join("data", "selenium_profiles", f"Amazon_optimized_{profile_suffix}"))
+        profile_dir = os.path.join(PROJECT_ROOT, "data", "selenium_profiles", f"Amazon_optimized_{profile_suffix}")
         if not os.path.exists(profile_dir):
             os.makedirs(profile_dir, exist_ok=True)
         options.add_argument(f"--user-data-dir={profile_dir}")
@@ -136,7 +141,7 @@ def scrape_amazon(skus, log_callback=None):
             return products
 
         for i, sku in enumerate(skus, 1):
-            product_info = scrape_single_product(sku, driver)
+            product_info = scrape_single_product(sku, driver, log_callback=log_callback)
             if product_info:
                 products.append(product_info)
             else:
@@ -151,7 +156,7 @@ def scrape_amazon(skus, log_callback=None):
 
     return products
 
-def scrape_single_product(UPC_or_ASIN, driver, max_retries=0):
+def scrape_single_product(UPC_or_ASIN, driver, max_retries=0, log_callback=None):
     """Scrape a single Amazon product with improved automation and error handling."""
     if driver is None:
         display_error("WebDriver instance is None. Cannot scrape product.", log_callback=log_callback)
@@ -167,7 +172,7 @@ def scrape_single_product(UPC_or_ASIN, driver, max_retries=0):
                 direct_url = f"https://www.amazon.com/dp/{UPC_or_ASIN}"
                 driver.get(direct_url)
                 time.sleep(1)  # Reduced from 2 seconds
-                return _extract_product_data(driver, product_info)
+                return _extract_product_data(driver, product_info, log_callback=log_callback)
             else:
                 # Try search URL
                 search_url = f"https://www.amazon.com/s?k={UPC_or_ASIN}"
@@ -175,15 +180,15 @@ def scrape_single_product(UPC_or_ASIN, driver, max_retries=0):
                 time.sleep(2)  # Reduced from 3 seconds
 
                 # Check for no results before trying to click
-                if _has_no_search_results(driver):
+                if _has_no_search_results(driver, log_callback=log_callback):
                     return None  # No results found
 
-                if _click_first_search_result(driver):
+                if _click_first_search_result(driver, log_callback=log_callback):
                     time.sleep(1)  # Reduced from 2 seconds
 
                     # Verify we actually landed on a product page
                     if _is_product_page(driver):
-                        return _extract_product_data(driver, product_info)
+                        return _extract_product_data(driver, product_info, log_callback=log_callback)
                     else:
                         return None  # Not a real product page
 
@@ -247,7 +252,7 @@ def _is_product_page(driver):
         return False
 
 
-def _has_no_search_results(driver):
+def _has_no_search_results(driver, log_callback=None):
     """Check if the current page shows 'no results found' from Amazon."""
     try:
         # Check for "no results" messages
@@ -333,7 +338,7 @@ def _has_no_search_results(driver):
         return False
 
 
-def _click_first_search_result(driver):
+def _click_first_search_result(driver, log_callback=None):
     """Try to click on the first NON-SPONSORED search result."""
     try:
         # Find all search result containers first
@@ -377,7 +382,7 @@ def _click_first_search_result(driver):
         return False
 
 
-def _extract_product_data(driver, product_info):
+def _extract_product_data(driver, product_info, log_callback=None):
     """Extract product data from a product page."""
     try:
         # Extract title
@@ -418,7 +423,7 @@ def _extract_product_data(driver, product_info):
             product_info["Name"] = _filter_brand_from_name(product_info["Name"], product_info["Brand"])
 
         # Extract images (always extract URLs even in optimized mode)
-        product_info["Image URLs"] = _extract_images(driver)
+        product_info["Image URLs"] = _extract_images(driver, log_callback=log_callback)
 
         # Extract weight
         product_info["Weight"] = _extract_weight(driver)
@@ -430,12 +435,12 @@ def _extract_product_data(driver, product_info):
         )
 
         # Display the complete product result after all data is extracted
-        display_product_result(product_info, None, None)
+        display_product_result(product_info, log_callback, None)
 
         return product_info
 
     except Exception as e:
-        display_error(f"Error extracting product data: {e}")
+        display_error(f"Error extracting product data: {e}", log_callback=log_callback)
         return None
 
 
@@ -579,7 +584,7 @@ def _extract_brand(driver):
     return "Unknown"
 
 
-def _extract_images(driver):
+def _extract_images(driver, log_callback=None):
     """Extract product images by parsing thumbnail URLs and constructing high-res versions."""
     image_urls = []
 
@@ -613,7 +618,7 @@ def _extract_images(driver):
                     continue
 
         except Exception as e:
-            display_error(f"Error extracting carousel images from thumbnails: {e}")
+            display_error(f"Error extracting carousel images from thumbnails: {e}", log_callback=log_callback)
 
         # Remove duplicates while preserving order
         seen = set()
@@ -626,7 +631,7 @@ def _extract_images(driver):
         return unique_images
 
     except Exception as e:
-        display_error(f"Error extracting images: {e}")
+        display_error(f"Error extracting images: {e}", log_callback=log_callback)
         return []
 
 

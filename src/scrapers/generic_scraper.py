@@ -208,12 +208,15 @@ def generic_product_scraper(url, sku):
 
         return product_info
 
-def scrape_generic(skus):
+def scrape_generic(skus, log_callback=None):
     """Main function for generic scraping workflow."""
     products = []
 
     for sku in skus:
-        print(f"\n🎯 Processing SKU: {sku}")
+        if log_callback:
+            log_callback(f"\n🎯 Processing SKU: {sku}")
+        else:
+            print(f"\n🎯 Processing SKU: {sku}")
 
         # Step 1: Search Google
         search_results = search_google_for_sku(sku)
@@ -222,7 +225,10 @@ def scrape_generic(skus):
         selected_result = present_search_results_to_user(search_results, sku)
 
         if not selected_result:
-            print(f"⏭️ Skipping SKU: {sku}")
+            if log_callback:
+                log_callback(f"⏭️ Skipping SKU: {sku}")
+            else:
+                print(f"⏭️ Skipping SKU: {sku}")
             products.append(None)
             continue
 
@@ -231,9 +237,15 @@ def scrape_generic(skus):
 
         if product_info and product_info.get('Name'):
             products.append(product_info)
-            print(f"✅ Successfully scraped: {product_info['Name']}")
+            if log_callback:
+                log_callback(f"✅ Successfully scraped: {product_info['Name']}")
+            else:
+                print(f"✅ Successfully scraped: {product_info['Name']}")
         else:
-            print(f"❌ Failed to extract product data from selected page")
+            if log_callback:
+                log_callback(f"❌ Failed to extract product data from selected page")
+            else:
+                print(f"❌ Failed to extract product data from selected page")
             products.append(None)
 
     return products

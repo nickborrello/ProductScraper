@@ -28,7 +28,7 @@ def clean_string(s):
     s = re.sub(r'\s{2,}', ' ', s)
     return s.strip()
 
-def scrape_coastal_pet(skus):
+def scrape_coastal_pet(skus, log_callback=None):
     """Scrape Coastal Pet products for multiple SKUs."""
     if not skus:
         return []
@@ -38,11 +38,11 @@ def scrape_coastal_pet(skus):
 
     with create_browser("Coastal Pet", headless=HEADLESS) as driver:
         if driver is None:
-            display_error("Could not create browser for Coastal Pet")
+            display_error("Could not create browser for Coastal Pet", log_callback=log_callback)
             return products
             
         for i, sku in enumerate(skus, 1):
-            product_info = scrape_single_product(sku, driver)
+            product_info = scrape_single_product(sku, driver, log_callback=log_callback)
             if product_info:
                 products.append(product_info)
                 display_product_result(product_info, i, len(skus))
@@ -52,11 +52,11 @@ def scrape_coastal_pet(skus):
             display_scraping_progress(i, len(skus), start_time, "Coastal Pet")
     
     successful_products = [p for p in products if p]
-    display_scraping_summary(successful_products, start_time, "Coastal Pet")
+    display_scraping_summary(successful_products, start_time, "Coastal Pet", log_callback=log_callback)
                 
     return products
 
-def scrape_single_product(SKU, driver):
+def scrape_single_product(SKU, driver, log_callback=None):
     search_url = f"https://www.coastalpet.com/products/search/?q={SKU}"
     product_info = {}
     
@@ -94,11 +94,11 @@ def scrape_single_product(SKU, driver):
             product_info['Weight'] = 'N/A'
 
         except Exception:
-            display_error(f"No result found for {SKU}.")
+            display_error(f"No result found for {SKU}.", log_callback=log_callback)
             return None
 
     except Exception as e:
-        display_error(f"Scraping error: {e}")
+        display_error(f"Scraping error: {e}", log_callback=log_callback)
         return None
 
     # Check for critical missing data - return None if essential fields are missing

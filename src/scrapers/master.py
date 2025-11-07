@@ -73,18 +73,16 @@ class ScrapingProgressTracker:
         elapsed = time.time() - self.start_time
         
         # Calculate overall progress
+        overall_progress = 0.0
         if self.total_sites > 0:
             overall_progress = self.completed_sites / self.total_sites
-            overall_percent = overall_progress * 100
-        else:
-            overall_percent = 0
+        overall_percent = overall_progress * 100
             
         # Calculate site progress
+        site_progress = 0.0
         if self.total_skus_current_site > 0:
             site_progress = min(self.current_sku_index / self.total_skus_current_site, 1.0)
-            site_percent = site_progress * 100
-        else:
-            site_percent = 0
+        site_percent = site_progress * 100
             
         # Calculate ETA
         eta_str = ""
@@ -129,6 +127,7 @@ def get_browser(site, headless_settings=None):
     if site == 'Excel':
         return None
     max_retries = 3
+    browser = None
     for attempt in range(max_retries):
         try:
             timestamp = int(time.time() * 1000)  # millisecond timestamp for uniqueness
@@ -168,7 +167,7 @@ def get_browser(site, headless_settings=None):
                 if attempt < max_retries - 1:
                     time.sleep(1 + attempt)
                     try:
-                        if 'browser' in locals():
+                        if browser is not None:
                             browser.quit()
                     except:
                         pass
@@ -210,21 +209,24 @@ def discover_scrapers():
     for scraper_file in scraper_files:
         module_name = os.path.basename(scraper_file)[:-3]  # Remove .py extension
         
+        module = None  # Initialize module to avoid unbound variable
         try:
             # Import the module
             spec = importlib.util.spec_from_file_location(module_name, scraper_file)
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
+            if spec and spec.loader:
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
             
             # Find the scrape function - only if it's defined in this module
             scrape_func = None
-            for attr_name in dir(module):
-                if attr_name.startswith('scrape_'):
-                    func = getattr(module, attr_name)
-                    # Check if the function is defined in this module (not imported)
-                    if hasattr(func, '__module__') and func.__module__ == module_name:
-                        scrape_func = func
-                        break
+            if module is not None:  # Only proceed if module was successfully loaded
+                for attr_name in dir(module):
+                    if attr_name.startswith('scrape_'):
+                        func = getattr(module, attr_name)
+                        # Check if the function is defined in this module (not imported)
+                        if hasattr(func, '__module__') and func.__module__ == module_name:
+                            scrape_func = func
+                            break
             
             if scrape_func and callable(scrape_func):
                 # Get display name
@@ -485,8 +487,8 @@ class ProductScraper:
     def cleanup_chrome_processes(self):
         """Kill any lingering Chrome processes that might cause conflicts."""
         try:
-            import subprocess
             import psutil
+            import subprocess
             
             killed_count = 0
             for proc in psutil.process_iter(['pid', 'name']):
@@ -768,7 +770,7 @@ class ProductScraper:
             print(f"❌ Error checking input file format: {e}")
             return False
 
-    def prompt_for_input_spreadsheet_tk():
+    def prompt_for_input_spreadsheet_tk(self):
         input_dir = os.path.join(os.path.dirname(__file__), "input")
         root = tk.Tk()
         root.withdraw()
@@ -1043,7 +1045,7 @@ class ProductScraper:
 
         try:
             # NEW ARCHITECTURE: Call scraper with SKU array
-            scraped_products = scraping_function(skus_to_process)
+            scraped_products = scraping_function(skus_to_process, log_callback=self.log_callback)
 
             # Handle different return types
             if scraped_products is None:

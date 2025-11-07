@@ -18,20 +18,23 @@ from src.utils.scraping.browser import create_browser
 HEADLESS = True
 TEST_SKU = "3002770745"  # KONG Pull A Partz Pals Koala SM - test SKU for Mazuri
 
-def log_error(message):
-    print(f"Error: {message}")
+def log_error(message, log_callback=None):
+    if log_callback:
+        log_callback(f"Error: {message}")
+    else:
+        print(f"Error: {message}")
 
-def scrape_mazuri(skus):
+def scrape_mazuri(skus, log_callback=None):
     """Scrape Mazuri products for multiple SKUs."""
     products = []
     
     with create_browser("Mazuri", headless=HEADLESS) as driver:
         if driver is None:
-            print("❌ Error: Could not create browser for Mazuri")
+            log_error("Could not create browser for Mazuri", log_callback=log_callback)
             return products
             
         for sku in skus:
-            product_info = scrape_single_product(sku, driver)
+            product_info = scrape_single_product(sku, driver, log_callback=log_callback)
             if product_info:
                 # Handle both single product dict and list of product dicts
                 if isinstance(product_info, list):
@@ -41,16 +44,16 @@ def scrape_mazuri(skus):
                 
     return products
 
-def scrape_single_product(SKU, driver):
+def scrape_single_product(SKU, driver, log_callback=None):
     if driver is None:
-        print("❌ Error: WebDriver instance is None. Cannot scrape product.")
+        log_error("WebDriver instance is None. Cannot scrape product.", log_callback=log_callback)
         return None
 
     url = f'https://mazuri.com/pages/search-results-page?q={SKU}'
     try:
         driver.get(url)
     except Exception as e:
-        log_error(f"[{SKU}] Error loading URL {url}: {e}")
+        log_error(f"[{SKU}] Error loading URL {url}: {e}", log_callback=log_callback)
         return None
 
     # No cookie/terms check
@@ -64,7 +67,7 @@ def scrape_single_product(SKU, driver):
             )
         )
     except Exception as e:
-        log_error(f"[{SKU}] Timeout waiting for product or no-results message: {e}")
+        log_error(f"[{SKU}] Timeout waiting for product or no-results message: {e}", log_callback=log_callback)
         return None
 
     # Robust no-results detection
@@ -74,7 +77,7 @@ def scrape_single_product(SKU, driver):
             if "didn't match any results" in elem.text:
                 return None
     except Exception as e:
-        log_error(f"[{SKU}] Error checking no-results elements: {e}")
+        log_error(f"[{SKU}] Error checking no-results elements: {e}", log_callback=log_callback)
 
     if "didn't match any results" in driver.page_source:
         return None
@@ -83,7 +86,7 @@ def scrape_single_product(SKU, driver):
     try:
         product_li = driver.find_element(By.CSS_SELECTOR, "li.snize-product")
     except Exception as e:
-        log_error(f"[{SKU}] No product found for SKU: {e}")
+        log_error(f"[{SKU}] No product found for SKU: {e}", log_callback=log_callback)
         return None
 
     # Click the product link to go to the detail page
@@ -99,7 +102,7 @@ def scrape_single_product(SKU, driver):
                 EC.presence_of_element_located((By.CSS_SELECTOR, "img"))
             )
     except Exception as e:
-        log_error(f"[{SKU}] Error clicking product link or loading detail page: {e}")
+        log_error(f"[{SKU}] Error clicking product link or loading detail page: {e}", log_callback=log_callback)
         return None
 
     # Try to parse embedded product JSON for robust extraction
@@ -110,11 +113,11 @@ def scrape_single_product(SKU, driver):
     product_dicts = []
     try:
         script_tag = soup.find("script", {"type": "application/json", "id": re.compile(r"ProductJson")})
-        if script_tag:
+        if script_tag and script_tag.string:
             import json
             product_json = json.loads(script_tag.string)
     except Exception as e:
-        log_error(f"[{SKU}] Error parsing embedded product JSON: {e}")
+        log_error(f"[{SKU}] Error parsing embedded product JSON: {e}", log_callback=log_callback)
         product_json = None
 
     if product_json:
@@ -125,7 +128,12 @@ def scrape_single_product(SKU, driver):
         brand = product_json.get("vendor", "Mazuri")
         # Try to get weight from SIZE selector (visible dropdown)
         size_weight = None
-        size_label = soup.find('label', string=lambda s: s and s.strip().upper() == 'SIZE')
+        size_labels = soup.find_all('label')
+        size_label = None
+        for label in size_labels:
+            if label.get_text(strip=True).upper() == 'SIZE':
+                size_label = label
+                break
         if size_label:
             select_tag = size_label.find_next('select', {'data-index': 'option1'})
             if select_tag:
@@ -135,7 +143,7 @@ def scrape_single_product(SKU, driver):
                 if selected_option:
                     size_weight = selected_option.get('value') or selected_option.text
                     if size_weight:
-                        size_weight = size_weight.strip()
+                        size_weight = str(size_weight).strip()
         seen = set()
         for variant in variants:
             v = {}
@@ -144,7 +152,7 @@ def scrape_single_product(SKU, driver):
             v['Brand'] = brand if brand else "N/A"
             # Weight: always use size_weight if available, and clean to just the number
             if size_weight:
-                m = re.search(r'(\d+(?:\.\d+)?)', size_weight)
+                m = re.search(r'(\d+(?:\.\d+)?)', str(size_weight))
                 v['Weight'] = m.group(1) if m else "N/A"
             else:
                 weight_raw = variant.get('option1', '') or variant.get('title', '')
@@ -167,7 +175,9 @@ def scrape_single_product(SKU, driver):
             for img_tag in carousel_imgs:
                 img_url = img_tag.get("src")
                 if img_url:
-                    if img_url.startswith("//"): img_url = "https:" + img_url
+                    img_url = str(img_url)
+                    if img_url.startswith("//"): 
+                        img_url = "https:" + img_url
                     image_list.append(img_url)
             # If fewer than 7, add main image and other fallbacks
             if len(image_list) < 7:
@@ -176,17 +186,21 @@ def scrape_single_product(SKU, driver):
                 if main_img_tag:
                     main_img_url = main_img_tag.get("src")
                     if main_img_url:
-                        if main_img_url.startswith("//"): main_img_url = "https:" + main_img_url
+                        main_img_url = str(main_img_url)
+                        if main_img_url.startswith("//"): 
+                            main_img_url = "https:" + main_img_url
                         image_list.append(main_img_url)
                 # Fallback: featured_image from variant
                 featured = variant.get('featured_image', {})
                 if featured and 'src' in featured:
                     img_url = featured['src']
-                    if img_url.startswith("//"): img_url = "https:" + img_url
+                    if isinstance(img_url, str) and img_url.startswith("//"): 
+                        img_url = "https:" + img_url
                     image_list.append(img_url)
                 # Fallback: images from product_json
                 for img_url in images:
-                    if img_url.startswith("//"): img_url = "https:" + img_url
+                    if isinstance(img_url, str) and img_url.startswith("//"): 
+                        img_url = "https:" + img_url
                     image_list.append(img_url)
             # Deduplicate, preserve order, limit to 7
             seen_imgs = set()
@@ -216,14 +230,14 @@ def scrape_single_product(SKU, driver):
             brand_element = soup.find("a", class_=re.compile("product-brand"))
             product_info['Brand'] = clean_string(brand_element.text) if brand_element and brand_element.text.strip() else "N/A"
         except Exception as e:
-            log_error(f"[{SKU}] Error extracting Brand: {e}")
+            log_error(f"[{SKU}] Error extracting Brand: {e}", log_callback=log_callback)
             product_info['Brand'] = "N/A"
         # Extract Name (append weight with 'lb.' if available)
         try:
             name_element = soup.find("h1")
             base_name = clean_string(name_element.text) if name_element and name_element.text.strip() else "N/A"
         except Exception as e:
-            log_error(f"[{SKU}] Error extracting Name: {e}")
+            log_error(f"[{SKU}] Error extracting Name: {e}", log_callback=log_callback)
             base_name = "N/A"
         weight_str = product_info.get('Weight', None)
         if weight_str and weight_str != "N/A":
@@ -235,7 +249,12 @@ def scrape_single_product(SKU, driver):
             product_info['Name'] = base_name
         # Extract Weight
         weight = None
-        size_label = soup.find('label', string=lambda s: s and s.strip().upper() == 'SIZE')
+        size_labels = soup.find_all('label')
+        size_label = None
+        for label in size_labels:
+            if label.get_text(strip=True).upper() == 'SIZE':
+                size_label = label
+                break
         if size_label:
             select_tag = size_label.find_next('select', {'data-index': 'option1'})
             if select_tag:
@@ -245,7 +264,7 @@ def scrape_single_product(SKU, driver):
                 if selected_option:
                     weight_raw = selected_option.get('value') or selected_option.text
                     if weight_raw:
-                        weight_raw = weight_raw.strip()
+                        weight_raw = str(weight_raw).strip()
                         m = re.search(r'(\d+(?:\.\d+)?)', weight_raw)
                         weight = m.group(1) if m else "N/A"
         if not weight:
@@ -258,7 +277,7 @@ def scrape_single_product(SKU, driver):
                         m = re.search(r'(\d+(?:\.\d+)?)', weight_raw)
                         weight = m.group(1) if m else "N/A"
             except Exception as e:
-                log_error(f"[{SKU}] Error extracting Weight (fallback): {e}")
+                log_error(f"[{SKU}] Error extracting Weight (fallback): {e}", log_callback=log_callback)
                 weight = "N/A"
         product_info['Weight'] = weight if weight else "N/A"
         # Extract Images (carousel images in order, fallback if <7)
@@ -270,7 +289,9 @@ def scrape_single_product(SKU, driver):
             for img_tag in carousel_imgs:
                 img_url = img_tag.get("src")
                 if img_url:
-                    if img_url.startswith("//"): img_url = "https:" + img_url
+                    img_url = str(img_url)
+                    if img_url.startswith("//"): 
+                        img_url = "https:" + img_url
                     image_list.append(img_url)
             # If fewer than 7, add main image and other fallbacks
             if len(image_list) < 7:
@@ -278,13 +299,16 @@ def scrape_single_product(SKU, driver):
                 if main_img_tag:
                     main_img_url = main_img_tag.get("src")
                     if main_img_url:
-                        if main_img_url.startswith("//"): main_img_url = "https:" + main_img_url
+                        main_img_url = str(main_img_url)
+                        if main_img_url.startswith("//"): 
+                            main_img_url = "https:" + main_img_url
                         image_list.append(main_img_url)
                 img_tags = soup.find_all("img")
                 for img in img_tags:
                     img_url = img.get("src")
-                    if img_url and "mazuri.com" in img_url:
-                        if img_url.startswith("//"): img_url = "https:" + img_url
+                    if img_url and isinstance(img_url, str) and "mazuri.com" in img_url:
+                        if img_url.startswith("//"): 
+                            img_url = "https:" + img_url
                         image_list.append(img_url)
             # Deduplicate, preserve order, limit to 7
             seen_imgs = set()
@@ -297,7 +321,7 @@ def scrape_single_product(SKU, driver):
                     break
             product_info['Image URLs'] = deduped_imgs
         except Exception as e:
-            log_error(f"[{SKU}] Error extracting Image URLs: {e}")
+            log_error(f"[{SKU}] Error extracting Image URLs: {e}", log_callback=log_callback)
         # Always return the required fields, even if some are missing
         # Print missing fields for debugging
         missing = []
@@ -305,7 +329,7 @@ def scrape_single_product(SKU, driver):
             if not product_info.get(key):
                 missing.append(key)
         if missing:
-            log_error(f"[{SKU}] Missing fields in extracted product_info: {', '.join(missing)}")
+            log_error(f"[{SKU}] Missing fields in extracted product_info: {', '.join(missing)}", log_callback=log_callback)
 
         # Check for critical missing data - return None if essential fields are missing
         critical_fields_missing = (

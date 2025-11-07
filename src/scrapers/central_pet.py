@@ -14,38 +14,38 @@ from src.utils.general.display import display_product_result, display_scraping_p
 HEADLESS = True
 TEST_SKU = "035585499741"  # KONG Pull A Partz Pals Koala SM - test SKU for Central Pet
 
-def scrape_central(skus):
+def scrape_central(skus, log_callback=None):
     """Scrape Central Pet products for multiple SKUs."""
     products = []
     start_time = time.time()
     
     with create_browser("Central Pet", headless=HEADLESS) as driver:
         if driver is None:
-            print("❌ Error: Could not create browser for Central Pet")
+            display_error("Could not create browser for Central Pet", log_callback=log_callback)
             return products
             
         for i, sku in enumerate(skus, 1):
-            product_info = scrape_single_product(sku, driver)
+            product_info = scrape_single_product(sku, driver, log_callback=log_callback)
             if product_info:
                 products.append(product_info)
                 # Display individual product result
-                display_product_result(product_info, i, len(skus))
+                display_product_result(product_info, i, len(skus), log_callback=log_callback)
             else:
                 # Display error for failed product
                 products.append(None)  # Keep list aligned with SKUs
             
             # Show progress
-            display_scraping_progress(i, len(skus), start_time, "Central Pet")
+            display_scraping_progress(i, len(skus), start_time, "Central Pet", log_callback=log_callback)
     
     # Display final summary
     successful_products = [p for p in products if p]
-    display_scraping_summary(successful_products, start_time, "Central Pet")
+    display_scraping_summary(successful_products, start_time, "Central Pet", log_callback=log_callback)
                 
     return products
 
-def scrape_single_product(UPC, driver):
+def scrape_single_product(UPC, driver, log_callback=None):
     if driver is None:
-        print("❌ Error: WebDriver instance is None. Cannot scrape product.")
+        display_error("WebDriver instance is None. Cannot scrape product.", log_callback=log_callback)
         return None
     url = f'https://www.centralpet.com/Search?criteria={UPC}'
 
@@ -69,7 +69,7 @@ def scrape_single_product(UPC, driver):
                 )
             )
         except Exception:
-            display_error("Timeout waiting for product or no-results message", UPC)
+            display_error("Timeout waiting for product or no-results message", UPC, log_callback=log_callback)
             return None
 
         # Robust no-results detection
@@ -97,8 +97,8 @@ def scrape_single_product(UPC, driver):
                 product_info['Brand'] = brand_name.strip() if brand_name else 'No brand found'
             else:
                 product_info['Brand'] = 'No brand found'
-        except Exception:
-            display_error(f"Error extracting brand: {e}", UPC)
+        except Exception as e:
+            display_error(f"Error extracting brand: {e}", UPC, log_callback=log_callback)
             product_info['Brand'] = 'N/A'  # Placeholder instead of failing
 
         # Name extraction
@@ -106,7 +106,7 @@ def scrape_single_product(UPC, driver):
             name_element = driver.find_element(By.ID, "tst_productDetail_erpDescription")
             product_info['Name'] = clean_string(name_element.text) if name_element else 'No name found'
         except Exception:
-            display_error("Error extracting name", UPC)
+            display_error("Error extracting name", UPC, log_callback=log_callback)
             product_info['Name'] = 'N/A'  # Placeholder instead of failing
 
         # Short description extraction
@@ -162,7 +162,7 @@ def scrape_single_product(UPC, driver):
             product_info['Image URLs'] = []
 
     except Exception as e:
-        display_error(f"Error processing UPC {UPC}: {e}")
+        display_error(f"Error processing UPC {UPC}: {e}", log_callback=log_callback)
         return None
 
     # Check for critical missing data - return None if essential fields are missing

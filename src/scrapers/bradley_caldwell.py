@@ -20,7 +20,7 @@ TEST_SKU = "791611038437"  # SKU that previously had empty brand
 def wait_for_element(driver, by, selector, timeout=15):
     return WebDriverWait(driver, timeout).until(EC.presence_of_element_located((by, selector)))
 
-def scrape_bradley_caldwell(skus):
+def scrape_bradley_caldwell(skus, log_callback=None):
     """
     Scrape Bradley Caldwell for multiple SKUs.
 
@@ -39,23 +39,23 @@ def scrape_bradley_caldwell(skus):
     # Create browser instance for this scraper
     with create_browser("Bradley Caldwell", headless=HEADLESS) as driver:
         for i, sku in enumerate(skus, 1):
-            product_info = scrape_single_product(sku, driver)
+            product_info = scrape_single_product(sku, driver, log_callback=log_callback)
             if product_info:
                 products.append(product_info)
-                display_product_result(product_info, i, len(skus))
+                display_product_result(product_info, i, len(skus), log_callback=log_callback)
             else:
                 products.append(None)
             
-            display_scraping_progress(i, len(skus), start_time, "Bradley Caldwell")
+            display_scraping_progress(i, len(skus), start_time, "Bradley Caldwell", log_callback=log_callback)
     
     successful_products = [p for p in products if p]
-    display_scraping_summary(successful_products, start_time, "Bradley Caldwell")
+    display_scraping_summary(successful_products, start_time, "Bradley Caldwell", log_callback=log_callback)
                 
     return products
 
-def scrape_single_product(SKU, driver):
+def scrape_single_product(SKU, driver, log_callback=None):
     if driver is None:
-        display_error("WebDriver instance is None. Cannot scrape product.")
+        display_error("WebDriver instance is None. Cannot scrape product.", log_callback=log_callback)
         return None
 
     search_url = f"https://www.bradleycaldwell.com/searchresults?Ntk=All|product.active%7C&Ntt=*{SKU}*&Nty=1&No=0&Nrpp=12&Rdm=323&searchType=simple&type=search"
@@ -75,8 +75,12 @@ def scrape_single_product(SKU, driver):
                 )
             )
         except TimeoutException:
-            print(f"❌ TIMEOUT: Product page failed to load within 20s for SKU: {SKU}")
-            display_error("Timeout: Neither product nor 'no results' message appeared.")
+            error_msg = f"❌ TIMEOUT: Product page failed to load within 20s for SKU: {SKU}"
+            if log_callback:
+                log_callback(error_msg)
+            else:
+                print(error_msg)
+            display_error("Timeout: Neither product nor 'no results' message appeared.", log_callback=log_callback)
             return None
 
         try:
@@ -94,8 +98,12 @@ def scrape_single_product(SKU, driver):
             
             product_info['Name'] = clean_string(name_element.text)
         except TimeoutException:
-            print(f"❌ TIMEOUT: Product name element not found within 15s for SKU: {SKU}")
-            display_error("Name not found.")
+            error_msg = f"❌ TIMEOUT: Product name element not found within 15s for SKU: {SKU}"
+            if log_callback:
+                log_callback(error_msg)
+            else:
+                print(error_msg)
+            display_error("Name not found.", log_callback=log_callback)
             product_info['Name'] = ''  # Return empty instead of trying alternatives
 
         # Try multiple selectors for brand extraction with shorter timeout
@@ -176,11 +184,14 @@ def scrape_single_product(SKU, driver):
                 EC.presence_of_element_located((By.XPATH, "//table[contains(@class, 'table')]//tr[td/strong[text()='Weight']]/td[2]"))
             )
             weight_html = weight_element.get_attribute('innerHTML')
-            match = re.search(r'(\d*\.?\d+)\s*(lbs?|kg|oz)?', weight_html, re.IGNORECASE)
-            if match:
-                product_info['Weight'] = f"{match.group(1)} {match.group(2) or ''}".strip()
+            if weight_html:
+                match = re.search(r'(\d*\.?\d+)\s*(lbs?|kg|oz)?', weight_html, re.IGNORECASE)
+                if match:
+                    product_info['Weight'] = f"{match.group(1)} {match.group(2) or ''}".strip()
+                else:
+                    product_info['Weight'] = ''  # Return empty if not parseable
             else:
-                product_info['Weight'] = ''  # Return empty if not parseable
+                product_info['Weight'] = ''  # Return empty if no HTML content
         except (TimeoutException, NoSuchElementException):
             product_info['Weight'] = ''  # Return empty if not found
 
@@ -223,11 +234,11 @@ def scrape_single_product(SKU, driver):
 
         except Exception as e:
             product_info['Image URLs'] = []
-            display_error(f"Image fetch failed: {e}")
+            display_error(f"Image fetch failed: {e}", log_callback=log_callback)
 
     except Exception as e:
         driver.save_screenshot("scrape_error.png")
-        display_error(f"WebDriver error: {e}")
+        display_error(f"WebDriver error: {e}", log_callback=log_callback)
         return None
 
     # Check for critical missing data - only discard if no images found

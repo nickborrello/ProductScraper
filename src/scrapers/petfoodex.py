@@ -13,8 +13,10 @@ from src.utils.scraping.browser import create_browser
 from src.utils.general.display import display_product_result, display_scraping_progress, display_scraping_summary, display_error
 from src.core.settings_manager import settings
 
-# Ensure project root is in sys.path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+# Ensure project root is on sys.path
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
 load_dotenv()
 HEADLESS = False
@@ -24,12 +26,12 @@ LOGIN_URL = "https://orders.petfoodexperts.com/SignIn"
 HOME_URL = "https://orders.petfoodexperts.com/"
 
 def init_browser(profile_suffix="default", headless=True):
-    # Use login-safe Chrome options instead of standard ones
-    from src.utils.scraping.scraping import get_login_safe_chrome_options
-    chrome_options = get_login_safe_chrome_options(headless=headless, profile_suffix=profile_suffix)
+    # Use standard Chrome options
+    from src.utils.scraping.scraping import get_standard_chrome_options
+    chrome_options = get_standard_chrome_options(headless=headless, profile_suffix=profile_suffix)
     
     # Use selenium_profiles directory for petfoodex with unique suffix
-    user_data_dir = os.path.abspath(f"data/selenium_profiles/petfoodex_{profile_suffix}")
+    user_data_dir = os.path.join(PROJECT_ROOT, "data", "selenium_profiles", f"petfoodex_{profile_suffix}")
     os.makedirs(user_data_dir, exist_ok=True)
     chrome_options.add_argument(f"--user-data-dir={user_data_dir}")
     
@@ -50,7 +52,7 @@ def load_cookies(driver):
     except:
         pass
 
-def save_cookies(driver):
+def save_cookies(driver, log_callback=None):
     try:
         import pickle
         import os
@@ -59,7 +61,11 @@ def save_cookies(driver):
         with open("cookies/petfoodex_cookies.pkl", "wb") as f:
             pickle.dump(cookies, f)
     except Exception as e:
-        print(f"⚠️ Failed to save cookies: {e}")
+        warning_msg = f"⚠️ Failed to save cookies: {e}"
+        if log_callback:
+            log_callback(warning_msg)
+        else:
+            print(warning_msg)
 
 def is_logged_in(driver):
     # Load saved cookies first
@@ -116,18 +122,28 @@ def is_logged_in(driver):
 
     return False
 
-def login(driver):
-    print("🚪 Starting login process...")
+def login(driver, log_callback=None):
+    if log_callback:
+        log_callback("🚪 Starting login process...")
+    else:
+        print("🚪 Starting login process...")
     driver.get(LOGIN_URL)
     time.sleep(3)  # Let page load
 
     username, password = settings.petfood_credentials
 
     if not username or not password:
-        print("❌ Missing PetFood credentials in settings")
+        error_msg = "❌ Missing PetFood credentials in settings"
+        if log_callback:
+            log_callback(error_msg)
+        else:
+            print(error_msg)
         raise ValueError("PetFood credentials not configured in settings")
 
-    print("📝 Filling login form...")
+    if log_callback:
+        log_callback("📝 Filling login form...")
+    else:
+        print("📝 Filling login form...")
     try:
         # Wait for and fill username
         username_field = WebDriverWait(driver, 10).until(
@@ -135,9 +151,16 @@ def login(driver):
         )
         username_field.clear()
         username_field.send_keys(username)
-        print("✅ Username entered")
+        if log_callback:
+            log_callback("✅ Username entered")
+        else:
+            print("✅ Username entered")
     except Exception as e:
-        print(f"❌ Failed to enter username: {e}")
+        error_msg = f"❌ Failed to enter username: {e}"
+        if log_callback:
+            log_callback(error_msg)
+        else:
+            print(error_msg)
         return
 
     try:
@@ -147,12 +170,22 @@ def login(driver):
         )
         password_field.clear()
         password_field.send_keys(password)
-        print("✅ Password entered")
+        if log_callback:
+            log_callback("✅ Password entered")
+        else:
+            print("✅ Password entered")
     except Exception as e:
-        print(f"❌ Failed to enter password: {e}")
+        error_msg = f"❌ Failed to enter password: {e}"
+        if log_callback:
+            log_callback(error_msg)
+        else:
+            print(error_msg)
         return
 
-    print("🔘 Clicking login button...")
+    if log_callback:
+        log_callback("🔘 Clicking login button...")
+    else:
+        print("🔘 Clicking login button...")
     try:
         # Find the submit button
         submit_button = WebDriverWait(driver, 10).until(
@@ -161,23 +194,44 @@ def login(driver):
         
         # Try to click
         submit_button.click()
-        print("✅ Login button clicked")
+        if log_callback:
+            log_callback("✅ Login button clicked")
+        else:
+            print("✅ Login button clicked")
     except Exception as e:
-        print(f"❌ Failed to click login button: {e}")
+        error_msg = f"❌ Failed to click login button: {e}"
+        if log_callback:
+            log_callback(error_msg)
+        else:
+            print(error_msg)
         return
 
-    print("⏳ Waiting for login to complete...")
+    if log_callback:
+        log_callback("⏳ Waiting for login to complete...")
+    else:
+        print("⏳ Waiting for login to complete...")
     try:
         # Wait for redirect
         WebDriverWait(driver, 30).until(
             lambda d: d.current_url != LOGIN_URL and "SignIn" not in d.current_url
         )
-        print("✅ Login process completed")
+        if log_callback:
+            log_callback("✅ Login process completed")
+        else:
+            print("✅ Login process completed")
         # Save cookies after successful login
-        save_cookies(driver)
+        save_cookies(driver, log_callback=log_callback)
     except Exception as e:
-        print(f"⚠️ Login may have timed out: {e}")
-        print(f"   Current URL: {driver.current_url}")
+        warning_msg = f"⚠️ Login may have timed out: {e}"
+        if log_callback:
+            log_callback(warning_msg)
+        else:
+            print(warning_msg)
+        current_url_msg = f"   Current URL: {driver.current_url}"
+        if log_callback:
+            log_callback(current_url_msg)
+        else:
+            print(current_url_msg)
 
 def parse_weight_from_name(name):
     """
@@ -215,7 +269,7 @@ def parse_weight_from_name(name):
     
     return ""
 
-def scrape_petfood_experts(skus, browser=None):
+def scrape_petfood_experts(skus, browser=None, log_callback=None):
     """Scrape Pet Food Experts products for multiple SKUs."""
     if not skus:
         return []
@@ -229,24 +283,24 @@ def scrape_petfood_experts(skus, browser=None):
     else:
         driver = create_browser("Pet Food Experts", headless=HEADLESS)
         if driver is None:
-            display_error("Could not create browser for Pet Food Experts")
+            display_error("Could not create browser for Pet Food Experts", log_callback=log_callback)
             return products
     
     try:
         # Handle login if required (only if we created our own browser)
         if browser is None:
             if not is_logged_in(driver):
-                login(driver)
+                login(driver, log_callback=log_callback)
             
         for i, sku in enumerate(skus, 1):
-            product_info = scrape_single_product(sku, driver)
+            product_info = scrape_single_product(sku, driver, log_callback=log_callback)
             if product_info:
                 products.append(product_info)
-                display_product_result(product_info, i, len(skus))
+                display_product_result(product_info, i, len(skus), log_callback=log_callback)
             else:
                 products.append(None)
             
-            display_scraping_progress(i, len(skus), start_time, "Pet Food Experts")
+            display_scraping_progress(i, len(skus), start_time, "Pet Food Experts", log_callback=log_callback)
     
     finally:
         # Only quit browser if we created it ourselves
@@ -257,13 +311,13 @@ def scrape_petfood_experts(skus, browser=None):
                 pass
     
     successful_products = [p for p in products if p]
-    display_scraping_summary(successful_products, start_time, "Pet Food Experts")
+    display_scraping_summary(successful_products, start_time, "Pet Food Experts", log_callback=log_callback)
                 
     return products
 
-def scrape_single_product(sku, driver):
+def scrape_single_product(sku, driver, log_callback=None):
     if driver is None:
-        display_error("WebDriver instance is None. Cannot scrape product.")
+        display_error("WebDriver instance is None. Cannot scrape product.", log_callback=log_callback)
         return None
     try:
         search_url = f"https://orders.petfoodexperts.com/Search?query={sku}"
@@ -284,7 +338,11 @@ def scrape_single_product(sku, driver):
 
         # Check if we're on a product detail page (has highest priority)
         if driver.find_elements(By.CSS_SELECTOR, "div.pf-detail-wrap"):
-            print(f"DEBUG: Found product detail page for SKU {sku}")
+            debug_msg = f"DEBUG: Found product detail page for SKU {sku}"
+            if log_callback:
+                log_callback(debug_msg)
+            else:
+                print(debug_msg)
             time.sleep(1)
             try:
                 brand_elem = driver.find_element(By.CSS_SELECTOR, "a.pf-detail-title span")
@@ -358,14 +416,22 @@ def scrape_single_product(sku, driver):
             )
 
             if critical_fields_missing:
-                print(f"DEBUG: Critical fields missing for SKU {sku}, returning None")
+                debug_msg = f"DEBUG: Critical fields missing for SKU {sku}, returning None"
+                if log_callback:
+                    log_callback(debug_msg)
+                else:
+                    print(debug_msg)
                 return None
 
             return product_info
 
         # Check for no results message
         elif driver.find_elements(By.CSS_SELECTOR, ".pf-no-results"):
-            print(f"DEBUG: No results found for SKU {sku}")
+            debug_msg = f"DEBUG: No results found for SKU {sku}"
+            if log_callback:
+                log_callback(debug_msg)
+            else:
+                print(debug_msg)
             return None
 
         # Check if we're on search results page with actual results
@@ -373,20 +439,32 @@ def scrape_single_product(sku, driver):
             # Look for product cards in search results - be more specific to avoid false positives
             product_cards = driver.find_elements(By.CSS_SELECTOR, ".pf-product-card, .product-card")
             if product_cards:
-                print(f"DEBUG: Found {len(product_cards)} products in search results for SKU {sku}, but expected direct navigation to product page")
+                debug_msg = f"DEBUG: Found {len(product_cards)} products in search results for SKU {sku}, but expected direct navigation to product page"
+                if log_callback:
+                    log_callback(debug_msg)
+                else:
+                    print(debug_msg)
                 # This might indicate the SKU matches multiple products - we could potentially scrape the first one
                 # For now, return None since we expect direct navigation for exact SKU matches
                 return None
             else:
-                print(f"DEBUG: On search results page but no product cards found for SKU {sku}")
+                debug_msg = f"DEBUG: On search results page but no product cards found for SKU {sku}"
+                if log_callback:
+                    log_callback(debug_msg)
+                else:
+                    print(debug_msg)
                 return None
 
         else:
-            print(f"DEBUG: Unexpected page state for SKU {sku} - no recognized elements found")
+            debug_msg = f"DEBUG: Unexpected page state for SKU {sku} - no recognized elements found"
+            if log_callback:
+                log_callback(debug_msg)
+            else:
+                print(debug_msg)
             return None
 
     except Exception as e:
-        display_error(f"PetFoodExperts scrape error for SKU {sku}: {e}")
+        display_error(f"PetFoodExperts scrape error for SKU {sku}: {e}", log_callback=log_callback)
         return None
 
 if __name__ == "__main__":
