@@ -45,7 +45,10 @@ git clone https://github.com/nickborrello/ProductScraper.git
 cd ProductScraper
 
 # Install Python dependencies
-pip install python-dotenv PyQt6 requests selenium pandas sqlalchemy
+pip install -r requirements.txt
+
+# Install Node.js dependencies (for APM - optional)
+npm install
 
 # Set up environment configuration
 cp .env.example .env
@@ -64,6 +67,7 @@ python main.py
 ```
 
 **Features:**
+
 - 🎨 Modern, intuitive interface with organized action cards
 - 📊 Real-time status updates and database statistics
 - 📋 Professional log viewer with color-coded messages
@@ -71,6 +75,7 @@ python main.py
 - 💾 Progress tracking for all operations
 
 **Available Operations:**
+
 - **Scraping Operations**: Start scraping, check discontinued products
 - **Database Management**: Refresh from XML, download XML, view/edit products, database statistics
 - **Tools**: Classify Excel files, run automated tests
