@@ -51,13 +51,3 @@ config/credentials.json
 
 # Browser profiles (Selenium automation)
 data/selenium_profiles/
-
-# Scrapy-specific files
-.scrapy/                    # Scrapy HTTP cache directory
-scrapy_project/.scrapy/     # Scrapy cache in project directory
-scrapy_project/httpcache/   # HTTP cache directory (configured in settings)
-data/scrapy_output.xlsx     # Scrapy pipeline output file
-
-# Scrapy output files
-*.csv
-*.json

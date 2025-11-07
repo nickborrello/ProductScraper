@@ -1,0 +1,22 @@
+{
+  "_comment": "ProductScraper Settings Example - Copy to settings.json and fill in your values",
+  "petfood_username": "your_petfood_username",
+  "petfood_password": "your_petfood_password",
+  "phillips_username": "your_phillips_username",
+  "phillips_password": "your_phillips_password",
+  "orgill_username": "your_orgill_username",
+  "orgill_password": "your_orgill_password",
+  "shopsite_client_id": "your_shopsite_client_id",
+  "shopsite_secret_key": "your_shopsite_secret_key",
+  "shopsite_authorization_code": "your_shopsite_auth_code",
+  "shopsite_auth_url": "https://yourstore.shopsite.com/xml/",
+  "shopsite_username": "your_shopsite_username",
+  "shopsite_password": "your_shopsite_password",
+  "zyte_api_key": "your_zyte_api_key_here",
+  "debug_mode": false,
+  "database_path": "data/databases/products.db",
+  "selenium_headless": true,
+  "selenium_timeout": 30,
+  "auto_scroll_logs": true,
+  "theme": "dark"
+}
