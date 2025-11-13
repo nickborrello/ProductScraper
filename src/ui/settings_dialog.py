@@ -233,8 +233,8 @@ class SettingsDialog(QDialog):
         # Classification method dropdown
         from PyQt6.QtWidgets import QComboBox
         self.classification_method = QComboBox()
-        self.classification_method.addItems(["hybrid", "llm", "fuzzy"])
-        self.classification_method.setToolTip("hybrid: AI + fuzzy matching\nllm: OpenAI API only\nfuzzy: fuzzy matching only")
+        self.classification_method.addItems(["llm", "fuzzy"])
+        self.classification_method.setToolTip("llm: OpenAI API only\nfuzzy: fuzzy matching only")
         ai_layout.addRow("Classification Method:", self.classification_method)
 
         ai_group.setLayout(ai_layout)
@@ -270,7 +270,7 @@ class SettingsDialog(QDialog):
 
         # AI/ML
         self.openai_api_key.setText(self.current_settings.get('openai_api_key', ''))
-        method = self.current_settings.get('classification_method', 'hybrid')
+        method = self.current_settings.get('classification_method', 'llm')
         index = self.classification_method.findText(method)
         if index >= 0:
             self.classification_method.setCurrentIndex(index)

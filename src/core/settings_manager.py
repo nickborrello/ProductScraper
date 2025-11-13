@@ -31,7 +31,7 @@ class SettingsManager:
 
         # AI/ML Settings
         'openai_api_key': '',
-        'classification_method': 'hybrid',  # 'hybrid', 'llm', or 'fuzzy'
+        'classification_method': 'llm',  # 'llm' or 'fuzzy'
 
         # Application Settings
         'debug_mode': False,

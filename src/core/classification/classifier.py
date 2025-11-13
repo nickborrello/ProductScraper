@@ -422,14 +422,14 @@ def get_default_pet_food_classifications(product_info):
     return None
 
 
-def classify_products_batch(products_list, method="hybrid"):
+def classify_products_batch(products_list, method="llm"):
     """
     Classify multiple products using specified method.
-    
+
     Args:
         products_list: List of product_info dictionaries to classify
-        method: Classification method - "hybrid" (AI + fuzzy), "llm" (OpenAI API), or "fuzzy" (fuzzy matching only)
-    
+        method: Classification method - "llm" (OpenAI API) or "fuzzy" (fuzzy matching only)
+
     Returns:
         List of product_info dictionaries with recommended facets added
     """
@@ -449,14 +449,14 @@ def classify_products_batch(products_list, method="hybrid"):
     return classified_products
 
 
-def classify_single_product(product_info, method="hybrid"):
+def classify_single_product(product_info, method="llm"):
     """
-    Classify a single product using specified method.
-    
+    Classify a single product using LLM classification.
+
     Args:
         product_info: Dict with product details
-        method: Classification method - "hybrid" (AI + fuzzy), "llm" (OpenAI API), or "fuzzy" (fuzzy matching only)
-    
+        method: Classification method - "llm" (OpenAI API) or "fuzzy" (fuzzy matching only)
+
     Returns:
         Dict: Product_info with recommended facets added
     """
@@ -467,104 +467,20 @@ def classify_single_product(product_info, method="hybrid"):
         try:
             from .llm_classifier import classify_product_llm
             llm_result = classify_product_llm(product_info)
-            
+
             # Apply LLM results
             for label in ['Category', 'Product Type', 'Product On Pages']:
                 if label in llm_result and llm_result[label]:
                     product_info[label] = llm_result[label]
                 else:
                     product_info[label] = ""
-            
+
             print(f"🧠 LLM classification: {product_name[:40]}... → {product_info.get('Category', 'N/A')}")
             return product_info
-            
-        except Exception as e:
-            print(f"⚠️ LLM classification failed, falling back to hybrid: {e}")
-            method = "hybrid"  # Fallback to hybrid
-    
-    # Hybrid AI + Fuzzy matching approach
-    if method == "hybrid":
-        # First try AI classification (fast and accurate)
-        ai_confidence = 0
-        ai_result = {}
-        try:
-            from .ai_classifier import classify_product_ai
-            ai_result = classify_product_ai(product_info)
-
-            # Enhanced confidence calculation
-            if ai_result and any(ai_result.values()):
-                confidence_score = 0.0
-
-                # Check if AI predictions match expected patterns
-                product_lower = product_name.lower()
-
-                # Pet type consistency check (high weight)
-                pet_keywords = {
-                    'dog': ['dog', 'puppy', 'canine'],
-                    'cat': ['cat', 'kitten', 'feline'],
-                    'bird': ['bird', 'avian', 'parrot'],
-                    'fish': ['fish', 'aquatic'],
-                    'reptile': ['reptile', 'snake', 'lizard', 'turtle', 'bearded dragon'],
-                    'small animal': ['rabbit', 'guinea pig', 'hamster']
-                }
-
-                category = ai_result.get('Category', '').lower().strip('|')
-                predicted_pet_type = None
-                for pet_type, keywords in pet_keywords.items():
-                    if any(keyword in category for keyword in keywords):
-                        predicted_pet_type = pet_type
-                        break
-
-                actual_pet_type = None
-                for pet_type, keywords in pet_keywords.items():
-                    if any(keyword in product_lower for keyword in keywords):
-                        actual_pet_type = pet_type
-                        break
-
-                if predicted_pet_type and actual_pet_type:
-                    if predicted_pet_type == actual_pet_type:
-                        confidence_score += 0.6  # Strong boost for pet type match
-                    else:
-                        confidence_score -= 0.4  # Penalty for mismatch
-                elif predicted_pet_type or actual_pet_type:
-                    confidence_score += 0.2  # Partial credit if only one has pet type
-
-                # Product type relevance check
-                product_type = ai_result.get('Product Type', '').lower().strip('|')
-                if product_type:
-                    # Check if product type makes sense for the category
-                    type_category_map = {
-                        'food': ['dog food', 'cat food', 'bird food', 'fish food'],
-                        'treat': ['dog food', 'cat food', 'bird food'],
-                        'toy': ['dog toy', 'cat toy', 'bird toy'],
-                        'bed': ['dog bed', 'cat bed'],
-                        'bowl': ['dog bowl', 'cat bowl', 'bird bowl']
-                    }
-
-                    for type_hint, valid_categories in type_category_map.items():
-                        if type_hint in product_type:
-                            if any(cat in category for cat in valid_categories):
-                                confidence_score += 0.2
-                            break
-
-                # Length and specificity check
-                total_predictions = sum(1 for v in ai_result.values() if v and v.strip('|'))
-                if total_predictions >= 2:
-                    confidence_score += 0.2  # Bonus for multiple predictions
-
-                ai_confidence = max(0.0, min(1.0, confidence_score))  # Clamp to [0,1]
-
-                # Use AI results if confidence is high enough
-                if ai_confidence >= 0.4:  # Lowered threshold for better coverage
-                    for label in ['Category', 'Product Type', 'Product On Pages']:
-                        if label in ai_result and ai_result[label]:
-                            product_info[label] = ai_result[label]
-                        else:
-                            product_info[label] = ""
-                    return product_info
 
         except Exception as e:
-            print(f"⚠️ AI classification failed (confidence: {ai_confidence}), falling back to fuzzy matching: {e}")
+            print(f"⚠️ LLM classification failed, falling back to fuzzy matching: {e}")
+            method = "fuzzy"  # Fallback to fuzzy matching
     
     # Fallback to fuzzy matching (either AI failed/low confidence, or method is "fuzzy")
     print(f"🔄 Using fuzzy matching fallback (method: {method})")
@@ -630,18 +546,18 @@ if __name__ == "__main__":
     print(f"   Brand: {test_product['Brand']}")
     print()
 
-    # Test single product classification (hybrid method)
-    print("🔍 Testing hybrid classification...")
-    classified_product = classify_single_product(test_product.copy(), method="hybrid")
+    # Test single product classification (LLM method)
+    print("🔍 Testing LLM classification...")
+    classified_product = classify_single_product(test_product.copy(), method="llm")
 
-    print("📊 Hybrid Classification Results:")
+    print("📊 LLM Classification Results:")
     print(f"   Category: {classified_product.get('Category', 'None')}")
     print(f"   Product Type: {classified_product.get('Product Type', 'None')}")
     print(f"   Product On Pages: {classified_product.get('Product On Pages', 'None')}")
     print()
 
-    # Test LLM classification
-    print("🧠 Testing LLM classification...")
+    # Test fuzzy classification
+    print("🔍 Testing fuzzy classification...")
     try:
         llm_product = classify_single_product(test_product.copy(), method="llm")
         print("📊 LLM Classification Results:")
@@ -670,7 +586,7 @@ if __name__ == "__main__":
         }
     ]
 
-    classified_batch = classify_products_batch(test_products, method="hybrid")
+    classified_batch = classify_products_batch(test_products, method="llm")
 
     print("📊 Batch Classification Results:")
     for i, product in enumerate(classified_batch, 1):

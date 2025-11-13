@@ -94,7 +94,7 @@ def classify_excel_file():
 
         # Run automatic classification first
         settings = SettingsManager()
-        classification_method = settings.get('classification_method', 'hybrid')
+        classification_method = settings.get('classification_method', 'llm')
         print(f"🤖 Running automatic classification using {classification_method} method...")
         products_list = classify_products_batch(products_list, method=classification_method)
         print("✅ Automatic classification complete")

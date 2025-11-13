@@ -24,8 +24,9 @@ MODEL = "gpt-4o-mini"  # Cost-effective and capable
 MAX_TOKENS = 1000
 TEMPERATURE = 0.1  # Low temperature for consistent classifications
 
-# Pet product taxonomy - comprehensive but not overwhelming
-PET_TAXONOMY = {
+# Comprehensive product taxonomy - includes both pet and general products
+GENERAL_PRODUCT_TAXONOMY = {
+    # Pet Products
     "Dog Food": [
         "Dry Dog Food", "Wet Dog Food", "Raw Dog Food", "Freeze Dried Dog Food",
         "Puppy Food", "Adult Dog Food", "Senior Dog Food", "Grain Free Dog Food",
@@ -79,15 +80,45 @@ PET_TAXONOMY = {
     "Pet Bowls & Feeders": [
         "Dog Bowls", "Cat Bowls", "Bird Bowls", "Automatic Feeders",
         "Pet Water Fountains", "Slow Feed Bowls"
+    ],
+    # Non-Pet Products
+    "Hardware": [
+        "Tools", "Fasteners", "Plumbing", "Electrical", "HVAC",
+        "Paint", "Lumber", "Hardware Accessories", "Power Tools", "Hand Tools"
+    ],
+    "Lawn & Garden": [
+        "Seeds", "Fertilizer", "Tools", "Plants", "Gardening Supplies",
+        "Lawn Care", "Outdoor Furniture", "Grills", "Pest Control", "Irrigation"
+    ],
+    "Farm Supplies": [
+        "Fencing", "Feeders", "Equipment", "Animal Health", "Farm Tools",
+        "Livestock Supplies", "Poultry Supplies", "Barn Equipment", "Tractor Parts"
+    ],
+    "Home & Kitchen": [
+        "Cleaning", "Storage", "Appliances", "Decor", "Kitchen Tools",
+        "Bathroom Supplies", "Bedding", "Furniture", "Home Improvement", "Organization"
+    ],
+    "Automotive": [
+        "Parts", "Tools", "Maintenance", "Accessories", "Tires",
+        "Batteries", "Oil", "Filters", "Brakes", "Engine Parts"
+    ],
+    "Farm Animal Supplies": [
+        "Chicken Feed", "Goat Feed", "Sheep Feed", "Pig Feed",
+        "Livestock Medications", "Animal Supplements", "Farm Equipment"
     ]
 }
 
-# Common product pages
+# Common product pages - includes both pet and general products
 PRODUCT_PAGES = [
+    # Pet Pages
     "Dog Food Shop All", "Cat Food Shop All", "Bird Supplies Shop All",
     "Fish Supplies Shop All", "Small Pet Supplies Shop All", "Reptile Supplies Shop All",
     "Pet Toys Shop All", "Pet Healthcare Shop All", "Pet Grooming Shop All",
     "Dog Supplies Shop All", "Cat Supplies Shop All", "Pet Beds Shop All",
+    # General Pages
+    "Hardware Shop All", "Lawn & Garden Shop All", "Farm Supplies Shop All",
+    "Home & Kitchen Shop All", "Automotive Shop All", "Farm Animal Supplies Shop All",
+    # Common Pages
     "Brand Pages", "Sale Items", "New Arrivals", "Best Sellers"
 ]
 
@@ -111,15 +142,15 @@ class LLMProductClassifier:
         """Initialize conversation with taxonomy and instructions."""
 
         # Create comprehensive system prompt
-        taxonomy_text = "PET PRODUCT TAXONOMY:\n"
-        for category, product_types in PET_TAXONOMY.items():
+        taxonomy_text = "PRODUCT TAXONOMY:\n"
+        for category, product_types in GENERAL_PRODUCT_TAXONOMY.items():
             taxonomy_text += f"\n{category.upper()}:\n"
             for pt in product_types:
                 taxonomy_text += f"  - {pt}\n"
 
         pages_text = "COMMON PRODUCT PAGES:\n" + "\n".join(f"  - {page}" for page in PRODUCT_PAGES)
 
-        system_prompt = f"""You are an expert pet product classifier for an e-commerce store.
+        system_prompt = f"""You are an expert e-commerce product classifier for a retail store.
 
 {taxonomy_text}
 
@@ -130,7 +161,7 @@ CLASSIFICATION RULES:
 2. For Category: Choose the most specific main category that fits
 3. For Product Type: Choose 1-3 most relevant product types from that category
 4. For Product On Pages: Choose 2-4 most relevant pages where this product should appear
-5. Consider the pet type (dog, cat, bird, fish, etc.) and product purpose
+5. Consider the product purpose and target market
 6. If uncertain, choose the closest match from the taxonomy
 
 Return classifications in this exact JSON format:
@@ -288,7 +319,7 @@ Be consistent and accurate in your classifications."""
             return []
 
         # Create batch prompt with essential product information
-        batch_prompt = "Classify these pet products. For each product, use the name and brand to determine the category and type.\n\n"
+        batch_prompt = "Classify these products. For each product, use the name and brand to determine the category and type.\n\n"
 
         for i, product in enumerate(products, 1):
             batch_prompt += f"PRODUCT {i}:\n"
@@ -508,7 +539,7 @@ if __name__ == "__main__":
     print("🧠 Testing LLM Product Classifier")
     print("=" * 50)
 
-    # Test products
+    # Test products - mix of pet and non-pet products
     test_products = [
         {
             'Name': 'Purina Pro Plan Adult Dog Food Chicken & Rice Formula',
@@ -521,6 +552,22 @@ if __name__ == "__main__":
         {
             'Name': 'Kaytee Forti-Diet Pro Health Cockatiel Food',
             'Brand': 'Kaytee'
+        },
+        {
+            'Name': 'Stanley 24oz Stainless Steel Water Bottle',
+            'Brand': 'Stanley'
+        },
+        {
+            'Name': 'Craftsman 16oz Claw Hammer',
+            'Brand': 'Craftsman'
+        },
+        {
+            'Name': ' Scotts Turf Builder Lawn Fertilizer',
+            'Brand': 'Scotts'
+        },
+        {
+            'Name': 'Mobil 1 Synthetic Motor Oil 5W-30',
+            'Brand': 'Mobil 1'
         }
     ]
 
