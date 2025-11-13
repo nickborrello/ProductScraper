@@ -663,6 +663,19 @@ def get_local_llm_classifier(model_name: str = None) -> LocalLLMProductClassifie
     return _local_llm_classifier
 
 
+def reset_local_llm_classifier():
+    """Reset the global classifier instance and clear cache (for testing)."""
+    global _local_llm_classifier
+    if _local_llm_classifier:
+        # Clear the cache file
+        try:
+            if _local_llm_classifier.cache_file.exists():
+                _local_llm_classifier.cache_file.unlink()
+        except Exception:
+            pass  # Ignore errors when deleting cache file
+    _local_llm_classifier = None
+
+
 def classify_product_local_llm(product_info: Dict[str, Any]) -> Dict[str, str]:
     """
     Classify a product using local LLM via Ollama (no API key required).
