@@ -778,7 +778,16 @@ def load_products_from_db(skus):
 
             img_list = []
             if images:
-                img_list = [i.strip() for i in images.split(",") if i.strip()]
+                raw_images = [i.strip() for i in images.split(",") if i.strip()]
+                # Convert relative paths to full URLs
+                base_url = "https://www.baystatepet.com/media/"
+                for img in raw_images:
+                    if img.startswith("http"):
+                        # Already a full URL
+                        img_list.append(img)
+                    else:
+                        # Convert relative path to full URL
+                        img_list.append(base_url + img)
 
             products.append(
                 {

@@ -290,6 +290,7 @@ class ProductViewer(QMainWindow):
             "Category", "Product Type", "Pages", "Special Order", "Disabled", "Last Updated"
         ])
         self.table.setAlternatingRowColors(True)
+        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)  # Make table read-only
         self.table.cellClicked.connect(self.on_table_click)
 
         # Set column widths and resize modes
@@ -761,6 +762,7 @@ class ProductViewer(QMainWindow):
                 sku = item.text()
                 self.toggle_selection(sku)
                 self.update_table_display()
+                self.update_edit_button()
 
     def toggle_selection(self, sku):
         """Toggle selection state of a product."""
@@ -933,9 +935,16 @@ class ProductViewer(QMainWindow):
                 image_urls = []
                 if images:
                     # Split by comma and strip whitespace
-                    image_urls = [
-                        url.strip() for url in str(images).split(",") if url.strip()
-                    ]
+                    raw_images = [url.strip() for url in str(images).split(",") if url.strip()]
+                    # Convert relative paths to full URLs
+                    base_url = "https://www.baystatepet.com/media/"
+                    for img in raw_images:
+                        if img.startswith("http"):
+                            # Already a full URL
+                            image_urls.append(img)
+                        else:
+                            # Convert relative path to full URL
+                            image_urls.append(base_url + img)
 
                 # Map database fields to editor format
                 mapped_product = {
