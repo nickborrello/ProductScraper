@@ -24,6 +24,9 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 
 # Central Pet scraper configuration
 HEADLESS = True  # Set to False only if CAPTCHA solving requires visible browser
+DEBUG_MODE = False  # Set to True to pause for manual inspection during scraping
+ENABLE_DEVTOOLS = False  # Set to True to enable Chrome DevTools remote debugging
+DEVTOOLS_PORT = 9222  # Port for Chrome DevTools remote debugging
 TEST_SKU = "035585499741"  # KONG Pull A Partz Pals Koala SM - test SKU for Central Pet
 
 
@@ -50,6 +53,12 @@ def create_driver(proxy_url=None) -> webdriver.Chrome:
         user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
     options.add_argument(f'--user-agent={user_agent}')
+
+    # Enable Chrome DevTools remote debugging if configured
+    if ENABLE_DEVTOOLS:
+        options.add_argument(f"--remote-debugging-port={DEVTOOLS_PORT}")
+        options.add_argument("--remote-debugging-address=0.0.0.0")
+        Actor.log.info(f"🔧 DevTools enabled on port {DEVTOOLS_PORT}")
 
     # Additional anti-detection measures
     options.add_argument("--disable-blink-features=AutomationControlled")
@@ -1352,6 +1361,12 @@ def scrape_single_product(driver: webdriver.Chrome, sku: str) -> dict[str, Any] 
         if "No results found for" in driver.page_source:
             Actor.log.info(f"Product not found for SKU: {sku}")
             return None
+
+        # DEBUG MODE: Pause for manual inspection
+        if DEBUG_MODE:
+            Actor.log.info(f"🐛 DEBUG MODE: Product page loaded for SKU {sku}")
+            Actor.log.info("Press Enter in the terminal to continue with data extraction...")
+            input("🐛 DEBUG MODE: Inspect the product page, then press Enter to continue...")
 
         return extract_product_data(driver, sku)
 

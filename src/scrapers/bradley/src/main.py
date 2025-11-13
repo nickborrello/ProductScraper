@@ -23,7 +23,10 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 
 
 # Bradley Caldwell scraper configuration
-HEADLESS = True  # Set to False only if CAPTCHA solving requires visible browser
+HEADLESS = False  # Set to False for debugging and manual inspection
+DEBUG_MODE = False  # Set to True to pause for manual inspection during scraping
+ENABLE_DEVTOOLS = False  # Set to True to enable Chrome DevTools remote debugging
+DEVTOOLS_PORT = 9222  # Port for Chrome DevTools remote debugging
 TEST_SKU = "791611038437"  # Bradley Caldwell SKU that previously had empty brand
 
 
@@ -51,10 +54,11 @@ def create_driver(proxy_url=None) -> webdriver.Chrome:
 
     options.add_argument(f'--user-agent={user_agent}')
 
-    # Additional anti-detection measures
-    options.add_argument("--disable-blink-features=AutomationControlled")
-    options.add_experimental_option("excludeSwitches", ["enable-automation"])
-    options.add_experimental_option('useAutomationExtension', False)
+    # Enable Chrome DevTools remote debugging if configured
+    if ENABLE_DEVTOOLS:
+        options.add_argument(f"--remote-debugging-port={DEVTOOLS_PORT}")
+        options.add_argument("--remote-debugging-address=0.0.0.0")
+        Actor.log.info(f"🔧 DevTools enabled on port {DEVTOOLS_PORT}")
 
     # Proxy support - use provided proxy or get from proxy manager
     effective_proxy = proxy_url or proxy_manager.get_proxy_url()
@@ -1399,6 +1403,12 @@ def scrape_single_product(driver: webdriver.Chrome, sku: str) -> dict[str, Any] 
         except TimeoutException:
             Actor.log.error(f"Timeout: Product page failed to load within 20s for SKU: {sku}")
             return None
+
+        # DEBUG MODE: Pause for manual inspection
+        if DEBUG_MODE:
+            Actor.log.info(f"🐛 DEBUG MODE: Product page loaded for SKU {sku}")
+            Actor.log.info("Press Enter in the terminal to continue with data extraction...")
+            input("🐛 DEBUG MODE: Inspect the product page, then press Enter to continue...")
 
         # Check if product was not found
         try:

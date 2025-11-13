@@ -24,6 +24,9 @@ from src.core.settings_manager import settings
 
 # HEADLESS is set to True for production deployment
 HEADLESS = True
+DEBUG_MODE = False  # Set to True to pause for manual inspection during scraping
+ENABLE_DEVTOOLS = False  # Set to True to enable Chrome DevTools remote debugging
+DEVTOOLS_PORT = 9222  # Port for Chrome DevTools remote debugging
 
 LOGIN_URL = "https://shop.phillipspet.com/ccrz__CCSiteLogin"
 HOME_URL = "https://shop.phillipspet.com/"
@@ -109,7 +112,7 @@ async def main() -> None:
         actor = apify.Actor()
 
         # Create browser
-        driver = create_browser("Phillips", headless=HEADLESS)
+        driver = create_browser("Phillips", headless=HEADLESS, enable_devtools=ENABLE_DEVTOOLS, devtools_port=DEVTOOLS_PORT)
         if driver is None:
             await apify.log.error("Could not create browser for Phillips")
             return
@@ -177,6 +180,12 @@ def scrape_single_product(SKU, driver):
                 EC.presence_of_element_located((By.CSS_SELECTOR, "div.plp-empty-state-message-container h3"))
             )
         )
+
+        # DEBUG MODE: Pause for manual inspection
+        if DEBUG_MODE:
+            apify.log.info(f"🐛 DEBUG MODE: Product page loaded for SKU {SKU}")
+            apify.log.info("Press Enter in the terminal to continue with data extraction...")
+            input("🐛 DEBUG MODE: Inspect the product page, then press Enter to continue...")
 
         empty_msg_elements = driver.find_elements(By.CSS_SELECTOR, "div.plp-empty-state-message-container h3")
         if empty_msg_elements:
