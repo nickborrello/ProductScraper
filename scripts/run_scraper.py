@@ -192,16 +192,24 @@ def run_db_refresh(progress_callback=None, log_callback=None, editor_callback=No
         raise
 
 
-def run_shopsite_xml_download(progress_callback=None, log_callback=None, editor_callback=None):
+def run_shopsite_xml_download(progress_callback=None, log_callback=None, editor_callback=None, status_callback=None):
     """Downloads and saves XML from ShopSite."""
-    log = log_callback if log_callback else print
+    # Determine log function
+    if log_callback is None:
+        log = print
+    elif hasattr(log_callback, 'emit'):
+        # If it's a Qt signal object, use emit method
+        log = log_callback.emit
+    else:
+        # If it's already a callable (like emit method or function), use it directly
+        log = log_callback
     
     log("🌐 Downloading XML from ShopSite...")
     if progress_callback:
         progress_callback.emit(10)
     
     try:
-        success, message = import_from_shopsite_xml(save_excel=True, save_to_db=False)
+        success, message = import_from_shopsite_xml(save_excel=True, save_to_db=False, interactive=False, log_callback=log_callback)
         log(message)
         if success:
             log("💡 XML downloaded. Use 'Refresh from XML' to process it into the database.")
