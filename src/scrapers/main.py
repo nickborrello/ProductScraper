@@ -44,17 +44,6 @@ except ImportError as e:
     if not is_gui_mode:
         print(f"❌ ProductScraper module not available: {e}")
 
-try:
-    from src.scrapers.discontinued import DiscontinuedChecker
-
-    DISCONTINUED_CHECKER_AVAILABLE = True
-    if not is_gui_mode:
-        print("✅ DiscontinuedChecker module loaded")
-except ImportError as e:
-    DISCONTINUED_CHECKER_AVAILABLE = False
-    if not is_gui_mode:
-        print(f"❌ DiscontinuedChecker module not available: {e}")
-
 if not is_gui_mode:
     print("🔧 Module check complete")
 
@@ -117,38 +106,6 @@ def run_scraping(file_path, progress_callback=None, log_callback=None, interacti
     if progress_callback:
         progress_callback.emit(90)
     log("✅ Product scraping completed!")
-
-def run_discontinued_check(file_path, progress_callback=None, log_callback=None, editor_callback=None, status_callback=None):
-    """Runs the discontinued product check."""
-    # Determine log function
-    if log_callback is None:
-        log = print
-    elif hasattr(log_callback, 'emit'):
-        # If it's a Qt signal object, use emit method
-        log = log_callback.emit
-    else:
-        # If it's already a callable (like emit method or function), use it directly
-        log = log_callback
-
-    if not DISCONTINUED_CHECKER_AVAILABLE:
-        log("❌ DiscontinuedChecker module not available.")
-        return
-
-    log(f"📂 Selected file: {os.path.basename(file_path)}")
-    if progress_callback:
-        progress_callback.emit(10)
-
-    log("🚀 Starting discontinued products check...")
-    if progress_callback:
-        progress_callback.emit(20)
-
-    checker = DiscontinuedChecker(file_path)
-    checker.run()
-
-    if progress_callback:
-        progress_callback.emit(90)
-    log("✅ Discontinued products check completed!")
-
 
 def run_db_refresh(progress_callback=None, log_callback=None, editor_callback=None, status_callback=None):
     """Processes the downloaded XML and refreshes the database, with callbacks."""
