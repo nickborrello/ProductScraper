@@ -63,7 +63,7 @@ The ProductScraper now features a modern, professional desktop application inter
 
 ```bash
 # Launch the GUI application
-python main.py
+python src/main.py --run gui
 ```
 
 **Features:**
@@ -79,6 +79,16 @@ python main.py
 - **Scraping Operations**: Start scraping, check discontinued products
 - **Database Management**: Refresh from XML, download XML, view/edit products, database statistics
 - **Tools**: Classify Excel files, run automated tests
+
+### Command-Line Interface
+
+For automation and scripting, you can use the command-line interface:
+
+```bash
+# Run the scraper
+python src/main.py --run scraper --file path/to/your/excel_file.xlsx
+```
+
 
 ### Testing
 
@@ -101,26 +111,22 @@ python -m pytest --cov=src
 ```
 ProductScraper/
 ├── src/                    # Main source code
+│   ├── main.py            # Main entry point for the application
 │   ├── core/              # Business logic and database
 │   │   ├── classification/ # Product classification system
 │   │   └── database_import.py
 │   ├── scrapers/          # Web scraping modules
-│   │   ├── amazon.py
-│   │   ├── bradley_caldwell.py
-│   │   └── master.py      # Main scraping orchestrator
+│   │   ├── amazon/
+│   │   ├── bradley/
+│   │   ├── ...
+│   │   └── main.py        # Main scraping orchestrator
 │   ├── ui/                # User interface components
+│   │   ├── main_window.py # Main application window
 │   │   ├── product_editor.py
-│   │   ├── product_classify_ui.py
-│   │   └── product_cross_sell_ui.py
+│   │   └── ...
 │   └── utils/             # Utility functions
-│       ├── scraping/      # Scraping utilities
-│       ├── images/        # Image processing
-│       └── files/         # File operations
-├── scripts/               # Executable entry points
-│   ├── run_scraper.py     # CLI application
-│   ├── run_gui.py         # GUI application
-│   ├── check_dataset.py   # Database statistics
-│   └── classify_excel.py  # Excel classification tool
+│       ├── tests.py       # Test utilities
+│       └── ...
 ├── tests/                 # Test suites
 │   ├── unit/             # Unit tests
 │   ├── integration/      # Integration tests
