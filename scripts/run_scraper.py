@@ -17,7 +17,7 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from src.core.database_import import import_from_shopsite_xml
+from src.core.database_import import import_from_shopsite_xml, publish_shopsite_changes
 from src.core.database_refresh import refresh_database_from_xml
 
 # Conditional imports for core modules
@@ -221,8 +221,41 @@ def run_shopsite_xml_download(progress_callback=None, log_callback=None, editor_
         raise
 
 
-def run_xml_to_db_processing():
-    """Processes the downloaded XML and refreshes the database."""
+def run_shopsite_publish(progress_callback=None, log_callback=None, editor_callback=None, status_callback=None):
+    """Publishes changes to ShopSite by regenerating website content."""
+    # Determine log function
+    if log_callback is None:
+        log = print
+    elif hasattr(log_callback, 'emit'):
+        # If it's a Qt signal object, use emit method
+        log = log_callback.emit
+    else:
+        # If it's already a callable (like emit method or function), use it directly
+        log = log_callback
+    
+    log("🚀 Publishing changes to ShopSite...")
+    if progress_callback:
+        progress_callback.emit(10)
+    
+    try:
+        # Default options: regenerate everything
+        success, message = publish_shopsite_changes(
+            html_pages=True,
+            custom_pages=True,
+            search_index=True,
+            sitemap=True,
+            full_regen=False,  # Use incremental by default
+            log_callback=log_callback
+        )
+        log(message)
+        if success:
+            log("💡 ShopSite publish completed successfully!")
+        if progress_callback:
+            progress_callback.emit(100)
+    except Exception as e:
+        log(f"❌ ShopSite publish failed: {e}")
+        # The worker's error signal will catch this
+        raise
     if not is_gui_mode:
         xml_path = os.path.join(
             PROJECT_ROOT, "data", "databases", "shopsite_products_cleaned.xml"
