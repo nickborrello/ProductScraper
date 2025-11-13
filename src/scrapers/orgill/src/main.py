@@ -19,14 +19,18 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 from fake_useragent import UserAgent
 import logging
 
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv()
+
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 # Module configuration
-HEADLESS = True  # Now works in headless mode after fixing Chrome options  # Set to False only if CAPTCHA solving requires visible browser
+HEADLESS = False  # Now works in headless mode after fixing Chrome options  # Set to False only if CAPTCHA solving requires visible browser
 DEBUG_MODE = False  # Set to True to pause for manual inspection during scraping
-ENABLE_DEVTOOLS = False  # Set to True to enable Chrome DevTools remote debugging
+ENABLE_DEVTOOLS = DEBUG_MODE  # Automatically enable DevTools when in debug mode
 DEVTOOLS_PORT = 9222  # Port for Chrome DevTools remote debugging
 TEST_SKU = "017800149372"
 
@@ -486,7 +490,7 @@ class OrgillScraper:
 
         # Extract images
         try:
-            img_elements = self.driver.find_elements(By.XPATH, "//img[contains(@src, 'images.orgill.com/websmall/')]")
+            img_elements = self.driver.find_elements(By.XPATH, "//img[contains(@src, 'images1.orgill.com/websmall/')]")
             for img_element in img_elements:
                 img_url = img_element.get_attribute('src')
                 if img_url and img_url not in product_info['Image URLs']:

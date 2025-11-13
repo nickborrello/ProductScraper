@@ -25,7 +25,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 # Bradley Caldwell scraper configuration
 HEADLESS = False  # Set to False for debugging and manual inspection
 DEBUG_MODE = False  # Set to True to pause for manual inspection during scraping
-ENABLE_DEVTOOLS = False  # Set to True to enable Chrome DevTools remote debugging
+ENABLE_DEVTOOLS = DEBUG_MODE  # Automatically enable DevTools when in debug mode
 DEVTOOLS_PORT = 9222  # Port for Chrome DevTools remote debugging
 TEST_SKU = "791611038437"  # Bradley Caldwell SKU that previously had empty brand
 
