@@ -947,6 +947,15 @@ class ProductViewer(QMainWindow):
                             image_urls.append(base_url + img)
 
                 # Map database fields to editor format
+                # Deduplicate pipe-separated fields
+                def deduplicate_pipe_separated(value):
+                    """Split by |, remove duplicates while preserving order, rejoin with |"""
+                    if not value:
+                        return ""
+                    parts = [part.strip() for part in str(value).split("|") if part.strip()]
+                    unique_parts = list(dict.fromkeys(parts))  # Preserve order while removing duplicates
+                    return "|".join(unique_parts)
+
                 mapped_product = {
                     'SKU': sku,
                     'Name': name or '',
@@ -954,9 +963,9 @@ class ProductViewer(QMainWindow):
                     'Price': price or '',
                     'Weight': weight or '',
                     'Special Order': 'yes' if special_order and str(special_order).lower().strip() == 'yes' else '',
-                    'Category': category or '',
-                    'Product Type': product_type or '',
-                    'Product On Pages': product_on_pages or '',
+                    'Category': deduplicate_pipe_separated(category),
+                    'Product Type': deduplicate_pipe_separated(product_type),
+                    'Product On Pages': deduplicate_pipe_separated(product_on_pages),
                     'Product Cross Sell': '',  # Not in schema, keep empty
                     'Image URLs': image_urls,
                     'Product Disabled': product_disabled or ''

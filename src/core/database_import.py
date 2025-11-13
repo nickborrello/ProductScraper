@@ -419,6 +419,20 @@ def save_dataframe_to_database(
             for _, product_row in df.iterrows():
                 product_data = product_row.to_dict()
 
+                # Deduplicate pipe-separated fields before saving
+                def deduplicate_pipe_separated(value):
+                    """Split by |, remove duplicates while preserving order, rejoin with |"""
+                    if not value:
+                        return ""
+                    parts = [part.strip() for part in str(value).split("|") if part.strip()]
+                    unique_parts = list(dict.fromkeys(parts))  # Preserve order while removing duplicates
+                    return "|".join(unique_parts)
+
+                # Apply deduplication to relevant fields
+                for field in ["Category", "Product_Type", "Product_On_Pages"]:
+                    if field in product_data:
+                        product_data[field] = deduplicate_pipe_separated(product_data[field])
+
                 # Extract individual fields for database columns
                 sku = str(product_data.get("SKU", "")).strip()
                 name = str(product_data.get("Name", "")).strip()
