@@ -22,6 +22,7 @@ These instructions guide GitHub Copilot's behavior when working in this reposito
 - Parse weights from product names and normalize to consistent units (LB)
 - Ensure cross-sell relationships are properly saved to Excel output
 - **Scraper Development**: When creating new scrapers, add `HEADLESS = True` (default) or `HEADLESS = False` at module level. Set to `False` only if the scraper requires visible browser for CAPTCHA solving, user interaction, or other visual elements.
+- **Testing Protocol**: Always test scraping functionality locally before pushing to Apify hosting. Never run scrapes with Apify hosting during testing phases - use local execution only for development and validation.
 
 ## Code Patterns
 
