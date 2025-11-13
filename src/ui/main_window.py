@@ -35,7 +35,6 @@ import os
 try:
     from src.scrapers.main import (
         run_scraping,
-        run_discontinued_check,
         run_db_refresh,
         run_shopsite_xml_download,
         run_shopsite_publish
@@ -79,6 +78,11 @@ except ImportError as e:
         if log_callback:
             log_callback("Error: Scraper integration test logic not found.")
         return False
+    def run_shopsite_xml_download(*args, **kwargs):
+        """Dummy function for ShopSite XML download if import fails."""
+        log_callback = kwargs.get("log_callback")
+        if log_callback:
+            log_callback("Error: ShopSite XML download logic not found.")
     def run_shopsite_publish(*args, **kwargs):
         """Dummy function for ShopSite publish if import fails."""
         log_callback = kwargs.get("log_callback")
