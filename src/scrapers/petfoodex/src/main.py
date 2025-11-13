@@ -22,6 +22,9 @@ from src.core.settings_manager import settings
 
 # HEADLESS is set to True for production deployment
 HEADLESS = True
+DEBUG_MODE = False  # Set to True to pause for manual inspection during scraping
+ENABLE_DEVTOOLS = False  # Set to True to enable Chrome DevTools remote debugging
+DEVTOOLS_PORT = 9222  # Port for Chrome DevTools remote debugging
 
 LOGIN_URL = "https://orders.petfoodexperts.com/SignIn"
 HOME_URL = "https://orders.petfoodexperts.com/"
@@ -213,7 +216,7 @@ async def main() -> None:
         actor = apify.Actor()
 
         # Create browser
-        driver = create_browser("Pet Food Experts", headless=HEADLESS)
+        driver = create_browser("Pet Food Experts", headless=HEADLESS, enable_devtools=ENABLE_DEVTOOLS, devtools_port=DEVTOOLS_PORT)
         if driver is None:
             await apify.log.error("Could not create browser for Pet Food Experts")
             return
@@ -275,6 +278,12 @@ def scrape_single_product(sku, driver):
 
         # Give page a moment to fully load
         time.sleep(2)
+
+        # DEBUG MODE: Pause for manual inspection
+        if DEBUG_MODE:
+            apify.log.info(f"🐛 DEBUG MODE: Product page loaded for SKU {sku}")
+            apify.log.info("Press Enter in the terminal to continue with data extraction...")
+            input("🐛 DEBUG MODE: Inspect the product page, then press Enter to continue...")
 
         # Check if we're on a product detail page (has highest priority)
         if driver.find_elements(By.CSS_SELECTOR, "div.pf-detail-wrap"):

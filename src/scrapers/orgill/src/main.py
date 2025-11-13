@@ -25,6 +25,9 @@ logger = logging.getLogger(__name__)
 
 # Module configuration
 HEADLESS = True  # Now works in headless mode after fixing Chrome options  # Set to False only if CAPTCHA solving requires visible browser
+DEBUG_MODE = False  # Set to True to pause for manual inspection during scraping
+ENABLE_DEVTOOLS = False  # Set to True to enable Chrome DevTools remote debugging
+DEVTOOLS_PORT = 9222  # Port for Chrome DevTools remote debugging
 TEST_SKU = "017800149372"
 
 # URLs and constants
@@ -105,6 +108,12 @@ class BrowserSession:
         options.add_argument('--disable-blink-features=AutomationControlled')
         options.add_experimental_option("excludeSwitches", ["enable-automation"])
         options.add_experimental_option('useAutomationExtension', False)
+
+        # Enable Chrome DevTools remote debugging if configured
+        if ENABLE_DEVTOOLS:
+            options.add_argument(f"--remote-debugging-port={DEVTOOLS_PORT}")
+            options.add_argument("--remote-debugging-address=0.0.0.0")
+            logger.info(f"🔧 DevTools enabled on port {DEVTOOLS_PORT}")
 
         # Performance optimizations
         options.add_argument('--disable-extensions')
@@ -319,6 +328,12 @@ class OrgillScraper:
             if self._check_multiple_results():
                 logger.info(f"Multiple results found for SKU: {sku}, skipping")
                 return None
+
+            # DEBUG MODE: Pause for manual inspection
+            if DEBUG_MODE:
+                logger.info(f"🐛 DEBUG MODE: Product page loaded for SKU {sku}")
+                logger.info("Press Enter in the terminal to continue with data extraction...")
+                input("🐛 DEBUG MODE: Inspect the product page, then press Enter to continue...")
 
             # Extract product data
             product_data = self._extract_product_data(sku)

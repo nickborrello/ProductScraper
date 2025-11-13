@@ -22,10 +22,19 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 
+# Amazon scraper configuration
+HEADLESS = False  # Set to False for debugging and manual inspection
+DEBUG_MODE = False  # Set to True to pause for manual inspection during scraping
+ENABLE_DEVTOOLS = False  # Set to True to enable Chrome DevTools remote debugging
+DEVTOOLS_PORT = 9222  # Port for Chrome DevTools remote debugging
+TEST_SKU = "035585499741"  # Amazon SKU that previously had empty brand
+
+
 def create_driver(proxy_url=None) -> webdriver.Chrome:
     """Create Chrome driver with enhanced anti-detection measures and proxy support."""
     options = Options()
-    options.add_argument("--headless")
+    if HEADLESS:
+        options.add_argument("--headless")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
@@ -44,6 +53,12 @@ def create_driver(proxy_url=None) -> webdriver.Chrome:
         user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
     options.add_argument(f'--user-agent={user_agent}')
+
+    # Enable Chrome DevTools remote debugging if configured
+    if ENABLE_DEVTOOLS:
+        options.add_argument(f"--remote-debugging-port={DEVTOOLS_PORT}")
+        options.add_argument("--remote-debugging-address=0.0.0.0")
+        Actor.log.info(f"🔧 DevTools enabled on port {DEVTOOLS_PORT}")
 
     # Additional anti-detection measures
     options.add_argument("--disable-blink-features=AutomationControlled")
@@ -1313,6 +1328,12 @@ def scrape_single_product(driver: webdriver.Chrome, sku: str) -> dict[str, Any] 
             except TimeoutException:
                 return None
 
+        # DEBUG MODE: Pause for manual inspection
+        if DEBUG_MODE:
+            Actor.log.info(f"🐛 DEBUG MODE: Product page loaded for SKU {sku}")
+            Actor.log.info("Press Enter in the terminal to continue with data extraction...")
+            input("🐛 DEBUG MODE: Inspect the product page, then press Enter to continue...")
+
         # Final CAPTCHA check before extraction
         if not captcha_detector.handle_captcha(driver):
             Actor.log.error(f"🚫 CAPTCHA blocking detected before extraction for SKU {sku}")
@@ -1452,7 +1473,7 @@ def main_local():
     import json
 
     # Default test SKUs
-    skus = ["035585499741"]
+    skus = [TEST_SKU]
 
     # Check command line arguments
     if len(sys.argv) > 1:
