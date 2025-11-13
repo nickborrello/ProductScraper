@@ -12,3 +12,5 @@ rapidfuzz>=3.14.3
 requests>=2.32.5
 selenium>=4.38.0
 undetected-chromedriver>=3.5.5
+apify-client>=1.8.0
+apify>=1.2.0
