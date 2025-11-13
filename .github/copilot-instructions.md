@@ -98,4 +98,4 @@ These instructions guide GitHub Copilot's behavior when working in this reposito
 
 - **Download**: ✅ Implemented and working (`import_from_shopsite_xml()`)
 - **Upload**: ❌ Not implemented (could be useful for bulk product updates)
-- **Publish**: ❌ Not implemented (could be useful for automated site updates)
+- **Publish**: ✅ Implemented and working (`publish_shopsite_changes()`)

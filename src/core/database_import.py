@@ -793,9 +793,109 @@ def import_from_shopsite_xml(
 
 
 # For backwards compatibility
-def import_from_saved_xml(
-    xml_file_path: str = None, save_to_db: bool = True
+def publish_shopsite_changes(
+    html_pages: bool = True,
+    custom_pages: bool = True,
+    search_index: bool = True,
+    sitemap: bool = True,
+    full_regen: bool = False,
+    log_callback=None
 ) -> Tuple[bool, str]:
+    """
+    Publish changes to ShopSite by regenerating website content.
+
+    Args:
+        html_pages: Whether to regenerate HTML product pages
+        custom_pages: Whether to regenerate custom pages
+        search_index: Whether to update search index
+        sitemap: Whether to generate Google XML sitemap
+        full_regen: Whether to do full regeneration (overrides incremental updates)
+        log_callback: Callback function for logging messages (for GUI integration)
+
+    Returns:
+        Tuple of (success: bool, message: str)
+    """
+    try:
+        # Get ShopSite credentials
+        config = SHOPSITE_CONFIG
+        if not (config.get("username") and config.get("password")):
+            error_msg = "❌ ShopSite credentials not found in environment variables"
+            if log_callback:
+                log_callback(error_msg)
+            return False, error_msg
+
+        # Build parameters for generate.cgi
+        params = {
+            "clientApp": "1",  # Required: identifies client application version
+        }
+
+        if html_pages:
+            params["htmlpages"] = "1"  # Generate HTML pages
+        if custom_pages:
+            params["custompages"] = "1"  # Generate custom pages
+        if search_index:
+            params["index"] = "1"  # Update search index
+        if sitemap:
+            params["sitemap"] = "1"  # Generate Google XML sitemap
+        if full_regen:
+            params["regen"] = "1"  # Full regeneration (overrides incremental)
+
+        publish_url = "https://www.baystatepet.com/cgi-baystatepet/bo/generate.cgi"
+
+        if log_callback:
+            log_callback("🚀 Publishing changes to ShopSite...")
+            log_callback(f"URL: {publish_url}")
+            log_callback(f"Parameters: {params}")
+        else:
+            logging.info("🚀 Publishing changes to ShopSite...")
+            logging.info(f"URL: {publish_url}")
+            logging.info(f"Parameters: {params}")
+
+        # Create session with authentication
+        session = requests.Session()
+        session.auth = (config["username"], config["password"])
+
+        # Make the publish request
+        response = session.get(publish_url, params=params, timeout=600)  # 10 minute timeout
+
+        if response.status_code == 200:
+            success_msg = "✅ ShopSite publish completed successfully"
+            if log_callback:
+                log_callback(success_msg)
+            else:
+                logging.info(success_msg)
+
+            # Check response content for any messages
+            if response.text.strip():
+                content_msg = f"📄 Response: {response.text.strip()[:200]}{'...' if len(response.text.strip()) > 200 else ''}"
+                if log_callback:
+                    log_callback(content_msg)
+                else:
+                    logging.info(content_msg)
+
+            return True, success_msg
+        else:
+            error_msg = f"❌ Publish failed: {response.status_code} - {response.text[:200]}"
+            if log_callback:
+                log_callback(error_msg)
+            else:
+                logging.error(error_msg)
+            return False, error_msg
+
+    except requests.RequestException as e:
+        error_msg = f"❌ Publish request failed: {e}"
+        if log_callback:
+            log_callback(error_msg)
+        else:
+            logging.error(error_msg)
+        return False, error_msg
+    except Exception as e:
+        error_msg = f"❌ Unexpected error during publish: {e}"
+        if log_callback:
+            log_callback(error_msg)
+        else:
+            logging.error(error_msg)
+        return False, error_msg
     """
     Import products from a saved ShopSite XML file (for testing/debugging).
 

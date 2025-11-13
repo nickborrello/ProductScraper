@@ -59,7 +59,8 @@ try:
         run_db_refresh,
         run_scraper_tests,
         run_scraper_integration_tests,
-        run_shopsite_xml_download
+        run_shopsite_xml_download,
+        run_shopsite_publish
     )
 except ImportError as e:
     if not is_gui_mode:
@@ -107,13 +108,13 @@ except ImportError as e:
         if not is_gui_mode:
             print("Error: Scraper integration test logic not found.")
         return False
-    def run_shopsite_xml_download(*args, **kwargs):
-        """Dummy function for XML download if import fails."""
+    def run_shopsite_publish(*args, **kwargs):
+        """Dummy function for ShopSite publish if import fails."""
         log_callback = kwargs.get("log_callback")
         if log_callback:
-            log_callback("Error: XML download logic not found.")
+            log_callback("Error: ShopSite publish logic not found.")
         if not is_gui_mode:
-            print("Error: XML download logic not found.")
+            print("Error: ShopSite publish logic not found.")
 
 
 class WorkerSignals(QObject):
@@ -515,6 +516,10 @@ class MainWindow(QMainWindow):
         download_xml_action.triggered.connect(self.start_xml_download)
         db_menu.addAction(download_xml_action)
 
+        publish_shopsite_action = QAction("🚀 Publish to ShopSite", self)
+        publish_shopsite_action.triggered.connect(self.start_shopsite_publish)
+        db_menu.addAction(publish_shopsite_action)
+
         # Tools Menu
         tools_menu = menubar.addMenu("&Tools")
         if tools_menu is None:
@@ -634,6 +639,12 @@ class MainWindow(QMainWindow):
             "Download latest XML from ShopSite",
             "⬇️",
         )
+        self.publish_shopsite_btn = database_card.add_button(
+            "Publish to ShopSite",
+            self.start_shopsite_publish,
+            "Publish changes to ShopSite website",
+            "🚀",
+        )
         self.view_products_btn = database_card.add_button(
             "View/Edit Products",
             self.open_product_viewer,
@@ -667,6 +678,7 @@ class MainWindow(QMainWindow):
             self.check_discontinued_btn,
             self.refresh_db_btn,
             self.download_xml_btn,
+            self.publish_shopsite_btn,
             self.view_products_btn,
             self.db_stats_btn,
             self.classify_btn,
@@ -922,6 +934,12 @@ class MainWindow(QMainWindow):
         self.last_operation = "XML Download"
         self.log_message("Downloading XML from ShopSite...", "INFO")
         self._run_worker(run_shopsite_xml_download)
+
+    def start_shopsite_publish(self):
+        """Publish changes to ShopSite"""
+        self.last_operation = "ShopSite Publish"
+        self.log_message("Publishing changes to ShopSite...", "INFO")
+        self._run_worker(run_shopsite_publish)
 
     def open_product_viewer(self):
         """Open the product viewer window"""
