@@ -61,17 +61,18 @@ if not is_gui_mode:
 
 # --- Core Logic Functions ---
 
-
-def run_scraping(
-    file_path,
-    progress_callback=None,
-    log_callback=None,
-    interactive=True,
-    selected_sites=None,
-    editor_callback=None,
-):
+def run_scraping(file_path, progress_callback=None, log_callback=None, interactive=True, selected_sites=None, editor_callback=None, status_callback=None):
     """Handles the entire scraping process for a given file."""
-    log = log_callback if log_callback else print
+    # Determine log function
+    if log_callback is None:
+        log = print
+    elif hasattr(log_callback, 'emit'):
+        # If it's a Qt signal object, use emit method
+        log = log_callback.emit
+    else:
+        # If it's already a callable (like emit method or function), use it directly
+        log = log_callback
+    
     log(f"🚀 run_scraping called with file: {file_path}")
 
     if not PRODUCT_SCRAPER_AVAILABLE:
@@ -110,14 +111,7 @@ def run_scraping(
 
     # Run scraper
     log("🚀 Starting scraper...")
-    scraper = ProductScraper(
-        file_path,
-        interactive=interactive,
-        selected_sites=selected_sites,
-        log_callback=log_callback,
-        progress_callback=progress_callback,
-        editor_callback=editor_callback,
-    )
+    scraper = ProductScraper(file_path, interactive=interactive, selected_sites=selected_sites, log_callback=log_callback, progress_callback=progress_callback, editor_callback=editor_callback, status_callback=status_callback)
     if progress_callback:
         progress_callback.emit(40)
     scraper.run()
@@ -127,7 +121,15 @@ def run_scraping(
 
 def run_discontinued_check(file_path, progress_callback=None, log_callback=None, editor_callback=None):
     """Runs the discontinued product check."""
-    log = log_callback if log_callback else print
+    # Determine log function
+    if log_callback is None:
+        log = print
+    elif hasattr(log_callback, 'emit'):
+        # If it's a Qt signal object, use emit method
+        log = log_callback.emit
+    else:
+        # If it's already a callable (like emit method or function), use it directly
+        log = log_callback
 
     if not DISCONTINUED_CHECKER_AVAILABLE:
         log("❌ DiscontinuedChecker module not available.")
@@ -151,8 +153,15 @@ def run_discontinued_check(file_path, progress_callback=None, log_callback=None,
 
 def run_db_refresh(progress_callback=None, log_callback=None, editor_callback=None):
     """Processes the downloaded XML and refreshes the database, with callbacks."""
-    log = log_callback if log_callback else print
-
+    # Determine log function
+    if log_callback is None:
+        log = print
+    elif hasattr(log_callback, 'emit'):
+        # If it's a Qt signal object, use emit method
+        log = log_callback.emit
+    else:
+        # If it's already a callable (like emit method or function), use it directly
+        log = log_callback
     log("💾 Refreshing database from XML file...")
     if progress_callback:
         progress_callback.emit(10)
@@ -290,7 +299,15 @@ def validate_excel_columns(file_path, log_callback=None):
     Validates required columns in the Excel file, adding them if missing.
     Returns: tuple (is_valid, message)
     """
-    log = log_callback if log_callback else print
+    # Determine log function
+    if log_callback is None:
+        log = print
+    elif hasattr(log_callback, 'emit'):
+        # If it's a Qt signal object, use emit method
+        log = log_callback.emit
+    else:
+        # If it's already a callable (like emit method or function), use it directly
+        log = log_callback
     try:
         df = pd.read_excel(file_path, dtype=str)
         required_cols = ["SKU", "Name"]
@@ -442,7 +459,15 @@ def run_scraper_integration_tests(log_callback=None, progress_callback=None, edi
     This function tests every scraper with a product we know works on that site,
     and reports which scrapers are working and which are failing.
     """
-    log = log_callback if log_callback else print
+    # Determine log function
+    if log_callback is None:
+        log = print
+    elif hasattr(log_callback, 'emit'):
+        # If it's a Qt signal object, use emit method
+        log = log_callback.emit
+    else:
+        # If it's already a callable (like emit method or function), use it directly
+        log = log_callback
 
     try:
         log("\n" + "="*60)
@@ -684,7 +709,15 @@ def run_scraper_integration_tests(log_callback=None, progress_callback=None, edi
 
 def run_scraper_tests(run_integration=False, log_callback=None, progress_callback=None):
     """Run pytest on scraper tests and stream results."""
-    log = log_callback if log_callback else print
+    # Determine log function
+    if log_callback is None:
+        log = print
+    elif hasattr(log_callback, 'emit'):
+        # If it's a Qt signal object, use emit method
+        log = log_callback.emit
+    else:
+        # If it's already a callable (like emit method or function), use it directly
+        log = log_callback
 
     test_file = os.path.join(PROJECT_ROOT, "tests", "unit", "test_scrapers.py")
 

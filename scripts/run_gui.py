@@ -126,6 +126,7 @@ class WorkerSignals(QObject):
     - result: object
     - progress: int
     - log: str
+    - status: str (status message update)
     - request_editor_sync: list (products to edit - blocks until editor closes)
     """
 
@@ -134,6 +135,7 @@ class WorkerSignals(QObject):
     result = pyqtSignal(object)
     progress = pyqtSignal(int)
     log = pyqtSignal(str)
+    status = pyqtSignal(str)
     request_editor_sync = pyqtSignal(list, object)  # products_list, result_container
 
 
@@ -158,12 +160,11 @@ class Worker(QThread):
         self.signals = WorkerSignals()
 
         # Inject progress and log callbacks into the target function's kwargs
+        # Pass signal objects directly - run_scraper.py expects objects with .emit()
         self.kwargs["progress_callback"] = self.signals.progress
-        self.kwargs["log_callback"] = self.signals.log.emit
-        self.kwargs["editor_callback"] = (
-            self._request_editor_sync
-        )  # Inject sync editor callback
-
+        self.kwargs["log_callback"] = self.signals.log
+        self.kwargs["status_callback"] = self.signals.status
+        self.kwargs["editor_callback"] = self._request_editor_sync  # Inject sync editor callback
     def _request_editor_sync(self, products_list):
         """Request editor on main thread and wait for result (synchronous from worker's perspective)"""
         from PyQt6.QtCore import QEventLoop
@@ -361,7 +362,105 @@ class MainWindow(QMainWindow):
         self.create_menu_bar()
         self.create_central_widget()
         self.create_status_bar()
-
+        
+        # Force dark theme regardless of system settings
+        self.setStyleSheet("""
+            * {
+                color: #ffffff;
+            }
+            QMainWindow {
+                background-color: #1e1e1e;
+                color: #ffffff;
+            }
+            QMenuBar {
+                background-color: #2d2d2d;
+                color: #ffffff;
+                border-bottom: 1px solid #3e3e3e;
+            }
+            QMenuBar::item {
+                background-color: transparent;
+                color: #ffffff;
+                padding: 4px 8px;
+            }
+            QMenuBar::item:selected {
+                background-color: #4CAF50;
+                color: #ffffff;
+            }
+            QMenu {
+                background-color: #2d2d2d;
+                color: #ffffff;
+                border: 1px solid #3e3e3e;
+            }
+            QMenu::item {
+                background-color: transparent;
+                color: #ffffff;
+                padding: 4px 20px;
+            }
+            QMenu::item:selected {
+                background-color: #4CAF50;
+                color: #ffffff;
+            }
+            QStatusBar {
+                background-color: #2d2d2d;
+                color: #ffffff;
+                border-top: 1px solid #3e3e3e;
+            }
+            QLabel {
+                color: #ffffff;
+            }
+            QCheckBox {
+                color: #ffffff;
+            }
+            QCheckBox::indicator {
+                border: 1px solid #ffffff;
+                background-color: #2d2d2d;
+            }
+            QCheckBox::indicator:checked {
+                background-color: #4CAF50;
+            }
+            QMessageBox {
+                background-color: #1e1e1e;
+                color: #ffffff;
+            }
+            QMessageBox QLabel {
+                color: #ffffff;
+            }
+            QDialog {
+                background-color: #1e1e1e;
+                color: #ffffff;
+            }
+            QDialog QLabel {
+                color: #ffffff;
+            }
+            QListWidget {
+                background-color: #2d2d2d;
+                color: #ffffff;
+                border: 1px solid #3e3e3e;
+            }
+            QListWidget::item {
+                color: #ffffff;
+                padding: 2px;
+            }
+            QListWidget::item:selected {
+                background-color: #4CAF50;
+                color: #ffffff;
+            }
+            QListWidget::indicator {
+                width: 13px;
+                height: 13px;
+                border: 1px solid #888888;
+                background-color: #2d2d2d;
+            }
+            QListWidget::indicator:checked {
+                background-color: #3d3d3d;
+                border: 1px solid #ffffff;
+                image: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIHZpZXdCb3g9IjAgMCAxMCAxMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTggM0w2IDUgMiA5IiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPg==);
+            }
+            QListWidget::indicator:unchecked {
+                background-color: #2d2d2d;
+                border: 1px solid #888888;
+            }
+        """)
         # Initial status
         self.log_message("Application started successfully", "SUCCESS")
         self.update_database_stats()
@@ -595,7 +694,7 @@ class MainWindow(QMainWindow):
                 border: 2px solid #4CAF50;
                 border-radius: 8px;
                 margin-top: 12px;
-                padding-top: 12px;
+                padding-top: 0px;
                 background-color: #1e1e1e;
                 color: #ffffff;
             }
@@ -732,6 +831,7 @@ class MainWindow(QMainWindow):
         # Connect worker signals to the appropriate slots in the main window
         self.worker.signals.log.connect(self.log_message)
         self.worker.signals.progress.connect(self.update_progress)
+        self.worker.signals.status.connect(self.update_status_message)
         self.worker.signals.error.connect(self.handle_error)
         self.worker.signals.finished.connect(self.worker_finished)
         self.worker.signals.request_editor_sync.connect(
@@ -1055,6 +1155,35 @@ class MainWindow(QMainWindow):
 
         # List widget with checkboxes
         list_widget = QListWidget()
+        list_widget.setStyleSheet("""
+            QListWidget {
+                background-color: #2d2d2d;
+                color: #ffffff;
+                border: 1px solid #3e3e3e;
+            }
+            QListWidget::item {
+                color: #ffffff;
+                padding: 2px;
+            }
+            QListWidget::item:selected {
+                background-color: #4CAF50;
+                color: #ffffff;
+            }
+            QListWidget::indicator {
+                width: 13px;
+                height: 13px;
+                border: 1px solid #888888;
+                background-color: #2d2d2d;
+            }
+            QListWidget::indicator:checked {
+                background-color: #4CAF50;
+                border: 1px solid #ffffff;
+            }
+            QListWidget::indicator:unchecked {
+                background-color: #2d2d2d;
+                border: 1px solid #888888;
+            }
+        """)
         for site in available_sites:
             item = QListWidgetItem(site)
             item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
@@ -1157,7 +1286,10 @@ class MainWindow(QMainWindow):
     def update_progress(self, value):
         """Update the progress bar value"""
         self.progress_bar.setValue(value)
-
+        
+    def update_status_message(self, message):
+        """Update the status indicator message (called from worker thread)"""
+        self.update_status(message, "working")
     def update_status(self, message, status_type="ready"):
         """Update the status indicator"""
         colors = {"ready": "#4CAF50", "working": "#FF9800", "error": "#F44336"}

@@ -13,8 +13,7 @@ import subprocess
 # Ensure project root is on sys.path before importing local packages to avoid shadowing
 import os
 import sys
-
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
@@ -343,24 +342,31 @@ def discover_scrapers():
 
 
 class ProductScraper:
-    def __init__(
-        self,
-        file_path,
-        interactive=True,
-        selected_sites=None,
-        log_callback=None,
-        progress_callback=None,
-        editor_callback=None,
-    ):
+    def __init__(self, file_path, interactive=True, selected_sites=None, log_callback=None, progress_callback=None, editor_callback=None, status_callback=None):
         self.file_path = file_path
         self.interactive = interactive
         self.selected_sites = selected_sites
-        self.log_callback = log_callback or print
+        
+        # Wrap callbacks to handle both Qt signals and regular functions
+        # If callback has 'emit' attribute, wrap it to call emit()
+        if log_callback is None:
+            self.log_callback = print
+        elif hasattr(log_callback, 'emit'):
+            self.log_callback = lambda msg: log_callback.emit(msg)
+        else:
+            self.log_callback = log_callback
+            
+        if status_callback and hasattr(status_callback, 'emit'):
+            self.status_callback = lambda msg: status_callback.emit(msg)
+        else:
+            self.status_callback = status_callback
+        
         self.progress_callback = progress_callback
-        self.editor_callback = (
-            editor_callback  # Callback to request editor on main thread
-        )
-
+        self.editor_callback = editor_callback  # Callback to request editor on main thread
+        
+        # Initialize results folder (will be set during scraping)
+        self.results_folder = None
+        
         # Dynamically discover and load scraper modules
         self.scraping_options, self.headless_settings = discover_scrapers()
 
@@ -678,12 +684,15 @@ class ProductScraper:
 
     def load_existing_skus(self, site):
         try:
-            # Use combined output file instead of site-specific files
-            from pathlib import Path
-
-            output_dir = Path(PROJECT_ROOT) / "data" / "spreadsheets"
-            combined_file_path = output_dir / "products.xlsx"
-
+            # Use session-specific results folder instead of global spreadsheets folder
+            if hasattr(self, 'results_folder') and self.results_folder:
+                combined_file_path = os.path.join(self.results_folder, "data", 'products.xlsx')
+            else:
+                # Fallback to global folder if no session folder exists yet
+                from pathlib import Path
+                output_dir = Path(PROJECT_ROOT) / "data" / "spreadsheets"
+                combined_file_path = output_dir / 'products.xlsx'
+            
             if os.path.exists(combined_file_path):
                 try:
                     existing_df = pd.read_excel(combined_file_path, dtype={"SKU": str})
@@ -723,13 +732,13 @@ class ProductScraper:
 
     def download_images(self, brand, file_name, image_urls, site):
         """Download images for a product."""
-        # Organize images by brand only (no longer by site)
+        # Use session-specific results folder instead of global images folder
         subdir = clean_brand(brand)
         for img_idx, img_url in enumerate(image_urls):
             if not isinstance(img_url, str) or not img_url:
                 continue
             try:
-                download_image(img_url, subdir, file_name, img_idx)
+                download_image(img_url, subdir, file_name, img_idx, results_folder=self.results_folder)
             except Exception as e:
                 pass
 
@@ -826,34 +835,48 @@ class ProductScraper:
             pass
 
     def save_incremental_results(self, new_row, source_site):
-        # Save to data/spreadsheets/ instead of src/scrapers/output/
-        from pathlib import Path
-
-        output_dir = Path(PROJECT_ROOT) / "data" / "spreadsheets"
-        output_dir.mkdir(parents=True, exist_ok=True)
+        # Save to session-specific results folder instead of global spreadsheets folder
+        output_dir = os.path.join(self.results_folder, "data")
+        os.makedirs(output_dir, exist_ok=True)
         # Use single combined output file instead of site-specific files
-        site_file_path = output_dir / "products.xlsx"
+        site_file_path = os.path.join(output_dir, 'products.xlsx')
         try:
             # Map new user-friendly column names to old ShopSite column names for Excel output
             shopsite_row = new_row.copy()
 
             # Map new names to old ShopSite names
-            if "Brand" in shopsite_row:
-                shopsite_row["Product Field 16"] = shopsite_row.pop("Brand")
-            if "Category" in shopsite_row:
-                shopsite_row["Product Field 24"] = shopsite_row.pop("Category")
-            if "Product_Type" in shopsite_row:
-                shopsite_row["Product Field 25"] = shopsite_row.pop("Product_Type")
-            if "Special_Order" in shopsite_row:
-                shopsite_row["Product Field 11"] = shopsite_row.pop("Special_Order")
-            if "Product_Cross_Sell" in shopsite_row:
-                shopsite_row["Product Field 32"] = shopsite_row.pop(
-                    "Product_Cross_Sell"
-                )
-
+            if 'Brand' in shopsite_row:
+                shopsite_row['Product Field 16'] = shopsite_row.pop('Brand')
+            if 'Category' in shopsite_row:
+                shopsite_row['Product Field 24'] = shopsite_row.pop('Category')
+            if 'Product_Type' in shopsite_row:
+                shopsite_row['Product Field 25'] = shopsite_row.pop('Product_Type')
+            if 'Special_Order' in shopsite_row:
+                shopsite_row['Product Field 11'] = shopsite_row.pop('Special_Order')
+            if 'Product_Cross_Sell' in shopsite_row:
+                shopsite_row['Product Field 32'] = shopsite_row.pop('Product_Cross_Sell')
+            if 'Product_On_Pages' in shopsite_row:
+                shopsite_row['Product On Pages'] = shopsite_row.pop('Product_On_Pages')
+            
             # Use the mapped row for all subsequent operations
             new_row = shopsite_row
-
+            
+            # Ensure all expected columns are present (default to empty string if missing)
+            expected_columns = [
+                'SKU', 'Name', 'Product Description', 'Price', 'Weight', 'Product Field 16', 
+                'File name', 'Graphic', 'More Information Graphic', 'Product Field 1', 'Product Field 11',
+                'Product Field 24', 'Product Field 25', 'Product On Pages', 'Product Field 32'
+            ]
+            
+            # Add any More Information Image columns that exist
+            for key in new_row.keys():
+                if key.startswith('More Information Image') and key not in expected_columns:
+                    expected_columns.append(key)
+            
+            # Ensure all expected columns exist with default empty values
+            for col in expected_columns:
+                if col not in new_row:
+                    new_row[col] = ""
             # Ensure SKU is always text (string)
             if "SKU" in new_row:
                 new_row["SKU"] = str(new_row["SKU"])
@@ -883,7 +906,17 @@ class ProductScraper:
                 else:
                     new_row["Price"] = ""
             if os.path.exists(site_file_path):
-                site_df = pd.read_excel(site_file_path, dtype={"SKU": str})
+                site_df = pd.read_excel(site_file_path, dtype={'SKU': str})
+                # Normalize column names to match new convention
+                column_mapping = {
+                    'Product_On_Pages': 'Product On Pages',
+                    'Product_Cross_Sell': 'Product Field 32',
+                    'Brand': 'Product Field 16',
+                    'Category': 'Product Field 24',
+                    'Product_Type': 'Product Field 25',
+                    'Special_Order': 'Product Field 11'
+                }
+                site_df = site_df.rename(columns=column_mapping)
             else:
                 # Only add More Information Image columns if present in new_row
                 more_info_image_cols = [
@@ -1000,7 +1033,12 @@ class ProductScraper:
 
         # Store original DataFrame for Excel scraper
         self.original_df = df.copy()
-
+        
+        # Create timestamp-based results folder for this scrape session
+        session_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.results_folder = os.path.join(PROJECT_ROOT, "results", f"scrape_results_{session_timestamp}")
+        os.makedirs(self.results_folder, exist_ok=True)
+        self.log_callback(f"📁 Created results folder: {os.path.basename(self.results_folder)}")
         # Only require and use SKU, Name, and Price for scraping
         required_cols = ["SKU", "Name", "Price"]
         for col in required_cols:
@@ -1279,8 +1317,8 @@ class ProductScraper:
                     pass
             else:
                 pass
-
-        convert_xlsx_to_xls_with_excel()
+        
+        convert_xlsx_to_xls_with_excel(self.results_folder)
 
     def process_site(self, site, skus_to_process, existing_skus_by_site, rows):
         """Process a site using the new architecture - pass SKU array to scraper.
@@ -1303,11 +1341,7 @@ class ProductScraper:
 
         try:
             # NEW ARCHITECTURE: Call scraper with SKU array
-            scraped_products = scraping_function(
-                skus_to_process,
-                log_callback=self.log_callback,
-                progress_tracker=self.progress_tracker,
-            )
+            scraped_products = scraping_function(skus_to_process, log_callback=self.log_callback, progress_tracker=self.progress_tracker, status_callback=self.status_callback)
 
             # Handle different return types
             if scraped_products is None:

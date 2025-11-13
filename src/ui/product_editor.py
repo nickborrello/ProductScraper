@@ -18,8 +18,8 @@ from PyQt6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
 )
-from PyQt6.QtGui import QPixmap, QFont
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
+from PyQt6.QtGui import QPixmap, QFont, QCloseEvent
 import sqlite3
 import pandas as pd
 import os
@@ -318,33 +318,43 @@ class ProductEditor(QMainWindow):
             brand_options = cons.get("brand_options", [])
             self.brand_combo.addItems(brand_options)
             current_brand = product.get("Brand", "")
-            if current_brand and current_brand in brand_options:
-                self.brand_combo.setCurrentText(current_brand)
-            elif brand_options:
-                self.brand_combo.setCurrentIndex(0)
-
+            # Default to first option if no current value
+            if not current_brand and brand_options:
+                current_brand = brand_options[0]
+            self.brand_combo.setCurrentText(current_brand)
             # Name
             self.name_combo.clear()
             name_options = cons.get("name_options", [])
             self.name_combo.addItems(name_options)
             current_name = product.get("Name", "")
-            if current_name and current_name in name_options:
-                self.name_combo.setCurrentText(current_name)
-            elif name_options:
-                self.name_combo.setCurrentIndex(0)
-
+            # Default to first option if no current value
+            if not current_name and name_options:
+                current_name = name_options[0]
+            self.name_combo.setCurrentText(current_name)
             # Weight
             self.weight_combo.clear()
             weight_options = cons.get("weight_options", [])
             self.weight_combo.addItems(weight_options)
             current_weight = product.get("Weight", "")
-            if current_weight and current_weight in weight_options:
-                self.weight_combo.setCurrentText(current_weight)
-            elif weight_options:
-                self.weight_combo.setCurrentIndex(0)
-
-            # Setup image sources
-            self._setup_image_sources(cons, product)
+            # Default to first option if no current value
+            if not current_weight and weight_options:
+                current_weight = weight_options[0]
+            self.weight_combo.setCurrentText(current_weight)
+            
+            # Load images - prioritize saved images over consolidated data
+            saved_urls = product.get("Image URLs", [])
+            if isinstance(saved_urls, str):
+                saved_urls = [u.strip() for u in saved_urls.split(',') if u.strip()]
+            
+            if saved_urls:
+                # Use saved images
+                self.current_images = saved_urls
+                self.current_image_index = 0
+                self.image_set_group.setVisible(False)
+                self.show_current_image()
+            else:
+                # Setup image sources from consolidated data
+                self._setup_image_sources(cons, product)
         else:
             self.brand_combo.clear()
             self.brand_combo.setCurrentText(product.get("Brand", ""))
@@ -664,6 +674,7 @@ class ProductEditor(QMainWindow):
         if reply == QMessageBox.StandardButton.Yes:
             self.cancelled = True
             self.close()
+            self.finished.emit()
 
 
 def edit_products_in_batch(products_or_skus, auto_close_seconds=None):
