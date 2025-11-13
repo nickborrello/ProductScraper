@@ -28,7 +28,8 @@ class SettingsManager:
         "shopsite_username": "",
         "shopsite_password": "",
         # AI/ML Settings
-        "openai_api_key": "",
+        "openrouter_api_key": "",
+        "ollama_model": "llama3.2",
         "classification_method": "llm",  # 'llm' or 'fuzzy'
         # Application Settings
         "debug_mode": False,
@@ -63,7 +64,7 @@ class SettingsManager:
             "shopsite_auth_url": "SHOPSITE_AUTH_URL",
             "shopsite_username": "SHOPSITE_USERNAME",
             "shopsite_password": "SHOPSITE_PASSWORD",
-            "openai_api_key": "OPENAI_API_KEY",
+            "openrouter_api_key": "OPENROUTER_API_KEY",
         }
 
         for setting_key, env_key in env_mappings.items():

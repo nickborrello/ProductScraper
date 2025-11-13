@@ -1,6 +1,5 @@
 """
-LLM-Based Product Classification Module
-Uses OpenRouter API for accurate product classification with persistent context.
+Local LLM-based product classifier using Ollama for running models locally without API keys.
 """
 
 import os
@@ -8,19 +7,10 @@ import json
 import time
 from typing import List, Dict, Any, Optional
 from pathlib import Path
-import requests
+import ollama
 
 # Configuration
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-if not OPENROUTER_API_KEY:
-    # Try to load from config file
-    config_path = Path(__file__).parent.parent.parent / "settings.json"
-    if config_path.exists():
-        with open(config_path, "r") as f:
-            config = json.load(f)
-            OPENROUTER_API_KEY = config.get("openrouter_api_key")
-
-MODEL = "openai/gpt-4o-mini"  # Cost-effective and capable
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2")  # Default to a good general model
 MAX_TOKENS = 1000
 TEMPERATURE = 0.1  # Low temperature for consistent classifications
 
@@ -257,22 +247,36 @@ PRODUCT_PAGES = [
 ]
 
 
-class LLMProductClassifier:
-    """LLM-based product classifier using OpenRouter API with conversation threads."""
+class LocalLLMProductClassifier:
+    """Local LLM-based product classifier using Ollama for running models locally without API keys."""
 
-    def __init__(self):
-        if not OPENROUTER_API_KEY:
-            raise ValueError(
-                "OpenRouter API key not found. Set OPENROUTER_API_KEY environment variable or add to settings.json"
-            )
+    def __init__(self, model_name: str = None):
+        # Try to get model name from settings first, then parameter, then environment, then default
+        if model_name is None:
+            config_path = Path(__file__).parent.parent.parent / "settings.json"
+            if config_path.exists():
+                with open(config_path, "r") as f:
+                    config = json.load(f)
+                    model_name = config.get("ollama_model", OLLAMA_MODEL)
+            else:
+                model_name = os.getenv("OLLAMA_MODEL", OLLAMA_MODEL)
 
-        self.api_key = OPENROUTER_API_KEY
+        self.model_name = model_name or OLLAMA_MODEL
         self.conversation_history = []
         self.classification_cache = {}  # Cache for classifications
-        self.cache_file = Path.home() / ".cache" / "productscraper_llm_cache.json"
+        self.cache_file = Path.home() / ".cache" / "productscraper_ollama_cache.json"
         self.cache_file.parent.mkdir(parents=True, exist_ok=True)
         self._load_cache()
         self._initialize_conversation()
+
+        # Test Ollama connection
+        try:
+            ollama.list()
+            print(f"✅ Ollama connection successful, using model: {self.model_name}")
+        except Exception as e:
+            raise ValueError(
+                f"Ollama not available. Please install Ollama and ensure it's running: {e}"
+            )
 
     def _initialize_conversation(self):
         """Initialize conversation with taxonomy and instructions."""
@@ -313,38 +317,23 @@ Be consistent and accurate in your classifications."""
 
         self.conversation_history = [{"role": "system", "content": system_prompt}]
 
-    def _call_openrouter(self, messages: List[Dict], max_retries: int = 3) -> Optional[str]:
-        """Call OpenRouter API with retry logic."""
+    def _call_ollama(self, messages: List[Dict], max_retries: int = 3) -> Optional[str]:
+        """Call Ollama API with retry logic."""
         for attempt in range(max_retries):
             try:
-                response = requests.post(
-                    "https://openrouter.ai/api/v1/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {self.api_key}",
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "model": MODEL,
-                        "messages": messages,
-                        "max_tokens": MAX_TOKENS,
+                response = ollama.chat(
+                    model=self.model_name,
+                    messages=messages,
+                    options={
                         "temperature": TEMPERATURE,
-                    },
-                    timeout=30,
+                        "num_predict": MAX_TOKENS,
+                    }
                 )
-
-                if response.status_code == 200:
-                    result = response.json()
-                    return result["choices"][0]["message"]["content"]
-                else:
-                    print(
-                        f"OpenRouter API error (attempt {attempt + 1}): {response.status_code} - {response.text}"
-                    )
-
+                return response['message']['content']
             except Exception as e:
-                print(f"OpenRouter API call failed (attempt {attempt + 1}): {e}")
-
-            if attempt < max_retries - 1:
-                time.sleep(2**attempt)  # Exponential backoff
+                print(f"Ollama API call failed (attempt {attempt + 1}): {e}")
+                if attempt < max_retries - 1:
+                    time.sleep(2**attempt)  # Exponential backoff
 
         return None
 
@@ -352,7 +341,7 @@ Be consistent and accurate in your classifications."""
         self, product_name: str, product_brand: str = ""
     ) -> Dict[str, str]:
         """
-        Classify a single product using LLM with caching.
+        Classify a single product using local LLM with caching.
 
         Args:
             product_name: Product name
@@ -368,7 +357,7 @@ Be consistent and accurate in your classifications."""
             return self.classification_cache[cache_key].copy()
 
         # Create user prompt
-        user_prompt = f"Classify this pet product:\n"
+        user_prompt = f"Classify this product:\n"
         if product_brand:
             user_prompt += f"Brand: {product_brand}\n"
         user_prompt += f"Name: {product_name}"
@@ -376,8 +365,8 @@ Be consistent and accurate in your classifications."""
         # Add to conversation
         self.conversation_history.append({"role": "user", "content": user_prompt})
 
-        # Call API
-        response = self._call_openrouter(self.conversation_history)
+        # Call Ollama
+        response = self._call_ollama(self.conversation_history)
 
         if not response:
             return {"category": "", "product_type": "", "product_on_pages": ""}
@@ -458,7 +447,7 @@ Be consistent and accurate in your classifications."""
         # Process in batches
         for i in range(0, len(products), batch_size):
             batch = products[i : i + batch_size]
-            batch_results = self._classify_batch_api_call(batch)
+            batch_results = self._classify_batch_ollama_call(batch)
             results.extend(batch_results)
 
             # Progress indicator
@@ -467,7 +456,7 @@ Be consistent and accurate in your classifications."""
 
         return results
 
-    def _classify_batch_api_call(
+    def _classify_batch_ollama_call(
         self, products: List[Dict[str, Any]]
     ) -> List[Dict[str, str]]:
         """Make a single API call for multiple products."""
@@ -508,8 +497,8 @@ Be consistent and accurate in your classifications."""
         # Add to conversation
         self.conversation_history.append({"role": "user", "content": batch_prompt})
 
-        # Call API
-        response = self._call_openrouter(self.conversation_history)
+        # Call Ollama
+        response = self._call_ollama(self.conversation_history)
 
         if not response:
             # Return empty results for all products in batch
@@ -658,25 +647,25 @@ Be consistent and accurate in your classifications."""
 
 
 # Global classifier instance
-_llm_classifier = None
+_local_llm_classifier = None
 
 
-def get_llm_classifier() -> LLMProductClassifier:
-    """Get or create LLM classifier instance."""
-    global _llm_classifier
-    if _llm_classifier is None:
+def get_local_llm_classifier(model_name: str = None) -> LocalLLMProductClassifier:
+    """Get or create local LLM classifier instance."""
+    global _local_llm_classifier
+    if _local_llm_classifier is None:
         try:
-            _llm_classifier = LLMProductClassifier()
-            print("✅ LLM classifier initialized")
+            _local_llm_classifier = LocalLLMProductClassifier(model_name)
+            print("✅ Local LLM classifier initialized")
         except ValueError as e:
-            print(f"❌ LLM classifier initialization failed: {e}")
+            print(f"❌ Local LLM classifier initialization failed: {e}")
             return None
-    return _llm_classifier
+    return _local_llm_classifier
 
 
-def classify_product_llm(product_info: Dict[str, Any]) -> Dict[str, str]:
+def classify_product_local_llm(product_info: Dict[str, Any]) -> Dict[str, str]:
     """
-    Classify a product using LLM API with rich context.
+    Classify a product using local LLM via Ollama (no API key required).
 
     Args:
         product_info: Dict with product details (Name, Brand, Weight, Price, etc.)
@@ -684,7 +673,7 @@ def classify_product_llm(product_info: Dict[str, Any]) -> Dict[str, str]:
     Returns:
         Dict with category, product_type, product_on_pages
     """
-    classifier = get_llm_classifier()
+    classifier = get_local_llm_classifier()
     if not classifier:
         return {"category": "", "product_type": "", "product_on_pages": ""}
 
@@ -706,13 +695,13 @@ def classify_product_llm(product_info: Dict[str, Any]) -> Dict[str, str]:
         }
 
     except Exception as e:
-        print(f"⚠️ LLM classification failed: {e}")
+        print(f"⚠️ Local LLM classification failed: {e}")
         return {"Category": "", "Product Type": "", "Product On Pages": ""}
 
 
-# Test the LLM classifier
+# Test the local LLM classifier
 if __name__ == "__main__":
-    print("🧠 Testing LLM Product Classifier")
+    print("🧠 Testing Local LLM Product Classifier")
     print("=" * 50)
 
     # Test products - mix of pet and non-pet products
@@ -732,7 +721,7 @@ if __name__ == "__main__":
         {"Name": "Mobil 1 Synthetic Motor Oil 5W-30", "Brand": "Mobil 1"},
     ]
 
-    classifier = get_llm_classifier()
+    classifier = get_local_llm_classifier()
     if classifier:
         print("🤖 Classifying test products...")
         results = classifier.classify_products_batch(test_products)
@@ -743,6 +732,6 @@ if __name__ == "__main__":
             print(f"   Product Type: {result.get('product_type', 'N/A')}")
             print(f"   Product On Pages: {result.get('product_on_pages', 'N/A')}")
 
-        print("\n✅ LLM classification test completed!")
+        print("\n✅ Local LLM classification test completed!")
     else:
-        print("❌ Could not initialize LLM classifier - check API key")
+        print("❌ Could not initialize local LLM classifier - check Ollama installation")

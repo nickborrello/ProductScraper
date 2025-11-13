@@ -394,22 +394,27 @@ class SettingsDialog(QDialog):
         ai_group = QGroupBox("AI/ML Settings")
         ai_layout = QFormLayout()
 
-        self.openai_api_key = QLineEdit()
-        self.openai_api_key.setEchoMode(QLineEdit.EchoMode.Password)
-        self.openai_api_key.setPlaceholderText(
-            "Enter OpenAI API key for LLM classification"
+        self.openrouter_api_key = QLineEdit()
+        self.openrouter_api_key.setEchoMode(QLineEdit.EchoMode.Password)
+        self.openrouter_api_key.setPlaceholderText(
+            "Enter OpenRouter API key for LLM classification"
         )
-        ai_layout.addRow("OpenAI API Key:", self.openai_api_key)
+        ai_layout.addRow("OpenRouter API Key:", self.openrouter_api_key)
 
         # Classification method dropdown
         from PyQt6.QtWidgets import QComboBox
 
         self.classification_method = QComboBox()
-        self.classification_method.addItems(["llm", "fuzzy"])
+        self.classification_method.addItems(["llm", "local_llm", "fuzzy"])
         self.classification_method.setToolTip(
-            "llm: OpenAI API only\nfuzzy: fuzzy matching only"
+            "llm: OpenRouter API only\nlocal_llm: Local Ollama (no API key)\nfuzzy: fuzzy matching only"
         )
         ai_layout.addRow("Classification Method:", self.classification_method)
+
+        self.ollama_model = QLineEdit()
+        self.ollama_model.setText("llama3.2")
+        self.ollama_model.setPlaceholderText("Enter Ollama model name (e.g., llama3.2, gemma3)")
+        ai_layout.addRow("Ollama Model:", self.ollama_model)
 
         ai_group.setLayout(ai_layout)
         layout.addWidget(ai_group)
@@ -465,11 +470,12 @@ class SettingsDialog(QDialog):
         )
 
         # AI/ML
-        self.openai_api_key.setText(self.current_settings.get("openai_api_key", ""))
+        self.openrouter_api_key.setText(self.current_settings.get("openrouter_api_key", ""))
         method = self.current_settings.get("classification_method", "llm")
         index = self.classification_method.findText(method)
         if index >= 0:
             self.classification_method.setCurrentIndex(index)
+        self.ollama_model.setText(self.current_settings.get("ollama_model", "llama3.2"))
 
     def save_settings(self):
         """Save settings from UI to settings manager."""
@@ -500,10 +506,11 @@ class SettingsDialog(QDialog):
             settings.set("auto_scroll_logs", self.auto_scroll_logs.isChecked())
 
             # AI/ML
-            settings.set("openai_api_key", self.openai_api_key.text().strip())
+            settings.set("openrouter_api_key", self.openrouter_api_key.text().strip())
             settings.set(
                 "classification_method", self.classification_method.currentText()
             )
+            settings.set("ollama_model", self.ollama_model.text().strip())
 
             QMessageBox.information(self, "Success", "Settings saved successfully!")
             self.accept()
