@@ -15,7 +15,7 @@ class ScraperBrowser:
     """Base browser class for scrapers with common functionality."""
 
     def __init__(
-        self, site_name, headless=True, profile_suffix=None, custom_options=None
+        self, site_name, headless=True, profile_suffix=None, custom_options=None, enable_devtools=False, devtools_port=9222
     ):
         """
         Initialize browser for scraping.
@@ -25,14 +25,18 @@ class ScraperBrowser:
             headless: Whether to run in headless mode
             profile_suffix: Optional suffix for profile directory
             custom_options: Additional Chrome options to add
+            enable_devtools: Whether to enable Chrome DevTools remote debugging
+            devtools_port: Port for DevTools remote debugging (default: 9222)
         """
         self.site_name = site_name
         self.headless = headless
         self.profile_suffix = profile_suffix or f"{int(time.time() * 1000)}"
+        self.enable_devtools = enable_devtools
+        self.devtools_port = devtools_port
 
         # Get standard options
         options = get_standard_chrome_options(
-            headless=headless, profile_suffix=self.profile_suffix
+            headless=headless, profile_suffix=self.profile_suffix, enable_devtools=enable_devtools, devtools_port=devtools_port
         )
 
         # Add custom options if provided
@@ -50,7 +54,7 @@ class ScraperBrowser:
 
         # Initialize browser
         self.driver = webdriver.Chrome(service=service, options=options)
-        print(f"🌐 [{site_name}] Browser initialized (headless={headless})")
+        print(f"🌐 [{site_name}] Browser initialized (headless={headless}, devtools={enable_devtools})")
 
     def __getattr__(self, name):
         """Delegate WebDriver methods to the underlying driver."""
@@ -78,7 +82,7 @@ class ScraperBrowser:
         self.quit()
 
 
-def create_browser(site_name, headless=True, profile_suffix=None, custom_options=None):
+def create_browser(site_name, headless=True, profile_suffix=None, custom_options=None, enable_devtools=False, devtools_port=9222):
     """
     Factory function to create a browser instance.
 
@@ -87,8 +91,10 @@ def create_browser(site_name, headless=True, profile_suffix=None, custom_options
         headless: Whether to run headless
         profile_suffix: Optional profile suffix
         custom_options: Additional Chrome options
+        enable_devtools: Whether to enable Chrome DevTools remote debugging
+        devtools_port: Port for DevTools remote debugging (default: 9222)
 
     Returns:
         ScraperBrowser instance
     """
-    return ScraperBrowser(site_name, headless, profile_suffix, custom_options)
+    return ScraperBrowser(site_name, headless, profile_suffix, custom_options, enable_devtools, devtools_port)
