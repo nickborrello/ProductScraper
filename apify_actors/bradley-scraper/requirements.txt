@@ -1,0 +1,8 @@
+apify==3.0.4
+beautifulsoup4==4.12.2
+httpx
+types-beautifulsoup4
+selenium==4.15.2
+tenacity>=8.2.0
+fake-useragent>=1.4.0
+psutil>=5.9.0
