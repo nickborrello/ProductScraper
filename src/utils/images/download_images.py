@@ -1,11 +1,14 @@
 import os
 import pandas as pd
 from urllib.parse import urlparse
-from src.utils.images.processing import download_image  # Make sure this function is implemented correctly
+from src.utils.images.processing import (
+    download_image,
+)  # Make sure this function is implemented correctly
 
 # Define the directory and filename of the Excel file
-EXCEL_FILE = './util/image_urls.xlsx'
-URL_COLUMN = 'Image_URL'  # Column name in the Excel file containing the image URLs
+EXCEL_FILE = "./util/image_urls.xlsx"
+URL_COLUMN = "Image_URL"  # Column name in the Excel file containing the image URLs
+
 
 # Function to download images from the URLs in the Excel sheet
 def download_images_from_excel(excel_file, url_column):
@@ -39,6 +42,7 @@ def download_images_from_excel(excel_file, url_column):
             # Download the image
             download_image(img_url, subdir, file_name, idx)
 
+
 # Run the script to download images
-if __name__ == '__main__':
+if __name__ == "__main__":
     download_images_from_excel(EXCEL_FILE, URL_COLUMN)

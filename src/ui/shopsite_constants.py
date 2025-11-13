@@ -15,5 +15,5 @@ SHOPSITE_PAGES = [
     "Lawn & Garden",
     "Farm Supplies",
     "Home & Kitchen",
-    "Automotive"
+    "Automotive",
 ]

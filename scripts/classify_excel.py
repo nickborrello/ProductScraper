@@ -42,7 +42,7 @@ def classify_excel_file():
     file_path = filedialog.askopenfilename(
         initialdir=str(spreadsheets_dir),
         title="Select Excel file to classify",
-        filetypes=[("Excel files", "*.xlsx *.xls"), ("All files", "*.*")]
+        filetypes=[("Excel files", "*.xlsx *.xls"), ("All files", "*.*")],
     )
 
     root.destroy()  # Clean up the file dialog root
@@ -63,7 +63,7 @@ def classify_excel_file():
             return
 
         # Check required columns
-        required_cols = ['SKU', 'Name']
+        required_cols = ["SKU", "Name"]
         missing_cols = [col for col in required_cols if col not in df.columns]
         if missing_cols:
             print(f"❌ Missing required columns: {missing_cols}")
@@ -75,18 +75,26 @@ def classify_excel_file():
             # Map Excel columns to internal format
             # Exclude existing classifications since classifier.py will set fresh ones
             product = {
-                'SKU': str(row.get('SKU', '')).strip(),
-                'Name': str(row.get('Name', '')).strip(),
-                'Brand': str(row.get('Product Field 16', '')).strip(),  # Brand
-                'Price': str(row.get('Price', '')).strip(),
-                'Weight': str(row.get('Weight', '')).strip(),
-                'Images': str(row.get('Images', '')).strip(),
-                'Special Order': 'yes' if str(row.get('Product Field 11', '')).strip().lower() == 'yes' else '',
-                'Category': '',  # Will be set by classifier.py
-                'Product Type': '',  # Will be set by classifier.py
-                'Product On Pages': '',  # Will be set by classifier.py
-                'Product Cross Sell': str(row.get('Product Field 32', '')).strip(),
-                'Product Disabled': 'checked' if str(row.get('ProductDisabled', '')).strip().lower() == 'checked' else 'uncheck'
+                "SKU": str(row.get("SKU", "")).strip(),
+                "Name": str(row.get("Name", "")).strip(),
+                "Brand": str(row.get("Product Field 16", "")).strip(),  # Brand
+                "Price": str(row.get("Price", "")).strip(),
+                "Weight": str(row.get("Weight", "")).strip(),
+                "Images": str(row.get("Images", "")).strip(),
+                "Special Order": (
+                    "yes"
+                    if str(row.get("Product Field 11", "")).strip().lower() == "yes"
+                    else ""
+                ),
+                "Category": "",  # Will be set by classifier.py
+                "Product Type": "",  # Will be set by classifier.py
+                "Product On Pages": "",  # Will be set by classifier.py
+                "Product Cross Sell": str(row.get("Product Field 32", "")).strip(),
+                "Product Disabled": (
+                    "checked"
+                    if str(row.get("ProductDisabled", "")).strip().lower() == "checked"
+                    else "uncheck"
+                ),
             }
             products_list.append(product)
 
@@ -94,9 +102,13 @@ def classify_excel_file():
 
         # Run automatic classification first
         settings = SettingsManager()
-        classification_method = settings.get('classification_method', 'llm')
-        print(f"🤖 Running automatic classification using {classification_method} method...")
-        products_list = classify_products_batch(products_list, method=classification_method)
+        classification_method = settings.get("classification_method", "llm")
+        print(
+            f"🤖 Running automatic classification using {classification_method} method..."
+        )
+        products_list = classify_products_batch(
+            products_list, method=classification_method
+        )
         print("✅ Automatic classification complete")
 
         # Run manual classification UI
@@ -112,33 +124,40 @@ def classify_excel_file():
         # Convert back to Excel format
         excel_data = []
         from datetime import datetime
+
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         for product in products_list:
             row = {
-                'SKU': product.get('SKU', ''),
-                'Name': product.get('Name', ''),
-                'Price': product.get('Price', ''),
-                'Images': product.get('Images', ''),
-                'Weight': product.get('Weight', ''),
-                'Product Field 16': product.get('Brand', ''),  # Brand
-                'Product Field 11': 'yes' if product.get('Special Order') == 'yes' else '',  # Special Order
-                'Product Field 24': product.get('Category', ''),  # Category
-                'Product Field 25': product.get('Product Type', ''),  # Product Type
-                'Product On Pages': product.get('Product On Pages', ''),
-                'Product Field 32': product.get('Product Cross Sell', ''),  # Cross-sell
-                'ProductDisabled': 'checked' if product.get('Product Disabled') == 'checked' else 'uncheck',
-                'Last Edited': timestamp
+                "SKU": product.get("SKU", ""),
+                "Name": product.get("Name", ""),
+                "Price": product.get("Price", ""),
+                "Images": product.get("Images", ""),
+                "Weight": product.get("Weight", ""),
+                "Product Field 16": product.get("Brand", ""),  # Brand
+                "Product Field 11": (
+                    "yes" if product.get("Special Order") == "yes" else ""
+                ),  # Special Order
+                "Product Field 24": product.get("Category", ""),  # Category
+                "Product Field 25": product.get("Product Type", ""),  # Product Type
+                "Product On Pages": product.get("Product On Pages", ""),
+                "Product Field 32": product.get("Product Cross Sell", ""),  # Cross-sell
+                "ProductDisabled": (
+                    "checked"
+                    if product.get("Product Disabled") == "checked"
+                    else "uncheck"
+                ),
+                "Last Edited": timestamp,
             }
             excel_data.append(row)
 
         # Save back to Excel file
         # Always save as .xlsx since pandas can't write to .xls
         save_path = file_path
-        if file_path.lower().endswith('.xls'):
-            save_path = file_path[:-4] + '.xlsx'
+        if file_path.lower().endswith(".xls"):
+            save_path = file_path[:-4] + ".xlsx"
             print(f"📝 Converting to .xlsx format: {save_path}")
-        
+
         new_df = pd.DataFrame(excel_data)
         new_df.to_excel(save_path, index=False)
 
@@ -148,6 +167,7 @@ def classify_excel_file():
     except Exception as e:
         print(f"❌ Error during classification: {e}")
         import traceback
+
         traceback.print_exc()
 
 

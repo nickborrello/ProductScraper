@@ -3,6 +3,7 @@
 import os
 import pickle
 
+
 def save_cookies(driver, filename):
     os.makedirs("cookies", exist_ok=True)
     filepath = os.path.join("cookies", filename)
@@ -29,11 +30,12 @@ def load_cookies(driver, filename, domain_url):
     except Exception as e:
         print(f"⚠️ Failed to load cookies from {filename}: {e}")
         return False
-    
+
 
 def save_petfood_cookies(driver, path="petfood_cookies.pkl"):
     with open(path, "wb") as f:
         pickle.dump(driver.get_cookies(), f)
+
 
 def load_petfood_cookies(driver, path="petfood_cookies.pkl"):
     if not os.path.exists(path):
@@ -45,22 +47,29 @@ def load_petfood_cookies(driver, path="petfood_cookies.pkl"):
         driver.add_cookie(cookie)
     return True
 
+
 # Optional convenience wrappers
+
 
 def save_orgill_cookies(driver):
     save_cookies(driver, "orgill.pkl")
 
+
 def load_orgill_cookies(driver):
     return load_cookies(driver, "orgill.pkl", "https://www.orgill.com")
+
 
 def save_petfood_experts_cookies(driver):
     save_cookies(driver, "petfood_experts.pkl")
 
+
 def load_petfood_experts_cookies(driver):
     return load_cookies(driver, "petfood_experts.pkl", "https://www.petfoodexperts.com")
 
+
 def save_phillips_cookies(driver):
     save_cookies(driver, "phillips.pkl")
+
 
 def load_phillips_cookies(driver):
     return load_cookies(driver, "phillips.pkl", "https://www.phillipspet.com")

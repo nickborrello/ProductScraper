@@ -4,9 +4,21 @@ Provides a GUI for configuring application settings.
 """
 
 from PyQt6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QTabWidget, QWidget, QLabel,
-    QLineEdit, QCheckBox, QSpinBox, QPushButton, QGroupBox, QFormLayout,
-    QMessageBox, QTextEdit, QFileDialog
+    QDialog,
+    QVBoxLayout,
+    QHBoxLayout,
+    QTabWidget,
+    QWidget,
+    QLabel,
+    QLineEdit,
+    QCheckBox,
+    QSpinBox,
+    QPushButton,
+    QGroupBox,
+    QFormLayout,
+    QMessageBox,
+    QTextEdit,
+    QFileDialog,
 )
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QIcon
@@ -227,14 +239,19 @@ class SettingsDialog(QDialog):
 
         self.openai_api_key = QLineEdit()
         self.openai_api_key.setEchoMode(QLineEdit.EchoMode.Password)
-        self.openai_api_key.setPlaceholderText("Enter OpenAI API key for LLM classification")
+        self.openai_api_key.setPlaceholderText(
+            "Enter OpenAI API key for LLM classification"
+        )
         ai_layout.addRow("OpenAI API Key:", self.openai_api_key)
 
         # Classification method dropdown
         from PyQt6.QtWidgets import QComboBox
+
         self.classification_method = QComboBox()
         self.classification_method.addItems(["llm", "fuzzy"])
-        self.classification_method.setToolTip("llm: OpenAI API only\nfuzzy: fuzzy matching only")
+        self.classification_method.setToolTip(
+            "llm: OpenAI API only\nfuzzy: fuzzy matching only"
+        )
         ai_layout.addRow("Classification Method:", self.classification_method)
 
         ai_group.setLayout(ai_layout)
@@ -246,31 +263,53 @@ class SettingsDialog(QDialog):
     def load_settings(self):
         """Load current settings into the UI."""
         # Credentials
-        self.petfood_username.setText(self.current_settings.get('petfood_username', ''))
-        self.petfood_password.setText(self.current_settings.get('petfood_password', ''))
-        self.phillips_username.setText(self.current_settings.get('phillips_username', ''))
-        self.phillips_password.setText(self.current_settings.get('phillips_password', ''))
-        self.orgill_username.setText(self.current_settings.get('orgill_username', ''))
-        self.orgill_password.setText(self.current_settings.get('orgill_password', ''))
+        self.petfood_username.setText(self.current_settings.get("petfood_username", ""))
+        self.petfood_password.setText(self.current_settings.get("petfood_password", ""))
+        self.phillips_username.setText(
+            self.current_settings.get("phillips_username", "")
+        )
+        self.phillips_password.setText(
+            self.current_settings.get("phillips_password", "")
+        )
+        self.orgill_username.setText(self.current_settings.get("orgill_username", ""))
+        self.orgill_password.setText(self.current_settings.get("orgill_password", ""))
 
         # ShopSite
-        self.shopsite_client_id.setText(self.current_settings.get('shopsite_client_id', ''))
-        self.shopsite_secret_key.setText(self.current_settings.get('shopsite_secret_key', ''))
-        self.shopsite_auth_code.setText(self.current_settings.get('shopsite_authorization_code', ''))
-        self.shopsite_auth_url.setText(self.current_settings.get('shopsite_auth_url', ''))
-        self.shopsite_username.setText(self.current_settings.get('shopsite_username', ''))
-        self.shopsite_password.setText(self.current_settings.get('shopsite_password', ''))
+        self.shopsite_client_id.setText(
+            self.current_settings.get("shopsite_client_id", "")
+        )
+        self.shopsite_secret_key.setText(
+            self.current_settings.get("shopsite_secret_key", "")
+        )
+        self.shopsite_auth_code.setText(
+            self.current_settings.get("shopsite_authorization_code", "")
+        )
+        self.shopsite_auth_url.setText(
+            self.current_settings.get("shopsite_auth_url", "")
+        )
+        self.shopsite_username.setText(
+            self.current_settings.get("shopsite_username", "")
+        )
+        self.shopsite_password.setText(
+            self.current_settings.get("shopsite_password", "")
+        )
 
         # Application
-        self.database_path.setText(self.current_settings.get('database_path', ''))
-        self.selenium_headless.setChecked(self.current_settings.get('selenium_headless', True))
-        self.selenium_timeout.setValue(self.current_settings.get('selenium_timeout', 30))
-        self.debug_mode.setChecked(self.current_settings.get('debug_mode', False))
-        self.auto_scroll_logs.setChecked(self.current_settings.get('auto_scroll_logs', True))
+        self.database_path.setText(self.current_settings.get("database_path", ""))
+        self.selenium_headless.setChecked(
+            self.current_settings.get("selenium_headless", True)
+        )
+        self.selenium_timeout.setValue(
+            self.current_settings.get("selenium_timeout", 30)
+        )
+        self.debug_mode.setChecked(self.current_settings.get("debug_mode", False))
+        self.auto_scroll_logs.setChecked(
+            self.current_settings.get("auto_scroll_logs", True)
+        )
 
         # AI/ML
-        self.openai_api_key.setText(self.current_settings.get('openai_api_key', ''))
-        method = self.current_settings.get('classification_method', 'llm')
+        self.openai_api_key.setText(self.current_settings.get("openai_api_key", ""))
+        method = self.current_settings.get("classification_method", "llm")
         index = self.classification_method.findText(method)
         if index >= 0:
             self.classification_method.setCurrentIndex(index)
@@ -279,31 +318,35 @@ class SettingsDialog(QDialog):
         """Save settings from UI to settings manager."""
         try:
             # Credentials
-            settings.set('petfood_username', self.petfood_username.text().strip())
-            settings.set('petfood_password', self.petfood_password.text().strip())
-            settings.set('phillips_username', self.phillips_username.text().strip())
-            settings.set('phillips_password', self.phillips_password.text().strip())
-            settings.set('orgill_username', self.orgill_username.text().strip())
-            settings.set('orgill_password', self.orgill_password.text().strip())
+            settings.set("petfood_username", self.petfood_username.text().strip())
+            settings.set("petfood_password", self.petfood_password.text().strip())
+            settings.set("phillips_username", self.phillips_username.text().strip())
+            settings.set("phillips_password", self.phillips_password.text().strip())
+            settings.set("orgill_username", self.orgill_username.text().strip())
+            settings.set("orgill_password", self.orgill_password.text().strip())
 
             # ShopSite
-            settings.set('shopsite_client_id', self.shopsite_client_id.text().strip())
-            settings.set('shopsite_secret_key', self.shopsite_secret_key.text().strip())
-            settings.set('shopsite_authorization_code', self.shopsite_auth_code.text().strip())
-            settings.set('shopsite_auth_url', self.shopsite_auth_url.text().strip())
-            settings.set('shopsite_username', self.shopsite_username.text().strip())
-            settings.set('shopsite_password', self.shopsite_password.text().strip())
+            settings.set("shopsite_client_id", self.shopsite_client_id.text().strip())
+            settings.set("shopsite_secret_key", self.shopsite_secret_key.text().strip())
+            settings.set(
+                "shopsite_authorization_code", self.shopsite_auth_code.text().strip()
+            )
+            settings.set("shopsite_auth_url", self.shopsite_auth_url.text().strip())
+            settings.set("shopsite_username", self.shopsite_username.text().strip())
+            settings.set("shopsite_password", self.shopsite_password.text().strip())
 
             # Application
-            settings.set('database_path', self.database_path.text().strip())
-            settings.set('selenium_headless', self.selenium_headless.isChecked())
-            settings.set('selenium_timeout', self.selenium_timeout.value())
-            settings.set('debug_mode', self.debug_mode.isChecked())
-            settings.set('auto_scroll_logs', self.auto_scroll_logs.isChecked())
+            settings.set("database_path", self.database_path.text().strip())
+            settings.set("selenium_headless", self.selenium_headless.isChecked())
+            settings.set("selenium_timeout", self.selenium_timeout.value())
+            settings.set("debug_mode", self.debug_mode.isChecked())
+            settings.set("auto_scroll_logs", self.auto_scroll_logs.isChecked())
 
             # AI/ML
-            settings.set('openai_api_key', self.openai_api_key.text().strip())
-            settings.set('classification_method', self.classification_method.currentText())
+            settings.set("openai_api_key", self.openai_api_key.text().strip())
+            settings.set(
+                "classification_method", self.classification_method.currentText()
+            )
 
             QMessageBox.information(self, "Success", "Settings saved successfully!")
             self.accept()
@@ -318,7 +361,7 @@ class SettingsDialog(QDialog):
             "Reset Settings",
             "Are you sure you want to reset all settings to defaults?\n\nThis will clear all your configured credentials.",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No
+            QMessageBox.StandardButton.No,
         )
 
         if reply == QMessageBox.StandardButton.Yes:
@@ -332,7 +375,7 @@ class SettingsDialog(QDialog):
             self,
             "Select Database Location",
             self.database_path.text() or "data/databases/products.db",
-            "SQLite Database (*.db);;All Files (*)"
+            "SQLite Database (*.db);;All Files (*)",
         )
         if file_path:
             self.database_path.setText(file_path)

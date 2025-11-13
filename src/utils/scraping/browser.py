@@ -14,7 +14,9 @@ from src.utils.scraping.scraping import get_standard_chrome_options
 class ScraperBrowser:
     """Base browser class for scrapers with common functionality."""
 
-    def __init__(self, site_name, headless=True, profile_suffix=None, custom_options=None):
+    def __init__(
+        self, site_name, headless=True, profile_suffix=None, custom_options=None
+    ):
         """
         Initialize browser for scraping.
 
@@ -29,7 +31,9 @@ class ScraperBrowser:
         self.profile_suffix = profile_suffix or f"{int(time.time() * 1000)}"
 
         # Get standard options
-        options = get_standard_chrome_options(headless=headless, profile_suffix=self.profile_suffix)
+        options = get_standard_chrome_options(
+            headless=headless, profile_suffix=self.profile_suffix
+        )
 
         # Add custom options if provided
         if custom_options:
@@ -38,11 +42,11 @@ class ScraperBrowser:
 
         # Create service with suppressed logs
         service = ChromeService(log_path=os.devnull)
-        
+
         # Set environment variables to suppress GPU errors
-        os.environ['WEBKIT_DISABLE_COMPOSITING_MODE'] = '1'
-        os.environ['QT_QPA_PLATFORM'] = 'offscreen'  # For Linux systems
-        os.environ['LIBGL_ALWAYS_SOFTWARE'] = '1'    # Force software rendering
+        os.environ["WEBKIT_DISABLE_COMPOSITING_MODE"] = "1"
+        os.environ["QT_QPA_PLATFORM"] = "offscreen"  # For Linux systems
+        os.environ["LIBGL_ALWAYS_SOFTWARE"] = "1"  # Force software rendering
 
         # Initialize browser
         self.driver = webdriver.Chrome(service=service, options=options)

@@ -10,39 +10,58 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from src.utils.scraping.scraping import get_standard_chrome_options
 from src.utils.scraping.browser import create_browser
-from src.utils.general.display import display_product_result, display_scraping_progress, display_scraping_summary, display_error
+from src.utils.general.display import (
+    display_product_result,
+    display_scraping_progress,
+    display_scraping_summary,
+    display_error,
+)
 from src.core.settings_manager import settings
 
 # Ensure project root is on sys.path
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+PROJECT_ROOT = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 load_dotenv()
 HEADLESS = False
-TEST_SKU = "855089008580"  # KONG Pull A Partz Pals Koala SM - test SKU for Pet Food Experts
+TEST_SKU = (
+    "855089008580"  # KONG Pull A Partz Pals Koala SM - test SKU for Pet Food Experts
+)
 
 LOGIN_URL = "https://orders.petfoodexperts.com/SignIn"
 HOME_URL = "https://orders.petfoodexperts.com/"
 
+
 def init_browser(profile_suffix="default", headless=True):
     # Use standard Chrome options
     from src.utils.scraping.scraping import get_standard_chrome_options
-    chrome_options = get_standard_chrome_options(headless=headless, profile_suffix=profile_suffix)
-    
+
+    chrome_options = get_standard_chrome_options(
+        headless=headless, profile_suffix=profile_suffix
+    )
+
     # Use selenium_profiles directory for petfoodex with unique suffix
-    user_data_dir = os.path.join(PROJECT_ROOT, "data", "browser_profiles", f"petfoodex_{profile_suffix}")
+    user_data_dir = os.path.join(
+        PROJECT_ROOT, "data", "browser_profiles", f"petfoodex_{profile_suffix}"
+    )
     os.makedirs(user_data_dir, exist_ok=True)
     chrome_options.add_argument(f"--user-data-dir={user_data_dir}")
-    
+
     # Add service with error suppression
     service = Service(log_path=os.devnull)
     return webdriver.Chrome(service=service, options=chrome_options)
 
+
 def load_cookies(driver):
     try:
         import pickle
-        cookie_path = os.path.join(PROJECT_ROOT, "data", "cookies", "petfoodex_cookies.pkl")
+
+        cookie_path = os.path.join(
+            PROJECT_ROOT, "data", "cookies", "petfoodex_cookies.pkl"
+        )
         if not os.path.exists(cookie_path):
             return
         with open(cookie_path, "rb") as f:
@@ -55,10 +74,12 @@ def load_cookies(driver):
     except:
         pass
 
+
 def save_cookies(driver, log_callback=None):
     try:
         import pickle
         import os
+
         cookie_dir = os.path.join(PROJECT_ROOT, "data", "cookies")
         os.makedirs(cookie_dir, exist_ok=True)
         cookies = driver.get_cookies()
@@ -71,10 +92,11 @@ def save_cookies(driver, log_callback=None):
         else:
             print(warning_msg)
 
+
 def is_logged_in(driver):
     # Load saved cookies first
     load_cookies(driver)
-    
+
     driver.get(HOME_URL)
     time.sleep(3)  # Reduced wait time
 
@@ -87,8 +109,12 @@ def is_logged_in(driver):
     # Check for various logout/signout links
     try:
         logout_selectors = [
-            "a[href*='logout']", "a[href*='signout']", "a[href*='Logout']", "a[href*='SignOut']",
-            "a[href*='logoff']", "a[href*='signoff']"
+            "a[href*='logout']",
+            "a[href*='signout']",
+            "a[href*='Logout']",
+            "a[href*='SignOut']",
+            "a[href*='logoff']",
+            "a[href*='signoff']",
         ]
         for selector in logout_selectors:
             logout_links = driver.find_elements(By.CSS_SELECTOR, selector)
@@ -100,8 +126,11 @@ def is_logged_in(driver):
     # Check for user account/profile links
     try:
         account_selectors = [
-            "a[href*='account']", "a[href*='profile']", "a[href*='myaccount']",
-            "a[href*='my-account']", "a[href*='user']"
+            "a[href*='account']",
+            "a[href*='profile']",
+            "a[href*='myaccount']",
+            "a[href*='my-account']",
+            "a[href*='user']",
         ]
         for selector in account_selectors:
             account_links = driver.find_elements(By.CSS_SELECTOR, selector)
@@ -113,8 +142,17 @@ def is_logged_in(driver):
     # Check page content for logged-in indicators
     try:
         page_text = driver.page_source.lower()
-        logged_in_indicators = ['welcome', 'dashboard', 'my account', 'logout', 'sign out', 'hello']
-        found_indicators = [indicator for indicator in logged_in_indicators if indicator in page_text]
+        logged_in_indicators = [
+            "welcome",
+            "dashboard",
+            "my account",
+            "logout",
+            "sign out",
+            "hello",
+        ]
+        found_indicators = [
+            indicator for indicator in logged_in_indicators if indicator in page_text
+        ]
         if found_indicators:
             return True
     except Exception:
@@ -125,6 +163,7 @@ def is_logged_in(driver):
         return True
 
     return False
+
 
 def login(driver, log_callback=None):
     if log_callback:
@@ -193,9 +232,11 @@ def login(driver, log_callback=None):
     try:
         # Find the submit button
         submit_button = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, "button[data-test-selector='signIn_submit']"))
+            EC.element_to_be_clickable(
+                (By.CSS_SELECTOR, "button[data-test-selector='signIn_submit']")
+            )
         )
-        
+
         # Try to click
         submit_button.click()
         if log_callback:
@@ -237,6 +278,7 @@ def login(driver, log_callback=None):
         else:
             print(current_url_msg)
 
+
 def parse_weight_from_name(name):
     """
     Extract weight from product name and convert to pounds (LB).
@@ -244,22 +286,22 @@ def parse_weight_from_name(name):
     Returns weight in LB as string, or empty string if not found.
     """
     import re
-    
+
     if not name:
         return ""
-    
+
     # Patterns to match various weight formats
     patterns = [
         # Pounds: "3 lb", "3lb", "3.5 lbs", "3-lb", "3LB"
-        (r'(\d+(?:\.\d+)?)\s*-?\s*(?:lb|lbs|pound|pounds)\b', 1.0),
+        (r"(\d+(?:\.\d+)?)\s*-?\s*(?:lb|lbs|pound|pounds)\b", 1.0),
         # Ounces: "12 oz", "12oz", "12.5 oz.", "12-oz", "12OZ"
-        (r'(\d+(?:\.\d+)?)\s*-?\s*(?:oz|ounce|ounces)\.?\b', 1.0/16.0),
+        (r"(\d+(?:\.\d+)?)\s*-?\s*(?:oz|ounce|ounces)\.?\b", 1.0 / 16.0),
         # Kilograms: "1.5 kg", "2kg", "1.5-kg", "2KG"
-        (r'(\d+(?:\.\d+)?)\s*-?\s*(?:kg|kilogram|kilograms)\b', 2.20462),
+        (r"(\d+(?:\.\d+)?)\s*-?\s*(?:kg|kilogram|kilograms)\b", 2.20462),
         # Grams: "500 g", "500g", "500-g", "500G"
-        (r'(\d+(?:\.\d+)?)\s*-?\s*(?:g|gram|grams)\b', 0.00220462),
+        (r"(\d+(?:\.\d+)?)\s*-?\s*(?:g|gram|grams)\b", 0.00220462),
     ]
-    
+
     for pattern, conversion_factor in patterns:
         match = re.search(pattern, name, re.IGNORECASE)
         if match:
@@ -270,10 +312,13 @@ def parse_weight_from_name(name):
                 return f"{weight_lb:.2f}"
             except (ValueError, IndexError):
                 continue
-    
+
     return ""
 
-def scrape_petfood_experts(skus, browser=None, log_callback=None, progress_tracker=None):
+
+def scrape_petfood_experts(
+    skus, browser=None, log_callback=None, progress_tracker=None
+):
     """Scrape Pet Food Experts products for multiple SKUs."""
     if not skus:
         return []
@@ -287,29 +332,38 @@ def scrape_petfood_experts(skus, browser=None, log_callback=None, progress_track
     else:
         driver = create_browser("Pet Food Experts", headless=HEADLESS)
         if driver is None:
-            display_error("Could not create browser for Pet Food Experts", log_callback=log_callback)
+            display_error(
+                "Could not create browser for Pet Food Experts",
+                log_callback=log_callback,
+            )
             return products
-    
+
     try:
         # Handle login if required (only if we created our own browser)
         if browser is None:
             if not is_logged_in(driver):
                 login(driver, log_callback=log_callback)
-            
+
         for i, sku in enumerate(skus, 1):
             product_info = scrape_single_product(sku, driver, log_callback=log_callback)
             if product_info:
                 products.append(product_info)
-                display_product_result(product_info, i, len(skus), log_callback=log_callback)
+                display_product_result(
+                    product_info, i, len(skus), log_callback=log_callback
+                )
             else:
                 products.append(None)
-            
-            display_scraping_progress(i, len(skus), start_time, "Pet Food Experts", log_callback=log_callback)
-            
+
+            display_scraping_progress(
+                i, len(skus), start_time, "Pet Food Experts", log_callback=log_callback
+            )
+
             # Update progress tracker if provided
             if progress_tracker:
-                progress_tracker.update_sku_progress(i, f"Processed {sku}", 1 if product_info else 0)
-    
+                progress_tracker.update_sku_progress(
+                    i, f"Processed {sku}", 1 if product_info else 0
+                )
+
     finally:
         # Only quit browser if we created it ourselves
         if browser is None and driver:
@@ -317,15 +371,21 @@ def scrape_petfood_experts(skus, browser=None, log_callback=None, progress_track
                 driver.quit()
             except:
                 pass
-    
+
     successful_products = [p for p in products if p]
-    display_scraping_summary(successful_products, start_time, "Pet Food Experts", log_callback=log_callback)
-                
+    display_scraping_summary(
+        successful_products, start_time, "Pet Food Experts", log_callback=log_callback
+    )
+
     return products
+
 
 def scrape_single_product(sku, driver, log_callback=None):
     if driver is None:
-        display_error("WebDriver instance is None. Cannot scrape product.", log_callback=log_callback)
+        display_error(
+            "WebDriver instance is None. Cannot scrape product.",
+            log_callback=log_callback,
+        )
         return None
     try:
         search_url = f"https://orders.petfoodexperts.com/Search?query={sku}"
@@ -334,7 +394,12 @@ def scrape_single_product(sku, driver, log_callback=None):
         # Wait for page to load - either search results or product detail
         WebDriverWait(driver, 15).until(
             EC.any_of(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "label[data-test-selector='productListSortSelect-label']")),
+                EC.presence_of_element_located(
+                    (
+                        By.CSS_SELECTOR,
+                        "label[data-test-selector='productListSortSelect-label']",
+                    )
+                ),
                 EC.presence_of_element_located((By.CSS_SELECTOR, "div.pf-detail-wrap")),
                 # Also wait for "no results" message
                 EC.presence_of_element_located((By.CSS_SELECTOR, ".pf-no-results")),
@@ -353,11 +418,15 @@ def scrape_single_product(sku, driver, log_callback=None):
                 print(debug_msg)
             time.sleep(1)
             try:
-                brand_elem = driver.find_element(By.CSS_SELECTOR, "a.pf-detail-title span")
+                brand_elem = driver.find_element(
+                    By.CSS_SELECTOR, "a.pf-detail-title span"
+                )
             except:
                 brand_elem = None
             try:
-                name_elem = driver.find_element(By.CSS_SELECTOR, "div.pf-detail-heading h1")
+                name_elem = driver.find_element(
+                    By.CSS_SELECTOR, "div.pf-detail-heading h1"
+                )
             except:
                 name_elem = None
 
@@ -365,7 +434,10 @@ def scrape_single_product(sku, driver, log_callback=None):
             image_urls = []
             try:
                 # Get main image
-                main_image = driver.find_element(By.CSS_SELECTOR, "img[data-test-selector='productDetails_mainImage']")
+                main_image = driver.find_element(
+                    By.CSS_SELECTOR,
+                    "img[data-test-selector='productDetails_mainImage']",
+                )
                 main_image_src = main_image.get_attribute("src")
                 if main_image_src:
                     image_urls.append(main_image_src)
@@ -374,7 +446,9 @@ def scrape_single_product(sku, driver, log_callback=None):
 
             try:
                 # Get all slider thumbnail images
-                slider_images = driver.find_elements(By.CSS_SELECTOR, ".pf-detail-nav .pf-slide img")
+                slider_images = driver.find_elements(
+                    By.CSS_SELECTOR, ".pf-detail-nav .pf-slide img"
+                )
                 for img in slider_images:
                     img_src = img.get_attribute("src")
                     if img_src and img_src not in image_urls:
@@ -397,13 +471,14 @@ def scrape_single_product(sku, driver, log_callback=None):
 
             # Remove brand from beginning of name if present (case-insensitive)
             if brand and brand.strip() and name.startswith(brand + " "):
-                name = name[len(brand) + 1:].strip()
+                name = name[len(brand) + 1 :].strip()
             elif brand and brand.strip() and name.startswith(brand + "-"):
-                name = name[len(brand) + 1:].strip()
+                name = name[len(brand) + 1 :].strip()
 
             # Normalize weights like '12Oz' to '12 oz.' in name
             import re
-            name = re.sub(r'(\d+)\s*[Oo][Zz]\b', r'\1 oz.', name)
+
+            name = re.sub(r"(\d+)\s*[Oo][Zz]\b", r"\1 oz.", name)
 
             # Parse weight from name and convert to LB
             weight_lb = parse_weight_from_name(name)
@@ -418,13 +493,15 @@ def scrape_single_product(sku, driver, log_callback=None):
 
             # Check for critical missing data - return None if essential fields are missing
             critical_fields_missing = (
-                not product_info.get('Name', '').strip() or
-                not product_info.get('Brand', '').strip() or
-                not product_info.get('Image URLs')
+                not product_info.get("Name", "").strip()
+                or not product_info.get("Brand", "").strip()
+                or not product_info.get("Image URLs")
             )
 
             if critical_fields_missing:
-                debug_msg = f"DEBUG: Critical fields missing for SKU {sku}, returning None"
+                debug_msg = (
+                    f"DEBUG: Critical fields missing for SKU {sku}, returning None"
+                )
                 if log_callback:
                     log_callback(debug_msg)
                 else:
@@ -443,9 +520,13 @@ def scrape_single_product(sku, driver, log_callback=None):
             return None
 
         # Check if we're on search results page with actual results
-        elif driver.find_elements(By.CSS_SELECTOR, "label[data-test-selector='productListSortSelect-label']"):
+        elif driver.find_elements(
+            By.CSS_SELECTOR, "label[data-test-selector='productListSortSelect-label']"
+        ):
             # Look for product cards in search results - be more specific to avoid false positives
-            product_cards = driver.find_elements(By.CSS_SELECTOR, ".pf-product-card, .product-card")
+            product_cards = driver.find_elements(
+                By.CSS_SELECTOR, ".pf-product-card, .product-card"
+            )
             if product_cards:
                 debug_msg = f"DEBUG: Found {len(product_cards)} products in search results for SKU {sku}, but expected direct navigation to product page"
                 if log_callback:
@@ -472,8 +553,11 @@ def scrape_single_product(sku, driver, log_callback=None):
             return None
 
     except Exception as e:
-        display_error(f"PetFoodExperts scrape error for SKU {sku}: {e}", log_callback=log_callback)
+        display_error(
+            f"PetFoodExperts scrape error for SKU {sku}: {e}", log_callback=log_callback
+        )
         return None
+
 
 if __name__ == "__main__":
     test_sku = "10852301008912"

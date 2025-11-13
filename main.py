@@ -20,16 +20,16 @@ from scripts.run_gui import MainWindow
 def main():
     """Launch the ProductScraper GUI application"""
     app = QApplication(sys.argv)
-    
+
     # Set application metadata
     app.setApplicationName("ProductScraper")
     app.setOrganizationName("BayStatePet")
     app.setOrganizationDomain("baystatepet.com")
-    
+
     # Create and show main window
     window = MainWindow()
     window.show()
-    
+
     # Run the application
     sys.exit(app.exec())
 

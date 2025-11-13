@@ -9,9 +9,23 @@ from pathlib import Path
 
 # PyQt6 imports
 from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-    QPushButton, QLineEdit, QScrollArea, QFrame, QCheckBox, QMessageBox,
-    QSplitter, QProgressBar, QSizePolicy, QGridLayout, QGroupBox
+    QApplication,
+    QMainWindow,
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QLineEdit,
+    QScrollArea,
+    QFrame,
+    QCheckBox,
+    QMessageBox,
+    QSplitter,
+    QProgressBar,
+    QSizePolicy,
+    QGridLayout,
+    QGroupBox,
 )
 from PyQt6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
 from PyQt6.QtGui import QPixmap, QPainter, QFont
@@ -22,14 +36,16 @@ from PyQt6.QtGui import QPalette, QColor
 from src.core.classification.cross_sell_logic import (
     get_facet_options_from_db,
     query_cross_sell_candidates,
-    get_first_image_url
+    get_first_image_url,
 )
 
 CROSS_SELL_FIELD = "Product Cross Sell"
 MAX_CROSS_SELLS = 4
 # Database path - Adjusted for the new location: UI/product_cross_sell_ui.py
 # It needs to go up two levels (UI, ProductScraper) and then into data
-DB_PATH = Path(__file__).parent.parent.parent.parent / "data" / "databases" / "products.db"
+DB_PATH = (
+    Path(__file__).parent.parent.parent.parent / "data" / "databases" / "products.db"
+)
 
 
 def assign_cross_sells_batch(products_list):
@@ -42,10 +58,12 @@ def assign_cross_sells_batch(products_list):
         List of product_info dictionaries with cross-sells assigned
     """
     print(f"🔗 Cross-Sell Assignment (UI): Processing {len(products_list)} products...")
-    
+
     # Always use the interactive batch UI
     results = edit_cross_sells_in_batch(products_list)
-    print(f"\033[92m✅ Cross-sell assignment (UI) complete! Processed {len(results)} products\033[0m\n")
+    print(
+        f"\033[92m✅ Cross-sell assignment (UI) complete! Processed {len(results)} products\033[0m\n"
+    )
     return results
 
 
@@ -92,7 +110,8 @@ class MultiSelectWidget(QWidget):
         self.search_edit = QLineEdit()
         self.search_edit.setFont(QFont("Arial", 12))
         self.search_edit.setPlaceholderText("Search...")
-        self.search_edit.setStyleSheet("""
+        self.search_edit.setStyleSheet(
+            """
             QLineEdit {
                 background-color: #2d2d2d;
                 color: #ffffff;
@@ -103,7 +122,8 @@ class MultiSelectWidget(QWidget):
             QLineEdit:focus {
                 border: 1px solid #2196F3;
             }
-        """)
+        """
+        )
         self.search_edit.textChanged.connect(self.filter_options)
         available_layout.addWidget(self.search_edit)
 
@@ -112,14 +132,18 @@ class MultiSelectWidget(QWidget):
 
         self.available_scroll = QScrollArea()
         self.available_scroll.setWidgetResizable(True)
-        self.available_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.available_scroll.setStyleSheet("""
+        self.available_scroll.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
+        self.available_scroll.setStyleSheet(
+            """
             QScrollArea {
                 background-color: #2d2d2d;
                 border: 1px solid #4a4a4a;
                 border-radius: 4px;
             }
-        """)
+        """
+        )
 
         available_widget = QWidget()
         self.available_layout = QVBoxLayout(available_widget)
@@ -135,14 +159,18 @@ class MultiSelectWidget(QWidget):
 
         self.selected_scroll = QScrollArea()
         self.selected_scroll.setWidgetResizable(True)
-        self.selected_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.selected_scroll.setStyleSheet("""
+        self.selected_scroll.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
+        self.selected_scroll.setStyleSheet(
+            """
             QScrollArea {
                 background-color: #2d2d2d;
                 border: 1px solid #4a4a4a;
                 border-radius: 4px;
             }
-        """)
+        """
+        )
 
         selected_widget = QWidget()
         self.selected_layout = QVBoxLayout(selected_widget)
@@ -157,7 +185,9 @@ class MultiSelectWidget(QWidget):
         if not query:
             self.current_options = self.all_options[:]
         else:
-            self.current_options = [opt for opt in self.all_options if query in opt.lower()]
+            self.current_options = [
+                opt for opt in self.all_options if query in opt.lower()
+            ]
         self.update_display()
 
     def update_display(self):
@@ -170,7 +200,9 @@ class MultiSelectWidget(QWidget):
         for option in self.current_options:
             if option not in self.selected_items:
                 checkbox = QCheckBox(option)
-                checkbox.stateChanged.connect(lambda state, opt=option: self.on_available_changed(opt, state))
+                checkbox.stateChanged.connect(
+                    lambda state, opt=option: self.on_available_changed(opt, state)
+                )
                 self.available_layout.addWidget(checkbox)
                 self.checkboxes[option] = checkbox
 
@@ -178,7 +210,9 @@ class MultiSelectWidget(QWidget):
         for option in sorted(self.selected_items, key=str.lower):
             checkbox = QCheckBox(option)
             checkbox.setChecked(True)
-            checkbox.stateChanged.connect(lambda state, opt=option: self.on_selected_changed(opt, state))
+            checkbox.stateChanged.connect(
+                lambda state, opt=option: self.on_selected_changed(opt, state)
+            )
             self.selected_layout.addWidget(checkbox)
             self.checkboxes[option] = checkbox
 
@@ -222,7 +256,8 @@ class CrossSellEditorWindow(QMainWindow):
         self.current_candidates = []  # Store current candidates for selected bar
 
         # Apply dark theme styling
-        self.setStyleSheet("""
+        self.setStyleSheet(
+            """
             QMainWindow {
                 background-color: #1e1e1e;
                 color: #ffffff;
@@ -301,10 +336,13 @@ class CrossSellEditorWindow(QMainWindow):
             QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
                 background: none;
             }
-        """)
+        """
+        )
 
         # Get all available options from database
-        self.all_categories, self.all_product_types, self.all_pages = get_facet_options_from_db()
+        self.all_categories, self.all_product_types, self.all_pages = (
+            get_facet_options_from_db()
+        )
 
         # Network manager for image downloading
         self.network_manager = QNetworkAccessManager()
@@ -326,9 +364,10 @@ class CrossSellEditorWindow(QMainWindow):
                 if pixmap.loadFromData(image_data):
                     # Scale image to fit the display area while maintaining aspect ratio
                     scaled_pixmap = pixmap.scaled(
-                        120, 120, 
+                        120,
+                        120,
                         Qt.AspectRatioMode.KeepAspectRatio,
-                        Qt.TransformationMode.SmoothTransformation
+                        Qt.TransformationMode.SmoothTransformation,
                     )
                     # Find the label that requested this image
                     url = reply.url().toString()
@@ -346,7 +385,9 @@ class CrossSellEditorWindow(QMainWindow):
             reply.deleteLater()
 
     def setup_ui(self):
-        self.setWindowTitle(f"Batch Cross-Sell Editor - Professional Edition - {len(self.products_list)} Products")
+        self.setWindowTitle(
+            f"Batch Cross-Sell Editor - Professional Edition - {len(self.products_list)} Products"
+        )
         self.setMinimumSize(1200, 800)
 
         # Create central widget
@@ -374,7 +415,8 @@ class CrossSellEditorWindow(QMainWindow):
         """Setup the filter panel on the left side."""
         # Filter Panel Card
         filter_card = QGroupBox("🔍 Filter Panel")
-        filter_card.setStyleSheet("""
+        filter_card.setStyleSheet(
+            """
             QGroupBox {
                 font-weight: bold;
                 border: 2px solid #4a4a4a;
@@ -390,14 +432,16 @@ class CrossSellEditorWindow(QMainWindow):
                 color: #ffffff;
                 font-size: 14px;
             }
-        """)
+        """
+        )
         filter_layout = QVBoxLayout(filter_card)
         filter_layout.setSpacing(10)
         filter_layout.setContentsMargins(15, 15, 15, 15)
 
         # Category filter
         category_group = QGroupBox("📁 Categories")
-        category_group.setStyleSheet("""
+        category_group.setStyleSheet(
+            """
             QGroupBox {
                 font-weight: bold;
                 border: 1px solid #4a4a4a;
@@ -413,17 +457,21 @@ class CrossSellEditorWindow(QMainWindow):
                 color: #ffffff;
                 font-size: 12px;
             }
-        """)
+        """
+        )
         category_layout = QVBoxLayout(category_group)
         category_layout.setContentsMargins(10, 10, 10, 10)
-        self.category_multi_select = MultiSelectWidget("Categories", self.all_categories)
+        self.category_multi_select = MultiSelectWidget(
+            "Categories", self.all_categories
+        )
         self.category_multi_select.selection_changed.connect(self.on_filters_changed)
         category_layout.addWidget(self.category_multi_select)
         filter_layout.addWidget(category_group)
 
         # Product Type filter
         type_group = QGroupBox("🏷️ Product Types")
-        type_group.setStyleSheet("""
+        type_group.setStyleSheet(
+            """
             QGroupBox {
                 font-weight: bold;
                 border: 1px solid #4a4a4a;
@@ -439,17 +487,21 @@ class CrossSellEditorWindow(QMainWindow):
                 color: #ffffff;
                 font-size: 12px;
             }
-        """)
+        """
+        )
         type_layout = QVBoxLayout(type_group)
         type_layout.setContentsMargins(10, 10, 10, 10)
-        self.type_multi_select = MultiSelectWidget("Product Types", self.all_product_types)
+        self.type_multi_select = MultiSelectWidget(
+            "Product Types", self.all_product_types
+        )
         self.type_multi_select.selection_changed.connect(self.on_filters_changed)
         type_layout.addWidget(self.type_multi_select)
         filter_layout.addWidget(type_group)
 
         # Pages filter
         pages_group = QGroupBox("📄 Pages")
-        pages_group.setStyleSheet("""
+        pages_group.setStyleSheet(
+            """
             QGroupBox {
                 font-weight: bold;
                 border: 1px solid #4a4a4a;
@@ -465,7 +517,8 @@ class CrossSellEditorWindow(QMainWindow):
                 color: #ffffff;
                 font-size: 12px;
             }
-        """)
+        """
+        )
         pages_layout = QVBoxLayout(pages_group)
         pages_layout.setContentsMargins(10, 10, 10, 10)
         self.pages_multi_select = MultiSelectWidget("Pages", self.all_pages)
@@ -476,7 +529,8 @@ class CrossSellEditorWindow(QMainWindow):
         # Apply filters button
         self.apply_filters_button = QPushButton("🔍 Apply Filters")
         self.apply_filters_button.setFont(QFont("Arial", 12, QFont.Weight.Bold))
-        self.apply_filters_button.setStyleSheet("""
+        self.apply_filters_button.setStyleSheet(
+            """
             QPushButton {
                 background-color: #2196F3;
                 color: white;
@@ -493,7 +547,8 @@ class CrossSellEditorWindow(QMainWindow):
             QPushButton:pressed {
                 background-color: #1565C0;
             }
-        """)
+        """
+        )
         self.apply_filters_button.clicked.connect(self.apply_filters)
         filter_layout.addWidget(self.apply_filters_button)
 
@@ -504,7 +559,8 @@ class CrossSellEditorWindow(QMainWindow):
         """Setup the candidates panel on the right side."""
         # Candidates Panel Card
         candidates_card = QGroupBox("🔗 Cross-Sell Candidates")
-        candidates_card.setStyleSheet("""
+        candidates_card.setStyleSheet(
+            """
             QGroupBox {
                 font-weight: bold;
                 border: 2px solid #4a4a4a;
@@ -520,7 +576,8 @@ class CrossSellEditorWindow(QMainWindow):
                 color: #ffffff;
                 font-size: 14px;
             }
-        """)
+        """
+        )
         candidates_layout = QVBoxLayout(candidates_card)
         candidates_layout.setContentsMargins(15, 15, 15, 15)
 
@@ -534,14 +591,18 @@ class CrossSellEditorWindow(QMainWindow):
         # Candidates grid in scroll area
         self.candidates_scroll = QScrollArea()
         self.candidates_scroll.setWidgetResizable(True)
-        self.candidates_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.candidates_scroll.setStyleSheet("""
+        self.candidates_scroll.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
+        self.candidates_scroll.setStyleSheet(
+            """
             QScrollArea {
                 background-color: #343a40;
                 border: 1px solid #4a4a4a;
                 border-radius: 6px;
             }
-        """)
+        """
+        )
 
         self.candidates_grid_widget = QWidget()
         self.candidates_grid_layout = QGridLayout(self.candidates_grid_widget)
@@ -550,7 +611,8 @@ class CrossSellEditorWindow(QMainWindow):
 
         # Selected cross-sells bar
         selected_group = QGroupBox("✅ Selected Cross-Sells")
-        selected_group.setStyleSheet("""
+        selected_group.setStyleSheet(
+            """
             QGroupBox {
                 font-weight: bold;
                 border: 1px solid #4a4a4a;
@@ -566,23 +628,32 @@ class CrossSellEditorWindow(QMainWindow):
                 color: #ffffff;
                 font-size: 12px;
             }
-        """)
+        """
+        )
         selected_layout = QVBoxLayout(selected_group)
         selected_layout.setContentsMargins(10, 10, 10, 10)
 
         self.selected_scroll = QScrollArea()
         self.selected_scroll.setWidgetResizable(True)
         self.selected_scroll.setMinimumHeight(200)
-        self.selected_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        self.selected_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        self.selected_scroll.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-        self.selected_scroll.setStyleSheet("""
+        self.selected_scroll.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAsNeeded
+        )
+        self.selected_scroll.setVerticalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAsNeeded
+        )
+        self.selected_scroll.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum
+        )
+        self.selected_scroll.setStyleSheet(
+            """
             QScrollArea {
                 background-color: #2d2d2d;
                 border: 1px solid #4a4a4a;
                 border-radius: 4px;
             }
-        """)
+        """
+        )
 
         self.selected_bar_widget = QWidget()
         self.selected_bar_layout = QHBoxLayout(self.selected_bar_widget)
@@ -599,7 +670,8 @@ class CrossSellEditorWindow(QMainWindow):
         """Setup the navigation bar at the bottom."""
         # Navigation Card
         nav_card = QGroupBox("🧭 Navigation & Actions")
-        nav_card.setStyleSheet("""
+        nav_card.setStyleSheet(
+            """
             QGroupBox {
                 font-weight: bold;
                 border: 2px solid #4a4a4a;
@@ -615,7 +687,8 @@ class CrossSellEditorWindow(QMainWindow):
                 color: #ffffff;
                 font-size: 14px;
             }
-        """)
+        """
+        )
         nav_widget = QWidget()
         nav_widget.setFixedHeight(70)
         nav_layout = QHBoxLayout(nav_widget)
@@ -648,7 +721,8 @@ class CrossSellEditorWindow(QMainWindow):
         self.cancel_button = QPushButton("❌ Cancel")
         self.cancel_button.setFont(QFont("Arial", 14, QFont.Weight.Bold))
         self.cancel_button.setFixedSize(120, 45)
-        self.cancel_button.setStyleSheet("""
+        self.cancel_button.setStyleSheet(
+            """
             QPushButton {
                 background-color: #dc3545;
                 color: white;
@@ -662,14 +736,16 @@ class CrossSellEditorWindow(QMainWindow):
             QPushButton:pressed {
                 background-color: #bd2130;
             }
-        """)
+        """
+        )
         self.cancel_button.clicked.connect(self.cancel)
         button_layout.addWidget(self.cancel_button)
 
         self.deselect_button = QPushButton("⛔ Deselect All")
         self.deselect_button.setFont(QFont("Arial", 14, QFont.Weight.Bold))
         self.deselect_button.setFixedSize(140, 45)
-        self.deselect_button.setStyleSheet("""
+        self.deselect_button.setStyleSheet(
+            """
             QPushButton {
                 background-color: #ffc107;
                 color: black;
@@ -683,14 +759,16 @@ class CrossSellEditorWindow(QMainWindow):
             QPushButton:pressed {
                 background-color: #d39e00;
             }
-        """)
+        """
+        )
         self.deselect_button.clicked.connect(self.deselect_all)
         button_layout.addWidget(self.deselect_button)
 
         self.prev_button = QPushButton("⬅️ Previous")
         self.prev_button.setFont(QFont("Arial", 14, QFont.Weight.Bold))
         self.prev_button.setFixedSize(140, 45)
-        self.prev_button.setStyleSheet("""
+        self.prev_button.setStyleSheet(
+            """
             QPushButton {
                 background-color: #6c757d;
                 color: white;
@@ -708,14 +786,16 @@ class CrossSellEditorWindow(QMainWindow):
                 background-color: #495057;
                 color: #6c757d;
             }
-        """)
+        """
+        )
         self.prev_button.clicked.connect(self.go_previous)
         button_layout.addWidget(self.prev_button)
 
         self.next_button = QPushButton("Next ➡️")
         self.next_button.setFont(QFont("Arial", 14, QFont.Weight.Bold))
         self.next_button.setFixedSize(140, 45)
-        self.next_button.setStyleSheet("""
+        self.next_button.setStyleSheet(
+            """
             QPushButton {
                 background-color: #007bff;
                 color: white;
@@ -733,14 +813,16 @@ class CrossSellEditorWindow(QMainWindow):
                 background-color: #495057;
                 color: #6c757d;
             }
-        """)
+        """
+        )
         self.next_button.clicked.connect(self.go_next)
         button_layout.addWidget(self.next_button)
 
         self.finish_button = QPushButton("✅ Finish")
         self.finish_button.setFont(QFont("Arial", 14, QFont.Weight.Bold))
         self.finish_button.setFixedSize(140, 45)
-        self.finish_button.setStyleSheet("""
+        self.finish_button.setStyleSheet(
+            """
             QPushButton {
                 background-color: #28a745;
                 color: white;
@@ -754,7 +836,8 @@ class CrossSellEditorWindow(QMainWindow):
             QPushButton:pressed {
                 background-color: #1e7e34;
             }
-        """)
+        """
+        )
         self.finish_button.clicked.connect(self.finish)
         button_layout.addWidget(self.finish_button)
 
@@ -765,35 +848,43 @@ class CrossSellEditorWindow(QMainWindow):
     def load_product_into_ui(self, idx):
         """Load product data into the UI."""
         product = self.products_list[idx]
-        sku = product.get('SKU', 'Unknown')
-        name = product.get('Name', 'Unknown Product')
-        
+        sku = product.get("SKU", "Unknown")
+        name = product.get("Name", "Unknown Product")
+
         # Update product info in bottom bar
         self.product_info_label_bottom.setText(f"{name}\nSKU: {sku}")
-        
+
         # Set default filters to current product's values
-        category_str = str(product.get('Category', '')).strip()
-        type_str = str(product.get('Product Type', '')).strip()
-        pages_str = str(product.get('Product On Pages', '')).strip()
-        
+        category_str = str(product.get("Category", "")).strip()
+        type_str = str(product.get("Product Type", "")).strip()
+        pages_str = str(product.get("Product On Pages", "")).strip()
+
         # Parse pipe-separated values
-        default_categories = [c.strip() for c in category_str.split('|') if c.strip()] if category_str else []
-        default_types = [t.strip() for t in type_str.split('|') if t.strip()] if type_str else []
-        default_pages = [p.strip() for p in pages_str.split('|') if p.strip()] if pages_str else []
-        
+        default_categories = (
+            [c.strip() for c in category_str.split("|") if c.strip()]
+            if category_str
+            else []
+        )
+        default_types = (
+            [t.strip() for t in type_str.split("|") if t.strip()] if type_str else []
+        )
+        default_pages = (
+            [p.strip() for p in pages_str.split("|") if p.strip()] if pages_str else []
+        )
+
         # Set filter defaults
         self.category_multi_select.set_selected(default_categories)
         self.type_multi_select.set_selected(default_types)
         self.pages_multi_select.set_selected(default_pages)
-        
+
         # Update progress
         self.progress_label.setText(f"Product {idx + 1} of {len(self.products_list)}")
-        
+
         # Update button states
         self.prev_button.setEnabled(idx > 0)
         self.next_button.setEnabled(idx < len(self.products_list) - 1)
         self.finish_button.setEnabled(idx == len(self.products_list) - 1)
-        
+
         # Load candidates with current filters
         self.apply_filters()
 
@@ -807,45 +898,50 @@ class CrossSellEditorWindow(QMainWindow):
         category_filters = self.category_multi_select.get_selected()
         type_filters = self.type_multi_select.get_selected()
         page_filters = self.pages_multi_select.get_selected()
-        
+
         current_product = self.products_list[self.current_index]
-        exclude_sku = current_product.get('SKU', '')
-        
+        exclude_sku = current_product.get("SKU", "")
+
         # Query database for candidates
         candidates = query_cross_sell_candidates(
-            category_filters, type_filters, page_filters, 
-            exclude_sku=exclude_sku, limit=50
+            category_filters,
+            type_filters,
+            page_filters,
+            exclude_sku=exclude_sku,
+            limit=50,
         )
-        
+
         # Update candidates display
         self.display_candidates(candidates)
 
     def display_candidates(self, candidates):
         """Display candidates in the grid."""
         self.current_candidates = candidates  # Store for selected bar
-        
+
         # Clear existing candidates
         for i in reversed(range(self.candidates_grid_layout.count())):
             widget = self.candidates_grid_layout.itemAt(i).widget()
             if widget:
                 widget.setParent(None)
-        
+
         # Clear image cache
         self.image_cache.clear()
-        
+
         # Display candidates in grid (4 columns)
         cols = 4
         for i, candidate in enumerate(candidates):
             row = i // cols
             col = i % cols
-            
+
             # Create candidate card
             card = self.create_candidate_card(candidate)
             self.candidates_grid_layout.addWidget(card, row, col)
-        
+
         # Update header
-        self.candidates_header.setText(f"Cross-Sell Candidates ({len(candidates)} found)")
-        
+        self.candidates_header.setText(
+            f"Cross-Sell Candidates ({len(candidates)} found)"
+        )
+
         # Update selected bar
         self.update_selected_bar()
 
@@ -854,44 +950,50 @@ class CrossSellEditorWindow(QMainWindow):
         card = QFrame()
         card.setFrameStyle(QFrame.Shape.Box)
         card.setFixedSize(180, 200)
-        
-        sku = candidate.get('SKU', '')
-        name = candidate.get('Name', '')
-        images_field = candidate.get('Images', '')
+
+        sku = candidate.get("SKU", "")
+        name = candidate.get("Name", "")
+        images_field = candidate.get("Images", "")
         image_url = get_first_image_url(images_field)
-        
+
         # Set border color based on selection
         is_selected = sku in self.selected_cross_sells[self.current_index]
         border_color = "#1976d2" if is_selected else "#cccccc"
-        card.setStyleSheet(f"""
+        card.setStyleSheet(
+            f"""
             QFrame {{
                 border: 2px solid {border_color};
                 border-radius: 5px;
                 background-color: #ffffff;
             }}
-        """)
-        
+        """
+        )
+
         layout = QVBoxLayout(card)
         layout.setContentsMargins(5, 5, 5, 5)
-        
+
         # Checkbox
         checkbox = QCheckBox()
         checkbox.setChecked(is_selected)
-        checkbox.stateChanged.connect(lambda state, s=sku: self.on_candidate_selected(s, state))
+        checkbox.stateChanged.connect(
+            lambda state, s=sku: self.on_candidate_selected(s, state)
+        )
         layout.addWidget(checkbox, alignment=Qt.AlignmentFlag.AlignCenter)
-        
+
         # Image
         image_label = QLabel()
         image_label.setFixedSize(120, 120)
-        image_label.setStyleSheet("""
+        image_label.setStyleSheet(
+            """
             QLabel {
                 background-color: #f8f9fa;
                 border: 1px solid #dee2e6;
                 border-radius: 3px;
             }
-        """)
+        """
+        )
         image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        
+
         if image_url:
             # Load image
             request = QNetworkRequest(QUrl(image_url))
@@ -899,9 +1001,9 @@ class CrossSellEditorWindow(QMainWindow):
             self.image_cache[image_url] = image_label
         else:
             image_label.setText("No image")
-        
+
         layout.addWidget(image_label, alignment=Qt.AlignmentFlag.AlignCenter)
-        
+
         # Name (truncated)
         display_name = name if len(name) <= 25 else name[:22] + "..."
         name_label = QLabel(display_name)
@@ -909,14 +1011,14 @@ class CrossSellEditorWindow(QMainWindow):
         name_label.setWordWrap(True)
         name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(name_label)
-        
+
         # SKU
         sku_label = QLabel(f"SKU: {sku}")
         sku_label.setFont(QFont("Arial", 9))
         sku_label.setStyleSheet("color: #6c757d;")
         sku_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(sku_label)
-        
+
         return card
 
     def on_candidate_selected(self, sku, state):
@@ -943,7 +1045,7 @@ class CrossSellEditorWindow(QMainWindow):
                 return  # Don't proceed with updates
         else:  # Unchecked
             self.selected_cross_sells[self.current_index].discard(sku)
-        
+
         # Update card borders
         self.update_candidate_borders()
         # Update selected bar
@@ -951,39 +1053,45 @@ class CrossSellEditorWindow(QMainWindow):
 
     def update_candidate_borders(self):
         """Update the border colors and checkbox states of candidate cards based on selection."""
-        max_reached = len(self.selected_cross_sells[self.current_index]) >= MAX_CROSS_SELLS
-        
+        max_reached = (
+            len(self.selected_cross_sells[self.current_index]) >= MAX_CROSS_SELLS
+        )
+
         for i in range(self.candidates_grid_layout.count()):
             card = self.candidates_grid_layout.itemAt(i).widget()
-            if card and hasattr(card, 'findChild'):
+            if card and hasattr(card, "findChild"):
                 checkbox = card.findChild(QCheckBox)
                 sku_label = None
                 for child in card.findChildren(QLabel):
                     if child.text().startswith("SKU: "):
                         sku_label = child
                         break
-                
+
                 if checkbox and sku_label:
                     sku = sku_label.text().replace("SKU: ", "")
                     is_selected = sku in self.selected_cross_sells[self.current_index]
-                    
+
                     # Update checkbox state
                     checkbox.setChecked(is_selected)
                     # Disable checkbox if max reached and not selected
                     checkbox.setEnabled(not (max_reached and not is_selected))
-                    
+
                     # Update border color and opacity
                     border_color = "#1976d2" if is_selected else "#cccccc"
                     opacity = "1.0" if not max_reached or is_selected else "0.4"
-                    
-                    card.setStyleSheet("""
+
+                    card.setStyleSheet(
+                        """
                         QFrame {{
                             border: 2px solid {};
                             border-radius: 5px;
                             background-color: #ffffff;
                             opacity: {};
                         }}
-                    """.format(border_color, opacity))
+                    """.format(
+                            border_color, opacity
+                        )
+                    )
 
     def update_selected_bar(self):
         """Update the selected cross-sells bar."""
@@ -992,51 +1100,57 @@ class CrossSellEditorWindow(QMainWindow):
             widget = self.selected_bar_layout.itemAt(i).widget()
             if widget:
                 widget.setParent(None)
-        
+
         # Add selected items
         for sku in sorted(self.selected_cross_sells[self.current_index]):
             # Find the candidate info
             candidate_info = None
             for candidate in self.current_candidates:
-                if candidate.get('SKU') == sku:
+                if candidate.get("SKU") == sku:
                     candidate_info = candidate
                     break
-            
+
             if candidate_info:
                 # Create a smaller card for selected item
                 selected_card = QFrame()
                 selected_card.setFrameStyle(QFrame.Shape.Box)
                 selected_card.setFixedSize(110, 140)
-                selected_card.setStyleSheet("""
+                selected_card.setStyleSheet(
+                    """
                     QFrame {
                         border: 2px solid #1976d2;
                         border-radius: 3px;
                         background-color: #ffffff;
                     }
-                """)
-                
+                """
+                )
+
                 layout = QVBoxLayout(selected_card)
                 layout.setContentsMargins(3, 3, 3, 3)
-                
+
                 # Checkbox (checked and enabled for deselection)
                 checkbox = QCheckBox()
                 checkbox.setChecked(True)
-                checkbox.stateChanged.connect(lambda state, s=sku: self.remove_selected_cross_sell(s))
+                checkbox.stateChanged.connect(
+                    lambda state, s=sku: self.remove_selected_cross_sell(s)
+                )
                 layout.addWidget(checkbox, alignment=Qt.AlignmentFlag.AlignCenter)
-                
+
                 # Image
                 image_label = QLabel()
                 image_label.setFixedSize(70, 70)
-                image_label.setStyleSheet("""
+                image_label.setStyleSheet(
+                    """
                     QLabel {
                         background-color: #f8f9fa;
                         border: 1px solid #dee2e6;
                         border-radius: 2px;
                     }
-                """)
+                """
+                )
                 image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-                
-                images_field = candidate_info.get('Images', '')
+
+                images_field = candidate_info.get("Images", "")
                 image_url = get_first_image_url(images_field)
                 if image_url:
                     # Load image
@@ -1045,27 +1159,27 @@ class CrossSellEditorWindow(QMainWindow):
                     self.image_cache[image_url] = image_label
                 else:
                     image_label.setText("No image")
-                
+
                 layout.addWidget(image_label, alignment=Qt.AlignmentFlag.AlignCenter)
-                
+
                 # Name (truncated)
-                name = candidate_info.get('Name', '')
+                name = candidate_info.get("Name", "")
                 display_name = name if len(name) <= 15 else name[:12] + "..."
                 name_label = QLabel(display_name)
                 name_label.setFont(QFont("Arial", 8))
                 name_label.setWordWrap(True)
                 name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
                 layout.addWidget(name_label)
-                
+
                 # SKU
                 sku_label = QLabel(f"{sku}")
                 sku_label.setFont(QFont("Arial", 7))
                 sku_label.setStyleSheet("color: #6c757d;")
                 sku_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
                 layout.addWidget(sku_label)
-                
+
                 self.selected_bar_layout.addWidget(selected_card)
-        
+
         # No stretch needed - items are centered
 
     def remove_selected_cross_sell(self, sku):
@@ -1093,14 +1207,16 @@ class CrossSellEditorWindow(QMainWindow):
         print(f"📊 Total products: {len(self.products_list)}")
         print(f"👀 Current product index: {self.current_index}")
         print(f"💾 Products reviewed: {self.current_index + 1}")
-        print(f"🤖 Products with auto-classifications only: {len(self.products_list) - (self.current_index + 1)}")
-        
+        print(
+            f"🤖 Products with auto-classifications only: {len(self.products_list) - (self.current_index + 1)}"
+        )
+
         # Save selections to products
         for idx, product in enumerate(self.products_list):
             product[CROSS_SELL_FIELD] = "|".join(self.selected_cross_sells[idx])
-        
+
         self.close()
-    
+
     def closeEvent(self, event):
         """Emit finished signal when window closes."""
         self.finished.emit()
@@ -1108,10 +1224,11 @@ class CrossSellEditorWindow(QMainWindow):
 
     def cancel(self):
         reply = QMessageBox.question(
-            self, 'Cancel',
-            'Are you sure you want to cancel? All changes will be lost.',
+            self,
+            "Cancel",
+            "Are you sure you want to cancel? All changes will be lost.",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No
+            QMessageBox.StandardButton.No,
         )
 
         if reply == QMessageBox.StandardButton.Yes:
@@ -1133,12 +1250,13 @@ def edit_cross_sells_in_batch(products_list):
     app = QApplication.instance()
     if app is None:
         app = QApplication([])
-    
+
     window = CrossSellEditorWindow(products_list)
     window.show()
 
     # Use QEventLoop to wait for window closure
     from PyQt6.QtCore import QEventLoop
+
     loop = QEventLoop()
     window.finished.connect(loop.quit)
     loop.exec()
@@ -1155,22 +1273,22 @@ if __name__ == "__main__":
             "Name": "Premium Dog Food Sample",
             "Category": "Dog Food",
             "Product Type": "Food",
-            "Product On Pages": "Dog Food Shop All"
+            "Product On Pages": "Dog Food Shop All",
         },
         {
-            "SKU": "DEMO002", 
+            "SKU": "DEMO002",
             "Name": "Cat Toy Bundle",
             "Category": "Cat Supplies",
             "Product Type": "Cat Toys",
-            "Product On Pages": "Cat Supplies Shop All"
+            "Product On Pages": "Cat Supplies Shop All",
         },
         {
             "SKU": "DEMO003",
             "Name": "Unclassified Bird Seed",
             "Category": "",
             "Product Type": "",
-            "Product On Pages": ""
-        }
+            "Product On Pages": "",
+        },
     ]
 
     print("Launching cross-sell UI demo with database filtering...")

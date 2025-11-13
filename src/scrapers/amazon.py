@@ -4,7 +4,9 @@ import time
 import sys
 
 # Ensure project root is on sys.path
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+PROJECT_ROOT = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
@@ -19,9 +21,19 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, NoSuchElementException, WebDriverException
+from selenium.common.exceptions import (
+    TimeoutException,
+    NoSuchElementException,
+    WebDriverException,
+)
 from src.utils.scraping.browser import create_browser
-from src.utils.general.display import display_product_result, display_scraping_progress, display_scraping_summary, display_error, display_info
+from src.utils.general.display import (
+    display_product_result,
+    display_scraping_progress,
+    display_scraping_summary,
+    display_error,
+    display_info,
+)
 
 # Amazon scraper with optimizations for speed
 # - Runs headless for maximum speed (no visual browser window)
@@ -35,28 +47,36 @@ HEADLESS = True
 # Optimization settings
 USE_OPTIMIZED_BROWSER = True  # Set to False if you need images for debugging
 
+
 def init_browser(profile_suffix="default", headless=True):
     """Initialize Chrome browser for Amazon scraping with proper profile management."""
     from src.utils.scraping.scraping import get_standard_chrome_options
-    chrome_options = get_standard_chrome_options(headless=headless, profile_suffix=profile_suffix)
-    
+
+    chrome_options = get_standard_chrome_options(
+        headless=headless, profile_suffix=profile_suffix
+    )
+
     # Use selenium_profiles directory for Amazon with unique suffix
-    user_data_dir = os.path.join(PROJECT_ROOT, "data", "browser_profiles", f"Amazon_{profile_suffix}")
+    user_data_dir = os.path.join(
+        PROJECT_ROOT, "data", "browser_profiles", f"Amazon_{profile_suffix}"
+    )
     os.makedirs(user_data_dir, exist_ok=True)
     chrome_options.add_argument(f"--user-data-dir={user_data_dir}")
-    
+
     # Add service with error suppression
     service = Service(log_path=os.devnull)
     return webdriver.Chrome(service=service, options=chrome_options)
 
+
 def get_amazon_optimized_options(profile_suffix="default", headless=True):
     """Get Chrome options optimized specifically for Amazon scraping - blocks ads, images, and unnecessary resources."""
     from selenium.webdriver.chrome.options import Options
+
     options = Options()
-    
+
     if headless:
         options.add_argument("--headless=new")
-    
+
     # Basic stability options
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
@@ -68,14 +88,14 @@ def get_amazon_optimized_options(profile_suffix="default", headless=True):
     options.add_argument("--disable-sync")
     options.add_argument("--no-first-run")
     options.add_argument("--enable-unsafe-swiftshader")  # Suppress WebGL warnings
-    
+
     # Block images and media for faster loading
     options.add_argument("--blink-settings=imagesEnabled=false")
     options.add_argument("--disable-images")
     options.add_argument("--disable-background-timer-throttling")
     options.add_argument("--disable-renderer-backgrounding")
     options.add_argument("--disable-backgrounding-occluded-windows")
-    
+
     # Block ads, tracking, and analytics
     options.add_argument("--disable-features=VizDisplayCompositor")
     options.add_argument("--disable-ipc-flooding-protection")
@@ -85,7 +105,7 @@ def get_amazon_optimized_options(profile_suffix="default", headless=True):
     options.add_argument("--disable-domain-reliability")
     options.add_argument("--disable-client-side-phishing-detection")
     options.add_argument("--disable-background-media-download")
-    
+
     # Block unnecessary resource types
     options.add_argument("--disable-features=TranslateUI")
     options.add_argument("--disable-features=BlinkGenPropertyTrees")
@@ -93,34 +113,47 @@ def get_amazon_optimized_options(profile_suffix="default", headless=True):
     options.add_argument("--disable-features=WebRtcUseH264")
     options.add_argument("--disable-features=MediaRouter")
     options.add_argument("--no-default-browser-check")
-    
+
     # User agent
-    options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-    
+    options.add_argument(
+        "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    )
+
     # Suppress logging
     options.add_experimental_option("useAutomationExtension", False)
-    options.add_experimental_option("excludeSwitches", ["enable-logging", "enable-automation", "use-mock-keychain"])
+    options.add_experimental_option(
+        "excludeSwitches", ["enable-logging", "enable-automation", "use-mock-keychain"]
+    )
     options.add_argument("--log-level=3")
     options.add_argument("--silent")
     options.add_argument("--disable-logging")
     options.add_argument("--disable-dev-tools")
-    
+
     # Profile directory
     if profile_suffix:
-        profile_dir = os.path.join(PROJECT_ROOT, "data", "browser_profiles", f"Amazon_optimized_{profile_suffix}")
+        profile_dir = os.path.join(
+            PROJECT_ROOT,
+            "data",
+            "browser_profiles",
+            f"Amazon_optimized_{profile_suffix}",
+        )
         if not os.path.exists(profile_dir):
             os.makedirs(profile_dir, exist_ok=True)
         options.add_argument(f"--user-data-dir={profile_dir}")
-    
+
     return options
+
 
 def init_browser_optimized(profile_suffix="default", headless=True):
     """Initialize optimized Chrome browser for Amazon scraping that blocks ads and images."""
-    chrome_options = get_amazon_optimized_options(headless=headless, profile_suffix=profile_suffix)
-    
+    chrome_options = get_amazon_optimized_options(
+        headless=headless, profile_suffix=profile_suffix
+    )
+
     # Add service with error suppression
     service = Service(log_path=os.devnull)
     return webdriver.Chrome(service=service, options=chrome_options)
+
 
 def scrape_amazon(skus, log_callback=None, progress_tracker=None):
     """Scrape Amazon products for multiple SKUs."""
@@ -134,39 +167,53 @@ def scrape_amazon(skus, log_callback=None, progress_tracker=None):
         browser_context = init_browser_optimized("amazon_batch", headless=HEADLESS)
     else:
         browser_context = create_browser("Amazon", headless=HEADLESS)
-    
+
     with browser_context as driver:
         if driver is None:
-            display_error("Could not create browser for Amazon", log_callback=log_callback)
+            display_error(
+                "Could not create browser for Amazon", log_callback=log_callback
+            )
             return products
 
         for i, sku in enumerate(skus, 1):
             product_info = scrape_single_product(sku, driver, log_callback=log_callback)
             if product_info:
                 products.append(product_info)
-                display_product_result(product_info, i, len(skus), log_callback=log_callback)
+                display_product_result(
+                    product_info, i, len(skus), log_callback=log_callback
+                )
             else:
                 products.append(None)
 
-            display_scraping_progress(i, len(skus), start_time, "Amazon", log_callback=log_callback)
+            display_scraping_progress(
+                i, len(skus), start_time, "Amazon", log_callback=log_callback
+            )
 
             # Update progress tracker if provided
             if progress_tracker:
-                progress_tracker.update_sku_progress(i, f"Processed {sku}", 1 if product_info else 0)
+                progress_tracker.update_sku_progress(
+                    i, f"Processed {sku}", 1 if product_info else 0
+                )
 
             # Reduced delay between products for optimized scraping
             if i < len(skus):
                 time.sleep(1)  # Reduced from 2 seconds
 
     successful_products = [p for p in products if p]
-    display_scraping_summary(successful_products, start_time, "Amazon", log_callback=log_callback)
+    display_scraping_summary(
+        successful_products, start_time, "Amazon", log_callback=log_callback
+    )
 
     return products
+
 
 def scrape_single_product(UPC_or_ASIN, driver, max_retries=0, log_callback=None):
     """Scrape a single Amazon product with improved automation and error handling."""
     if driver is None:
-        display_error("WebDriver instance is None. Cannot scrape product.", log_callback=log_callback)
+        display_error(
+            "WebDriver instance is None. Cannot scrape product.",
+            log_callback=log_callback,
+        )
         return None
 
     product_info = {"SKU": UPC_or_ASIN}
@@ -179,7 +226,9 @@ def scrape_single_product(UPC_or_ASIN, driver, max_retries=0, log_callback=None)
                 direct_url = f"https://www.amazon.com/dp/{UPC_or_ASIN}"
                 driver.get(direct_url)
                 time.sleep(1)  # Reduced from 2 seconds
-                return _extract_product_data(driver, product_info, log_callback=log_callback)
+                return _extract_product_data(
+                    driver, product_info, log_callback=log_callback
+                )
             else:
                 # Try search URL
                 search_url = f"https://www.amazon.com/s?k={UPC_or_ASIN}"
@@ -195,7 +244,9 @@ def scrape_single_product(UPC_or_ASIN, driver, max_retries=0, log_callback=None)
 
                     # Verify we actually landed on a product page
                     if _is_product_page(driver, log_callback=log_callback):
-                        return _extract_product_data(driver, product_info, log_callback=log_callback)
+                        return _extract_product_data(
+                            driver, product_info, log_callback=log_callback
+                        )
                     else:
                         return None  # Not a real product page
 
@@ -208,7 +259,11 @@ def scrape_single_product(UPC_or_ASIN, driver, max_retries=0, log_callback=None)
                 return None
 
         except Exception as e:
-            display_error(f"Error on attempt {attempt + 1}: {str(e)}", UPC_or_ASIN, log_callback=log_callback)
+            display_error(
+                f"Error on attempt {attempt + 1}: {str(e)}",
+                UPC_or_ASIN,
+                log_callback=log_callback,
+            )
             if attempt < max_retries:
                 time.sleep(1)  # Reduced from 2 seconds
                 continue
@@ -246,7 +301,10 @@ def _is_product_page(driver, log_callback=None):
             # This might be a redirect from search - check if it's a real product
             try:
                 # Look for product price or other product indicators
-                price_indicators = driver.find_elements(By.CSS_SELECTOR, ".a-price, #priceblock_ourprice, #priceblock_dealprice")
+                price_indicators = driver.find_elements(
+                    By.CSS_SELECTOR,
+                    ".a-price, #priceblock_ourprice, #priceblock_dealprice",
+                )
                 if not price_indicators:
                     return False
             except:
@@ -268,14 +326,23 @@ def _has_no_search_results(driver, log_callback=None):
             "[data-component-type='s-no-results']",
             ".a-section h1",
             ".s-search-results-content h1",
-            ".s-search-results-content"
+            ".s-search-results-content",
         ]
 
         for selector in no_results_selectors:
             try:
                 element = driver.find_element(By.CSS_SELECTOR, selector)
                 text = element.text.lower()
-                if any(phrase in text for phrase in ['no results', 'did not match', 'no search results', 'we couldn\'t find', 'no products found']):
+                if any(
+                    phrase in text
+                    for phrase in [
+                        "no results",
+                        "did not match",
+                        "no search results",
+                        "we couldn't find",
+                        "no products found",
+                    ]
+                ):
                     return True
             except:
                 continue
@@ -283,11 +350,11 @@ def _has_no_search_results(driver, log_callback=None):
         # Check page source for no results indicators
         page_source = driver.page_source.lower()
         no_results_phrases = [
-            'no results for',
-            'did not match any products',
-            'no search results',
-            'we couldn\'t find any matches',
-            'no products found'
+            "no results for",
+            "did not match any products",
+            "no search results",
+            "we couldn't find any matches",
+            "no products found",
         ]
 
         for phrase in no_results_phrases:
@@ -297,16 +364,25 @@ def _has_no_search_results(driver, log_callback=None):
         # Additional check: if there are very few search results and they look like sponsored/generic content
         try:
             # Count actual product result containers
-            result_count = len(driver.find_elements(By.CSS_SELECTOR, "div[data-component-type='s-search-result']"))
+            result_count = len(
+                driver.find_elements(
+                    By.CSS_SELECTOR, "div[data-component-type='s-search-result']"
+                )
+            )
             if result_count == 0:
                 return True
             else:
                 # Check if all results are sponsored (regardless of count)
                 sponsored_count = 0
-                results = driver.find_elements(By.CSS_SELECTOR, "div[data-component-type='s-search-result']")
+                results = driver.find_elements(
+                    By.CSS_SELECTOR, "div[data-component-type='s-search-result']"
+                )
                 for result in results:
                     try:
-                        sponsored_indicators = result.find_elements(By.CSS_SELECTOR, ".s-sponsored-label-info, .sbv-sponsored, [data-sponsored='true'], .puis-sponsored-label-text, .puis-label-sponsored")
+                        sponsored_indicators = result.find_elements(
+                            By.CSS_SELECTOR,
+                            ".s-sponsored-label-info, .sbv-sponsored, [data-sponsored='true'], .puis-sponsored-label-text, .puis-label-sponsored",
+                        )
                         if sponsored_indicators:
                             sponsored_count += 1
                     except:
@@ -320,11 +396,22 @@ def _has_no_search_results(driver, log_callback=None):
 
                 # Also check for "More Results" sections that contain only sponsored content
                 try:
-                    more_results_sections = driver.find_elements(By.XPATH, "//h2[contains(text(), 'More Results')]/following-sibling::*")
+                    more_results_sections = driver.find_elements(
+                        By.XPATH,
+                        "//h2[contains(text(), 'More Results')]/following-sibling::*",
+                    )
                     for section in more_results_sections:
-                        section_sponsored = section.find_elements(By.CSS_SELECTOR, ".s-sponsored-label-info, .sbv-sponsored, [data-sponsored='true'], .puis-sponsored-label-text, .puis-label-sponsored")
-                        section_total = section.find_elements(By.CSS_SELECTOR, "div[data-component-type='s-search-result']")
-                        if section_total and len(section_sponsored) == len(section_total):
+                        section_sponsored = section.find_elements(
+                            By.CSS_SELECTOR,
+                            ".s-sponsored-label-info, .sbv-sponsored, [data-sponsored='true'], .puis-sponsored-label-text, .puis-label-sponsored",
+                        )
+                        section_total = section.find_elements(
+                            By.CSS_SELECTOR,
+                            "div[data-component-type='s-search-result']",
+                        )
+                        if section_total and len(section_sponsored) == len(
+                            section_total
+                        ):
                             return True
                 except:
                     pass
@@ -349,31 +436,38 @@ def _click_first_search_result(driver, log_callback=None):
     """Try to click on the first NON-SPONSORED search result."""
     try:
         # Find all search result containers first
-        result_containers = driver.find_elements(By.CSS_SELECTOR, "div[data-component-type='s-search-result'], .s-result-item")
+        result_containers = driver.find_elements(
+            By.CSS_SELECTOR,
+            "div[data-component-type='s-search-result'], .s-result-item",
+        )
 
         for i, container in enumerate(result_containers):
             try:
                 # Check for sponsored indicators in this container
-                sponsored_indicators = container.find_elements(By.CSS_SELECTOR,
-                    ".s-sponsored-label-info, .sbv-sponsored, [data-sponsored='true'], .puis-sponsored-label-text, .puis-label-sponsored, .AdHolder")
+                sponsored_indicators = container.find_elements(
+                    By.CSS_SELECTOR,
+                    ".s-sponsored-label-info, .sbv-sponsored, [data-sponsored='true'], .puis-sponsored-label-text, .puis-label-sponsored, .AdHolder",
+                )
 
                 if sponsored_indicators:
                     continue  # Skip this sponsored result
 
                 # Also check for "Sponsored" text in the container
                 container_text = container.text.lower()
-                if 'sponsored' in container_text:
+                if "sponsored" in container_text:
                     continue
 
                 # This container appears to be organic, find a product link within it
                 try:
-                    product_link = container.find_element(By.CSS_SELECTOR, "a.a-link-normal[href*='/dp/']")
-                    
+                    product_link = container.find_element(
+                        By.CSS_SELECTOR, "a.a-link-normal[href*='/dp/']"
+                    )
+
                     # Additional check: if the link URL contains '/sspa/click?', it's sponsored
                     link_href = product_link.get_attribute("href") or ""
                     if "/sspa/click?" in link_href:
                         continue  # Skip sponsored link
-                    
+
                     product_link.click()
                     return True
                 except:
@@ -405,12 +499,15 @@ def _extract_product_data(driver, product_info, log_callback=None):
         # Extract and verify SKU/UPC/ASIN
         actual_sku = _extract_sku_from_page(driver)
         searched_sku = product_info.get("SKU", "")
-        
+
         # Check if the searched SKU appears anywhere on the page
         page_contains_searched_sku = _page_contains_sku(driver, searched_sku)
-        
+
         if actual_sku and actual_sku != searched_sku and not page_contains_searched_sku:
-            display_error(f"SKU mismatch! Searched for {searched_sku} but found product with SKU {actual_sku} and searched SKU not found on page", log_callback=log_callback)
+            display_error(
+                f"SKU mismatch! Searched for {searched_sku} but found product with SKU {actual_sku} and searched SKU not found on page",
+                log_callback=log_callback,
+            )
             return None  # Reject this product - wrong SKU
         elif page_contains_searched_sku:
             # Keep the searched SKU since we found it on the page
@@ -427,7 +524,9 @@ def _extract_product_data(driver, product_info, log_callback=None):
 
         # Filter brand out of the name if present
         if product_info["Name"] != "N/A" and product_info["Brand"] != "Unknown":
-            product_info["Name"] = _filter_brand_from_name(product_info["Name"], product_info["Brand"])
+            product_info["Name"] = _filter_brand_from_name(
+                product_info["Name"], product_info["Brand"]
+            )
 
         # Extract images (always extract URLs even in optimized mode)
         product_info["Image URLs"] = _extract_images(driver, log_callback=log_callback)
@@ -436,10 +535,9 @@ def _extract_product_data(driver, product_info, log_callback=None):
         product_info["Weight"] = _extract_weight(driver)
 
         # Flag product if it has issues
-        product_info['flagged'] = (
-            any(value == 'N/A' for value in product_info.values() if isinstance(value, str)) or
-            not product_info.get('Image URLs')
-        )
+        product_info["flagged"] = any(
+            value == "N/A" for value in product_info.values() if isinstance(value, str)
+        ) or not product_info.get("Image URLs")
 
         return product_info
 
@@ -452,20 +550,23 @@ def _extract_sku_from_page(driver):
     """Extract the actual SKU/UPC/ASIN from the product page to verify it matches what we searched for."""
     # Look for UPC/ASIN in product details tables
     try:
-        detail_rows = driver.find_elements(By.CSS_SELECTOR, "#productDetails_detailBullets_sections1 tr, #productDetails_techSpec_section_1 tr")
+        detail_rows = driver.find_elements(
+            By.CSS_SELECTOR,
+            "#productDetails_detailBullets_sections1 tr, #productDetails_techSpec_section_1 tr",
+        )
         for row in detail_rows:
             try:
                 text = row.text.lower()
                 # Look for UPC
-                if 'upc' in text:
-                    match = re.search(r'upc\s*:?\s*([A-Z0-9]+)', text, re.IGNORECASE)
+                if "upc" in text:
+                    match = re.search(r"upc\s*:?\s*([A-Z0-9]+)", text, re.IGNORECASE)
                     if match:
                         sku = match.group(1).strip()
                         if len(sku) >= 10:  # Valid SKU length
                             return sku
                 # Look for ASIN
-                elif 'asin' in text:
-                    match = re.search(r'asin\s*:?\s*([A-Z0-9]+)', text, re.IGNORECASE)
+                elif "asin" in text:
+                    match = re.search(r"asin\s*:?\s*([A-Z0-9]+)", text, re.IGNORECASE)
                     if match:
                         sku = match.group(1).strip()
                         if len(sku) == 10:  # ASIN is always 10 characters
@@ -474,23 +575,26 @@ def _extract_sku_from_page(driver):
                 continue
     except:
         pass
-    
+
     # Look for UPC/ASIN in bullet points
     try:
-        bullets = driver.find_elements(By.CSS_SELECTOR, "#detailBullets_feature_div li, [data-feature-name='Bullet Points'] li")
+        bullets = driver.find_elements(
+            By.CSS_SELECTOR,
+            "#detailBullets_feature_div li, [data-feature-name='Bullet Points'] li",
+        )
         for bullet in bullets:
             try:
                 text = bullet.text.lower()
                 # Look for UPC
-                if 'upc' in text:
-                    match = re.search(r'upc\s*:?\s*([A-Z0-9]+)', text, re.IGNORECASE)
+                if "upc" in text:
+                    match = re.search(r"upc\s*:?\s*([A-Z0-9]+)", text, re.IGNORECASE)
                     if match:
                         sku = match.group(1).strip()
                         if len(sku) >= 10:
                             return sku
                 # Look for ASIN
-                elif 'asin' in text:
-                    match = re.search(r'asin\s*:?\s*([A-Z0-9]+)', text, re.IGNORECASE)
+                elif "asin" in text:
+                    match = re.search(r"asin\s*:?\s*([A-Z0-9]+)", text, re.IGNORECASE)
                     if match:
                         sku = match.group(1).strip()
                         if len(sku) == 10:
@@ -499,16 +603,16 @@ def _extract_sku_from_page(driver):
                 continue
     except:
         pass
-    
+
     # Try to extract ASIN from URL as fallback
     try:
         current_url = driver.current_url
-        asin_match = re.search(r'/dp/([A-Z0-9]{10})', current_url)
+        asin_match = re.search(r"/dp/([A-Z0-9]{10})", current_url)
         if asin_match:
             return asin_match.group(1)
     except:
         pass
-    
+
     return None
 
 
@@ -517,9 +621,9 @@ def _page_contains_sku(driver, sku):
     try:
         page_source = driver.page_source
         # Remove spaces and case sensitivity for matching
-        normalized_page = page_source.lower().replace(' ', '').replace('-', '')
-        normalized_sku = sku.lower().replace(' ', '').replace('-', '')
-        
+        normalized_page = page_source.lower().replace(" ", "").replace("-", "")
+        normalized_sku = sku.lower().replace(" ", "").replace("-", "")
+
         return normalized_sku in normalized_page
     except:
         return False
@@ -568,7 +672,7 @@ def _extract_brand(driver):
         "#brand",
         ".a-brand",
         "[data-cy='brand-name']",
-        ".brand-link"
+        ".brand-link",
     ]
 
     for selector in brand_selectors:
@@ -577,8 +681,10 @@ def _extract_brand(driver):
             brand_text = element.text.strip()
 
             # Clean up common brand text patterns
-            brand_text = re.sub(r'^(Brand|Visit the|by)\s*:?\s*', '', brand_text, flags=re.IGNORECASE)
-            brand_text = re.sub(r'\s+Store$', '', brand_text, flags=re.IGNORECASE)
+            brand_text = re.sub(
+                r"^(Brand|Visit the|by)\s*:?\s*", "", brand_text, flags=re.IGNORECASE
+            )
+            brand_text = re.sub(r"\s+Store$", "", brand_text, flags=re.IGNORECASE)
 
             if brand_text and len(brand_text) > 1:
                 return clean_string(brand_text)
@@ -596,25 +702,30 @@ def _extract_images(driver, log_callback=None):
         # Extract carousel images by parsing thumbnail URLs and constructing high-res versions
         try:
             # Find all thumbnail images in the carousel
-            thumbnail_imgs = driver.find_elements(By.CSS_SELECTOR, "#altImages li.imageThumbnail img")
+            thumbnail_imgs = driver.find_elements(
+                By.CSS_SELECTOR, "#altImages li.imageThumbnail img"
+            )
 
             for img in thumbnail_imgs:
                 try:
                     thumbnail_src = img.get_attribute("src")
-                    if thumbnail_src and 'media-amazon.com' in thumbnail_src:
+                    if thumbnail_src and "media-amazon.com" in thumbnail_src:
                         # Extract the image ID from the thumbnail URL
                         # Example: https://m.media-amazon.com/images/I/41+MRN-56cL._AC_US40_.jpg
                         # We want: 41+MRN-56cL
                         import re
-                        match = re.search(r'/images/I/([^.]+)', thumbnail_src)
+
+                        match = re.search(r"/images/I/([^.]+)", thumbnail_src)
                         if match:
                             image_id = match.group(1)
                             # Construct high-res URL
                             high_res_url = f"https://m.media-amazon.com/images/I/{image_id}._AC_SL1500_.jpg"
 
-                            if (high_res_url not in image_urls and
-                                _is_valid_image_url(high_res_url) and
-                                _is_product_image(high_res_url)):
+                            if (
+                                high_res_url not in image_urls
+                                and _is_valid_image_url(high_res_url)
+                                and _is_product_image(high_res_url)
+                            ):
 
                                 image_urls.append(high_res_url)
 
@@ -622,7 +733,10 @@ def _extract_images(driver, log_callback=None):
                     continue
 
         except Exception as e:
-            display_error(f"Error extracting carousel images from thumbnails: {e}", log_callback=log_callback)
+            display_error(
+                f"Error extracting carousel images from thumbnails: {e}",
+                log_callback=log_callback,
+            )
 
         # Remove duplicates while preserving order
         seen = set()
@@ -646,6 +760,7 @@ def _get_largest_image_from_data_attr(data_attr):
 
     try:
         import json
+
         # The data attribute contains a JSON string with URLs as keys and dimensions as values
         # e.g., {"url1":[width,height], "url2":[width,height], ...}
         image_data = json.loads(data_attr)
@@ -677,9 +792,9 @@ def _get_largest_image_from_data_attr(data_attr):
 def _extract_weight(driver):
     """Extract weight from multiple possible locations."""
     weight_patterns = [
-        r'(\d+\.?\d*)\s*(ounce|oz|pound|lb|ounces|lbs|gram|g|kilogram|kg)s?\b',
-        r'(\d+\.?\d*)\s*(oz|lb|g|kg)\b',
-        r'weight\s*:\s*(\d+\.?\d*)\s*(ounce|oz|pound|lb|ounces|lbs|gram|g|kilogram|kg)s?\b'
+        r"(\d+\.?\d*)\s*(ounce|oz|pound|lb|ounces|lbs|gram|g|kilogram|kg)s?\b",
+        r"(\d+\.?\d*)\s*(oz|lb|g|kg)\b",
+        r"weight\s*:\s*(\d+\.?\d*)\s*(ounce|oz|pound|lb|ounces|lbs|gram|g|kilogram|kg)s?\b",
     ]
 
     # Locations to check for weight information
@@ -689,7 +804,7 @@ def _extract_weight(driver):
         "#detailBullets_feature_div li",
         "#feature-bullets li",
         ".a-expander-content",
-        "[data-feature-name='Bullet Points'] li"
+        "[data-feature-name='Bullet Points'] li",
     ]
 
     for selector in selectors:
@@ -700,7 +815,7 @@ def _extract_weight(driver):
                 text = element.text.lower()
 
                 # Check if this element contains weight info
-                if 'weight' in text or 'oz' in text or 'lb' in text or 'pound' in text:
+                if "weight" in text or "oz" in text or "lb" in text or "pound" in text:
                     for pattern in weight_patterns:
                         match = re.search(pattern, text, re.IGNORECASE)
                         if match:
@@ -708,11 +823,11 @@ def _extract_weight(driver):
                             unit = match.group(2).lower()
 
                             # Convert to pounds
-                            if unit in ['ounce', 'oz', 'ounces']:
+                            if unit in ["ounce", "oz", "ounces"]:
                                 value = round(value / 16, 2)
-                            elif unit in ['gram', 'g']:
+                            elif unit in ["gram", "g"]:
                                 value = round(value / 453.592, 2)
-                            elif unit in ['kilogram', 'kg']:
+                            elif unit in ["kilogram", "kg"]:
                                 value = round(value * 2.20462, 2)
 
                             return str(value)
@@ -729,11 +844,16 @@ def _is_valid_image_url(url):
         return False
 
     # Skip Amazon placeholder images
-    if any(skip in url.lower() for skip in ['grey-pixel', 'transparent', 'placeholder', 'no-image']):
+    if any(
+        skip in url.lower()
+        for skip in ["grey-pixel", "transparent", "placeholder", "no-image"]
+    ):
         return False
 
     # Must be a proper image URL
-    return url.startswith(('http://', 'https://')) and any(ext in url.lower() for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp'])
+    return url.startswith(("http://", "https://")) and any(
+        ext in url.lower() for ext in [".jpg", ".jpeg", ".png", ".gif", ".webp"]
+    )
 
 
 def _is_product_image(url):
@@ -745,11 +865,32 @@ def _is_product_image(url):
 
     # Skip obvious non-product images
     skip_indicators = [
-        'logo', 'badge', 'icon', 'button', 'arrow', 'star', 'rating',
-        'prime', 'certified', 'warranty', 'guarantee', 'shipping',
-        'payment', 'credit', 'card', 'badge', 'ribbon', 'award',
-        'verified', 'trusted', 'secure', 'safe', 'lock', 'shield',
-        '360_icon', 'home_custom_product'  # Skip 360 view icons and custom product icons
+        "logo",
+        "badge",
+        "icon",
+        "button",
+        "arrow",
+        "star",
+        "rating",
+        "prime",
+        "certified",
+        "warranty",
+        "guarantee",
+        "shipping",
+        "payment",
+        "credit",
+        "card",
+        "badge",
+        "ribbon",
+        "award",
+        "verified",
+        "trusted",
+        "secure",
+        "safe",
+        "lock",
+        "shield",
+        "360_icon",
+        "home_custom_product",  # Skip 360 view icons and custom product icons
     ]
 
     # Check URL path for skip indicators
@@ -760,12 +901,13 @@ def _is_product_image(url):
     # Prioritize high-resolution product images
     # Amazon product images typically have patterns like _AC_SL1500_, _AC_SL1000_, etc.
     import re
-    if re.search(r'_AC_SL\d+', url_lower):  # High-res product images
+
+    if re.search(r"_AC_SL\d+", url_lower):  # High-res product images
         return True
 
     # Skip very small images (likely icons/logos) - check URL parameters
     # Amazon URLs often have size parameters like _SL75_ or _SS40_
-    size_match = re.search(r'_SL(\d+)_|_SS(\d+)_|_US(\d+)_', url_lower)
+    size_match = re.search(r"_SL(\d+)_|_SS(\d+)_|_US(\d+)_", url_lower)
     if size_match:
         # Extract the size from any of the capture groups
         size = None
@@ -792,10 +934,12 @@ if __name__ == "__main__":
     for i, result in enumerate(results):
         sku = test_skus[i]
         if result:
-            print(f"  {i+1}. SKU {sku}: Found '{result.get('Name', 'Unknown')[:50]}...'")
+            print(
+                f"  {i+1}. SKU {sku}: Found '{result.get('Name', 'Unknown')[:50]}...'"
+            )
             print(f"     Full product data: {result}")
             # Print image URLs separately for debugging
-            images = result.get('Image URLs', [])
+            images = result.get("Image URLs", [])
             print(f"     Image URLs ({len(images)}):")
             for j, img_url in enumerate(images, 1):
                 print(f"       {j}. {img_url}")

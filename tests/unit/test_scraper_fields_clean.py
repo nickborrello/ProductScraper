@@ -13,12 +13,14 @@ if PROJECT_ROOT not in sys.path:
 
 from src.utils.general.display import display_success, display_error, display_warning
 
+
 class FieldTestStatus(Enum):
     PASS = "✅ PASS"
     FAIL = "❌ FAIL"
     ERROR = "🔥 ERROR"
     SKIP = "⏭️  SKIP"
     TIMEOUT = "⏰ TIMEOUT"
+
 
 @dataclass
 class FieldTestResult:
@@ -28,12 +30,14 @@ class FieldTestResult:
     error_message: str = ""
     duration: float = 0.0
 
+
 @dataclass
 class ScraperTestResult:
     scraper_name: str
     overall_status: FieldTestStatus
     field_results: Dict[str, FieldTestResult]
     total_duration: float = 0.0
+
 
 class GranularScraperTester:
     """Test individual fields for each scraper to identify specific failures."""
@@ -56,7 +60,9 @@ class GranularScraperTester:
         if os.path.exists(archive_dir):
             archived_files = glob.glob(os.path.join(archive_dir, "*.py"))
             archived_names = [os.path.basename(f) for f in archived_files]
-            scraper_files = [f for f in scraper_files if os.path.basename(f) not in archived_names]
+            scraper_files = [
+                f for f in scraper_files if os.path.basename(f) not in archived_names
+            ]
 
         modules = {}
         for scraper_file in scraper_files:
@@ -76,14 +82,16 @@ class GranularScraperTester:
     def get_scraper_function(self, module) -> Optional[callable]:
         """Find the scrape function in a module."""
         for attr_name in dir(module):
-            if attr_name.startswith('scrape_'):
+            if attr_name.startswith("scrape_"):
                 func = getattr(module, attr_name)
                 # Check if the function is defined in this module (not imported)
-                if hasattr(func, '__module__') and func.__module__ == module.__name__:
+                if hasattr(func, "__module__") and func.__module__ == module.__name__:
                     return func
         return None
 
-    def test_single_field(self, scraper_func: callable, test_sku: str, field_name: str) -> FieldTestResult:
+    def test_single_field(
+        self, scraper_func: callable, test_sku: str, field_name: str
+    ) -> FieldTestResult:
         """Test a single field for a scraper."""
         start_time = time.time()
 
@@ -97,7 +105,7 @@ class GranularScraperTester:
                         field_name=field_name,
                         status=FieldTestStatus.FAIL,
                         error_message="No results returned",
-                        duration=time.time() - start_time
+                        duration=time.time() - start_time,
                     )
 
                 product = results[0]
@@ -106,90 +114,162 @@ class GranularScraperTester:
                         field_name=field_name,
                         status=FieldTestStatus.FAIL,
                         error_message="Invalid product data type",
-                        duration=time.time() - start_time
+                        duration=time.time() - start_time,
                     )
 
                 # Check the specific field
-                return self.validate_field(product, field_name, time.time() - start_time)
+                return self.validate_field(
+                    product, field_name, time.time() - start_time
+                )
 
             except Exception as e:
                 return FieldTestResult(
                     field_name=field_name,
                     status=FieldTestStatus.ERROR,
                     error_message=str(e),
-                    duration=time.time() - start_time
+                    duration=time.time() - start_time,
                 )
 
         # Run test with timeout
-        result_container = {'result': None, 'completed': False}
+        result_container = {"result": None, "completed": False}
 
         def run_test_thread():
-            result_container['result'] = run_test()
-            result_container['completed'] = True
+            result_container["result"] = run_test()
+            result_container["completed"] = True
 
         thread = threading.Thread(target=run_test_thread)
         thread.daemon = True
         thread.start()
         thread.join(timeout=self.test_timeout)
 
-        if not result_container['completed']:
+        if not result_container["completed"]:
             return FieldTestResult(
                 field_name=field_name,
                 status=FieldTestStatus.TIMEOUT,
                 error_message=f"Test timed out after {self.test_timeout}s",
-                duration=self.test_timeout
+                duration=self.test_timeout,
             )
 
-        result = result_container['result']
+        result = result_container["result"]
         result.duration = time.time() - start_time
         return result
 
-    def validate_field(self, product: dict, field_name: str, duration: float) -> FieldTestResult:
+    def validate_field(
+        self, product: dict, field_name: str, duration: float
+    ) -> FieldTestResult:
         """Validate a specific field in the product data."""
         value = product.get(field_name)
 
         # Field-specific validation rules
         if field_name == "SKU":
             if not value or str(value).strip() == "":
-                return FieldTestResult(field_name, FieldTestStatus.FAIL, value, "SKU is empty", duration)
+                return FieldTestResult(
+                    field_name, FieldTestStatus.FAIL, value, "SKU is empty", duration
+                )
             if len(str(value).strip()) < 3:
-                return FieldTestResult(field_name, FieldTestStatus.FAIL, value, "SKU too short", duration)
-            return FieldTestResult(field_name, FieldTestStatus.PASS, value, "", duration)
+                return FieldTestResult(
+                    field_name, FieldTestStatus.FAIL, value, "SKU too short", duration
+                )
+            return FieldTestResult(
+                field_name, FieldTestStatus.PASS, value, "", duration
+            )
 
         elif field_name == "Name":
-            if not value or str(value).strip() == "" or str(value).strip().upper() == "N/A":
-                return FieldTestResult(field_name, FieldTestStatus.FAIL, value, "Name is empty or N/A", duration)
+            if (
+                not value
+                or str(value).strip() == ""
+                or str(value).strip().upper() == "N/A"
+            ):
+                return FieldTestResult(
+                    field_name,
+                    FieldTestStatus.FAIL,
+                    value,
+                    "Name is empty or N/A",
+                    duration,
+                )
             if len(str(value).strip()) < 3:
-                return FieldTestResult(field_name, FieldTestStatus.FAIL, value, "Name too short", duration)
-            return FieldTestResult(field_name, FieldTestStatus.PASS, value, "", duration)
+                return FieldTestResult(
+                    field_name, FieldTestStatus.FAIL, value, "Name too short", duration
+                )
+            return FieldTestResult(
+                field_name, FieldTestStatus.PASS, value, "", duration
+            )
 
         elif field_name == "Brand":
-            if value is None or str(value).strip() == "" or str(value).strip().upper() == "N/A":
-                return FieldTestResult(field_name, FieldTestStatus.FAIL, value, "Brand is empty or N/A", duration)
-            return FieldTestResult(field_name, FieldTestStatus.PASS, value, "", duration)
+            if (
+                value is None
+                or str(value).strip() == ""
+                or str(value).strip().upper() == "N/A"
+            ):
+                return FieldTestResult(
+                    field_name,
+                    FieldTestStatus.FAIL,
+                    value,
+                    "Brand is empty or N/A",
+                    duration,
+                )
+            return FieldTestResult(
+                field_name, FieldTestStatus.PASS, value, "", duration
+            )
 
         elif field_name == "Weight":
-            if value is None or str(value).strip() == "" or str(value).strip().upper() == "N/A":
-                return FieldTestResult(field_name, FieldTestStatus.FAIL, value, "Weight is empty or N/A", duration)
-            return FieldTestResult(field_name, FieldTestStatus.PASS, value, "", duration)
+            if (
+                value is None
+                or str(value).strip() == ""
+                or str(value).strip().upper() == "N/A"
+            ):
+                return FieldTestResult(
+                    field_name,
+                    FieldTestStatus.FAIL,
+                    value,
+                    "Weight is empty or N/A",
+                    duration,
+                )
+            return FieldTestResult(
+                field_name, FieldTestStatus.PASS, value, "", duration
+            )
 
         elif field_name == "Image URLs":
             if not value or (isinstance(value, list) and len(value) == 0):
-                return FieldTestResult(field_name, FieldTestStatus.FAIL, value, "No image URLs found", duration)
+                return FieldTestResult(
+                    field_name,
+                    FieldTestStatus.FAIL,
+                    value,
+                    "No image URLs found",
+                    duration,
+                )
             if isinstance(value, list) and len(value) > 0:
-                return FieldTestResult(field_name, FieldTestStatus.PASS, f"{len(value)} images", "", duration)
-            return FieldTestResult(field_name, FieldTestStatus.FAIL, value, "Invalid image URLs format", duration)
+                return FieldTestResult(
+                    field_name,
+                    FieldTestStatus.PASS,
+                    f"{len(value)} images",
+                    "",
+                    duration,
+                )
+            return FieldTestResult(
+                field_name,
+                FieldTestStatus.FAIL,
+                value,
+                "Invalid image URLs format",
+                duration,
+            )
 
         elif field_name in ["Special Order", "Product Disabled", "Product Cross Sell"]:
             # These are optional fields - pass if present or empty
-            return FieldTestResult(field_name, FieldTestStatus.PASS, value, "", duration)
+            return FieldTestResult(
+                field_name, FieldTestStatus.PASS, value, "", duration
+            )
 
         else:
             # Unknown field - just check if it has a value
             if value is not None and str(value).strip() != "":
-                return FieldTestResult(field_name, FieldTestStatus.PASS, value, "", duration)
+                return FieldTestResult(
+                    field_name, FieldTestStatus.PASS, value, "", duration
+                )
             else:
-                return FieldTestResult(field_name, FieldTestStatus.FAIL, value, "Field is empty", duration)
+                return FieldTestResult(
+                    field_name, FieldTestStatus.FAIL, value, "Field is empty", duration
+                )
 
     def get_fields_to_test(self, scraper_name: str) -> List[str]:
         """Get the list of fields to test for a specific scraper."""
@@ -205,7 +285,7 @@ class GranularScraperTester:
             "mazuri": [],
             "petfoodex": [],
             "phillips": [],
-            "nassau_candy": []
+            "nassau_candy": [],
         }
 
         fields = standard_fields.copy()
@@ -227,11 +307,11 @@ class GranularScraperTester:
                 scraper_name=scraper_name,
                 overall_status=FieldTestStatus.ERROR,
                 field_results={},
-                total_duration=time.time() - start_time
+                total_duration=time.time() - start_time,
             )
 
         # Get test SKU
-        test_sku = getattr(module, 'TEST_SKU', '035585499741')  # Default KONG product
+        test_sku = getattr(module, "TEST_SKU", "035585499741")  # Default KONG product
 
         # Get fields to test
         fields_to_test = self.get_fields_to_test(scraper_name)
@@ -261,23 +341,31 @@ class GranularScraperTester:
             scraper_name=scraper_name,
             overall_status=overall_status,
             field_results=field_results,
-            total_duration=time.time() - start_time
+            total_duration=time.time() - start_time,
         )
 
-    def run_all_tests(self, scraper_names: Optional[List[str]] = None) -> Dict[str, ScraperTestResult]:
+    def run_all_tests(
+        self, scraper_names: Optional[List[str]] = None
+    ) -> Dict[str, ScraperTestResult]:
         """Run granular field tests for all or specified scrapers."""
-        print("\n" + "="*80)
+        print("\n" + "=" * 80)
         print("🔬 GRANULAR SCRAPER FIELD TESTS")
-        print("="*80)
-        print("Testing individual fields for each scraper to identify specific failures...")
-        print("="*80)
+        print("=" * 80)
+        print(
+            "Testing individual fields for each scraper to identify specific failures..."
+        )
+        print("=" * 80)
 
         modules = self.discover_scrapers()
         results = {}
 
         # Filter to specified scrapers if provided
         if scraper_names:
-            modules = {name: module for name, module in modules.items() if name in scraper_names}
+            modules = {
+                name: module
+                for name, module in modules.items()
+                if name in scraper_names
+            }
 
         for scraper_name, module in modules.items():
             result = self.test_scraper(scraper_name, module)
@@ -290,9 +378,9 @@ class GranularScraperTester:
 
     def print_summary(self, results: Dict[str, ScraperTestResult]):
         """Print a detailed summary of test results."""
-        print("\n" + "="*80)
+        print("\n" + "=" * 80)
         print("📊 GRANULAR TEST RESULTS SUMMARY")
-        print("="*80)
+        print("=" * 80)
 
         passed_scrapers = []
         failed_scrapers = []
@@ -304,7 +392,11 @@ class GranularScraperTester:
 
             for field_name, field_result in result.field_results.items():
                 status_emoji = field_result.status.value
-                value_display = str(field_result.value)[:50] + "..." if field_result.value and len(str(field_result.value)) > 50 else str(field_result.value)
+                value_display = (
+                    str(field_result.value)[:50] + "..."
+                    if field_result.value and len(str(field_result.value)) > 50
+                    else str(field_result.value)
+                )
                 print(f"  {field_name}: {status_emoji}")
                 if field_result.status != FieldTestStatus.PASS:
                     print(f"    Error: {field_result.error_message}")
@@ -319,9 +411,9 @@ class GranularScraperTester:
             else:
                 failed_scrapers.append(scraper_name)
 
-        print("\n" + "="*80)
+        print("\n" + "=" * 80)
         print("🎯 SUMMARY BY SCRAPER")
-        print("="*80)
+        print("=" * 80)
 
         if passed_scrapers:
             print(f"✅ FULLY WORKING ({len(passed_scrapers)}):")
@@ -332,7 +424,11 @@ class GranularScraperTester:
             print(f"❌ PARTIALLY FAILING ({len(failed_scrapers)}):")
             for scraper in failed_scrapers:
                 result = results[scraper]
-                failed_fields = [f for f, r in result.field_results.items() if r.status != FieldTestStatus.PASS]
+                failed_fields = [
+                    f
+                    for f, r in result.field_results.items()
+                    if r.status != FieldTestStatus.PASS
+                ]
                 print(f"   • {scraper} (failed: {', '.join(failed_fields)})")
 
         if error_scrapers:
@@ -341,15 +437,18 @@ class GranularScraperTester:
                 print(f"   • {scraper}")
 
         total_scrapers = len(results)
-        success_rate = len(passed_scrapers) / total_scrapers * 100 if total_scrapers > 0 else 0
+        success_rate = (
+            len(passed_scrapers) / total_scrapers * 100 if total_scrapers > 0 else 0
+        )
         print(f"Success rate: {success_rate:.1f}%")
+
 
 def run_granular_tests(scraper_names: Optional[List[str]] = None):
     """Convenience function to run granular scraper tests."""
     tester = GranularScraperTester()
     return tester.run_all_tests(scraper_names)
 
+
 if __name__ == "__main__":
     # Run tests for all scrapers
     results = run_granular_tests()
-

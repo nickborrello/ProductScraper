@@ -7,6 +7,7 @@ import json
 import os
 from typing import List, Dict, Any
 
+
 class ProductDatabase:
     def __init__(self, db_path: str = None):
         if db_path is None:
@@ -34,7 +35,7 @@ class ProductDatabase:
 
     def get_product_count(self) -> int:
         """Get total number of products"""
-        cursor = self.conn.execute('SELECT COUNT(*) FROM products')
+        cursor = self.conn.execute("SELECT COUNT(*) FROM products")
         return cursor.fetchone()[0]
 
     def get_sample_fields(self) -> List[str]:
@@ -43,7 +44,7 @@ class ProductDatabase:
         cursor = self.conn.execute("PRAGMA table_info(products)")
         columns_info = cursor.fetchall()
         # Return column names, excluding 'id' and 'last_updated'
-        return [row[1] for row in columns_info if row[1] not in ['id', 'last_updated']]
+        return [row[1] for row in columns_info if row[1] not in ["id", "last_updated"]]
 
     def query_products(self, sql_query: str, limit: int = 50) -> List[Dict[str, Any]]:
         """
@@ -52,8 +53,8 @@ class ProductDatabase:
         """
         try:
             # Add LIMIT if not present
-            if 'LIMIT' not in sql_query.upper():
-                sql_query += f' LIMIT {limit}'
+            if "LIMIT" not in sql_query.upper():
+                sql_query += f" LIMIT {limit}"
 
             cursor = self.conn.execute(sql_query)
             columns = [desc[0] for desc in cursor.description]
@@ -70,25 +71,27 @@ class ProductDatabase:
         except sqlite3.Error as e:
             raise Exception(f"SQL Error: {e}")
 
-    def search_products(self, field: str, value: str, limit: int = 20) -> List[Dict[str, Any]]:
+    def search_products(
+        self, field: str, value: str, limit: int = 20
+    ) -> List[Dict[str, Any]]:
         """
         Search for products where a specific field contains a value
         """
         # For the current schema, search in the appropriate column
         # Map common field names to database column names
         column_mapping = {
-            'SKU': 'SKU',
-            'Name': 'Name',
-            'Price': 'Price',
-            'Images': 'Images',
-            'Weight': 'Weight',
-            'Brand': 'Brand',
-            'Special_Order': 'Special_Order',
-            'Category': 'Category',
-            'Product_Type': 'Product_Type',
-            'Product_On_Pages': 'Product_On_Pages',
-            'Product_Cross_Sell': 'Product_Cross_Sell',
-            'ProductDisabled': 'ProductDisabled'
+            "SKU": "SKU",
+            "Name": "Name",
+            "Price": "Price",
+            "Images": "Images",
+            "Weight": "Weight",
+            "Brand": "Brand",
+            "Special_Order": "Special_Order",
+            "Category": "Category",
+            "Product_Type": "Product_Type",
+            "Product_On_Pages": "Product_On_Pages",
+            "Product_Cross_Sell": "Product_Cross_Sell",
+            "ProductDisabled": "ProductDisabled",
         }
 
         # Use the mapped column name, or the field name directly if not mapped
@@ -96,7 +99,7 @@ class ProductDatabase:
 
         # Build query for the specific column
         query = f"SELECT * FROM products WHERE {column_name} LIKE ? LIMIT {limit}"
-        cursor = self.conn.execute(query, (f'%{value}%',))
+        cursor = self.conn.execute(query, (f"%{value}%",))
 
         columns = [desc[0] for desc in cursor.description]
         results = []
@@ -106,6 +109,7 @@ class ProductDatabase:
             results.append(product)
 
         return results
+
 
 def main():
     db = ProductDatabase()
@@ -118,7 +122,7 @@ def main():
 
         fields = db.get_sample_fields()
         print(f"📋 Available fields: {len(fields)} total")
-        print("Common fields:", ', '.join(fields[:10]))
+        print("Common fields:", ", ".join(fields[:10]))
         if len(fields) > 10:
             print(f"... and {len(fields) - 10} more")
 
@@ -126,7 +130,9 @@ def main():
         print("Query Examples:")
         print("1. Search by name: 'Name' contains 'dog'")
         print("2. Custom SQL: SELECT * FROM products WHERE SKU LIKE '2028%'")
-        print("3. Count by category: SELECT Category, COUNT(*) FROM products WHERE Category IS NOT NULL GROUP BY Category")
+        print(
+            "3. Count by category: SELECT Category, COUNT(*) FROM products WHERE Category IS NOT NULL GROUP BY Category"
+        )
         print("=" * 50)
 
         while True:
@@ -138,23 +144,25 @@ def main():
 
             choice = input("\nEnter choice (1-4): ").strip()
 
-            if choice == '1':
+            if choice == "1":
                 field = input("Field to search: ").strip()
                 value = input("Value to find: ").strip()
                 try:
                     results = db.search_products(field, value)
                     print(f"\n🔍 Found {len(results)} products:")
                     for i, product in enumerate(results[:5], 1):  # Show first 5
-                        sku = product.get('sku', 'No SKU')
-                        name = product.get('extra_data', {}).get('Name', 'No Name')
+                        sku = product.get("sku", "No SKU")
+                        name = product.get("extra_data", {}).get("Name", "No Name")
                         print(f"  {i}. {sku}: {name}")
                     if len(results) > 5:
                         print(f"     ... and {len(results) - 5} more")
                 except Exception as e:
                     print(f"❌ Error: {e}")
 
-            elif choice == '2':
-                print("Enter SQL query (products table has: id, SKU, Name, Price, Images, Weight, Brand, Special_Order, Category, Product_Type, Product_On_Pages, Product_Cross_Sell, ProductDisabled, last_updated)")
+            elif choice == "2":
+                print(
+                    "Enter SQL query (products table has: id, SKU, Name, Price, Images, Weight, Brand, Special_Order, Category, Product_Type, Product_On_Pages, Product_Cross_Sell, ProductDisabled, last_updated)"
+                )
                 query = input("SQL> ").strip()
                 if query:
                     try:
@@ -167,21 +175,21 @@ def main():
                     except Exception as e:
                         print(f"❌ Error: {e}")
 
-            elif choice == '3':
+            elif choice == "3":
                 print("\n📋 Field Examples:")
                 sample = db.query_products("SELECT * FROM products LIMIT 1")[0]
                 examples = [
-                    ('SKU', sample.get('SKU', 'N/A')),
-                    ('Name', sample.get('Name', 'N/A')),
-                    ('Price', sample.get('Price', 'N/A')),
-                    ('Brand', sample.get('Brand', 'N/A')),
-                    ('Category', sample.get('Category', 'N/A')),
-                    ('Weight', sample.get('Weight', 'N/A')),
+                    ("SKU", sample.get("SKU", "N/A")),
+                    ("Name", sample.get("Name", "N/A")),
+                    ("Price", sample.get("Price", "N/A")),
+                    ("Brand", sample.get("Brand", "N/A")),
+                    ("Category", sample.get("Category", "N/A")),
+                    ("Weight", sample.get("Weight", "N/A")),
                 ]
                 for field, value in examples:
                     print(f"  {field}: {value}")
 
-            elif choice == '4':
+            elif choice == "4":
                 break
 
             else:
@@ -191,6 +199,7 @@ def main():
         print(f"❌ Error: {e}")
     finally:
         db.disconnect()
+
 
 if __name__ == "__main__":
     main()

@@ -7,12 +7,16 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import time
 
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+PROJECT_ROOT = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
 
 PLACEHOLDER_URL = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFUAfyVe3Easiycyh3isP9wDQTYuSmGPsPQvLIJdEYvQ_DsFq5Ez2Nh_QjiS3oZ3B8ZPfK9cZQyIStmQMV1lDPLw"
 
+
 def sanitize_filename(filename):
-    return re.sub(r'[<>:"/\\|?*]', '_', filename)
+    return re.sub(r'[<>:"/\\|?*]', "_", filename)
+
 
 def init_selenium_driver():
     options = Options()
@@ -22,6 +26,7 @@ def init_selenium_driver():
     options.add_argument("--disable-gpu")
     options.add_argument("--disable-blink-features=AutomationControlled")
     return webdriver.Chrome(options=options)
+
 
 def process_image(content, img_name):
     img = Image.open(BytesIO(content))
@@ -50,6 +55,7 @@ def process_image(content, img_name):
     paste_y = (1000 - new_height) // 2
     new_img.paste(img, (paste_x, paste_y))
     new_img.save(img_name, "JPEG", quality=95)
+
 
 def download_image(img_url, subdir, file_name, idx):
     folder_path = os.path.join(PROJECT_ROOT, "data", "images", subdir)

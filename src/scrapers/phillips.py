@@ -12,11 +12,18 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from src.utils.scraping.scraping import get_standard_chrome_options
 from src.utils.scraping.browser import create_browser
-from src.utils.general.display import display_product_result, display_scraping_progress, display_scraping_summary, display_error
+from src.utils.general.display import (
+    display_product_result,
+    display_scraping_progress,
+    display_scraping_summary,
+    display_error,
+)
 from src.core.settings_manager import settings
 
 # Ensure project root is on sys.path
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+PROJECT_ROOT = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
@@ -27,10 +34,14 @@ LOGIN_URL = "https://shop.phillipspet.com/ccrz__CCSiteLogin"
 HOME_URL = "https://shop.phillipspet.com/"
 SEARCH_URL_TEMPLATE = "https://shop.phillipspet.com/ccrz__ProductList?cartID=&operation=quickSearch&searchText={}&portalUser=&store=DefaultStore&cclcl=en_US"
 
+
 def load_cookies(driver):
     try:
         import pickle
-        cookie_path = os.path.join(PROJECT_ROOT, "data", "cookies", "phillips_cookies.pkl")
+
+        cookie_path = os.path.join(
+            PROJECT_ROOT, "data", "cookies", "phillips_cookies.pkl"
+        )
         if not os.path.exists(cookie_path):
             return
         with open(cookie_path, "rb") as f:
@@ -43,9 +54,11 @@ def load_cookies(driver):
     except:
         pass
 
+
 def save_cookies(driver):
     try:
         import pickle
+
         cookie_dir = os.path.join(PROJECT_ROOT, "data", "cookies")
         os.makedirs(cookie_dir, exist_ok=True)
         cookies = driver.get_cookies()
@@ -54,25 +67,33 @@ def save_cookies(driver):
     except:
         pass
 
+
 def init_browser(profile_suffix="default", headless=True):
     # Use standard Chrome options
     from src.utils.scraping.scraping import get_standard_chrome_options
-    options = get_standard_chrome_options(headless=headless, profile_suffix=profile_suffix)
-    
+
+    options = get_standard_chrome_options(
+        headless=headless, profile_suffix=profile_suffix
+    )
+
     # Use selenium_profiles directory for phillips with unique suffix
-    user_data_dir = os.path.join(PROJECT_ROOT, "data", "browser_profiles", f"phillips_{profile_suffix}")
+    user_data_dir = os.path.join(
+        PROJECT_ROOT, "data", "browser_profiles", f"phillips_{profile_suffix}"
+    )
     os.makedirs(user_data_dir, exist_ok=True)
     options.add_argument(f"--user-data-dir={user_data_dir}")
-    
+
     # Add service with error suppression
     from selenium.webdriver.chrome.service import Service as ChromeService
+
     service = ChromeService(log_path=os.devnull)
     return webdriver.Chrome(service=service, options=options)
+
 
 def is_logged_in(driver):
     # Load saved cookies first
     load_cookies(driver)
-    
+
     try:
         driver.get(HOME_URL)
         WebDriverWait(driver, 5).until(
@@ -81,6 +102,7 @@ def is_logged_in(driver):
         return True
     except:
         return False
+
 
 def login(driver):
     driver.get(LOGIN_URL)
@@ -103,6 +125,7 @@ def login(driver):
     # Save cookies after successful login
     save_cookies(driver)
 
+
 def scrape_phillips(skus, browser=None, log_callback=None, progress_tracker=None):
     """Scrape Phillips products for multiple SKUs."""
     if not skus:
@@ -121,13 +144,15 @@ def scrape_phillips(skus, browser=None, log_callback=None, progress_tracker=None
     else:
         driver = create_browser("Phillips", headless=HEADLESS)
         if driver is None:
-            display_error("Could not create browser for Phillips", log_callback=log_callback)
+            display_error(
+                "Could not create browser for Phillips", log_callback=log_callback
+            )
             return products
         if log_callback:
             log_callback("🌐 Phillips: Created new browser for scraping.")
         else:
             print("🌐 Phillips: Created new browser for scraping.")
-    
+
     try:
         # Handle login if required (only if we created our own browser)
         if browser is None:
@@ -142,21 +167,27 @@ def scrape_phillips(skus, browser=None, log_callback=None, progress_tracker=None
                     log_callback("✅ Phillips: Already logged in.")
                 else:
                     print("✅ Phillips: Already logged in.")
-                    
+
         for i, sku in enumerate(skus, 1):
             product_info = scrape_single_product(sku, driver)
             if product_info:
                 products.append(product_info)
-                display_product_result(product_info, i, len(skus), log_callback=log_callback)
+                display_product_result(
+                    product_info, i, len(skus), log_callback=log_callback
+                )
             else:
                 products.append(None)
-            
-            display_scraping_progress(i, len(skus), start_time, "Phillips", log_callback=log_callback)
-            
+
+            display_scraping_progress(
+                i, len(skus), start_time, "Phillips", log_callback=log_callback
+            )
+
             # Update progress tracker if provided
             if progress_tracker:
-                progress_tracker.update_sku_progress(i, f"Processed {sku}", 1 if product_info else 0)
-    
+                progress_tracker.update_sku_progress(
+                    i, f"Processed {sku}", 1 if product_info else 0
+                )
+
     finally:
         # Only quit browser if we created it ourselves
         if browser is None and driver:
@@ -164,11 +195,14 @@ def scrape_phillips(skus, browser=None, log_callback=None, progress_tracker=None
                 driver.quit()
             except:
                 pass
-    
+
     successful_products = [p for p in products if p]
-    display_scraping_summary(successful_products, start_time, "Phillips", log_callback=log_callback)
-                
+    display_scraping_summary(
+        successful_products, start_time, "Phillips", log_callback=log_callback
+    )
+
     return products
+
 
 def scrape_single_product(SKU, driver, log_callback=None):
     if driver is None:
@@ -179,11 +213,11 @@ def scrape_single_product(SKU, driver, log_callback=None):
             print(error_msg)
         return None
     product_info = {
-        'SKU': SKU,
-        'Brand': 'N/A',
-        'Name': 'N/A',
-        'Weight': 'N/A',
-        'Image URLs': []
+        "SKU": SKU,
+        "Brand": "N/A",
+        "Name": "N/A",
+        "Weight": "N/A",
+        "Image URLs": [],
     }
 
     try:
@@ -191,43 +225,63 @@ def scrape_single_product(SKU, driver, log_callback=None):
         driver.get(search_url)
 
         if SEARCH_URL_TEMPLATE.split("?")[0] not in driver.current_url:
-            display_error("Navigation to search URL failed. Aborting.", log_callback=log_callback)
+            display_error(
+                "Navigation to search URL failed. Aborting.", log_callback=log_callback
+            )
             return None
 
         # Wait for either product results or empty state message
         WebDriverWait(driver, 10).until(
             EC.any_of(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "div.cc_product_item")),
-                EC.presence_of_element_located((By.CSS_SELECTOR, "div.plp-empty-state-message-container h3"))
+                EC.presence_of_element_located(
+                    (By.CSS_SELECTOR, "div.cc_product_item")
+                ),
+                EC.presence_of_element_located(
+                    (By.CSS_SELECTOR, "div.plp-empty-state-message-container h3")
+                ),
             )
         )
 
-        empty_msg_elements = driver.find_elements(By.CSS_SELECTOR, "div.plp-empty-state-message-container h3")
+        empty_msg_elements = driver.find_elements(
+            By.CSS_SELECTOR, "div.plp-empty-state-message-container h3"
+        )
         if empty_msg_elements:
             empty_text = empty_msg_elements[0].text.strip().lower()
             if "no results were found" in empty_text:
                 return None
 
-        product_elements = driver.find_elements(By.CSS_SELECTOR, "div.cc_product_item.cc_row_item")
+        product_elements = driver.find_elements(
+            By.CSS_SELECTOR, "div.cc_product_item.cc_row_item"
+        )
 
         for product in product_elements:
             try:
-                upc_elem = product.find_element(By.XPATH, ".//div[contains(@class,'product-upc')]//span[contains(@class,'cc_value')]")
+                upc_elem = product.find_element(
+                    By.XPATH,
+                    ".//div[contains(@class,'product-upc')]//span[contains(@class,'cc_value')]",
+                )
                 current_upc = upc_elem.text.strip()
                 if current_upc == SKU:
-                    name = product.find_element(By.CSS_SELECTOR, "a.cc_product_name").text.strip()
-                    brand = product.find_element(By.CSS_SELECTOR, "div.product-brand span").text.strip()
-                    image = product.find_element(By.CSS_SELECTOR, "div.cc_product_image img").get_attribute("src")
+                    name = product.find_element(
+                        By.CSS_SELECTOR, "a.cc_product_name"
+                    ).text.strip()
+                    brand = product.find_element(
+                        By.CSS_SELECTOR, "div.product-brand span"
+                    ).text.strip()
+                    image = product.find_element(
+                        By.CSS_SELECTOR, "div.cc_product_image img"
+                    ).get_attribute("src")
 
-                    product_info['Name'] = name if name else 'N/A'
-                    product_info['Brand'] = brand if brand else 'N/A'
-                    product_info['Image URLs'] = [image] if image else []
+                    product_info["Name"] = name if name else "N/A"
+                    product_info["Brand"] = brand if brand else "N/A"
+                    product_info["Image URLs"] = [image] if image else []
 
                     # Check for critical missing data - return None if essential fields are missing
-                    critical_fields_missing = (
-                        any(value == 'N/A' for value in product_info.values() if isinstance(value, str)) or
-                        not product_info.get('Image URLs')
-                    )
+                    critical_fields_missing = any(
+                        value == "N/A"
+                        for value in product_info.values()
+                        if isinstance(value, str)
+                    ) or not product_info.get("Image URLs")
 
                     if critical_fields_missing:
                         return None
@@ -237,20 +291,21 @@ def scrape_single_product(SKU, driver, log_callback=None):
                 display_error(f"Error in product block: {e}", log_callback=log_callback)
                 continue
 
-        display_error(f"No exact UPC match for SKU {SKU}, products loaded but skipped.", log_callback=log_callback)
+        display_error(
+            f"No exact UPC match for SKU {SKU}, products loaded but skipped.",
+            log_callback=log_callback,
+        )
         return None
 
     except Exception as e:
-        display_error(f"Exception while searching for SKU {SKU}: {e}", log_callback=log_callback)
+        display_error(
+            f"Exception while searching for SKU {SKU}: {e}", log_callback=log_callback
+        )
         return None
 
+
 if __name__ == "__main__":
-    test_skus = [
-        "123412431289705",
-        "074198613953",
-        "072705115211",
-        "074198613939"
-    ]
+    test_skus = ["123412431289705", "074198613953", "072705115211", "074198613939"]
 
     print("� Scraping Phillips...")
     results = scrape_phillips(test_skus)

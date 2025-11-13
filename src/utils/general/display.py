@@ -10,7 +10,12 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional, Callable
 
 
-def display_product_result(product: Dict[str, Any], index: Optional[int] = None, total: Optional[int] = None, log_callback: Optional[Callable[[str], None]] = None) -> None:
+def display_product_result(
+    product: Dict[str, Any],
+    index: Optional[int] = None,
+    total: Optional[int] = None,
+    log_callback: Optional[Callable[[str], None]] = None,
+) -> None:
     """
     Display a single product result in a standardized format.
 
@@ -21,15 +26,15 @@ def display_product_result(product: Dict[str, Any], index: Optional[int] = None,
         log_callback: Optional callback function for logging (defaults to print)
     """
     output = log_callback if log_callback else print
-    
+
     if index is not None and total is not None:
         progress = f"[{index}/{total}] "
     else:
         progress = ""
 
-    sku = product.get('SKU', product.get('UPC', 'Unknown'))
-    name = product.get('Name', 'Unknown Product')
-    brand = product.get('Brand', 'Unknown Brand')
+    sku = product.get("SKU", product.get("UPC", "Unknown"))
+    name = product.get("Name", "Unknown Product")
+    brand = product.get("Brand", "Unknown Brand")
 
     # Truncate long names for display
     if len(name) > 60:
@@ -40,33 +45,33 @@ def display_product_result(product: Dict[str, Any], index: Optional[int] = None,
     output(f"   📝 Name: {name}")
 
     # Show key fields
-    weight = product.get('Weight', 'N/A')
-    if weight and weight != 'N/A':
+    weight = product.get("Weight", "N/A")
+    if weight and weight != "N/A":
         output(f"   ⚖️  Weight: {weight}")
 
-    images = product.get('Image URLs', [])
+    images = product.get("Image URLs", [])
     if images:
         output(f"   🖼️  Images: {len(images)} found")
     else:
         output("   🖼️  Images: None found")
 
     # Show flags if any
-    flagged = product.get('flagged', False)
+    flagged = product.get("flagged", False)
     if flagged:
         missing_items = []
-        
+
         # Check for N/A values in string fields
         for key, value in product.items():
-            if isinstance(value, str) and value == 'N/A':
+            if isinstance(value, str) and value == "N/A":
                 missing_items.append(key)
-        
+
         # Check for missing images
-        images = product.get('Image URLs', [])
+        images = product.get("Image URLs", [])
         if not images:
-            missing_items.append('Images')
-        
+            missing_items.append("Images")
+
         if missing_items:
-            missing_str = ', '.join(missing_items)
+            missing_str = ", ".join(missing_items)
             output(f"   ⚠️  FLAGGED: Missing {missing_str}")
         else:
             output("   ⚠️  FLAGGED: Missing data or images")
@@ -75,7 +80,13 @@ def display_product_result(product: Dict[str, Any], index: Optional[int] = None,
     output("")  # Extra buffer between products
 
 
-def display_scraping_progress(current: int, total: int, start_time: float, scraper_name: str = "Scraper", log_callback: Optional[Callable[[str], None]] = None) -> None:
+def display_scraping_progress(
+    current: int,
+    total: int,
+    start_time: float,
+    scraper_name: str = "Scraper",
+    log_callback: Optional[Callable[[str], None]] = None,
+) -> None:
     """
     Display scraping progress with timing information.
 
@@ -87,7 +98,7 @@ def display_scraping_progress(current: int, total: int, start_time: float, scrap
         log_callback: Optional callback function for logging (defaults to print)
     """
     output = log_callback if log_callback else print
-    
+
     elapsed = time.time() - start_time
     rate = current / elapsed if elapsed > 0 else 0
     remaining = total - current
@@ -96,12 +107,16 @@ def display_scraping_progress(current: int, total: int, start_time: float, scrap
     # Show progress at start, every few items for small lists, every 10th for large lists, and at end
     if current == 1:
         progress_pct = (current / total) * 100
-        output(f"🔄 {scraper_name}: {current}/{total} products ({progress_pct:.1f}%) | "
-              f"Rate: {rate:.1f}/sec | ETA: {eta:.0f}s")
+        output(
+            f"🔄 {scraper_name}: {current}/{total} products ({progress_pct:.1f}%) | "
+            f"Rate: {rate:.1f}/sec | ETA: {eta:.0f}s"
+        )
     elif total <= 10 or current % max(1, total // 10) == 0 or current == total:
         progress_pct = (current / total) * 100
-        output(f"🔄 {scraper_name}: {current}/{total} products ({progress_pct:.1f}%) | "
-              f"Rate: {rate:.1f}/sec | ETA: {eta:.0f}s")
+        output(
+            f"🔄 {scraper_name}: {current}/{total} products ({progress_pct:.1f}%) | "
+            f"Rate: {rate:.1f}/sec | ETA: {eta:.0f}s"
+        )
 
     if current == total:
         output(f"✅ {scraper_name}: Scraping completed!")
@@ -110,12 +125,20 @@ def display_scraping_progress(current: int, total: int, start_time: float, scrap
 # Global flag to suppress summary output during testing
 _SUPPRESS_SUMMARY = False
 
+
 def set_suppress_summary(suppress: bool):
     """Set whether to suppress scraping summary output (used during testing)."""
     global _SUPPRESS_SUMMARY
     _SUPPRESS_SUMMARY = suppress
 
-def display_scraping_summary(products: List[Dict[str, Any]], start_time: float, scraper_name: str = "Scraper", quiet: bool = False, log_callback: Optional[Callable[[str], None]] = None) -> None:
+
+def display_scraping_summary(
+    products: List[Dict[str, Any]],
+    start_time: float,
+    scraper_name: str = "Scraper",
+    quiet: bool = False,
+    log_callback: Optional[Callable[[str], None]] = None,
+) -> None:
     """
     Display a summary of scraping results.
 
@@ -127,10 +150,10 @@ def display_scraping_summary(products: List[Dict[str, Any]], start_time: float, 
         log_callback: Optional callback function for logging (defaults to print)
     """
     output = log_callback if log_callback else print
-    
+
     if quiet or _SUPPRESS_SUMMARY:
         return
-        
+
     total_time = time.time() - start_time
     successful = len([p for p in products if p])
     failed = len(products) - successful
@@ -145,19 +168,25 @@ def display_scraping_summary(products: List[Dict[str, Any]], start_time: float, 
         output(f"   📈 Rate: {rate:.1f} products/second")
 
         # Show flagged products
-        flagged = [p for p in products if p and p.get('flagged', False)]
+        flagged = [p for p in products if p and p.get("flagged", False)]
         if flagged:
             output(f"   ⚠️  Flagged: {len(flagged)} products (missing data/images)")
 
         # Show image statistics
-        total_images = sum(len(p.get('Image URLs', [])) for p in products if p)
+        total_images = sum(len(p.get("Image URLs", [])) for p in products if p)
         avg_images = total_images / successful if successful > 0 else 0
-        output(f"   🖼️  Total images: {total_images} (avg: {avg_images:.1f} per product)")
+        output(
+            f"   🖼️  Total images: {total_images} (avg: {avg_images:.1f} per product)"
+        )
 
     output("")
 
 
-def display_error(message: str, sku: Optional[str] = None, log_callback: Optional[Callable[[str], None]] = None) -> None:
+def display_error(
+    message: str,
+    sku: Optional[str] = None,
+    log_callback: Optional[Callable[[str], None]] = None,
+) -> None:
     """
     Display an error message in a standardized format.
 
@@ -167,16 +196,18 @@ def display_error(message: str, sku: Optional[str] = None, log_callback: Optiona
         log_callback: Optional callback function for logging (defaults to print)
     """
     output = log_callback if log_callback else print
-    
+
     if sku:
         output(f"❌ Error processing {sku}: {message}")
     else:
         output(f"❌ Error: {message}")
-    
+
     output("")  # Add spacing after error messages
 
 
-def display_info(message: str, log_callback: Optional[Callable[[str], None]] = None) -> None:
+def display_info(
+    message: str, log_callback: Optional[Callable[[str], None]] = None
+) -> None:
     """
     Display an informational message.
 
@@ -188,7 +219,9 @@ def display_info(message: str, log_callback: Optional[Callable[[str], None]] = N
     output(f"ℹ️  {message}")
 
 
-def display_success(message: str, log_callback: Optional[Callable[[str], None]] = None) -> None:
+def display_success(
+    message: str, log_callback: Optional[Callable[[str], None]] = None
+) -> None:
     """
     Display a success message.
 
@@ -200,7 +233,9 @@ def display_success(message: str, log_callback: Optional[Callable[[str], None]] 
     output(f"✅ {message}")
 
 
-def display_warning(message: str, log_callback: Optional[Callable[[str], None]] = None) -> None:
+def display_warning(
+    message: str, log_callback: Optional[Callable[[str], None]] = None
+) -> None:
     """
     Display a warning message.
 
@@ -217,21 +252,24 @@ if __name__ == "__main__":
     # Test data
     test_products = [
         {
-            'SKU': '123456789',
-            'Name': 'Premium Dog Food - Chicken Flavor, 15lb Bag',
-            'Brand': 'Premium Pet Foods',
-            'Weight': '15.00',
-            'Image URLs': ['https://example.com/image1.jpg', 'https://example.com/image2.jpg'],
-            'flagged': False
+            "SKU": "123456789",
+            "Name": "Premium Dog Food - Chicken Flavor, 15lb Bag",
+            "Brand": "Premium Pet Foods",
+            "Weight": "15.00",
+            "Image URLs": [
+                "https://example.com/image1.jpg",
+                "https://example.com/image2.jpg",
+            ],
+            "flagged": False,
         },
         {
-            'SKU': '987654321',
-            'Name': 'Cat Toy Assortment - 6 Pack with Bells and Feathers',
-            'Brand': 'Fun Pet Toys',
-            'Weight': 'N/A',
-            'Image URLs': [],
-            'flagged': True
-        }
+            "SKU": "987654321",
+            "Name": "Cat Toy Assortment - 6 Pack with Bells and Feathers",
+            "Brand": "Fun Pet Toys",
+            "Weight": "N/A",
+            "Image URLs": [],
+            "flagged": True,
+        },
     ]
 
     print("Testing scrape display utility...")

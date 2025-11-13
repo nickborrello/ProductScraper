@@ -2,6 +2,7 @@ import os
 from tkinter import Tk, filedialog
 from PIL import Image
 
+
 def select_folder():
     root = Tk()
     root.withdraw()
@@ -9,6 +10,7 @@ def select_folder():
     folder_selected = filedialog.askdirectory(title="Select Folder with Images")
     root.destroy()
     return folder_selected
+
 
 def process_and_replace_image(path):
     try:
@@ -33,7 +35,7 @@ def process_and_replace_image(path):
             new_img.paste(img, (paste_x, paste_y))
 
             # Force save as .jpg and overwrite original
-            save_path = os.path.splitext(path)[0] + '.jpg'
+            save_path = os.path.splitext(path)[0] + ".jpg"
             new_img.save(save_path, "JPEG", quality=95)
 
             if save_path != path:
@@ -43,11 +45,15 @@ def process_and_replace_image(path):
     except Exception as e:
         print(f"❌ Failed to convert {path}: {e}")
 
+
 def convert_all_images(folder):
     for root, _, files in os.walk(folder):
         for file in files:
-            if file.lower().endswith(('.png', '.jpg', '.jpeg', '.webp', '.bmp', '.tiff')):
+            if file.lower().endswith(
+                (".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tiff")
+            ):
                 process_and_replace_image(os.path.join(root, file))
+
 
 if __name__ == "__main__":
     folder = select_folder()

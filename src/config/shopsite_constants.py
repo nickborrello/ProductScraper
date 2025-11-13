@@ -201,5 +201,5 @@ SHOPSITE_PAGES = [
     "Wildlife Deer Food",
     "Wildlife Squirrel Food",
     "Winter Supplies",
-    "Wood Pellets"
+    "Wood Pellets",
 ]

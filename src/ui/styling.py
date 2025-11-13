@@ -124,36 +124,43 @@ STYLESHEET = f"""
     }}
 """
 
+
 def apply_dark_theme(app: QApplication):
     """Apply a global dark theme to the application."""
     app.setStyleSheet(STYLESHEET)
 
+
 class LogViewer(QTextEdit):
     """Professional log viewer with color-coded messages and filtering"""
-    
-    LOG_COLORS = {{
-        'DEBUG': MUTED_TEXT_COLOR,
-        'INFO': ACCENT_COLOR,
-        'SUCCESS': SUCCESS_COLOR,
-        'WARNING': WARNING_COLOR,
-        'ERROR': ERROR_COLOR,
-    }}
-    
-    LOG_ICONS = {{
-        'DEBUG': '🔧',
-        'INFO': 'ℹ️',
-        'SUCCESS': '✅',
-        'WARNING': '⚠️',
-        'ERROR': '❌',
-    }}
-    
+
+    LOG_COLORS = {
+        {
+            "DEBUG": MUTED_TEXT_COLOR,
+            "INFO": ACCENT_COLOR,
+            "SUCCESS": SUCCESS_COLOR,
+            "WARNING": WARNING_COLOR,
+            "ERROR": ERROR_COLOR,
+        }
+    }
+
+    LOG_ICONS = {
+        {
+            "DEBUG": "🔧",
+            "INFO": "ℹ️",
+            "SUCCESS": "✅",
+            "WARNING": "⚠️",
+            "ERROR": "❌",
+        }
+    }
+
     def __init__(self):
         super().__init__()
         self.setReadOnly(True)
         self.setFont(QFont("Consolas", 9))
         self.auto_scroll = True
         # The global stylesheet will cover this, but we can keep it for standalone use.
-        self.setStyleSheet(f"""
+        self.setStyleSheet(
+            f"""
             QTextEdit {{
                 background-color: {DARK_BACKGROUND};
                 color: {TEXT_COLOR};
@@ -161,20 +168,23 @@ class LogViewer(QTextEdit):
                 border-radius: 4px;
                 padding: 4px;
             }}
-        """)
-        
-    def log(self, message, level='INFO'):
+        """
+        )
+
+    def log(self, message, level="INFO"):
         """Add a timestamped, color-coded log entry"""
-        timestamp = datetime.now().strftime('%H:%M:%S')
+        timestamp = datetime.now().strftime("%H:%M:%S")
         color = self.LOG_COLORS.get(level, TEXT_COLOR)
-        icon = self.LOG_ICONS.get(level, '•')
-        
-        formatted = f'<span style="color: {color}"><b>[{timestamp}]</b> {icon} {message}</span>'
+        icon = self.LOG_ICONS.get(level, "•")
+
+        formatted = (
+            f'<span style="color: {color}"><b>[{timestamp}]</b> {icon} {message}</span>'
+        )
         self.append(formatted)
-        
+
         if self.auto_scroll:
             self.moveCursor(QTextCursor.MoveOperation.End)
-    
+
     def clear_logs(self):
         """Clear all log entries"""
         self.clear()
@@ -183,11 +193,12 @@ class LogViewer(QTextEdit):
 
 class ActionCard(QGroupBox):
     """A styled action card widget for organized UI sections"""
-    
+
     def __init__(self, title, icon=""):
         super().__init__()
         self.setTitle(f"{{icon}} {{title}}" if icon else title)
-        self.setStyleSheet(f"""
+        self.setStyleSheet(
+            f"""
             QGroupBox {{
                 font-weight: bold;
                 border: 2px solid {BORDER_COLOR};
@@ -203,19 +214,21 @@ class ActionCard(QGroupBox):
                 padding: 0 5px;
                 color: {TEXT_COLOR};
             }}
-        """)
-        
+        """
+        )
+
         self._layout = QVBoxLayout()
         self._layout.setSpacing(8)
         self.setLayout(self._layout)
-    
+
     def add_button(self, text, callback, tooltip="", icon=""):
         """Add a styled button to the card"""
         button = QPushButton(f"{{icon}} {{text}}" if icon else text)
         button.setMinimumHeight(40)
         button.setToolTip(tooltip)
         # The global stylesheet for QPushButton is good enough, but ActionCard buttons are special.
-        button.setStyleSheet(f"""
+        button.setStyleSheet(
+            f"""
             QPushButton {{
                 background-color: {LIGHT_BACKGROUND};
                 border: 1px solid #4a4a4a;
@@ -236,10 +249,12 @@ class ActionCard(QGroupBox):
                 background-color: #1a1a1a;
                 color: #666666;
             }}
-        """)
+        """
+        )
         button.clicked.connect(callback)
         self._layout.addWidget(button)
         return button
+
 
 class WorkerSignals(QObject):
     """
@@ -285,33 +300,35 @@ class Worker(QThread):
         # Inject progress and log callbacks into the target function's kwargs
         self.kwargs["progress_callback"] = self.signals.progress
         self.kwargs["log_callback"] = self.signals.log.emit
-        self.kwargs["editor_callback"] = self._request_editor_sync  # Inject sync editor callback
-    
+        self.kwargs["editor_callback"] = (
+            self._request_editor_sync
+        )  # Inject sync editor callback
+
     def _request_editor_sync(self, products_list):
         """Request editor on main thread and wait for result (synchronous from worker's perspective)"""
-        
+
         # Create container for result
-        result_container = {{'result': None, 'done': False}}
-        
+        result_container = {{"result": None, "done": False}}
+
         # Emit signal to main thread with products and result container
         self.signals.request_editor_sync.emit(products_list, result_container)
-        
+
         # Wait for main thread to complete
         loop = QEventLoop()
-        
+
         # Poll until done
         def check_done():
-            if result_container['done']:
+            if result_container["done"]:
                 loop.quit()
-        
+
         timer = QTimer()
         timer.timeout.connect(check_done)
         timer.start(100)  # Check every 100ms
-        
+
         loop.exec()  # Block until done
         timer.stop()
-        
-        return result_container['result']
+
+        return result_container["result"]
 
     def run(self):
         """

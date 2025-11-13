@@ -11,14 +11,23 @@ from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from src.utils.scraping.scraping import clean_string
 from src.utils.scraping.browser import create_browser
-from src.utils.general.display import display_product_result, display_scraping_progress, display_scraping_summary, display_error
+from src.utils.general.display import (
+    display_product_result,
+    display_scraping_progress,
+    display_scraping_summary,
+    display_error,
+)
 
 # Bradley Caldwell can run headless
 HEADLESS = True
 TEST_SKU = "791611038437"  # SKU that previously had empty brand
 
+
 def wait_for_element(driver, by, selector, timeout=15):
-    return WebDriverWait(driver, timeout).until(EC.presence_of_element_located((by, selector)))
+    return WebDriverWait(driver, timeout).until(
+        EC.presence_of_element_located((by, selector))
+    )
+
 
 def scrape_bradley_caldwell(skus, log_callback=None, progress_tracker=None):
     """
@@ -42,31 +51,43 @@ def scrape_bradley_caldwell(skus, log_callback=None, progress_tracker=None):
             product_info = scrape_single_product(sku, driver, log_callback=log_callback)
             if product_info:
                 products.append(product_info)
-                display_product_result(product_info, i, len(skus), log_callback=log_callback)
+                display_product_result(
+                    product_info, i, len(skus), log_callback=log_callback
+                )
             else:
                 products.append(None)
-            
-            display_scraping_progress(i, len(skus), start_time, "Bradley Caldwell", log_callback=log_callback)
-            
+
+            display_scraping_progress(
+                i, len(skus), start_time, "Bradley Caldwell", log_callback=log_callback
+            )
+
             # Update progress tracker if provided
             if progress_tracker:
-                progress_tracker.update_sku_progress(i, f"Processed {sku}", 1 if product_info else 0)
-    
+                progress_tracker.update_sku_progress(
+                    i, f"Processed {sku}", 1 if product_info else 0
+                )
+
     successful_products = [p for p in products if p]
-    display_scraping_summary(successful_products, start_time, "Bradley Caldwell", log_callback=log_callback)
-                
+    display_scraping_summary(
+        successful_products, start_time, "Bradley Caldwell", log_callback=log_callback
+    )
+
     return products
+
 
 def scrape_single_product(SKU, driver, log_callback=None):
     if driver is None:
-        display_error("WebDriver instance is None. Cannot scrape product.", log_callback=log_callback)
+        display_error(
+            "WebDriver instance is None. Cannot scrape product.",
+            log_callback=log_callback,
+        )
         return None
 
     search_url = f"https://www.bradleycaldwell.com/searchresults?Ntk=All|product.active%7C&Ntt=*{SKU}*&Nty=1&No=0&Nrpp=12&Rdm=323&searchType=simple&type=search"
     product_info = {}
-    
+
     # Set the SKU in the product info
-    product_info['SKU'] = SKU
+    product_info["SKU"] = SKU
 
     try:
         driver.get(search_url)
@@ -74,21 +95,32 @@ def scrape_single_product(SKU, driver, log_callback=None):
         try:
             WebDriverWait(driver, 20).until(
                 EC.any_of(
-                    EC.presence_of_element_located((By.CSS_SELECTOR, "h1.product-name")),
-                    EC.presence_of_element_located((By.XPATH, "//h2[contains(text(), 'No products were found.')]"))
+                    EC.presence_of_element_located(
+                        (By.CSS_SELECTOR, "h1.product-name")
+                    ),
+                    EC.presence_of_element_located(
+                        (By.XPATH, "//h2[contains(text(), 'No products were found.')]")
+                    ),
                 )
             )
         except TimeoutException:
-            error_msg = f"❌ TIMEOUT: Product page failed to load within 20s for SKU: {SKU}"
+            error_msg = (
+                f"❌ TIMEOUT: Product page failed to load within 20s for SKU: {SKU}"
+            )
             if log_callback:
                 log_callback(error_msg)
             else:
                 print(error_msg)
-            display_error("Timeout: Neither product nor 'no results' message appeared.", log_callback=log_callback)
+            display_error(
+                "Timeout: Neither product nor 'no results' message appeared.",
+                log_callback=log_callback,
+            )
             return None
 
         try:
-            not_found = driver.find_element(By.XPATH, "//h2[contains(text(), 'No products were found.')]")
+            not_found = driver.find_element(
+                By.XPATH, "//h2[contains(text(), 'No products were found.')]"
+            )
             if not_found:
                 return None
         except NoSuchElementException:
@@ -97,18 +129,22 @@ def scrape_single_product(SKU, driver, log_callback=None):
         try:
             name_element = wait_for_element(driver, By.CSS_SELECTOR, "h1.product-name")
             # Wait a bit for JavaScript to potentially update the content
-            WebDriverWait(driver, 5).until(lambda d: d.execute_script("return document.readyState") == "complete")
+            WebDriverWait(driver, 5).until(
+                lambda d: d.execute_script("return document.readyState") == "complete"
+            )
             time.sleep(2)  # Give extra time for dynamic content to load
-            
-            product_info['Name'] = clean_string(name_element.text)
+
+            product_info["Name"] = clean_string(name_element.text)
         except TimeoutException:
-            error_msg = f"❌ TIMEOUT: Product name element not found within 15s for SKU: {SKU}"
+            error_msg = (
+                f"❌ TIMEOUT: Product name element not found within 15s for SKU: {SKU}"
+            )
             if log_callback:
                 log_callback(error_msg)
             else:
                 print(error_msg)
             display_error("Name not found.", log_callback=log_callback)
-            product_info['Name'] = ''  # Return empty instead of trying alternatives
+            product_info["Name"] = ""  # Return empty instead of trying alternatives
 
         # Try multiple selectors for brand extraction with shorter timeout
         brand_found = False
@@ -119,17 +155,19 @@ def scrape_single_product(SKU, driver, log_callback=None):
             "//div[@class='product-brand']",
             "//a[contains(@href, '/brand/')]",
             "//span[contains(@class, 'brand')]",
-            "//div[contains(@class, 'brand')]"
+            "//div[contains(@class, 'brand')]",
         ]
 
         for selector in brand_selectors:
             try:
-                brand_element = WebDriverWait(driver, 3).until(  # Reduced to 3 seconds for optional elements
+                brand_element = WebDriverWait(
+                    driver, 3
+                ).until(  # Reduced to 3 seconds for optional elements
                     EC.presence_of_element_located((By.XPATH, selector))
                 )
                 brand_name = clean_string(brand_element.text)
                 if brand_name and len(brand_name.strip()) > 0:
-                    product_info['Brand'] = brand_name
+                    product_info["Brand"] = brand_name
                     brand_found = True
                     break
             except (TimeoutException, NoSuchElementException):
@@ -139,30 +177,43 @@ def scrape_single_product(SKU, driver, log_callback=None):
             # Try to extract brand from product details table
             try:
                 brand_table_element = WebDriverWait(driver, 3).until(  # Reduced timeout
-                    EC.presence_of_element_located((By.XPATH, "//table[contains(@class, 'table')]//tr[td/strong[text()='Brand']]/td[2]"))
+                    EC.presence_of_element_located(
+                        (
+                            By.XPATH,
+                            "//table[contains(@class, 'table')]//tr[td/strong[text()='Brand']]/td[2]",
+                        )
+                    )
                 )
                 brand_name = clean_string(brand_table_element.text)
                 if brand_name and len(brand_name.strip()) > 0:
-                    product_info['Brand'] = brand_name
+                    product_info["Brand"] = brand_name
                     brand_found = True
             except (TimeoutException, NoSuchElementException):
                 pass
 
         if not brand_found:
-            product_info['Brand'] = ''  # Return empty if not found        # If brand was found and is in the name, remove it
-        if brand_found and product_info['Brand']:
-            brand_name = product_info['Brand']
-            if brand_name.lower() in product_info['Name'].lower():
-                product_info['Name'] = clean_string(product_info['Name'].replace(brand_name, ''))
+            product_info["Brand"] = (
+                ""  # Return empty if not found        # If brand was found and is in the name, remove it
+            )
+        if brand_found and product_info["Brand"]:
+            brand_name = product_info["Brand"]
+            if brand_name.lower() in product_info["Name"].lower():
+                product_info["Name"] = clean_string(
+                    product_info["Name"].replace(brand_name, "")
+                )
 
         # Build complete product name from base name + color/size with shorter timeouts
         # Only add color/size if we have a base name
-        if product_info['Name']:
-            name_parts = [product_info['Name']]
+        if product_info["Name"]:
+            name_parts = [product_info["Name"]]
 
             try:
-                color_element = WebDriverWait(driver, 3).until(  # Reduced timeout for optional elements
-                    EC.presence_of_element_located((By.XPATH, "//span[@data-bind='text: colorDesc']"))
+                color_element = WebDriverWait(
+                    driver, 3
+                ).until(  # Reduced timeout for optional elements
+                    EC.presence_of_element_located(
+                        (By.XPATH, "//span[@data-bind='text: colorDesc']")
+                    )
                 )
                 color_desc = clean_string(color_element.text)
                 if color_desc:
@@ -171,8 +222,12 @@ def scrape_single_product(SKU, driver, log_callback=None):
                 pass
 
             try:
-                size_element = WebDriverWait(driver, 3).until(  # Reduced timeout for optional elements
-                    EC.presence_of_element_located((By.XPATH, "//span[@data-bind='text: sizeDesc']"))
+                size_element = WebDriverWait(
+                    driver, 3
+                ).until(  # Reduced timeout for optional elements
+                    EC.presence_of_element_located(
+                        (By.XPATH, "//span[@data-bind='text: sizeDesc']")
+                    )
                 )
                 size_desc = clean_string(size_element.text)
                 if size_desc:
@@ -180,36 +235,54 @@ def scrape_single_product(SKU, driver, log_callback=None):
             except (TimeoutException, NoSuchElementException):
                 pass
 
-            product_info['Name'] = ' '.join(name_parts)
+            product_info["Name"] = " ".join(name_parts)
         # If no base name found, leave it empty (don't include just color/size)
 
         try:
-            weight_element = WebDriverWait(driver, 3).until(  # Reduced timeout for optional weight
-                EC.presence_of_element_located((By.XPATH, "//table[contains(@class, 'table')]//tr[td/strong[text()='Weight']]/td[2]"))
+            weight_element = WebDriverWait(
+                driver, 3
+            ).until(  # Reduced timeout for optional weight
+                EC.presence_of_element_located(
+                    (
+                        By.XPATH,
+                        "//table[contains(@class, 'table')]//tr[td/strong[text()='Weight']]/td[2]",
+                    )
+                )
             )
-            weight_html = weight_element.get_attribute('innerHTML')
+            weight_html = weight_element.get_attribute("innerHTML")
             if weight_html:
-                match = re.search(r'(\d*\.?\d+)\s*(lbs?|kg|oz)?', weight_html, re.IGNORECASE)
+                match = re.search(
+                    r"(\d*\.?\d+)\s*(lbs?|kg|oz)?", weight_html, re.IGNORECASE
+                )
                 if match:
-                    product_info['Weight'] = f"{match.group(1)} {match.group(2) or ''}".strip()
+                    product_info["Weight"] = (
+                        f"{match.group(1)} {match.group(2) or ''}".strip()
+                    )
                 else:
-                    product_info['Weight'] = ''  # Return empty if not parseable
+                    product_info["Weight"] = ""  # Return empty if not parseable
             else:
-                product_info['Weight'] = ''  # Return empty if no HTML content
+                product_info["Weight"] = ""  # Return empty if no HTML content
         except (TimeoutException, NoSuchElementException):
-            product_info['Weight'] = ''  # Return empty if not found
+            product_info["Weight"] = ""  # Return empty if not found
 
         # ✅ Scrape images from desktop and mobile carousels with shorter timeout
         try:
-            WebDriverWait(driver, 5).until(lambda d: d.execute_script("return document.readyState") == "complete")  # Reduced timeout
+            WebDriverWait(driver, 5).until(
+                lambda d: d.execute_script("return document.readyState") == "complete"
+            )  # Reduced timeout
             time.sleep(1)
 
             image_urls = set()
 
             # Desktop thumbnails
             try:
-                desktop_thumbs = WebDriverWait(driver, 3).until(  # Reduced timeout for optional images
-                    lambda d: d.find_elements(By.CSS_SELECTOR, "#main-slider-desktop a[href*='/ccstore/v1/images']")
+                desktop_thumbs = WebDriverWait(
+                    driver, 3
+                ).until(  # Reduced timeout for optional images
+                    lambda d: d.find_elements(
+                        By.CSS_SELECTOR,
+                        "#main-slider-desktop a[href*='/ccstore/v1/images']",
+                    )
                 )
                 for el in desktop_thumbs:
                     href = el.get_attribute("href")
@@ -222,8 +295,13 @@ def scrape_single_product(SKU, driver, log_callback=None):
 
             # Mobile thumbnails
             try:
-                mobile_thumbs = WebDriverWait(driver, 3).until(  # Reduced timeout for optional images
-                    lambda d: d.find_elements(By.CSS_SELECTOR, "#main-slider-mobile a[href*='/ccstore/v1/images']")
+                mobile_thumbs = WebDriverWait(
+                    driver, 3
+                ).until(  # Reduced timeout for optional images
+                    lambda d: d.find_elements(
+                        By.CSS_SELECTOR,
+                        "#main-slider-mobile a[href*='/ccstore/v1/images']",
+                    )
                 )
                 for el in mobile_thumbs:
                     href = el.get_attribute("href")
@@ -234,10 +312,10 @@ def scrape_single_product(SKU, driver, log_callback=None):
             except (TimeoutException, NoSuchElementException):
                 pass
 
-            product_info['Image URLs'] = list(image_urls)
+            product_info["Image URLs"] = list(image_urls)
 
         except Exception as e:
-            product_info['Image URLs'] = []
+            product_info["Image URLs"] = []
             display_error(f"Image fetch failed: {e}", log_callback=log_callback)
 
     except Exception as e:
@@ -246,12 +324,13 @@ def scrape_single_product(SKU, driver, log_callback=None):
         return None
 
     # Check for critical missing data - only discard if no images found
-    critical_fields_missing = not product_info.get('Image URLs')
+    critical_fields_missing = not product_info.get("Image URLs")
 
     if critical_fields_missing:
         return None
 
     return product_info
+
 
 def init_test_browser():
     chrome_options = Options()
@@ -263,13 +342,16 @@ def init_test_browser():
     chrome_options.add_argument("--log-level=3")
     chrome_options.add_argument("--v=0")
     chrome_options.add_argument("--silent")
-    chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36")
-    chrome_options.add_experimental_option("prefs", {
-        "profile.managed_default_content_settings.images": 2
-    })
+    chrome_options.add_argument(
+        "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
+    )
+    chrome_options.add_experimental_option(
+        "prefs", {"profile.managed_default_content_settings.images": 2}
+    )
     chrome_options.add_experimental_option("excludeSwitches", ["enable-logging"])
     service = ChromeService(log_path=os.devnull)
     return webdriver.Chrome(service=service, options=chrome_options)
+
 
 if __name__ == "__main__":
     test_sku = "072725005516"

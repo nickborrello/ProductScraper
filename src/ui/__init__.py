@@ -36,31 +36,28 @@ from src.core.classification.classifier import (
     classify_single_product,
     find_matching_products_and_recommendations,
     load_classified_dataframe,
-    RECOMMEND_COLS
+    RECOMMEND_COLS,
 )
 
 from .product_cross_sell_ui import (
     assign_cross_sells_batch,
     assign_cross_sells_single,
     CROSS_SELL_FIELD,
-    MAX_CROSS_SELLS
+    MAX_CROSS_SELLS,
 )
 
-from .product_editor import (
-    product_editor_interactive,
-    edit_products_in_batch
-)
+from .product_editor import product_editor_interactive, edit_products_in_batch
 
 __all__ = [
-    'classify_products_batch',
-    'classify_single_product',
-    'find_matching_products_and_recommendations',
-    'load_classified_dataframe',
-    'assign_cross_sells_batch',
-    'assign_cross_sells_single',
-    'product_editor_interactive',
-    'edit_products_in_batch',
-    'RECOMMEND_COLS',
-    'CROSS_SELL_FIELD',
-    'MAX_CROSS_SELLS'
+    "classify_products_batch",
+    "classify_single_product",
+    "find_matching_products_and_recommendations",
+    "load_classified_dataframe",
+    "assign_cross_sells_batch",
+    "assign_cross_sells_single",
+    "product_editor_interactive",
+    "edit_products_in_batch",
+    "RECOMMEND_COLS",
+    "CROSS_SELL_FIELD",
+    "MAX_CROSS_SELLS",
 ]
