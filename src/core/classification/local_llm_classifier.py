@@ -9,6 +9,9 @@ from typing import List, Dict, Any, Optional
 from pathlib import Path
 import ollama
 
+# Import product pages from config
+from ...config.shopsite_pages import SHOPSITE_PAGES
+
 # Configuration
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2")  # Default to a good general model
 MAX_TOKENS = 1000
@@ -218,33 +221,7 @@ GENERAL_PRODUCT_TAXONOMY = {
 }
 
 # Common product pages - includes both pet and general products
-PRODUCT_PAGES = [
-    # Pet Pages
-    "Dog Food Shop All",
-    "Cat Food Shop All",
-    "Bird Supplies Shop All",
-    "Fish Supplies Shop All",
-    "Small Pet Supplies Shop All",
-    "Reptile Supplies Shop All",
-    "Pet Toys Shop All",
-    "Pet Healthcare Shop All",
-    "Pet Grooming Shop All",
-    "Dog Supplies Shop All",
-    "Cat Supplies Shop All",
-    "Pet Beds Shop All",
-    # General Pages
-    "Hardware Shop All",
-    "Lawn & Garden Shop All",
-    "Farm Supplies Shop All",
-    "Home & Kitchen Shop All",
-    "Automotive Shop All",
-    "Farm Animal Supplies Shop All",
-    # Common Pages
-    "Brand Pages",
-    "Sale Items",
-    "New Arrivals",
-    "Best Sellers",
-]
+PRODUCT_PAGES = SHOPSITE_PAGES
 
 
 class LocalLLMProductClassifier:
