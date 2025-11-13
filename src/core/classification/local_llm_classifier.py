@@ -250,7 +250,7 @@ PRODUCT_PAGES = [
 class LocalLLMProductClassifier:
     """Local LLM-based product classifier using Ollama for running models locally without API keys."""
 
-    def __init__(self, model_name: str = None):
+    def __init__(self, model_name: str = None, cache_file: Path = None):
         # Try to get model name from settings first, then parameter, then environment, then default
         if model_name is None:
             config_path = Path(__file__).parent.parent.parent / "settings.json"
@@ -264,7 +264,7 @@ class LocalLLMProductClassifier:
         self.model_name = model_name or OLLAMA_MODEL
         self.conversation_history = []
         self.classification_cache = {}  # Cache for classifications
-        self.cache_file = Path.home() / ".cache" / "productscraper_ollama_cache.json"
+        self.cache_file = cache_file or Path.home() / ".cache" / "productscraper_ollama_cache.json"
         self.cache_file.parent.mkdir(parents=True, exist_ok=True)
         self._load_cache()
         self._initialize_conversation()
@@ -675,11 +675,11 @@ def classify_product_local_llm(product_info: Dict[str, Any]) -> Dict[str, str]:
     """
     classifier = get_local_llm_classifier()
     if not classifier:
-        return {"category": "", "product_type": "", "product_on_pages": ""}
+        return {"Category": "", "Product Type": "", "Product On Pages": ""}
 
     product_name = product_info.get("Name", "").strip()
     if not product_name:
-        return {"category": "", "product_type": "", "product_on_pages": ""}
+        return {"Category": "", "Product Type": "", "Product On Pages": ""}
 
     # For now, still use simple classification (could be enhanced to use batch method)
     product_brand = product_info.get("Brand", "").strip()
