@@ -119,7 +119,7 @@ def run_scraping(file_path, progress_callback=None, log_callback=None, interacti
         progress_callback.emit(90)
     log("✅ Product scraping completed!")
 
-def run_discontinued_check(file_path, progress_callback=None, log_callback=None, editor_callback=None):
+def run_discontinued_check(file_path, progress_callback=None, log_callback=None, editor_callback=None, status_callback=None):
     """Runs the discontinued product check."""
     # Determine log function
     if log_callback is None:
@@ -151,7 +151,7 @@ def run_discontinued_check(file_path, progress_callback=None, log_callback=None,
     log("✅ Discontinued products check completed!")
 
 
-def run_db_refresh(progress_callback=None, log_callback=None, editor_callback=None):
+def run_db_refresh(progress_callback=None, log_callback=None, editor_callback=None, status_callback=None):
     """Processes the downloaded XML and refreshes the database, with callbacks."""
     # Determine log function
     if log_callback is None:
@@ -494,7 +494,7 @@ def select_excel_file_text():
         except KeyboardInterrupt:
             return None
 
-def run_scraper_integration_tests(log_callback=None, progress_callback=None, editor_callback=None):
+def run_scraper_integration_tests(log_callback=None, progress_callback=None, editor_callback=None, status_callback=None):
     """Run integration tests for all scrapers with known working products.
 
     This function tests every scraper with a product we know works on that site,
