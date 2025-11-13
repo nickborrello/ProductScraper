@@ -3,12 +3,20 @@ import os
 from selenium.webdriver.chrome.options import Options
 
 
-def get_standard_chrome_options(headless=True, profile_suffix="default"):
+def get_standard_chrome_options(headless=True, profile_suffix="default", enable_devtools=False, devtools_port=9222):
     """Get standardized Chrome options that suppress common errors and warnings."""
     options = Options()
 
     if headless:
         options.add_argument("--headless=new")  # Use new headless mode
+
+    # Enable remote debugging if requested
+    if enable_devtools:
+        options.add_argument(f"--remote-debugging-port={devtools_port}")
+        options.add_argument("--remote-debugging-address=127.0.0.1")
+        # Don't disable dev tools when debugging is enabled
+    else:
+        options.add_argument("--disable-dev-tools")
 
     # Ultra-conservative stability options for slow systems
     options.add_argument("--no-sandbox")

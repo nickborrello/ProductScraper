@@ -15,8 +15,9 @@ from src.utils.general.display import (
 import os
 import time
 
-HEADLESS = True
-TEST_SKU = "076484061233"
+HEADLESS = False
+DEBUG_MODE = False  # Default to False, will be set to True when run from file
+ENABLE_DEVTOOLS = True  # Set to True to enable Chrome DevTools remote debugging
 
 
 def clean_string(s):
@@ -46,7 +47,7 @@ def scrape_coastal_pet(skus, log_callback=None, progress_tracker=None, status_ca
     if status_callback:
         status_callback("Scraping Coastal Pet...")
 
-    with create_browser("Coastal Pet", headless=HEADLESS) as driver:
+    with create_browser("Coastal Pet", headless=HEADLESS, enable_devtools=ENABLE_DEVTOOLS) as driver:
         if driver is None:
             display_error(
                 "Could not create browser for Coastal Pet", log_callback=log_callback
@@ -84,6 +85,26 @@ def scrape_single_product(SKU, driver, log_callback=None):
 
     try:
         driver.get(search_url)
+        print(f"DEBUG: Searched URL: {search_url}")
+        print(f"DEBUG: Page title: {driver.title}")
+        
+        # Debug mode: pause for dev tools inspection
+        if DEBUG_MODE:
+            print("🔍 DEBUG MODE: Browser is paused for dev tools inspection")
+            print(f"📄 Page URL: {driver.current_url}")
+            print("💡 Open Chrome Dev Tools (F12) and inspect the page elements")
+            print("📋 Copy the dev tools URL from the address bar and send it to me")
+            print("⏸️  Press Enter in the terminal when ready to continue...")
+            input()
+        
+        # Check if we got search results or an error page
+        page_text = driver.page_source.lower()
+        if "no results" in page_text or "not found" in page_text:
+            print("DEBUG: Page indicates no results found")
+            # Show a preview of the page content for debugging
+            body_text = driver.find_element(By.TAG_NAME, "body").text[:500]
+            print(f"DEBUG: Page body preview: {body_text}")
+            return None
 
         try:
             WebDriverWait(driver, 10).until(
@@ -136,6 +157,9 @@ def scrape_single_product(SKU, driver, log_callback=None):
 
 
 if __name__ == "__main__":
+    # Enable debug mode when running from file
+    DEBUG_MODE = True
+    
     test_sku = "076484648649"
     print(f"🔍 Scraping Coastal Pet for SKU: {test_sku}")
     results = scrape_coastal_pet([test_sku])

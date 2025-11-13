@@ -9,19 +9,19 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from src.utils.scraping.scraping import get_standard_chrome_options
 
-from scrapers.bradley_caldwell import scrape_bradley_caldwell
-from scrapers.central_pet import scrape_central
-from scrapers.orgill import (
+from src.scrapers.bradley_caldwell import scrape_bradley_caldwell
+from src.scrapers.central_pet import scrape_central
+from src.scrapers.orgill import (
     scrape_orgill,
     login as login_orgill,
     is_logged_in as is_logged_in_orgill,
 )
-from scrapers.phillips import (
+from src.scrapers.phillips import (
     scrape_phillips,
     login as login_phillips,
     is_logged_in as is_logged_in_phillips,
 )
-from scrapers.petfoodex import (
+from src.scrapers.petfoodex import (
     scrape_petfood_experts,
     login as login_petfood,
     is_logged_in as is_logged_in_petfood,
@@ -76,15 +76,15 @@ class DiscontinuedChecker:
         timestamp = int(time.time() * 1000)
         unique_profile = f"{site.replace(' ', '_')}_{thread_id}_{timestamp}"
         if site == "Orgill":
-            from scrapers.orgill import init_browser as orgill_init_browser
+            from src.scrapers.orgill import init_browser as orgill_init_browser
 
             return orgill_init_browser(profile_suffix=unique_profile, headless=True)
         elif site == "Phillips":
-            from scrapers.phillips import init_browser as phillips_init_browser
+            from src.scrapers.phillips import init_browser as phillips_init_browser
 
             return phillips_init_browser(profile_suffix=unique_profile, headless=True)
         elif site == "Pet Food Experts":
-            from scrapers.petfoodex import init_browser as petfood_init_browser
+            from src.scrapers.petfoodex import init_browser as petfood_init_browser
 
             return petfood_init_browser(profile_suffix=unique_profile, headless=False)
         else:
