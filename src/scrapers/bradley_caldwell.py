@@ -29,7 +29,7 @@ def wait_for_element(driver, by, selector, timeout=15):
     )
 
 
-def scrape_bradley_caldwell(skus, log_callback=None, progress_tracker=None):
+def scrape_bradley_caldwell(skus, log_callback=None, progress_tracker=None, status_callback=None):
     """
     Scrape Bradley Caldwell for multiple SKUs.
 
@@ -44,6 +44,10 @@ def scrape_bradley_caldwell(skus, log_callback=None, progress_tracker=None):
 
     products = []
     start_time = time.time()
+
+    # Update status
+    if status_callback:
+        status_callback("Scraping Bradley Caldwell...")
 
     # Create browser instance for this scraper
     with create_browser("Bradley Caldwell", headless=HEADLESS) as driver:

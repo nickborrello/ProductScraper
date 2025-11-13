@@ -315,10 +315,7 @@ def parse_weight_from_name(name):
 
     return ""
 
-
-def scrape_petfood_experts(
-    skus, browser=None, log_callback=None, progress_tracker=None
-):
+def scrape_petfood_experts(skus, browser=None, log_callback=None, progress_tracker=None, status_callback=None):
     """Scrape Pet Food Experts products for multiple SKUs."""
     if not skus:
         return []
@@ -326,7 +323,9 @@ def scrape_petfood_experts(
     products = []
     start_time = time.time()
 
-    # Use provided browser or create a new one
+    # Update status
+    if status_callback:
+        status_callback("Scraping Pet Food Experts...")
     if browser is not None:
         driver = browser
     else:

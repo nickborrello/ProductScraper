@@ -12,7 +12,7 @@ import sqlite3
 from pathlib import Path
 
 # Database path instead of Excel
-DB_PATH = Path(__file__).parent.parent.parent / "data" / "databases" / "products.db"
+DB_PATH = Path(__file__).parent.parent.parent.parent / "data" / "databases" / "products.db"
 
 # Global cache for classified products DataFrame
 _classified_df_cache = None

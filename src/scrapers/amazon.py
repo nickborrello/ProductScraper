@@ -154,11 +154,14 @@ def init_browser_optimized(profile_suffix="default", headless=True):
     service = Service(log_path=os.devnull)
     return webdriver.Chrome(service=service, options=chrome_options)
 
-
-def scrape_amazon(skus, log_callback=None, progress_tracker=None):
+def scrape_amazon(skus, log_callback=None, progress_tracker=None, status_callback=None):
     """Scrape Amazon products for multiple SKUs."""
     products = []
     start_time = time.time()
+
+    # Update status
+    if status_callback:
+        status_callback("Scraping Amazon...")
 
     # display_info(f"Starting Amazon scraping for {len(skus)} products")  # Removed verbose message
 

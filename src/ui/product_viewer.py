@@ -151,6 +151,11 @@ class ProductViewer(QMainWindow):
         self.search_term = ""
         self.selected_products = set()  # Store SKUs of selected products
         self.show_disabled = True
+        self.category_filter = ""
+        self.product_type_filter = ""
+        self.special_order_filter = False
+        self.date_from = ""
+        self.date_to = ""
 
         # Create UI
         self.create_widgets()
@@ -192,29 +197,64 @@ class ProductViewer(QMainWindow):
                 color: #ffffff;
                 font-size: 14px;
             }
-        """
-        )
-        search_layout = QHBoxLayout(search_card)
+        """)
+        search_layout = QVBoxLayout(search_card)
         search_layout.setSpacing(10)
         search_layout.setContentsMargins(15, 15, 15, 15)
 
-        search_layout.addWidget(QLabel("Search:"))
+        # First row: Search and basic filters
+        first_row = QHBoxLayout()
+        first_row.addWidget(QLabel("Search:"))
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("Search by SKU, brand, or product name...")
         self.search_input.textChanged.connect(self.on_search_change)
-        search_layout.addWidget(self.search_input)
+        first_row.addWidget(self.search_input)
 
-        self.show_disabled_cb = QCheckBox("Show disabled products")
+        self.show_disabled_cb = QCheckBox("Show disabled")
         self.show_disabled_cb.setChecked(True)
         self.show_disabled_cb.stateChanged.connect(self.on_filter_change)
-        search_layout.addWidget(self.show_disabled_cb)
+        first_row.addWidget(self.show_disabled_cb)
 
-        search_layout.addWidget(QLabel("Items per page:"))
+        self.special_order_cb = QCheckBox("Special Order only")
+        self.special_order_cb.stateChanged.connect(self.on_filter_change)
+        first_row.addWidget(self.special_order_cb)
+
+        first_row.addWidget(QLabel("Items per page:"))
         self.page_size_combo = QComboBox()
         self.page_size_combo.addItems(["25", "50", "100", "200"])
         self.page_size_combo.setCurrentText("50")
         self.page_size_combo.currentTextChanged.connect(self.on_page_size_change)
-        search_layout.addWidget(self.page_size_combo)
+        first_row.addWidget(self.page_size_combo)
+
+        search_layout.addLayout(first_row)
+
+        # Second row: Category and Product Type filters
+        second_row = QHBoxLayout()
+        second_row.addWidget(QLabel("Category:"))
+        self.category_combo = QComboBox()
+        self.category_combo.addItem("All Categories", "")
+        self.category_combo.currentTextChanged.connect(self.on_filter_change)
+        second_row.addWidget(self.category_combo)
+
+        second_row.addWidget(QLabel("Product Type:"))
+        self.product_type_combo = QComboBox()
+        self.product_type_combo.addItem("All Types", "")
+        self.product_type_combo.currentTextChanged.connect(self.on_filter_change)
+        second_row.addWidget(self.product_type_combo)
+
+        second_row.addWidget(QLabel("Date From:"))
+        self.date_from_input = QLineEdit()
+        self.date_from_input.setPlaceholderText("YYYY-MM-DD")
+        self.date_from_input.textChanged.connect(self.on_filter_change)
+        second_row.addWidget(self.date_from_input)
+
+        second_row.addWidget(QLabel("Date To:"))
+        self.date_to_input = QLineEdit()
+        self.date_to_input.setPlaceholderText("YYYY-MM-DD")
+        self.date_to_input.textChanged.connect(self.on_filter_change)
+        second_row.addWidget(self.date_to_input)
+
+        search_layout.addLayout(second_row)
 
         layout.addWidget(search_card)
 
@@ -244,18 +284,26 @@ class ProductViewer(QMainWindow):
 
         # Table
         self.table = QTableWidget()
-        self.table.setColumnCount(5)
-        self.table.setHorizontalHeaderLabels(
-            ["Select", "SKU", "Brand", "Product Name", "Disabled"]
-        )
+        self.table.setColumnCount(12)
+        self.table.setHorizontalHeaderLabels([
+            "Select", "SKU", "Brand", "Product Name", "Price", "Weight", 
+            "Category", "Product Type", "Pages", "Special Order", "Disabled", "Last Updated"
+        ])
         self.table.setAlternatingRowColors(True)
         self.table.cellClicked.connect(self.on_table_click)
 
         # Set column widths and resize modes
-        self.table.setColumnWidth(0, 60)  # Select checkbox column - small
-        self.table.setColumnWidth(2, 150)  # Brand column - wider
-        self.table.setColumnWidth(4, 80)  # Disabled column - fixed width
-
+        self.table.setColumnWidth(0, 60)   # Select checkbox column - small
+        self.table.setColumnWidth(1, 120)  # SKU column
+        self.table.setColumnWidth(2, 120)  # Brand column
+        self.table.setColumnWidth(4, 80)   # Price column
+        self.table.setColumnWidth(5, 80)   # Weight column
+        self.table.setColumnWidth(6, 120)  # Category column
+        self.table.setColumnWidth(7, 120)  # Product Type column
+        self.table.setColumnWidth(8, 100)  # Pages column
+        self.table.setColumnWidth(9, 100)  # Special Order column
+        self.table.setColumnWidth(10, 80)  # Disabled column
+        self.table.setColumnWidth(11, 140) # Last Updated column
         # Set Product Name column to stretch
         header = self.table.horizontalHeader()
         if header is not None:
@@ -493,18 +541,29 @@ class ProductViewer(QMainWindow):
         self.search_term = self.search_input.text().strip()
         self.current_page = 0
         self.load_products()
+        # Reset scroll to top
+        self.table.verticalScrollBar().setValue(0)
 
-    def on_filter_change(self):
+    def on_filter_change(self, value=None):
         """Handle filter changes."""
         self.show_disabled = self.show_disabled_cb.isChecked()
+        self.special_order_filter = self.special_order_cb.isChecked()
+        self.category_filter = self.category_combo.currentData() or ""
+        self.product_type_filter = self.product_type_combo.currentData() or ""
+        self.date_from = self.date_from_input.text().strip()
+        self.date_to = self.date_to_input.text().strip()
         self.current_page = 0
         self.load_products()
+        # Reset scroll to top
+        self.table.verticalScrollBar().setValue(0)
 
     def on_page_size_change(self):
         """Handle page size changes."""
         self.page_size = int(self.page_size_combo.currentText())
         self.current_page = 0
         self.load_products()
+        # Reset scroll to top
+        self.table.verticalScrollBar().setValue(0)
 
     def load_products(self):
         """Load products from database with current filters."""
@@ -515,9 +574,10 @@ class ProductViewer(QMainWindow):
         try:
             cursor = self.conn.cursor()
 
-            # Build query
+            # Build query with all columns
             query = """
-                SELECT SKU, Brand, Name, ProductDisabled
+                SELECT SKU, Brand, Name, Price, Weight, Category, Product_Type, 
+                       Product_On_Pages, Special_Order, ProductDisabled, last_updated
                 FROM products
                 WHERE Name IS NOT NULL
             """
@@ -535,10 +595,45 @@ class ProductViewer(QMainWindow):
                 query += search_filter
                 params.extend([search_param, search_param, search_param])
 
+            # Add category filter
+            if self.category_filter:
+                query += " AND (Category LIKE ? OR Category LIKE ? OR Category LIKE ? OR Category = ?)"
+                # Match: "|Category|", "Category|", "|Category", "Category"
+                category_param = self.category_filter
+                params.extend([
+                    f"%|{category_param}|%",
+                    f"{category_param}|%",
+                    f"%|{category_param}",
+                    category_param
+                ])
+
+            # Add product type filter
+            if self.product_type_filter:
+                query += " AND (Product_Type LIKE ? OR Product_Type LIKE ? OR Product_Type LIKE ? OR Product_Type = ?)"
+                # Match: "|Type|", "Type|", "|Type", "Type"
+                type_param = self.product_type_filter
+                params.extend([
+                    f"%|{type_param}|%",
+                    f"{type_param}|%",
+                    f"%|{type_param}",
+                    type_param
+                ])
+
+            # Add special order filter
+            if self.special_order_filter:
+                query += " AND LOWER(Special_Order) = 'yes'"
+
             # Add disabled products filter
             if not self.show_disabled:
                 query += " AND (ProductDisabled IS NULL OR LOWER(ProductDisabled) != 'checked')"
-                params.extend([])
+
+            # Add date range filter
+            if self.date_from:
+                query += " AND last_updated >= ?"
+                params.append(self.date_from)
+            if self.date_to:
+                query += " AND last_updated <= ?"
+                params.append(self.date_to + " 23:59:59")  # Include the entire day
 
             # Get total count
             count_query = f"SELECT COUNT(*) FROM ({query})"
@@ -546,7 +641,7 @@ class ProductViewer(QMainWindow):
             self.total_products = cursor.fetchone()[0]
 
             # Add pagination
-            query += " ORDER BY sku LIMIT ? OFFSET ?"
+            query += " ORDER BY last_updated DESC, sku LIMIT ? OFFSET ?"
             params.extend([self.page_size, self.current_page * self.page_size])
 
             # Execute query
@@ -556,22 +651,38 @@ class ProductViewer(QMainWindow):
             # Populate table
             self.table.setRowCount(len(rows))
             for row_idx, row in enumerate(rows):
-                sku, brand, name, product_disabled = row
+                (sku, brand, name, price, weight, category, product_type, 
+                 product_on_pages, special_order, product_disabled, last_updated) = row
+                
                 # Check if this product is selected
                 is_selected = "☑" if sku in self.selected_products else "☐"
-                # Format disabled status
-                disabled_display = (
-                    "Yes"
-                    if product_disabled
-                    and str(product_disabled).lower().strip() == "checked"
-                    else "No"
-                )
+                
+                # Format data for display
+                price_display = price or ""
+                weight_display = weight or ""
+                category_display = category or ""
+                product_type_display = product_type or ""
+                pages_display = product_on_pages or ""
+                special_order_display = "Yes" if special_order and str(special_order).lower().strip() == "yes" else "No"
+                disabled_display = "Yes" if product_disabled and str(product_disabled).lower().strip() == "checked" else "No"
+                last_updated_display = last_updated or ""
 
+                # Set table items
                 self.table.setItem(row_idx, 0, QTableWidgetItem(is_selected))
                 self.table.setItem(row_idx, 1, QTableWidgetItem(sku))
                 self.table.setItem(row_idx, 2, QTableWidgetItem(brand or ""))
                 self.table.setItem(row_idx, 3, QTableWidgetItem(name or ""))
-                self.table.setItem(row_idx, 4, QTableWidgetItem(disabled_display))
+                self.table.setItem(row_idx, 4, QTableWidgetItem(price_display))
+                self.table.setItem(row_idx, 5, QTableWidgetItem(weight_display))
+                self.table.setItem(row_idx, 6, QTableWidgetItem(category_display))
+                self.table.setItem(row_idx, 7, QTableWidgetItem(product_type_display))
+                self.table.setItem(row_idx, 8, QTableWidgetItem(pages_display))
+                self.table.setItem(row_idx, 9, QTableWidgetItem(special_order_display))
+                self.table.setItem(row_idx, 10, QTableWidgetItem(disabled_display))
+                self.table.setItem(row_idx, 11, QTableWidgetItem(last_updated_display))
+
+            # Update filter dropdowns with available values
+            self.update_filter_dropdowns()
 
             # Update UI
             self.update_pagination()
@@ -580,6 +691,67 @@ class ProductViewer(QMainWindow):
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to load products: {e}")
+
+    def update_filter_dropdowns(self):
+        """Update category and product type filter dropdowns with available values."""
+        if self.conn is None:
+            return
+
+        try:
+            cursor = self.conn.cursor()
+
+            # Get distinct categories - split by "|" and collect unique values
+            cursor.execute("SELECT DISTINCT Category FROM products WHERE Category IS NOT NULL AND Category != ''")
+            categories = set()
+            for row in cursor.fetchall():
+                category_str = row[0]
+                if category_str:
+                    # Split by "|" and strip whitespace
+                    category_parts = [cat.strip() for cat in category_str.split('|') if cat.strip()]
+                    categories.update(category_parts)
+            categories = sorted(list(categories))
+
+            # Get distinct product types - split by "|" and collect unique values
+            cursor.execute("SELECT DISTINCT Product_Type FROM products WHERE Product_Type IS NOT NULL AND Product_Type != ''")
+            product_types = set()
+            for row in cursor.fetchall():
+                product_type_str = row[0]
+                if product_type_str:
+                    # Split by "|" and strip whitespace
+                    type_parts = [pt.strip() for pt in product_type_str.split('|') if pt.strip()]
+                    product_types.update(type_parts)
+            product_types = sorted(list(product_types))
+
+            # Update category combo - temporarily disconnect signal to avoid recursion
+            self.category_combo.currentTextChanged.disconnect(self.on_filter_change)
+            current_category = self.category_combo.currentData() or ""
+            self.category_combo.clear()
+            self.category_combo.addItem("All Categories", "")
+            for category in categories:
+                self.category_combo.addItem(category, category)
+            # Restore previous selection if it still exists
+            if current_category:
+                index = self.category_combo.findData(current_category)
+                if index >= 0:
+                    self.category_combo.setCurrentIndex(index)
+            self.category_combo.currentTextChanged.connect(self.on_filter_change)
+
+            # Update product type combo - temporarily disconnect signal to avoid recursion
+            self.product_type_combo.currentTextChanged.disconnect(self.on_filter_change)
+            current_type = self.product_type_combo.currentData() or ""
+            self.product_type_combo.clear()
+            self.product_type_combo.addItem("All Types", "")
+            for product_type in product_types:
+                self.product_type_combo.addItem(product_type, product_type)
+            # Restore previous selection if it still exists
+            if current_type:
+                index = self.product_type_combo.findData(current_type)
+                if index >= 0:
+                    self.product_type_combo.setCurrentIndex(index)
+            self.product_type_combo.currentTextChanged.connect(self.on_filter_change)
+
+        except Exception as e:
+            print(f"Error updating filter dropdowns: {e}")
 
     def on_table_click(self, row, col):
         """Handle table click events."""
@@ -641,8 +813,26 @@ class ProductViewer(QMainWindow):
         visible_count = self.table.rowCount()
         selected_count = len(self.selected_products)
 
+        # Build filter description
+        filter_parts = []
         if self.search_term:
-            status = f"Found {self.total_products} products matching '{self.search_term}' | Showing {visible_count} | Selected: {selected_count}"
+            filter_parts.append(f"search: '{self.search_term}'")
+        if self.category_filter:
+            filter_parts.append(f"category: {self.category_filter}")
+        if self.product_type_filter:
+            filter_parts.append(f"type: {self.product_type_filter}")
+        if self.special_order_filter:
+            filter_parts.append("special order only")
+        if not self.show_disabled:
+            filter_parts.append("enabled only")
+        if self.date_from or self.date_to:
+            date_range = f"{self.date_from or 'start'} to {self.date_to or 'end'}"
+            filter_parts.append(f"date: {date_range}")
+
+        filter_desc = f" | Filters: {', '.join(filter_parts)}" if filter_parts else ""
+
+        if self.search_term or filter_parts:
+            status = f"Found {self.total_products} products{filter_desc} | Showing {visible_count} | Selected: {selected_count}"
         else:
             status = f"Total: {self.total_products} products | Showing {visible_count} | Selected: {selected_count}"
 
@@ -662,6 +852,8 @@ class ProductViewer(QMainWindow):
         if self.current_page > 0:
             self.current_page -= 1
             self.load_products()
+            # Reset scroll to top
+            self.table.verticalScrollBar().setValue(0)
 
     def next_page(self):
         """Go to next page."""
@@ -671,6 +863,8 @@ class ProductViewer(QMainWindow):
         if self.current_page < total_pages - 1:
             self.current_page += 1
             self.load_products()
+            # Reset scroll to top
+            self.table.verticalScrollBar().setValue(0)
 
     def edit_selected_products(self):
         """Edit the selected products using the product editor."""
@@ -723,9 +917,8 @@ class ProductViewer(QMainWindow):
             self.conn.text_factory = str
             placeholders = ",".join("?" * len(skus))
             cursor = self.conn.cursor()
-            cursor.execute(
-                f"""
-                SELECT SKU, Brand, Name, Weight, Category, Product_Type, Product_On_Pages, Special_Order, Images, ProductDisabled
+            cursor.execute(f"""
+                SELECT SKU, Brand, Name, Price, Weight, Category, Product_Type, Product_On_Pages, Special_Order, Images, ProductDisabled
                 FROM products
                 WHERE SKU IN ({placeholders})
             """,
@@ -734,19 +927,8 @@ class ProductViewer(QMainWindow):
 
             products = []
             for row in cursor.fetchall():
-                (
-                    sku,
-                    brand,
-                    name,
-                    weight,
-                    category,
-                    product_type,
-                    product_on_pages,
-                    special_order,
-                    images,
-                    product_disabled,
-                ) = row
-
+                (sku, brand, name, price, weight, category, product_type, 
+                 product_on_pages, special_order, images, product_disabled) = row
                 # Parse images from comma-separated string
                 image_urls = []
                 if images:
@@ -757,21 +939,18 @@ class ProductViewer(QMainWindow):
 
                 # Map database fields to editor format
                 mapped_product = {
-                    "SKU": sku,
-                    "Name": name or "",
-                    "Brand": brand or "",
-                    "Weight": weight or "",
-                    "Special Order": (
-                        "yes"
-                        if special_order and str(special_order).lower().strip() == "yes"
-                        else ""
-                    ),
-                    "Category": category or "",
-                    "Product Type": product_type or "",
-                    "Product On Pages": product_on_pages or "",
-                    "Product Cross Sell": "",  # Not in schema, keep empty
-                    "Image URLs": image_urls,
-                    "Product Disabled": product_disabled or "",
+                    'SKU': sku,
+                    'Name': name or '',
+                    'Brand': brand or '',
+                    'Price': price or '',
+                    'Weight': weight or '',
+                    'Special Order': 'yes' if special_order and str(special_order).lower().strip() == 'yes' else '',
+                    'Category': category or '',
+                    'Product Type': product_type or '',
+                    'Product On Pages': product_on_pages or '',
+                    'Product Cross Sell': '',  # Not in schema, keep empty
+                    'Image URLs': image_urls,
+                    'Product Disabled': product_disabled or ''
                 }
 
                 products.append(mapped_product)

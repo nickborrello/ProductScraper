@@ -21,12 +21,14 @@ from src.utils.general.display import (
 HEADLESS = True
 TEST_SKU = "035585499741"  # KONG Pull A Partz Pals Koala SM - test SKU for Central Pet
 
-
-def scrape_central(skus, log_callback=None, progress_tracker=None):
+def scrape_central(skus, log_callback=None, progress_tracker=None, status_callback=None):
     """Scrape Central Pet products for multiple SKUs."""
     products = []
     start_time = time.time()
 
+    # Update status
+    if status_callback:
+        status_callback("Scraping Central Pet...")
     with create_browser("Central Pet", headless=HEADLESS) as driver:
         if driver is None:
             display_error(

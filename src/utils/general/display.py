@@ -25,8 +25,19 @@ def display_product_result(
         total: Total number of products being scraped
         log_callback: Optional callback function for logging (defaults to print)
     """
-    output = log_callback if log_callback else print
-
+    # Determine output function
+    if log_callback is None:
+        output = print
+    elif hasattr(log_callback, 'emit'):
+        # If it's a Qt signal object, use emit method
+        output = log_callback.emit
+    else:
+        # If it's already a callable (like emit method or function), use it directly
+        output = log_callback
+    
+    # Suppress product result output in GUI mode (when log_callback is provided and not print)
+    if log_callback is not None and log_callback is not print:
+        return
     if index is not None and total is not None:
         progress = f"[{index}/{total}] "
     else:
@@ -97,8 +108,19 @@ def display_scraping_progress(
         scraper_name: Name of the scraper for display
         log_callback: Optional callback function for logging (defaults to print)
     """
-    output = log_callback if log_callback else print
-
+    # Determine output function
+    if log_callback is None:
+        output = print
+    elif hasattr(log_callback, 'emit'):
+        # If it's a Qt signal object, use emit method
+        output = log_callback.emit
+    else:
+        # If it's already a callable (like emit method or function), use it directly
+        output = log_callback
+    
+    # Suppress progress output in GUI mode (when log_callback is provided and not print)
+    if log_callback is not None and log_callback is not print:
+        return
     elapsed = time.time() - start_time
     rate = current / elapsed if elapsed > 0 else 0
     remaining = total - current
@@ -149,8 +171,16 @@ def display_scraping_summary(
         quiet: If True, suppress the summary output (useful for testing)
         log_callback: Optional callback function for logging (defaults to print)
     """
-    output = log_callback if log_callback else print
-
+    # Determine output function
+    if log_callback is None:
+        output = print
+    elif hasattr(log_callback, 'emit'):
+        # If it's a Qt signal object, use emit method
+        output = log_callback.emit
+    else:
+        # If it's already a callable (like emit method or function), use it directly
+        output = log_callback
+    
     if quiet or _SUPPRESS_SUMMARY:
         return
 
@@ -195,8 +225,16 @@ def display_error(
         sku: SKU/UPC that caused the error (optional)
         log_callback: Optional callback function for logging (defaults to print)
     """
-    output = log_callback if log_callback else print
-
+    # Determine output function
+    if log_callback is None:
+        output = print
+    elif hasattr(log_callback, 'emit'):
+        # If it's a Qt signal object, use emit method
+        output = log_callback.emit
+    else:
+        # If it's already a callable (like emit method or function), use it directly
+        output = log_callback
+    
     if sku:
         output(f"❌ Error processing {sku}: {message}")
     else:
@@ -215,7 +253,15 @@ def display_info(
         message: Information message to display
         log_callback: Optional callback function for logging (defaults to print)
     """
-    output = log_callback if log_callback else print
+    # Determine output function
+    if log_callback is None:
+        output = print
+    elif hasattr(log_callback, 'emit'):
+        # If it's a Qt signal object, use emit method
+        output = log_callback.emit
+    else:
+        # If it's already a callable (like emit method or function), use it directly
+        output = log_callback
     output(f"ℹ️  {message}")
 
 
@@ -229,7 +275,15 @@ def display_success(
         message: Success message to display
         log_callback: Optional callback function for logging (defaults to print)
     """
-    output = log_callback if log_callback else print
+    # Determine output function
+    if log_callback is None:
+        output = print
+    elif hasattr(log_callback, 'emit'):
+        # If it's a Qt signal object, use emit method
+        output = log_callback.emit
+    else:
+        # If it's already a callable (like emit method or function), use it directly
+        output = log_callback
     output(f"✅ {message}")
 
 
@@ -243,7 +297,15 @@ def display_warning(
         message: Warning message to display
         log_callback: Optional callback function for logging (defaults to print)
     """
-    output = log_callback if log_callback else print
+    # Determine output function
+    if log_callback is None:
+        output = print
+    elif hasattr(log_callback, 'emit'):
+        # If it's a Qt signal object, use emit method
+        output = log_callback.emit
+    else:
+        # If it's already a callable (like emit method or function), use it directly
+        output = log_callback
     output(f"⚠️  {message}")
 
 

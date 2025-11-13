@@ -16,11 +16,12 @@ if os.path.exists(gen_py_cache):
 
 import win32com.client  # now safe to import
 
-
-def convert_xlsx_to_xls_with_excel():
-    # Use the new data/spreadsheets directory instead of scrapers/output
-    folder = os.path.join(PROJECT_ROOT, "data", "spreadsheets")
-
+def convert_xlsx_to_xls_with_excel(results_folder=None):
+    # Use session-specific results folder or default to global spreadsheets folder
+    if results_folder:
+        folder = os.path.join(results_folder, "data")
+    else:
+        folder = os.path.join(PROJECT_ROOT, "data", "spreadsheets")
     # Check if output folder exists
     if not os.path.exists(folder):
         print(f"⚠️ Output folder not found: {folder}")

@@ -241,14 +241,17 @@ def save_cookies(driver):
     except:
         pass
 
-
-def scrape_orgill(skus, browser=None, log_callback=None, progress_tracker=None):
+def scrape_orgill(skus, browser=None, log_callback=None, progress_tracker=None, status_callback=None):
     """Scrape Orgill products for multiple SKUs."""
     if not skus:
         return []
 
     products = []
     start_time = time.time()
+
+    # Update status
+    if status_callback:
+        status_callback("Scraping Orgill...")
 
     # Use provided browser or create a new one
     if browser is not None:
@@ -273,11 +276,10 @@ def scrape_orgill(skus, browser=None, log_callback=None, progress_tracker=None):
             product_info = scrape_single_product(sku, driver, log_callback=log_callback)
             if product_info:
                 products.append(product_info)
-                display_product_result(product_info, i, len(skus))
+                display_product_result(product_info, i, len(skus), log_callback=log_callback)
             else:
                 products.append(None)
-            display_scraping_progress(i, len(skus), start_time, "Orgill")
-
+            display_scraping_progress(i, len(skus), start_time, "Orgill", log_callback=log_callback)
             # Update progress tracker if provided
             if progress_tracker:
                 progress_tracker.update_sku_progress(

@@ -26,11 +26,13 @@ def log_error(message, log_callback=None):
     else:
         print(f"Error: {message}")
 
-
-def scrape_mazuri(skus, log_callback=None, progress_tracker=None):
+def scrape_mazuri(skus, log_callback=None, progress_tracker=None, status_callback=None):
     """Scrape Mazuri products for multiple SKUs."""
     products = []
 
+    # Update status
+    if status_callback:
+        status_callback("Scraping Mazuri...")
     with create_browser("Mazuri", headless=HEADLESS) as driver:
         if driver is None:
             log_error("Could not create browser for Mazuri", log_callback=log_callback)
