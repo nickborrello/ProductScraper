@@ -45,6 +45,9 @@ class TestScrapers:
                 try:
                     # Import the Apify scraper module
                     spec = importlib.util.spec_from_file_location(module_name, main_py_path)
+                    if spec is None or spec.loader is None:
+                        pytest.fail(f"Failed to create module spec for {module_name}")
+                    
                     module = importlib.util.module_from_spec(spec)
                     spec.loader.exec_module(module)
                     
@@ -153,7 +156,7 @@ class TestScrapers:
             except Exception as e:
                 pytest.fail(f"{scraper_name}: Failed to scrape test product: {e}")
 
-    def test_scraper_dependencies(self, scraper_modules):
+    def test_scraper_standard_dependencies(self, scraper_modules):
         """Test that scraper modules have required dependencies."""
         required_imports = ["selenium", "time", "os", "sys"]
 
