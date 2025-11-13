@@ -58,7 +58,8 @@ try:
         run_discontinued_check,
         run_db_refresh,
         run_scraper_tests,
-        run_shopsite_xml_download,
+        run_scraper_integration_tests,
+        run_shopsite_xml_download
     )
 except ImportError as e:
     if not is_gui_mode:
@@ -98,6 +99,14 @@ except ImportError as e:
             print("Error: Scraper test logic not found.")
         return False
 
+    def run_scraper_integration_tests(*args, **kwargs):
+        """Dummy function for scraper integration tests if import fails."""
+        log_callback = kwargs.get("log_callback")
+        if log_callback:
+            log_callback("Error: Scraper integration test logic not found.")
+        if not is_gui_mode:
+            print("Error: Scraper integration test logic not found.")
+        return False
     def run_shopsite_xml_download(*args, **kwargs):
         """Dummy function for XML download if import fails."""
         log_callback = kwargs.get("log_callback")
@@ -1112,10 +1121,10 @@ class MainWindow(QMainWindow):
         return file_path
 
     def start_scraper_tests(self):
-        """Start scraper test process with integration tests"""
+        """Start scraper integration test process - tests all scrapers with known working products"""
         self.last_operation = "Scraper Tests"
-        self.log_message("Starting scraper tests...", "INFO")
-        self._run_worker(run_scraper_tests, run_integration=True)
+        self.log_message("Starting scraper integration tests (testing all scrapers with known working products)...", "INFO")
+        self._run_worker(run_scraper_integration_tests)
 
     def log_message(self, message, level="INFO"):
         """Add a message to the log viewer"""
