@@ -21,7 +21,7 @@ from src.utils.scraping.browser import create_browser
 # HEADLESS is set to True for production deployment
 HEADLESS = True
 DEBUG_MODE = False  # Set to True to pause for manual inspection during scraping
-ENABLE_DEVTOOLS = False  # Set to True to enable Chrome DevTools remote debugging
+ENABLE_DEVTOOLS = DEBUG_MODE  # Automatically enable DevTools when in debug mode
 DEVTOOLS_PORT = 9222  # Port for Chrome DevTools remote debugging
 
 async def main() -> None:

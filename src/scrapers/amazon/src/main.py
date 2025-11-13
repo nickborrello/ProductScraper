@@ -25,7 +25,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 # Amazon scraper configuration
 HEADLESS = False  # Set to False for debugging and manual inspection
 DEBUG_MODE = False  # Set to True to pause for manual inspection during scraping
-ENABLE_DEVTOOLS = False  # Set to True to enable Chrome DevTools remote debugging
+ENABLE_DEVTOOLS = DEBUG_MODE  # Automatically enable DevTools when in debug mode
 DEVTOOLS_PORT = 9222  # Port for Chrome DevTools remote debugging
 TEST_SKU = "035585499741"  # Amazon SKU that previously had empty brand
 
@@ -40,8 +40,8 @@ def create_driver(proxy_url=None) -> webdriver.Chrome:
     options.add_argument("--disable-gpu")
 
     # Dynamic viewport to avoid detection
-    width = random.randint(1024, 1920)
-    height = random.randint(768, 1080)
+    width = 1920  # Fixed width for testing
+    height = 1080  # Fixed height for testing
     options.add_argument(f"--window-size={width},{height}")
 
     # Rotate user agents
@@ -1226,28 +1226,48 @@ def extract_product_data(driver: webdriver.Chrome, sku: str) -> dict[str, Any] |
                 EC.presence_of_element_located((By.ID, "productTitle"))
             )
             product_info["Name"] = clean_string(title_element.text)
+            Actor.log.info(f"✅ Found product title: {product_info['Name'][:50]}...")
         except TimeoutException:
-            product_info["Name"] = "N/A"
+            Actor.log.warning("❌ Could not find product title with #productTitle")
+            # Try alternative selectors
+            try:
+                title_element = driver.find_element(By.CSS_SELECTOR, "h1[id*='title'], .product-title, span[id*='productTitle']")
+                product_info["Name"] = clean_string(title_element.text)
+                Actor.log.info(f"✅ Found product title with alternative selector: {product_info['Name'][:50]}...")
+            except:
+                Actor.log.warning("❌ Could not find product title with any selector")
+                product_info["Name"] = "N/A"
 
         # Extract brand
         try:
             brand_element = driver.find_element(By.ID, "bylineInfo")
             product_info["Brand"] = clean_string(brand_element.text).replace("Visit the", "").replace("Brand:", "").strip()
+            Actor.log.info(f"✅ Found brand: {product_info['Brand']}")
         except NoSuchElementException:
-            product_info["Brand"] = "Unknown"
+            Actor.log.warning("❌ Could not find brand with #bylineInfo")
+            # Try alternative selectors
+            try:
+                brand_element = driver.find_element(By.CSS_SELECTOR, "a[id*='bylineInfo'], .brand-link, span[id*='brand']")
+                product_info["Brand"] = clean_string(brand_element.text).replace("Visit the", "").replace("Brand:", "").strip()
+                Actor.log.info(f"✅ Found brand with alternative selector: {product_info['Brand']}")
+            except:
+                Actor.log.warning("❌ Could not find brand with any selector")
+                product_info["Brand"] = "Unknown"
 
         # Extract images
         image_urls = []
         try:
             img_elements = driver.find_elements(By.CSS_SELECTOR, "#altImages img")
+            Actor.log.info(f"Found {len(img_elements)} image elements with #altImages img")
             for img in img_elements[:5]:  # Limit to 5 images
                 src = img.get_attribute("src")
                 if src and "amazon.com" in src:
                     # Convert to high res
                     high_res = re.sub(r'\._AC_[^.]+\.jpg', '._AC_SL1500_.jpg', src)
                     image_urls.append(high_res)
-        except Exception:
-            pass
+            Actor.log.info(f"✅ Extracted {len(image_urls)} valid image URLs")
+        except Exception as e:
+            Actor.log.warning(f"❌ Error extracting images: {e}")
         product_info["Image URLs"] = image_urls
 
         # Extract weight
@@ -1257,14 +1277,19 @@ def extract_product_data(driver: webdriver.Chrome, sku: str) -> dict[str, Any] |
             detail_rows = []
             try:
                 detail_rows = driver.find_elements(By.CSS_SELECTOR, "#productDetails_detailBullets_sections1 tr")
+                Actor.log.info(f"Found {len(detail_rows)} detail rows with #productDetails_detailBullets_sections1 tr")
             except:
                 try:
                     detail_rows = driver.find_elements(By.CSS_SELECTOR, "#prodDetails tr")
+                    Actor.log.info(f"Found {len(detail_rows)} detail rows with #prodDetails tr")
                 except:
                     detail_rows = driver.find_elements(By.CSS_SELECTOR, ".prodDetTable tr")
+                    Actor.log.info(f"Found {len(detail_rows)} detail rows with .prodDetTable tr")
             
             for row in detail_rows:
-                if "weight" in row.text.lower():
+                row_text = row.text.lower()
+                Actor.log.info(f"Checking detail row: {row_text[:100]}...")
+                if "weight" in row_text:
                     weight_match = re.search(r'(\d+(?:\.\d+)?)\s*(lbs?|ounces?|oz|g|kg)', row.text, re.I)
                     if weight_match:
                         value = float(weight_match.group(1))
@@ -1276,11 +1301,15 @@ def extract_product_data(driver: webdriver.Chrome, sku: str) -> dict[str, Any] |
                         elif unit in ['kg']:
                             value *= 2.20462
                         weight = f"{value:.2f}"
+                        Actor.log.info(f"✅ Found weight: {weight} {unit}")
                         break
-        except Exception:
-            pass
+            if weight == "N/A":
+                Actor.log.warning("❌ No weight information found in product details")
+        except Exception as e:
+            Actor.log.warning(f"❌ Error extracting weight: {e}")
         product_info["Weight"] = weight
 
+        Actor.log.info(f"📊 Extracted data summary: Name={product_info['Name'][:30]}..., Images={len(image_urls)}, Weight={weight}")
         return product_info
 
     except Exception as e:
@@ -1302,8 +1331,12 @@ def scrape_single_product(driver: webdriver.Chrome, sku: str) -> dict[str, Any] 
         else:
             url = f"https://www.amazon.com/s?k={sku}"
 
+        Actor.log.info(f"🌐 Navigating to: {url}")
         driver.get(url)
         time.sleep(2)
+
+        current_url = driver.current_url
+        Actor.log.info(f"📍 Current URL after navigation: {current_url}")
 
         # Check for CAPTCHA immediately after loading
         if not captcha_detector.handle_captcha(driver):
@@ -1312,6 +1345,7 @@ def scrape_single_product(driver: webdriver.Chrome, sku: str) -> dict[str, Any] 
 
         # Check if product page
         if "/dp/" not in driver.current_url:
+            Actor.log.info("🔍 Not on product page, trying to find and click first result...")
             # Try to click first result
             try:
                 first_result = WebDriverWait(driver, 5).until(
@@ -1320,12 +1354,16 @@ def scrape_single_product(driver: webdriver.Chrome, sku: str) -> dict[str, Any] 
                 first_result.click()
                 time.sleep(2)
 
+                new_url = driver.current_url
+                Actor.log.info(f"📍 URL after clicking first result: {new_url}")
+
                 # Check for CAPTCHA after clicking
                 if not captcha_detector.handle_captcha(driver):
                     Actor.log.error(f"🚫 CAPTCHA blocking detected after search for SKU {sku}")
                     return None
 
             except TimeoutException:
+                Actor.log.error(f"❌ Could not find clickable search result for SKU {sku}")
                 return None
 
         # DEBUG MODE: Pause for manual inspection

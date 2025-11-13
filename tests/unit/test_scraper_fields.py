@@ -267,10 +267,6 @@ class GranularScraperTester:
         fields_to_test = self.get_fields_to_test(scraper_name)
 
         try:
-            # Temporarily override headless mode for testing
-            original_headless = getattr(module, "HEADLESS", True)
-            module.HEADLESS = False  # Force non-headless for testing
-
             # Temporarily suppress scraping summary output during testing
             from src.utils.general.display import set_suppress_summary
 
@@ -282,9 +278,6 @@ class GranularScraperTester:
             finally:
                 # Restore summary display
                 set_suppress_summary(False)
-
-            # Restore headless setting
-            module.HEADLESS = original_headless
 
             # Check if we got results
             if not results or len(results) == 0 or results[0] is None:
@@ -340,12 +333,6 @@ class GranularScraperTester:
             )
 
         except Exception as e:
-            # Restore headless setting in case of error
-            try:
-                module.HEADLESS = original_headless
-            except:
-                pass
-
             # Restore summary display in case of error
             try:
                 set_suppress_summary(False)
