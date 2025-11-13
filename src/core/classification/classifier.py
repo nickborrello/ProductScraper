@@ -552,7 +552,7 @@ def classify_products_batch(products_list, method="llm"):
 
     Args:
         products_list: List of product_info dictionaries to classify
-        method: Classification method - "llm" (OpenAI API) or "fuzzy" (fuzzy matching only)
+        method: Classification method - "llm" (OpenRouter API), "local_llm" (Ollama), or "fuzzy" (fuzzy matching only)
 
     Returns:
         List of product_info dictionaries with recommended facets added
@@ -583,7 +583,7 @@ def classify_single_product(product_info, method="llm"):
 
     Args:
         product_info: Dict with product details
-        method: Classification method - "llm" (OpenAI API) or "fuzzy" (fuzzy matching only)
+        method: Classification method - "llm" (OpenRouter API), "local_llm" (Ollama), or "fuzzy" (fuzzy matching only)
 
     Returns:
         Dict: Product_info with recommended facets added
@@ -611,6 +611,29 @@ def classify_single_product(product_info, method="llm"):
 
         except Exception as e:
             print(f"⚠️ LLM classification failed, falling back to fuzzy matching: {e}")
+            method = "fuzzy"  # Fallback to fuzzy matching
+
+    # Local LLM-based classification (Ollama - no API key required)
+    elif method == "local_llm":
+        try:
+            from .local_llm_classifier import classify_product_local_llm
+
+            llm_result = classify_product_local_llm(product_info)
+
+            # Apply LLM results
+            for label in ["Category", "Product Type", "Product On Pages"]:
+                if label in llm_result and llm_result[label]:
+                    product_info[label] = llm_result[label]
+                else:
+                    product_info[label] = ""
+
+            print(
+                f"🏠 Local LLM classification: {product_name[:40]}... → {product_info.get('Category', 'N/A')}"
+            )
+            return product_info
+
+        except Exception as e:
+            print(f"⚠️ Local LLM classification failed, falling back to fuzzy matching: {e}")
             method = "fuzzy"  # Fallback to fuzzy matching
 
     # Fallback to fuzzy matching (either AI failed/low confidence, or method is "fuzzy")
