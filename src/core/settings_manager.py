@@ -29,6 +29,10 @@ class SettingsManager:
         'shopsite_username': '',
         'shopsite_password': '',
 
+        # AI/ML Settings
+        'openai_api_key': '',
+        'classification_method': 'hybrid',  # 'hybrid', 'llm', or 'fuzzy'
+
         # Application Settings
         'debug_mode': False,
         'database_path': 'data/databases/products.db',
@@ -63,6 +67,7 @@ class SettingsManager:
             'shopsite_auth_url': 'SHOPSITE_AUTH_URL',
             'shopsite_username': 'SHOPSITE_USERNAME',
             'shopsite_password': 'SHOPSITE_PASSWORD',
+            'openai_api_key': 'OPENAI_API_KEY',
         }
 
         for setting_key, env_key in env_mappings.items():

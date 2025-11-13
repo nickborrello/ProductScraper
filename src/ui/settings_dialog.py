@@ -221,6 +221,25 @@ class SettingsDialog(QDialog):
         ui_group.setLayout(ui_layout)
         layout.addWidget(ui_group)
 
+        # AI/ML settings
+        ai_group = QGroupBox("AI/ML Settings")
+        ai_layout = QFormLayout()
+
+        self.openai_api_key = QLineEdit()
+        self.openai_api_key.setEchoMode(QLineEdit.EchoMode.Password)
+        self.openai_api_key.setPlaceholderText("Enter OpenAI API key for LLM classification")
+        ai_layout.addRow("OpenAI API Key:", self.openai_api_key)
+
+        # Classification method dropdown
+        from PyQt6.QtWidgets import QComboBox
+        self.classification_method = QComboBox()
+        self.classification_method.addItems(["hybrid", "llm", "fuzzy"])
+        self.classification_method.setToolTip("hybrid: AI + fuzzy matching\nllm: OpenAI API only\nfuzzy: fuzzy matching only")
+        ai_layout.addRow("Classification Method:", self.classification_method)
+
+        ai_group.setLayout(ai_layout)
+        layout.addWidget(ai_group)
+
         layout.addStretch()
         self.tab_widget.addTab(tab, "⚙️ Application")
 
@@ -249,6 +268,13 @@ class SettingsDialog(QDialog):
         self.debug_mode.setChecked(self.current_settings.get('debug_mode', False))
         self.auto_scroll_logs.setChecked(self.current_settings.get('auto_scroll_logs', True))
 
+        # AI/ML
+        self.openai_api_key.setText(self.current_settings.get('openai_api_key', ''))
+        method = self.current_settings.get('classification_method', 'hybrid')
+        index = self.classification_method.findText(method)
+        if index >= 0:
+            self.classification_method.setCurrentIndex(index)
+
     def save_settings(self):
         """Save settings from UI to settings manager."""
         try:
@@ -274,6 +300,10 @@ class SettingsDialog(QDialog):
             settings.set('selenium_timeout', self.selenium_timeout.value())
             settings.set('debug_mode', self.debug_mode.isChecked())
             settings.set('auto_scroll_logs', self.auto_scroll_logs.isChecked())
+
+            # AI/ML
+            settings.set('openai_api_key', self.openai_api_key.text().strip())
+            settings.set('classification_method', self.classification_method.currentText())
 
             QMessageBox.information(self, "Success", "Settings saved successfully!")
             self.accept()

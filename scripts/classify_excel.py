@@ -19,6 +19,7 @@ if PROJECT_ROOT not in sys.path:
 # Import classification functions
 from src.ui.product_classify_ui import edit_classification_in_batch
 from src.core.classification.classifier import classify_products_batch
+from src.core.settings_manager import SettingsManager
 
 
 def classify_excel_file():
@@ -92,8 +93,10 @@ def classify_excel_file():
         print(f"✅ Converted {len(products_list)} products to internal format")
 
         # Run automatic classification first
-        print("🤖 Running automatic classification...")
-        products_list = classify_products_batch(products_list)
+        settings = SettingsManager()
+        classification_method = settings.get('classification_method', 'hybrid')
+        print(f"🤖 Running automatic classification using {classification_method} method...")
+        products_list = classify_products_batch(products_list, method=classification_method)
         print("✅ Automatic classification complete")
 
         # Run manual classification UI

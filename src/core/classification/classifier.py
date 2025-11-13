@@ -14,6 +14,18 @@ from pathlib import Path
 # Database path instead of Excel
 DB_PATH = Path(__file__).parent.parent.parent / "data" / "databases" / "products.db"
 
+# Global cache for classified products DataFrame
+_classified_df_cache = None
+_cache_timestamp = None
+CACHE_DURATION_SECONDS = 600  # 10 minutes
+
+def clear_classified_cache():
+    """Clear the classified products cache, forcing fresh database queries on next access."""
+    global _classified_df_cache, _cache_timestamp
+    _classified_df_cache = None
+    _cache_timestamp = None
+    print("🧹 Cleared classified products cache")
+
 RECOMMEND_COLS = [
     ("Category", "Category"),
     ("Product_Type", "Product Type"),
@@ -32,53 +44,92 @@ def clean_text(text):
 
 def product_similarity(name1, brand1, name2, brand2):
     """Calculate similarity score between two products based on name and brand.
-    Pet-related keywords get significantly higher weight for better matching.
+    Enhanced with better pet-specific matching and keyword weighting.
     """
     name1_clean = clean_text(name1)
     name2_clean = clean_text(name2)
     brand1_clean = clean_text(brand1)
     brand2_clean = clean_text(brand2)
 
-    # Pet-related keywords that should have high matching weight
+    # Enhanced pet-related keywords with better categorization
     pet_keywords = {
-        'dog', 'cat', 'puppy', 'kitten', 'canine', 'feline',
-        'bird', 'avian', 'parrot', 'cockatiel', 'budgie',
-        'fish', 'aquatic', 'tropical', 'goldfish',
-        'small animal', 'rabbit', 'guinea pig', 'hamster', 'gerbil',
-        'reptile', 'snake', 'lizard', 'turtle', 'tortoise',
-        'horse', 'equine', 'pony'
+        'dog': ['dog', 'puppy', 'canine', 'adult dog', 'senior dog', 'large dog', 'small dog', 'medium dog'],
+        'cat': ['cat', 'kitten', 'feline', 'adult cat', 'senior cat', 'kitten'],
+        'bird': ['bird', 'avian', 'parrot', 'cockatiel', 'budgie', 'canary', 'finch', 'pigeon'],
+        'fish': ['fish', 'aquatic', 'tropical', 'goldfish', 'betta', 'guppy', 'cichlid'],
+        'small_animal': ['rabbit', 'guinea pig', 'hamster', 'gerbil', 'mouse', 'rat', 'ferret', 'chinchilla'],
+        'reptile': ['reptile', 'snake', 'lizard', 'turtle', 'tortoise', 'bearded dragon', 'gecko', 'frog'],
+        'horse': ['horse', 'equine', 'pony', 'donkey', 'mule']
     }
+
+    # Food and product type keywords
+    food_keywords = ['food', 'formula', 'kibble', 'chow', 'diet', 'nutrition', 'feed']
+    treat_keywords = ['treat', 'treats', 'biscuit', 'cookie', 'chew', 'dental', 'jerky']
+    care_keywords = ['shampoo', 'conditioner', 'grooming', 'brush', 'clipper', 'collar', 'leash']
 
     # Calculate base scores
     brand_score = fuzz.ratio(brand1_clean, brand2_clean)
     name_score = fuzz.token_set_ratio(name1_clean, name2_clean)
 
-    # Extract pet keywords from both names
-    name1_words = set(name1_clean.split())
-    name2_words = set(name2_clean.split())
-    name1_pet_words = name1_words & pet_keywords
-    name2_pet_words = name2_words & pet_keywords
+    # Enhanced pet keyword matching
+    name1_pet_types = set()
+    name2_pet_types = set()
 
-    # Calculate pet keyword matching bonus
+    for pet_type, keywords in pet_keywords.items():
+        if any(keyword in name1_clean for keyword in keywords):
+            name1_pet_types.add(pet_type)
+        if any(keyword in name2_clean for keyword in keywords):
+            name2_pet_types.add(pet_type)
+
+    # Pet type matching bonus
     pet_match_bonus = 0
-    if name1_pet_words and name2_pet_words:
-        # Perfect match if they share any pet keywords
-        if name1_pet_words & name2_pet_words:
-            pet_match_bonus = 100  # Maximum bonus for matching pet types
+    if name1_pet_types and name2_pet_types:
+        if name1_pet_types & name2_pet_types:  # Shared pet types
+            pet_match_bonus = 80  # High bonus for matching pet types
         else:
-            # Partial bonus if they have different pet keywords (less relevant)
-            pet_match_bonus = 20
+            # Check for related pet types (e.g., dog and puppy)
+            related_bonus = 0
+            for pet1 in name1_pet_types:
+                for pet2 in name2_pet_types:
+                    if pet1 == pet2 or (pet1 == 'dog' and 'puppy' in name2_clean) or (pet2 == 'dog' and 'puppy' in name1_clean):
+                        related_bonus = 60
+                        break
+                if related_bonus > 0:
+                    break
+            pet_match_bonus = related_bonus
+    elif name1_pet_types or name2_pet_types:
+        pet_match_bonus = 20  # Partial bonus if only one has pet keywords
 
-    # Enhanced scoring: pet keywords get much higher weight
-    # Base weights: brand 60%, name 40%
-    # But pet matching can boost the score significantly
-    base_score = 0.6 * brand_score + 0.4 * name_score
+    # Product category matching
+    category_bonus = 0
+    name1_has_food = any(kw in name1_clean for kw in food_keywords)
+    name2_has_food = any(kw in name2_clean for kw in food_keywords)
+    name1_has_treat = any(kw in name1_clean for kw in treat_keywords)
+    name2_has_treat = any(kw in name2_clean for kw in treat_keywords)
+    name1_has_care = any(kw in name1_clean for kw in care_keywords)
+    name2_has_care = any(kw in name2_clean for kw in care_keywords)
 
-    # Apply pet matching bonus (weighted heavily)
-    final_score = base_score + (pet_match_bonus * 0.3)  # 30% weight for pet matching
+    if (name1_has_food and name2_has_food) or (name1_has_treat and name2_has_treat) or (name1_has_care and name2_has_care):
+        category_bonus = 30  # Bonus for matching product categories
 
-    # Cap at 100
-    return min(final_score, 100.0)
+    # Brand consistency bonus
+    brand_bonus = 0
+    if brand1_clean and brand2_clean:
+        if brand_score > 80:
+            brand_bonus = 20  # Strong brand match bonus
+
+    # Combine scores with weighted components
+    base_score = 0.5 * brand_score + 0.5 * name_score
+    final_score = base_score + pet_match_bonus + category_bonus + brand_bonus
+
+    # Cap at 100 and ensure minimum score for very similar items
+    final_score = min(final_score, 100.0)
+
+    # Boost score slightly for items that are very similar in name even without perfect matches
+    if name_score > 85 and final_score < 85:
+        final_score = min(final_score + 10, 95.0)
+
+    return final_score
 
 
 def find_matching_products_and_recommendations(product_info, classified_df):
@@ -177,15 +228,35 @@ def find_matching_products_and_recommendations(product_info, classified_df):
 
 def load_classified_dataframe():
     """
-    Load the classified products from the database.
+    Load the classified products from the database with caching.
     
     Returns:
         pandas.DataFrame: Classified products data with columns matching Excel format
     """
+    global _classified_df_cache, _cache_timestamp
+    import time
+
+    # Check cache validity
+    current_time = time.time()
+    cache_valid = (
+        _classified_df_cache is not None and
+        _cache_timestamp is not None and
+        (current_time - _cache_timestamp) < CACHE_DURATION_SECONDS
+    )
+
+    if cache_valid:
+        print(f"📋 Using cached classified products (age: {current_time - _cache_timestamp:.1f}s)")
+        return _classified_df_cache.copy()
+
+    print("📋 Loading classified products from database...")
+
     if not DB_PATH.exists():
         print(f"❌ Database file not found: {DB_PATH}")
         print("Creating empty DataFrame for classification...")
-        return pd.DataFrame(columns=["Name", "Product Field 16", "Product Field 24", "Product Field 25", "Product On Pages"])
+        empty_df = pd.DataFrame(columns=["Name", "Product Field 16", "Product Field 24", "Product Field 25", "Product On Pages"])
+        _classified_df_cache = empty_df
+        _cache_timestamp = current_time
+        return empty_df
     
     conn = sqlite3.connect(DB_PATH)
     try:
@@ -210,6 +281,11 @@ def load_classified_dataframe():
         df = pd.DataFrame(rows, columns=["Name", "Brand", "Category", "Product_Type", "Product_On_Pages"])
         
         print(f"✅ Loaded {len(df)} classified products from database")
+        
+        # Update cache
+        _classified_df_cache = df
+        _cache_timestamp = current_time
+        
         return df
     
     finally:
@@ -346,18 +422,18 @@ def get_default_pet_food_classifications(product_info):
     return None
 
 
-def classify_products_batch(products_list):
+def classify_products_batch(products_list, method="hybrid"):
     """
-    Classify multiple products using hybrid AI + Fuzzy matching approach.
-    Uses AI for primary classification, falls back to fuzzy matching for edge cases.
+    Classify multiple products using specified method.
     
     Args:
         products_list: List of product_info dictionaries to classify
+        method: Classification method - "hybrid" (AI + fuzzy), "llm" (OpenAI API), or "fuzzy" (fuzzy matching only)
     
     Returns:
         List of product_info dictionaries with recommended facets added
     """
-    print(f"🤖 Batch Classification: Using AI + Fuzzy hybrid approach for {len(products_list)} products...")
+    print(f"🤖 Batch Classification: Using {method} approach for {len(products_list)} products...")
     
     classified_products = []
     
@@ -365,75 +441,133 @@ def classify_products_batch(products_list):
         product_name = product_info.get('Name', 'Unknown')
         print(f"  Analyzing {idx}/{len(products_list)}: {product_name[:50]}...")
         
-        # Use hybrid classification (AI first, fuzzy fallback)
-        classified_product = classify_single_product(product_info.copy())
+        # Use specified classification method
+        classified_product = classify_single_product(product_info.copy(), method=method)
         classified_products.append(classified_product)
     
-    print(f"\033[92m✅ Hybrid batch classification complete! Processed {len(classified_products)} products\033[0m\n")
+    print(f"\033[92m✅ {method.title()} batch classification complete! Processed {len(classified_products)} products\033[0m\n")
     return classified_products
 
 
-def classify_single_product(product_info):
+def classify_single_product(product_info, method="hybrid"):
     """
-    Classify a single product using hybrid AI + Fuzzy matching approach.
-    Uses AI for primary classification, falls back to fuzzy matching for edge cases.
+    Classify a single product using specified method.
     
     Args:
         product_info: Dict with product details
+        method: Classification method - "hybrid" (AI + fuzzy), "llm" (OpenAI API), or "fuzzy" (fuzzy matching only)
     
     Returns:
         Dict: Product_info with recommended facets added
     """
     product_name = product_info.get('Name', '').strip()
+
+    # LLM-based classification (most accurate)
+    if method == "llm":
+        try:
+            from .llm_classifier import classify_product_llm
+            llm_result = classify_product_llm(product_info)
+            
+            # Apply LLM results
+            for label in ['Category', 'Product Type', 'Product On Pages']:
+                if label in llm_result and llm_result[label]:
+                    product_info[label] = llm_result[label]
+                else:
+                    product_info[label] = ""
+            
+            print(f"🧠 LLM classification: {product_name[:40]}... → {product_info.get('Category', 'N/A')}")
+            return product_info
+            
+        except Exception as e:
+            print(f"⚠️ LLM classification failed, falling back to hybrid: {e}")
+            method = "hybrid"  # Fallback to hybrid
     
-    # First try AI classification (fast and accurate)
-    ai_confidence = 0
-    try:
-        from .ai_classifier import classify_product_ai
-        ai_result = classify_product_ai(product_info)
-        
-        # Check AI confidence - if AI gives results but they seem wrong, reduce confidence
-        if ai_result and any(ai_result.values()):
-            # Simple heuristic: check if product name keywords match predicted category
-            product_lower = product_name.lower()
-            category = ai_result.get('Category', '').lower()
-            
-            # If product mentions "reptile" but AI says "dog", very low confidence
-            pet_keywords = {
-                'dog': ['dog', 'puppy', 'canine'],
-                'cat': ['cat', 'kitten', 'feline'], 
-                'bird': ['bird', 'avian', 'parrot'],
-                'fish': ['fish', 'aquatic'],
-                'reptile': ['reptile', 'snake', 'lizard', 'turtle', 'bearded dragon'],
-                'small animal': ['rabbit', 'guinea pig', 'hamster']
-            }
-            
-            # Check if product keywords contradict AI prediction
-            product_pet_type = None
-            for pet_type, keywords in pet_keywords.items():
-                if any(keyword in product_lower for keyword in keywords):
-                    product_pet_type = pet_type
-                    break
-            
-            if product_pet_type and product_pet_type not in category:
-                ai_confidence = 0.2  # Very low confidence if pet types don't match
-            else:
-                ai_confidence = 0.8  # Good confidence if pet types match
-            
-            # Use AI results if confidence is high enough
-            if ai_confidence >= 0.5:
-                for label in ['Category', 'Product Type', 'Product On Pages']:
-                    if label in ai_result and ai_result[label]:
-                        product_info[label] = ai_result[label]
+    # Hybrid AI + Fuzzy matching approach
+    if method == "hybrid":
+        # First try AI classification (fast and accurate)
+        ai_confidence = 0
+        ai_result = {}
+        try:
+            from .ai_classifier import classify_product_ai
+            ai_result = classify_product_ai(product_info)
+
+            # Enhanced confidence calculation
+            if ai_result and any(ai_result.values()):
+                confidence_score = 0.0
+
+                # Check if AI predictions match expected patterns
+                product_lower = product_name.lower()
+
+                # Pet type consistency check (high weight)
+                pet_keywords = {
+                    'dog': ['dog', 'puppy', 'canine'],
+                    'cat': ['cat', 'kitten', 'feline'],
+                    'bird': ['bird', 'avian', 'parrot'],
+                    'fish': ['fish', 'aquatic'],
+                    'reptile': ['reptile', 'snake', 'lizard', 'turtle', 'bearded dragon'],
+                    'small animal': ['rabbit', 'guinea pig', 'hamster']
+                }
+
+                category = ai_result.get('Category', '').lower().strip('|')
+                predicted_pet_type = None
+                for pet_type, keywords in pet_keywords.items():
+                    if any(keyword in category for keyword in keywords):
+                        predicted_pet_type = pet_type
+                        break
+
+                actual_pet_type = None
+                for pet_type, keywords in pet_keywords.items():
+                    if any(keyword in product_lower for keyword in keywords):
+                        actual_pet_type = pet_type
+                        break
+
+                if predicted_pet_type and actual_pet_type:
+                    if predicted_pet_type == actual_pet_type:
+                        confidence_score += 0.6  # Strong boost for pet type match
                     else:
-                        product_info[label] = ""
-                return product_info
-        
-    except Exception as e:
-        print(f"⚠️ AI classification failed (confidence: {ai_confidence}), falling back to fuzzy matching: {e}")
+                        confidence_score -= 0.4  # Penalty for mismatch
+                elif predicted_pet_type or actual_pet_type:
+                    confidence_score += 0.2  # Partial credit if only one has pet type
+
+                # Product type relevance check
+                product_type = ai_result.get('Product Type', '').lower().strip('|')
+                if product_type:
+                    # Check if product type makes sense for the category
+                    type_category_map = {
+                        'food': ['dog food', 'cat food', 'bird food', 'fish food'],
+                        'treat': ['dog food', 'cat food', 'bird food'],
+                        'toy': ['dog toy', 'cat toy', 'bird toy'],
+                        'bed': ['dog bed', 'cat bed'],
+                        'bowl': ['dog bowl', 'cat bowl', 'bird bowl']
+                    }
+
+                    for type_hint, valid_categories in type_category_map.items():
+                        if type_hint in product_type:
+                            if any(cat in category for cat in valid_categories):
+                                confidence_score += 0.2
+                            break
+
+                # Length and specificity check
+                total_predictions = sum(1 for v in ai_result.values() if v and v.strip('|'))
+                if total_predictions >= 2:
+                    confidence_score += 0.2  # Bonus for multiple predictions
+
+                ai_confidence = max(0.0, min(1.0, confidence_score))  # Clamp to [0,1]
+
+                # Use AI results if confidence is high enough
+                if ai_confidence >= 0.4:  # Lowered threshold for better coverage
+                    for label in ['Category', 'Product Type', 'Product On Pages']:
+                        if label in ai_result and ai_result[label]:
+                            product_info[label] = ai_result[label]
+                        else:
+                            product_info[label] = ""
+                    return product_info
+
+        except Exception as e:
+            print(f"⚠️ AI classification failed (confidence: {ai_confidence}), falling back to fuzzy matching: {e}")
     
-    # Fallback to fuzzy matching (either AI failed or low confidence)
-    print(f"🔄 Using fuzzy matching fallback (AI confidence: {ai_confidence})")
+    # Fallback to fuzzy matching (either AI failed/low confidence, or method is "fuzzy")
+    print(f"🔄 Using fuzzy matching fallback (method: {method})")
     classified_df = load_classified_dataframe()
     
     # Find matches and get recommendations
@@ -496,14 +630,26 @@ if __name__ == "__main__":
     print(f"   Brand: {test_product['Brand']}")
     print()
 
-    # Test single product classification
-    print("🔍 Classifying single product...")
-    classified_product = classify_single_product(test_product.copy())
+    # Test single product classification (hybrid method)
+    print("🔍 Testing hybrid classification...")
+    classified_product = classify_single_product(test_product.copy(), method="hybrid")
 
-    print("📊 Classification Results:")
+    print("📊 Hybrid Classification Results:")
     print(f"   Category: {classified_product.get('Category', 'None')}")
     print(f"   Product Type: {classified_product.get('Product Type', 'None')}")
     print(f"   Product On Pages: {classified_product.get('Product On Pages', 'None')}")
+    print()
+
+    # Test LLM classification
+    print("🧠 Testing LLM classification...")
+    try:
+        llm_product = classify_single_product(test_product.copy(), method="llm")
+        print("📊 LLM Classification Results:")
+        print(f"   Category: {llm_product.get('Category', 'None')}")
+        print(f"   Product Type: {llm_product.get('Product Type', 'None')}")
+        print(f"   Product On Pages: {llm_product.get('Product On Pages', 'None')}")
+    except Exception as e:
+        print(f"⚠️ LLM classification failed: {e}")
     print()
 
     # Test batch classification
@@ -524,7 +670,7 @@ if __name__ == "__main__":
         }
     ]
 
-    classified_batch = classify_products_batch(test_products)
+    classified_batch = classify_products_batch(test_products, method="hybrid")
 
     print("📊 Batch Classification Results:")
     for i, product in enumerate(classified_batch, 1):

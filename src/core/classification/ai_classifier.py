@@ -14,9 +14,10 @@ from sklearn.multioutput import MultiOutputClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, f1_score
 import re
 from collections import Counter
+from scipy.sparse import hstack
 
 # Database and model paths
 DB_PATH = Path(__file__).parent.parent.parent.parent / "data" / "databases" / "products.db"
@@ -34,10 +35,52 @@ class AIProductClassifier:
         self.page_labels = []
 
     def clean_text(self, text):
-        """Clean text for ML processing."""
+        """Clean text for ML processing with enhanced pet-specific preprocessing."""
         text = str(text).lower().strip()
-        text = re.sub(r'[^a-z0-9 ]', '', text)
-        return text
+
+        # Remove common noise patterns
+        text = re.sub(r'[^\w\s]', ' ', text)  # Replace punctuation with spaces
+        text = re.sub(r'\s+', ' ', text)      # Normalize whitespace
+
+        # Pet-specific abbreviations and expansions
+        pet_abbreviations = {
+            'lb': 'pound', 'lbs': 'pounds', 'oz': 'ounce', 'kg': 'kilogram',
+            'kitten': 'cat', 'puppy': 'dog', 'canine': 'dog', 'feline': 'cat',
+            'adult': '', 'junior': '', 'senior': '', 'all life stages': '',
+            'dry': '', 'wet': '', 'canned': '', 'raw': '', 'freeze dried': '',
+            'chicken': 'poultry', 'turkey': 'poultry', 'beef': 'meat', 'fish': 'seafood',
+            'salmon': 'seafood', 'tuna': 'seafood', 'lamb': 'meat'
+        }
+
+        for abbr, expansion in pet_abbreviations.items():
+            text = re.sub(r'\b' + re.escape(abbr) + r'\b', expansion, text)
+
+        # Extract and preserve important numbers (weights, ages)
+        weight_pattern = r'(\d+(?:\.\d+)?)\s*(lb|pound|pounds|oz|ounce|kg|kilogram)'
+        weights = re.findall(weight_pattern, text)
+        if weights:
+            text += f" weight_{weights[0][1]}"  # Add weight unit as feature
+
+        # Remove stopwords but keep pet-specific important words
+        important_words = {
+            'dog', 'cat', 'bird', 'fish', 'reptile', 'small', 'animal', 'pet',
+            'food', 'treat', 'toy', 'bed', 'bowl', 'cage', 'litter', 'grooming',
+            'health', 'care', 'supplies', 'equipment', 'feed', 'seed'
+        }
+
+        basic_stopwords = {
+            'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with',
+            'by', 'an', 'a', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+            'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
+            'should', 'may', 'might', 'must', 'can', 'shall'
+        }
+
+        tokens = []
+        for word in text.split():
+            if word not in basic_stopwords or word in important_words:
+                tokens.append(word)
+
+        return ' '.join(tokens)
 
     def load_training_data(self):
         """Load classified products from database for training."""
@@ -69,12 +112,27 @@ class AIProductClassifier:
             conn.close()
 
     def prepare_features(self, df):
-        """Prepare text features for ML."""
+        """Prepare text features for ML with enhanced pet-specific features."""
         # Combine name and brand for richer features
         df['text_features'] = df['Name'].fillna('') + ' ' + df['Brand'].fillna('')
 
         # Clean text
         df['text_features'] = df['text_features'].apply(self.clean_text)
+
+        # Extract pet type features
+        pet_types = ['dog', 'cat', 'bird', 'fish', 'reptile', 'small animal', 'horse']
+        for pet in pet_types:
+            df[f'pet_{pet.replace(" ", "_")}'] = df['text_features'].str.contains(pet).astype(int)
+
+        # Extract food type features
+        food_types = ['dry', 'wet', 'raw', 'canned', 'treat', 'kibble', 'formula']
+        for food in food_types:
+            df[f'food_{food}'] = df['text_features'].str.contains(food).astype(int)
+
+        # Extract product category hints
+        category_hints = ['food', 'treat', 'toy', 'bed', 'bowl', 'cage', 'litter', 'grooming', 'health']
+        for hint in category_hints:
+            df[f'category_{hint}'] = df['text_features'].str.contains(hint).astype(int)
 
         return df
 
@@ -138,9 +196,18 @@ class AIProductClassifier:
         df = self.prepare_labels(df)
         df = self.encode_labels(df)
 
-        # Prepare features
-        self.vectorizer = TfidfVectorizer(max_features=2000, ngram_range=(1, 2))  # Reduced features
-        X = self.vectorizer.fit_transform(df['text_features'])
+        # Prepare features - combine TF-IDF with binary features
+        text_vectorizer = TfidfVectorizer(max_features=1000, ngram_range=(1, 2))
+        X_text = text_vectorizer.fit_transform(df['text_features'])
+
+        # Get binary features
+        binary_cols = [col for col in df.columns if col.startswith(('pet_', 'food_', 'category_'))]
+        X_binary = df[binary_cols].values
+
+        # Combine features
+        X = hstack([X_text, X_binary])
+
+        print(f"📊 Feature matrix shape: {X.shape} (text: {X_text.shape[1]}, binary: {X_binary.shape[1]})")
 
         # Prepare targets
         y_category = df['category_encoded'].values
@@ -184,6 +251,12 @@ class AIProductClassifier:
         cat_accuracy = np.mean(cat_pred == y_cat_test)
         type_accuracy = np.mean(type_pred == y_type_test)
 
+        # Calculate F1 scores for better evaluation
+        cat_f1 = f1_score(y_cat_test, cat_pred, average='weighted')
+        type_f1 = f1_score(y_type_test, type_pred, average='weighted')
+
+        print(".2f")
+        print(".2f")
         print(".2f")
         print(".2f")
 
@@ -198,9 +271,26 @@ class AIProductClassifier:
         if not self.classifier:
             raise ValueError("Model not trained. Call train() first.")
 
-        # Prepare input
+        # Prepare input - combine text and binary features
         text_features = self.clean_text(f"{product_name} {product_brand}")
-        X = self.vectorizer.transform([text_features])
+        X_text = self.vectorizer.transform([text_features])
+
+        # Extract binary features for this product
+        binary_features = []
+        pet_types = ['dog', 'cat', 'bird', 'fish', 'reptile', 'small animal', 'horse']
+        for pet in pet_types:
+            binary_features.append(1 if pet in text_features else 0)
+
+        food_types = ['dry', 'wet', 'raw', 'canned', 'treat', 'kibble', 'formula']
+        for food in food_types:
+            binary_features.append(1 if food in text_features else 0)
+
+        category_hints = ['food', 'treat', 'toy', 'bed', 'bowl', 'cage', 'litter', 'grooming', 'health']
+        for hint in category_hints:
+            binary_features.append(1 if hint in text_features else 0)
+
+        X_binary = [binary_features]  # Make it 2D
+        X = hstack([X_text, X_binary])
 
         # Predict
         category_idx = self.classifier['category'].predict(X)[0]
@@ -223,11 +313,16 @@ class AIProductClassifier:
     def save_model(self):
         """Save trained model to disk."""
         model_data = {
-            'vectorizer': self.vectorizer,
+            'vectorizer': self.vectorizer,  # This is now just the text vectorizer
             'classifier': self.classifier,
             'category_labels': self.category_labels,
             'type_labels': self.type_labels,
-            'page_labels': self.page_labels
+            'page_labels': self.page_labels,
+            'feature_info': {
+                'pet_types': ['dog', 'cat', 'bird', 'fish', 'reptile', 'small animal', 'horse'],
+                'food_types': ['dry', 'wet', 'raw', 'canned', 'treat', 'kibble', 'formula'],
+                'category_hints': ['food', 'treat', 'toy', 'bed', 'bowl', 'cage', 'litter', 'grooming', 'health']
+            }
         }
 
         model_path = MODEL_DIR / 'ai_classifier.pkl'
