@@ -41,6 +41,163 @@ class SettingsDialog(QDialog):
         self.create_ui()
         self.load_settings()
 
+        # Apply dark theme styling
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #1e1e1e;
+                color: #ffffff;
+                border: 1px solid #3e3e3e;
+            }
+            QLabel {
+                color: #ffffff;
+            }
+            QLineEdit {
+                background-color: #2d2d2d;
+                color: #ffffff;
+                border: 1px solid #4a4a4a;
+                border-radius: 4px;
+                padding: 4px;
+                selection-background-color: #4CAF50;
+            }
+            QLineEdit:focus {
+                border: 1px solid #2196F3;
+            }
+            QCheckBox {
+                color: #ffffff;
+            }
+            QCheckBox::indicator {
+                border: 1px solid #ffffff;
+                background-color: #2d2d2d;
+            }
+            QCheckBox::indicator:checked {
+                background-color: #4CAF50;
+            }
+            QSpinBox {
+                background-color: #2d2d2d;
+                color: #ffffff;
+                border: 1px solid #4a4a4a;
+                border-radius: 4px;
+                padding: 4px;
+                selection-background-color: #4CAF50;
+            }
+            QSpinBox:focus {
+                border: 1px solid #2196F3;
+            }
+            QSpinBox::up-button, QSpinBox::down-button {
+                background-color: #3d3d3d;
+                border: none;
+                width: 16px;
+            }
+            QSpinBox::up-button:hover, QSpinBox::down-button:hover {
+                background-color: #4a4a4a;
+            }
+            QComboBox {
+                background-color: #2d2d2d;
+                color: #ffffff;
+                border: 1px solid #4a4a4a;
+                border-radius: 4px;
+                padding: 4px;
+                selection-background-color: #4CAF50;
+            }
+            QComboBox:focus {
+                border: 1px solid #2196F3;
+            }
+            QComboBox::drop-down {
+                border: none;
+            }
+            QComboBox::down-arrow {
+                image: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIHZpZXdCb3g9IjAgMCAxMCAxMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTggM0w2IDUgMiA5IiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPg==);
+            }
+            QComboBox QAbstractItemView {
+                background-color: #2d2d2d;
+                color: #ffffff;
+                border: 1px solid #4a4a4a;
+                selection-background-color: #4CAF50;
+            }
+            QGroupBox {
+                font-weight: bold;
+                border: 2px solid #3e3e3e;
+                border-radius: 8px;
+                margin-top: 12px;
+                padding-top: 12px;
+                background-color: #1e1e1e;
+                color: #ffffff;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 5px;
+                color: #ffffff;
+            }
+            QPushButton {
+                background-color: #2d2d2d;
+                border: 1px solid #4a4a4a;
+                border-radius: 4px;
+                padding: 8px 16px;
+                color: #ffffff;
+                font-weight: normal;
+            }
+            QPushButton:hover {
+                background-color: #3d3d3d;
+                border: 1px solid #2196F3;
+            }
+            QPushButton:pressed {
+                background-color: #1a1a1a;
+            }
+            QPushButton[text="💾 Save"] {
+                background-color: #4CAF50;
+                border: 1px solid #4CAF50;
+            }
+            QPushButton[text="💾 Save"]:hover {
+                background-color: #45a049;
+                border: 1px solid #45a049;
+            }
+            QPushButton[text="❌ Cancel"] {
+                background-color: #F44336;
+                border: 1px solid #F44336;
+            }
+            QPushButton[text="❌ Cancel"]:hover {
+                background-color: #d32f2f;
+                border: 1px solid #d32f2f;
+            }
+            QTabWidget::pane {
+                border: 1px solid #3e3e3e;
+                background-color: #1e1e1e;
+            }
+            QTabBar::tab {
+                background-color: #2d2d2d;
+                color: #ffffff;
+                border: 1px solid #3e3e3e;
+                padding: 8px 16px;
+                margin-right: 2px;
+            }
+            QTabBar::tab:selected {
+                background-color: #1e1e1e;
+                border-bottom: 2px solid #2196F3;
+            }
+            QTabBar::tab:hover {
+                background-color: #3d3d3d;
+            }
+            QTextEdit {
+                background-color: #2d2d2d;
+                color: #ffffff;
+                border: 1px solid #4a4a4a;
+                border-radius: 4px;
+                padding: 4px;
+            }
+            QMessageBox {
+                background-color: #1e1e1e;
+                color: #ffffff;
+            }
+            QMessageBox QLabel {
+                color: #ffffff;
+            }
+            QFileDialog {
+                background-color: #1e1e1e;
+                color: #ffffff;
+            }
+        """)
+
     def create_ui(self):
         """Create the settings dialog UI."""
         layout = QVBoxLayout(self)

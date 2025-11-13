@@ -50,13 +50,52 @@ These instructions guide GitHub Copilot's behavior when working in this reposito
   - last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP // Timestamp of last update
   - ProductDisabled TEXT, // Indicates if the product is disabled (checked or uncheck)
 
-## Agentic Project Management (APM)
+## ShopSite XML API
 
-- This project uses APM for AI-assisted project management and task tracking.
-- Key resources for context and navigation:
-  - `.apm/README.md`: Quick start guide and project overview.
-  - `.apm/Memory/Memory_Root.md`: Current project state, architecture, priorities, and recent changes.
-  - `.apm/guides/`: Detailed guides including setup, implementation planning, memory system, and task assignment.
-  - `.apm/Implementation_Plan.md`: Active development tasks, progress tracking, and next steps.
-- Always reference these files for project context, current state, and to avoid redundant work.
-- Update memory files when making significant changes to maintain project awareness.
+### Downloading Data
+
+- **Program**: `db_xml.cgi`
+- **Parameters**:
+  - `clientApp=1` (required) - Client application version identifier
+  - `dbname=products` (required) - Database to access (products/pages)
+  - `version=14.0` (optional) - XML format version (14.0, 12.0, 11.2, 11.1, 11.0, 10.2, 10.1, 10.0, 9.0, 8.3, 8.2, 8.1, 8.0, 7.1)
+  - `fields` (optional) - Comma-separated list of fields to download, or "all" for everything
+  - `fieldmap` (optional) - Predefined field mapping name
+- **Authentication**: Basic HTTP authentication (username/password)
+- **Response**: Uses chunked transfer encoding (no Content-Length header available)
+- **Current Implementation**: Downloads all product fields, shows progress with speed/time estimates
+
+### Uploading Data
+
+- **Program**: `dbupload.cgi`
+- **Parameters**:
+  - `clientApp=1` (required) - Client application version identifier
+  - `dbname=products` (required) - Database to upload to (products/pages)
+  - `filename` (optional) - Name of XML file previously uploaded to ShopSite's HTML output directory
+  - `uniqueName` (optional) - Unique database key field (defaults to "Name", can be "SKU", "Product GUID", "File Name", or "(none)" for duplicates)
+  - `newRecords=yes/no` (optional) - Whether to include new records (default: yes)
+  - `defer_linking=yes/no` (optional) - Defer record linking for batch uploads (default: no)
+  - `restart=1` (optional) - Restart interrupted upload from where it left off
+- **Authentication**: Basic HTTP authentication (username/password)
+- **Notes**:
+  - For large databases (>10,000 records), break uploads into batches
+  - Use `defer_linking=yes` for all files except the last in a batch
+  - Can upload MIME-encoded XML or reference pre-uploaded files
+
+### Publishing Changes
+
+- **Program**: `generate.cgi`
+- **Parameters**:
+  - `clientApp=1` (required) - Client application version identifier
+  - `htmlpages=1` (optional) - Generate HTML pages
+  - `custompages=1` (optional) - Generate custom pages
+  - `index=1` (optional) - Update search index
+  - `regen=1` (optional) - Regenerate all content (overrides incremental updates)
+  - `sitemap=1` (optional) - Generate Google XML sitemap
+- **Notes**: If publish times out, call again with same parameters to restart from interruption point
+
+### Current Usage
+
+- **Download**: ✅ Implemented and working (`import_from_shopsite_xml()`)
+- **Upload**: ❌ Not implemented (could be useful for bulk product updates)
+- **Publish**: ❌ Not implemented (could be useful for automated site updates)

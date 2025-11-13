@@ -174,14 +174,30 @@ SHOPSITE_CONFIG = {
 class ShopSiteXMLClient:
     """Client for ShopSite Database Automated XML Download."""
 
-    def __init__(self):
+    def __init__(self, log_callback=None):
         self.session = requests.Session()
         self.config = SHOPSITE_CONFIG
+        self.log_callback = log_callback
 
-        # Set user agent for web requests
-        self.session.headers.update(
-            {"User-Agent": "ProductScraper/1.0 (ShopSite XML Download)"}
-        )
+    def _estimate_download_size(self) -> int:
+        """Estimate download size based on previous downloads."""
+        try:
+            # Check if we have a saved raw XML file from previous downloads
+            xml_file_path = os.path.join(
+                PROJECT_ROOT, "data", "databases", "shopsite_products_raw.xml"
+            )
+            
+            if os.path.exists(xml_file_path):
+                size = os.path.getsize(xml_file_path)
+                # Add 10% buffer for potential changes
+                return int(size * 1.1)
+            
+            # Could also check logs for previous download sizes
+            # For now, return 0 if no previous data
+            return 0
+            
+        except Exception:
+            return 0
 
     def authenticate(self) -> bool:
         """Authenticate with ShopSite using basic auth (username/password)."""
@@ -218,15 +234,30 @@ class ShopSiteXMLClient:
             if response.status_code == 200:
                 import time
 
+                # Try to estimate total size based on previous downloads
+                # Look for previous download sizes in the log or saved files
+                estimated_size = self._estimate_download_size()
+                if estimated_size > 0:
+                    if self.log_callback:
+                        self.log_callback(f"📊 Estimated download size: ~{estimated_size:,} bytes (based on previous downloads)")
+                    else:
+                        print(f"📊 Estimated download size: ~{estimated_size:,} bytes (based on previous downloads)")
+
                 total_size = int(response.headers.get("content-length", 0))
                 downloaded_size = 0
                 content_chunks = []
                 start_time = time.time()
 
                 if total_size > 0:
-                    print(f"📊 Downloading {total_size:,} bytes...")
+                    if self.log_callback:
+                        self.log_callback(f"📊 Downloading {total_size:,} bytes...")
+                    else:
+                        print(f"📊 Downloading {total_size:,} bytes...")
                 else:
-                    print(f"📊 Downloading (size unknown - showing progress info)...")
+                    if self.log_callback:
+                        self.log_callback(f"📊 Downloading (size unknown - showing progress info)...")
+                    else:
+                        print(f"📊 Downloading (size unknown - showing progress info)...")
 
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:
@@ -251,11 +282,17 @@ class ShopSiteXMLClient:
                                 )
                             else:
                                 eta_str = ""
-                            print(
-                                f"\r📥 Progress: {progress:.1f}% ({downloaded_size:,}/{total_size:,} bytes){eta_str}",
-                                end="",
-                                flush=True,
-                            )
+                            
+                            # Send progress update to log callback (every 1MB or every 5 seconds)
+                            current_time = time.time()
+                            if (downloaded_size % (1024 * 1024) < 8192 or  # Every ~1MB
+                                current_time - (getattr(self, 'last_progress_time', 0)) > 5):  # Or every 5 seconds
+                                progress_msg = f"📥 Progress: {progress:.1f}% ({downloaded_size:,}/{total_size:,} bytes){eta_str}"
+                                if self.log_callback:
+                                    self.log_callback(progress_msg)
+                                else:
+                                    print(f"\r{progress_msg}", end="", flush=True)
+                                self.last_progress_time = current_time
                         else:
                             # Show download speed and time elapsed when size unknown
                             elapsed = time.time() - start_time
@@ -266,13 +303,23 @@ class ShopSiteXMLClient:
                                 )
                             else:
                                 speed_str = ""
-                            print(
-                                f"\r📥 Downloaded: {downloaded_size:,} bytes{speed_str} ({elapsed:.1f}s elapsed)",
-                                end="",
-                                flush=True,
-                            )
+                            
+                            # Send progress update to log callback (every 5 seconds)
+                            current_time = time.time()
+                            if current_time - getattr(self, 'last_progress_time', 0) > 5:
+                                progress_msg = f"📥 Downloaded: {downloaded_size:,} bytes{speed_str} ({elapsed:.1f}s elapsed)"
+                                if self.log_callback:
+                                    self.log_callback(progress_msg)
+                                else:
+                                    print(f"\r{progress_msg}", end="", flush=True)
+                                self.last_progress_time = current_time
 
-                print()  # New line after progress
+                # Send final download complete message
+                final_msg = f"📥 Downloaded: {downloaded_size:,} bytes @ {downloaded_size/(time.time()-start_time)/1024:.0f}KB/s ({time.time()-start_time:.1f}s elapsed)"
+                if self.log_callback:
+                    self.log_callback(final_msg)
+                else:
+                    print(final_msg)
 
                 # Combine chunks into full content
                 full_content = b"".join(content_chunks).decode(
@@ -661,14 +708,20 @@ def parse_xml_to_dataframe(xml_content: str) -> Optional[pd.DataFrame]:
 
 
 def import_from_shopsite_xml(
-    save_excel: bool = True, save_to_db: bool = False
+    save_excel: bool = True, save_to_db: bool = False, interactive: bool = True, log_callback=None
 ) -> Tuple[bool, str]:
     """
     Import products from ShopSite using Database Automated XML Download.
 
     Downloads product data as XML from the products database and saves to Excel and/or database.
+    
+    Args:
+        save_excel: Whether to save to Excel file
+        save_to_db: Whether to save to database
+        interactive: Whether to prompt for user confirmation (should be False for GUI mode)
+        log_callback: Callback function for logging messages (for GUI integration)
     """
-    client = ShopSiteXMLClient()
+    client = ShopSiteXMLClient(log_callback=log_callback)
 
     # Authenticate first
     if not client.authenticate():
@@ -677,12 +730,13 @@ def import_from_shopsite_xml(
             "❌ Failed to authenticate with ShopSite XML interface. Check credentials in .env file.",
         )
 
-    # Confirm with user before downloading live data
-    print("\n⚠️  WARNING: This will download LIVE product data from ShopSite!")
-    print("   This is production data - proceed with caution.")
-    confirm = input("   Continue? (yes/no): ").strip().lower()
-    if confirm not in ["yes", "y"]:
-        return False, "❌ Import cancelled by user."
+    # Confirm with user before downloading live data (only in interactive mode)
+    if interactive:
+        print("\n⚠️  WARNING: This will download LIVE product data from ShopSite!")
+        print("   This is production data - proceed with caution.")
+        confirm = input("   Continue? (yes/no): ").strip().lower()
+        if confirm not in ["yes", "y"]:
+            return False, "❌ Import cancelled by user."
 
     # Download XML
     xml_content = client.download_products_xml()
