@@ -561,6 +561,45 @@ def classify_products_batch(products_list, method="llm"):
         f"🤖 Batch Classification: Using {method} approach for {len(products_list)} products..."
     )
 
+    # Special handling for local_llm method - use batch processing
+    if method == "local_llm":
+        try:
+            from .local_llm_classifier import get_local_llm_classifier
+
+            classifier = get_local_llm_classifier()
+            if classifier:
+                # Convert products to format expected by batch classifier
+                batch_products = []
+                for product in products_list:
+                    batch_products.append({
+                        "Name": product.get("Name", ""),
+                        "Brand": product.get("Brand", "")
+                    })
+
+                # Use batch classification
+                batch_results = classifier.classify_products_batch(batch_products)
+
+                # Convert results back to expected format
+                classified_products = []
+                for product_info, result in zip(products_list, batch_results):
+                    product_copy = product_info.copy()
+                    product_copy["Category"] = result.get("category", "")
+                    product_copy["Product Type"] = result.get("product_type", "")
+                    product_copy["Product On Pages"] = result.get("product_on_pages", "")
+                    classified_products.append(product_copy)
+
+                print(
+                    f"\033[92m✅ Local_Llm batch classification complete! Processed {len(classified_products)} products\033[0m\n"
+                )
+                return classified_products
+            else:
+                print("⚠️ Local LLM classifier not available, falling back to individual processing")
+                method = "fuzzy"  # Fallback
+        except Exception as e:
+            print(f"⚠️ Local LLM batch classification failed: {e}, falling back to individual processing")
+            method = "fuzzy"  # Fallback
+
+    # Default: process each product individually
     classified_products = []
 
     for idx, product_info in enumerate(products_list, 1):
