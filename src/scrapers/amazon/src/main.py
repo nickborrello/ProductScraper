@@ -19,6 +19,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from selenium.webdriver.common.action_chains import ActionChains
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 
@@ -27,7 +28,7 @@ HEADLESS = False  # Set to False for debugging and manual inspection
 DEBUG_MODE = False  # Set to True to pause for manual inspection during scraping
 ENABLE_DEVTOOLS = DEBUG_MODE  # Automatically enable DevTools when in debug mode
 DEVTOOLS_PORT = 9222  # Port for Chrome DevTools remote debugging
-TEST_SKU = "035585499741"  # Amazon SKU that previously had empty brand
+TEST_SKU = "B01N7UHU93"  # Kong Classic Dog Toy ASIN
 
 
 def create_driver(proxy_url=None) -> webdriver.Chrome:
@@ -38,19 +39,35 @@ def create_driver(proxy_url=None) -> webdriver.Chrome:
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
+    options.add_argument("--disable-dev-tools")
+    options.add_argument("--disable-extensions")
+    options.add_argument("--disable-plugins")
+    options.add_argument("--disable-images")  # Speed up loading
 
-    # Dynamic viewport to avoid detection
-    width = 1920  # Fixed width for testing
-    height = 1080  # Fixed height for testing
+    # Dynamic viewport to avoid detection - rotate screen sizes
+    screen_sizes = [
+        (1920, 1080), (1366, 768), (1536, 864), (1440, 900),
+        (1280, 720), (1680, 1050), (1600, 900)
+    ]
+    width, height = random.choice(screen_sizes)
     options.add_argument(f"--window-size={width},{height}")
 
-    # Rotate user agents
+    # Advanced user agent rotation with device simulation
     try:
         ua = UserAgent()
-        user_agent = ua.random
+        # Rotate between desktop and mobile user agents
+        if random.choice([True, False]):
+            user_agent = ua.random
+        else:
+            user_agent = ua.chrome
     except:
-        # Fallback user agent if fake-useragent fails
-        user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        user_agents = [
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0"
+        ]
+        user_agent = random.choice(user_agents)
 
     options.add_argument(f'--user-agent={user_agent}')
 
@@ -60,10 +77,18 @@ def create_driver(proxy_url=None) -> webdriver.Chrome:
         options.add_argument("--remote-debugging-address=0.0.0.0")
         Actor.log.info(f"🔧 DevTools enabled on port {DEVTOOLS_PORT}")
 
-    # Additional anti-detection measures
+    # Enhanced anti-detection measures
     options.add_argument("--disable-blink-features=AutomationControlled")
-    options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    options.add_argument("--disable-features=VizDisplayCompositor")
+    options.add_experimental_option("excludeSwitches", ["enable-automation", "enable-logging"])
     options.add_experimental_option('useAutomationExtension', False)
+    options.add_experimental_option("prefs", {
+        "profile.managed_default_content_settings.images": 2,  # Block images
+        "profile.default_content_setting_values.notifications": 2,  # Block notifications
+        "profile.managed_default_content_settings.media_stream": 2,  # Block media
+        "credentials_enable_service": False,
+        "profile.password_manager_enabled": False
+    })
 
     # Proxy support - use provided proxy or get from proxy manager
     effective_proxy = proxy_url or proxy_manager.get_proxy_url()
@@ -74,36 +99,88 @@ def create_driver(proxy_url=None) -> webdriver.Chrome:
     service = Service()
     driver = webdriver.Chrome(service=service, options=options)
 
-    # Execute script to remove webdriver property
+    # Execute comprehensive anti-detection scripts
     driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+
+    # Spoof additional navigator properties
+    driver.execute_script("""
+        Object.defineProperty(navigator, 'plugins', {
+            get: () => [
+                {name: 'Chrome PDF Plugin', description: 'Portable Document Format', filename: 'internal-pdf-viewer'},
+                {name: 'Chrome PDF Viewer', description: '', filename: 'mhjfbmdgcfjbbpaeojofohoefgiehjai'},
+                {name: 'Native Client', description: '', filename: 'internal-nacl-plugin'}
+            ]
+        });
+        Object.defineProperty(navigator, 'languages', {
+            get: () => ['en-US', 'en']
+        });
+    """)
+
+    # Randomize timezone and locale
+    timezones = ['America/New_York', 'America/Los_Angeles', 'Europe/London', 'Asia/Tokyo']
+    driver.execute_script(f"Object.defineProperty(Intl.DateTimeFormat.prototype, 'resolvedOptions', {{get: () => ({{\'timeZone\': \'{random.choice(timezones)}\'}})}});")
 
     return driver
 
 
 class RateLimiter:
-    """Smart rate limiter with randomized delays."""
+    """Smart rate limiter with randomized delays and human-like timing patterns."""
 
     def __init__(self, min_delay=1, max_delay=5):
         self.min_delay = min_delay
         self.max_delay = max_delay
         self.last_request = 0
+        self.request_times = []
+        self.burst_count = 0
+        self.burst_reset_time = time.time()
 
     async def wait(self):
-        """Wait for appropriate delay before next request."""
-        elapsed = time.time() - self.last_request
-        delay = max(self.min_delay, random.uniform(self.min_delay, self.max_delay))
+        """Wait for appropriate delay before next request with human-like patterns."""
+        current_time = time.time()
+
+        # Reset burst counter if enough time has passed
+        if current_time - self.burst_reset_time > 60:  # Reset every minute
+            self.burst_count = 0
+            self.burst_reset_time = current_time
+
+        # Calculate base delay
+        elapsed = current_time - self.last_request
+
+        # Add burst protection - longer delays after multiple quick requests
+        burst_penalty = min(self.burst_count * 0.5, 3.0)  # Max 3 second penalty
+
+        # Base delay with randomization
+        base_delay = random.uniform(self.min_delay, self.max_delay) + burst_penalty
+
+        # Add human-like pauses (sometimes longer delays)
+        if random.random() < 0.1:  # 10% chance
+            base_delay += random.uniform(2, 8)  # Occasional longer pauses
+
+        delay = max(base_delay, 0.5)  # Minimum 0.5 second delay
+
         if elapsed < delay:
-            await asyncio.sleep(delay - elapsed)
+            actual_delay = delay - elapsed
+            await asyncio.sleep(actual_delay)
+
         self.last_request = time.time()
+        self.request_times.append(self.last_request)
+        self.burst_count += 1
+
+        # Keep only recent requests for burst calculation
+        cutoff_time = time.time() - 60
+        self.request_times = [t for t in self.request_times if t > cutoff_time]
 
 
 class BrowserSession:
-    """Manages browser session with automatic rotation."""
+    """Manages browser session with automatic rotation and cookie persistence."""
 
     def __init__(self):
         self.driver = None
         self.created_at = time.time()
         self.request_count = 0
+        self.cookies_file = "amazon_cookies.pkl"
+        self.session_profiles = []
+        self.current_profile_index = 0
 
     def get_driver(self):
         """Get current driver, rotating if necessary."""
@@ -118,14 +195,82 @@ class BrowserSession:
                 time.time() - self.created_at > 300)
 
     def rotate_session(self):
-        """Create new browser session."""
+        """Create new browser session with fresh profile."""
         if self.driver:
+            # Save cookies before quitting
+            self._save_cookies()
             monitoring.record_session_rotated()
             self.driver.quit()
+
         self.driver = create_driver()
-        monitoring.record_session_created()
         self.created_at = time.time()
         self.request_count = 0
+
+        # Load existing cookies if available
+        self._load_cookies()
+
+        # Accept cookies/privacy notices if present
+        self._handle_privacy_notices()
+
+        monitoring.record_session_created()
+
+    def _save_cookies(self):
+        """Save cookies to file."""
+        if not self.driver:
+            return
+        try:
+            import pickle
+            cookies = self.driver.get_cookies()
+            with open(self.cookies_file, 'wb') as f:
+                pickle.dump(cookies, f)
+            Actor.log.info("🍪 Cookies saved successfully")
+        except Exception as e:
+            Actor.log.warning(f"⚠️ Failed to save cookies: {e}")
+
+    def _load_cookies(self):
+        """Load cookies from file."""
+        if not self.driver:
+            return
+        try:
+            import pickle
+            if os.path.exists(self.cookies_file):
+                with open(self.cookies_file, 'rb') as f:
+                    cookies = pickle.load(f)
+                for cookie in cookies:
+                    try:
+                        self.driver.add_cookie(cookie)
+                    except Exception as e:
+                        Actor.log.warning(f"⚠️ Failed to add cookie: {e}")
+                Actor.log.info("🍪 Cookies loaded successfully")
+        except Exception as e:
+            Actor.log.warning(f"⚠️ Failed to load cookies: {e}")
+
+    def _handle_privacy_notices(self):
+        """Handle cookie/privacy consent notices."""
+        if not self.driver:
+            return
+        try:
+            # Common selectors for cookie consent buttons
+            consent_selectors = [
+                "#sp-cc-accept",  # Amazon cookie accept
+                "[data-action='sp-accept']",  # Alternative Amazon
+                ".cookie-accept-button",
+                "#accept-cookies",
+                "[data-testid='cookie-accept-button']"
+            ]
+
+            for selector in consent_selectors:
+                try:
+                    button = self.driver.find_element(By.CSS_SELECTOR, selector)
+                    button.click()
+                    Actor.log.info("🍪 Cookie consent accepted")
+                    time.sleep(1)
+                    break
+                except:
+                    continue
+
+        except Exception as e:
+            Actor.log.warning(f"⚠️ Error handling privacy notices: {e}")
 
     def increment_counter(self):
         """Increment request counter."""
@@ -134,6 +279,7 @@ class BrowserSession:
     def cleanup(self):
         """Clean up browser session."""
         if self.driver:
+            self._save_cookies()
             self.driver.quit()
             self.driver = None
 
@@ -156,7 +302,13 @@ class DataValidator:
     def validate_product_data(product: dict[str, Any] | None) -> dict[str, Any]:
         """Validate and clean product data."""
         if not product:
-            return {"valid": False, "errors": ["No product data"], "data": None}
+            return {
+                "valid": False, 
+                "errors": ["No product data"], 
+                "data": None,
+                "completeness_score": 0.0,
+                "quality_score": 0.0
+            }
 
         errors = []
         cleaned_data = {}
@@ -847,6 +999,98 @@ class CaptchaDetector:
 captcha_detector = CaptchaDetector()
 
 
+class HumanBehaviorSimulator:
+    """Simulates human-like browsing behavior to avoid detection."""
+
+    def __init__(self):
+        self.last_mouse_position = (0, 0)
+
+    def simulate_human_behavior(self, driver: webdriver.Chrome):
+        """Simulate realistic human browsing patterns."""
+        try:
+            # Random initial delay
+            time.sleep(random.uniform(1, 3))
+
+            # Simulate mouse movements
+            self._simulate_mouse_movements(driver)
+
+            # Simulate scrolling behavior
+            self._simulate_scrolling(driver)
+
+            # Random additional delay
+            time.sleep(random.uniform(0.5, 2))
+
+        except Exception as e:
+            Actor.log.warning(f"⚠️ Human behavior simulation error: {e}")
+
+    def _simulate_mouse_movements(self, driver: webdriver.Chrome):
+        """Simulate realistic mouse movements."""
+        try:
+            # Get viewport size
+            viewport_width = driver.execute_script("return window.innerWidth;")
+            viewport_height = driver.execute_script("return window.innerHeight;")
+
+            # Generate natural mouse path
+            actions = ActionChains(driver)
+
+            # Move mouse in curved path (more human-like than straight lines)
+            points = []
+            num_points = random.randint(3, 8)
+
+            for i in range(num_points):
+                x = random.randint(50, viewport_width - 50)
+                y = random.randint(50, viewport_height - 50)
+                points.append((x, y))
+
+            # Move through points with slight delays
+            for x, y in points:
+                actions.move_by_offset(x - self.last_mouse_position[0], y - self.last_mouse_position[1])
+                actions.pause(random.uniform(0.1, 0.3))
+                self.last_mouse_position = (x, y)
+
+            actions.perform()
+
+        except Exception as e:
+            Actor.log.warning(f"⚠️ Mouse movement simulation error: {e}")
+
+    def _simulate_scrolling(self, driver: webdriver.Chrome):
+        """Simulate realistic scrolling behavior."""
+        try:
+            # Get page height
+            page_height = driver.execute_script("return document.body.scrollHeight;")
+            viewport_height = driver.execute_script("return window.innerHeight;")
+
+            if page_height > viewport_height:
+                # Simulate reading time before scrolling
+                time.sleep(random.uniform(1, 3))
+
+                # Scroll down in chunks
+                scroll_steps = random.randint(2, 5)
+                for _ in range(scroll_steps):
+                    scroll_distance = random.randint(200, 500)
+                    driver.execute_script(f"window.scrollBy(0, {scroll_distance});")
+                    time.sleep(random.uniform(0.5, 1.5))
+
+                # Sometimes scroll back up a bit (like re-reading)
+                if random.choice([True, False]):
+                    time.sleep(random.uniform(0.5, 1))
+                    scroll_back = random.randint(50, 150)
+                    driver.execute_script(f"window.scrollBy(0, -{scroll_back});")
+
+        except Exception as e:
+            Actor.log.warning(f"⚠️ Scrolling simulation error: {e}")
+
+    def add_realistic_delays(self):
+        """Add realistic delays between actions."""
+        # Simulate thinking/reading time
+        delay = random.uniform(0.5, 2.0)
+        time.sleep(delay)
+
+
+# Global human behavior simulator instance
+behavior_simulator = HumanBehaviorSimulator()
+
+
 class LargeScaleTester:
     """Large-scale testing and performance benchmarking for the scraper."""
 
@@ -865,8 +1109,8 @@ class LargeScaleTester:
             "performance_over_time": [],
             "resource_usage_timeline": []
         }
-        self.test_start_time = None
-        self.memory_baseline = None
+        self.test_start_time: float = 0.0
+        self.memory_baseline: float = 0.0
 
     def start_performance_test(self, sku_list: list[str], batch_size: int = 50) -> dict:
         """Run comprehensive large-scale performance testing."""
@@ -971,11 +1215,18 @@ class LargeScaleTester:
     def _calculate_performance_trend(self, batches: list[dict]) -> dict:
         """Calculate performance trends from recent batches."""
         if len(batches) < 3:
-            return {"success_trend": 0, "throughput_trend": 0}
+            return {"success_trend": 0.0, "throughput_trend": 0.0}
 
         # Simple linear trend calculation
-        success_rates = [b["success_rate"] for b in batches]
-        throughputs = [b["throughput"] for b in batches]
+        success_rates = [float(b.get("success_rate", 0.0)) for b in batches]
+        throughputs = [float(b.get("throughput", 0.0)) for b in batches]
+
+        # Ensure we have valid numeric values
+        success_rates = [rate for rate in success_rates if isinstance(rate, (int, float)) and not (isinstance(rate, float) and (rate == float('inf') or rate != rate))]
+        throughputs = [tput for tput in throughputs if isinstance(tput, (int, float)) and not (isinstance(tput, float) and (tput == float('inf') or tput != tput))]
+
+        if len(success_rates) < 2 or len(throughputs) < 2:
+            return {"success_trend": 0.0, "throughput_trend": 0.0}
 
         success_trend = (success_rates[-1] - success_rates[0]) / len(success_rates)
         throughput_trend = (throughputs[-1] - throughputs[0]) / len(throughputs)
@@ -1217,7 +1468,7 @@ def clean_string(text: str) -> str:
 
 def extract_product_data(driver: webdriver.Chrome, sku: str) -> dict[str, Any] | None:
     """Extract product data from Amazon page."""
-    product_info = {"SKU": sku}
+    product_info: dict[str, Any] = {"SKU": sku}
 
     try:
         # Extract title
@@ -1334,6 +1585,9 @@ def scrape_single_product(driver: webdriver.Chrome, sku: str) -> dict[str, Any] 
         Actor.log.info(f"🌐 Navigating to: {url}")
         driver.get(url)
         time.sleep(2)
+
+        # Simulate human behavior after page load
+        behavior_simulator.simulate_human_behavior(driver)
 
         current_url = driver.current_url
         Actor.log.info(f"📍 Current URL after navigation: {current_url}")
