@@ -56,89 +56,15 @@ class ProductViewer(QMainWindow):
         super().__init__()
         self.setWindowTitle("Product Database Viewer - Professional Edition")
         self.setGeometry(100, 100, 1400, 900)
-        self.setStyleSheet(
-            """
-            QMainWindow {
-                background-color: #1e1e1e;
-                color: #ffffff;
-            }
-            QTableWidget {
-                background-color: #2d2d2d;
-                color: #ffffff;
-                border: 1px solid #3e3e3e;
-                border-radius: 4px;
-                gridline-color: #4a4a4a;
-            }
-            QTableWidget::item {
-                padding: 5px;
-                border-bottom: 1px solid #4a4a4a;
-            }
-            QTableWidget::item:selected {
-                background-color: #4a4a4a;
-            }
-            QHeaderView::section {
-                background-color: #343a40;
-                color: #ffffff;
-                padding: 8px;
-                border: 1px solid #495057;
-                font-weight: bold;
-            }
-            QLineEdit {
-                background-color: #2d2d2d;
-                color: #ffffff;
-                border: 1px solid #4a4a4a;
-                border-radius: 4px;
-                padding: 6px;
-                font-size: 12px;
-            }
-            QLineEdit:focus {
-                border: 1px solid #2196F3;
-            }
-            QCheckBox {
-                color: #ffffff;
-                font-size: 12px;
-            }
-            QCheckBox::indicator {
-                width: 16px;
-                height: 16px;
-                background-color: #2d2d2d;
-                border: 1px solid #4a4a4a;
-                border-radius: 3px;
-            }
-            QCheckBox::indicator:checked {
-                background-color: #2196F3;
-                border: 1px solid #2196F3;
-            }
-            QComboBox {
-                background-color: #2d2d2d;
-                color: #ffffff;
-                border: 1px solid #4a4a4a;
-                border-radius: 4px;
-                padding: 4px;
-                min-width: 80px;
-            }
-            QComboBox::drop-down {
-                border: none;
-            }
-            QComboBox::down-arrow {
-                image: none;
-                border-left: 4px solid transparent;
-                border-right: 4px solid transparent;
-                border-top: 4px solid #ffffff;
-                margin-right: 8px;
-            }
-            QComboBox QAbstractItemView {
-                background-color: #2d2d2d;
-                color: #ffffff;
-                border: 1px solid #4a4a4a;
-                selection-background-color: #4a4a4a;
-            }
-            QLabel {
-                color: #ffffff;
-                font-size: 12px;
-            }
-        """
-        )
+        
+        # Apply the global dark theme.
+        try:
+            from src.ui.styling import STYLESHEET
+            self.setStyleSheet(STYLESHEET)
+        except (ImportError, ModuleNotFoundError):
+            print("CRITICAL: Could not import stylesheet. UI will be unstyled.")
+            # Fallback to a very basic theme if the import fails
+            self.setStyleSheet("QMainWindow { background-color: #1e1e1e; color: #ffffff; }")
 
         # Database connection
         self.conn = None
@@ -180,24 +106,6 @@ class ProductViewer(QMainWindow):
 
         # Search and Filter Card
         search_card = QGroupBox("🔍 Search & Filter")
-        search_card.setStyleSheet(
-            """
-            QGroupBox {
-                font-weight: bold;
-                border: 2px solid #4a4a4a;
-                border-radius: 8px;
-                margin-top: 1ex;
-                background-color: #2d2d2d;
-                color: #ffffff;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 10px 0 10px;
-                color: #ffffff;
-                font-size: 14px;
-            }
-        """)
         search_layout = QVBoxLayout(search_card)
         search_layout.setSpacing(10)
         search_layout.setContentsMargins(15, 15, 15, 15)
@@ -260,25 +168,6 @@ class ProductViewer(QMainWindow):
 
         # Products Table Card
         table_card = QGroupBox("📊 Product Database")
-        table_card.setStyleSheet(
-            """
-            QGroupBox {
-                font-weight: bold;
-                border: 2px solid #4a4a4a;
-                border-radius: 8px;
-                margin-top: 1ex;
-                background-color: #2d2d2d;
-                color: #ffffff;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 10px 0 10px;
-                color: #ffffff;
-                font-size: 14px;
-            }
-        """
-        )
         table_layout = QVBoxLayout(table_card)
         table_layout.setContentsMargins(15, 15, 15, 15)
 
@@ -316,25 +205,6 @@ class ProductViewer(QMainWindow):
 
         # Action Buttons Card
         action_card = QGroupBox("⚡ Actions")
-        action_card.setStyleSheet(
-            """
-            QGroupBox {
-                font-weight: bold;
-                border: 2px solid #4a4a4a;
-                border-radius: 8px;
-                margin-top: 1ex;
-                background-color: #2d2d2d;
-                color: #ffffff;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 10px 0 10px;
-                color: #ffffff;
-                font-size: 14px;
-            }
-        """
-        )
         button_layout = QHBoxLayout(action_card)
         button_layout.setSpacing(10)
         button_layout.setContentsMargins(15, 15, 15, 15)
@@ -421,25 +291,6 @@ class ProductViewer(QMainWindow):
 
         # Pagination Card
         pagination_card = QGroupBox("📄 Navigation")
-        pagination_card.setStyleSheet(
-            """
-            QGroupBox {
-                font-weight: bold;
-                border: 2px solid #4a4a4a;
-                border-radius: 8px;
-                margin-top: 1ex;
-                background-color: #2d2d2d;
-                color: #ffffff;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 10px 0 10px;
-                color: #ffffff;
-                font-size: 14px;
-            }
-        """
-        )
         pagination_layout = QHBoxLayout(pagination_card)
         pagination_layout.setSpacing(10)
         pagination_layout.setContentsMargins(15, 15, 15, 15)
@@ -509,25 +360,6 @@ class ProductViewer(QMainWindow):
 
         # Status Card
         status_card = QGroupBox("📊 Status")
-        status_card.setStyleSheet(
-            """
-            QGroupBox {
-                font-weight: bold;
-                border: 2px solid #4a4a4a;
-                border-radius: 8px;
-                margin-top: 1ex;
-                background-color: #2d2d2d;
-                color: #ffffff;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 10px 0 10px;
-                color: #ffffff;
-                font-size: 14px;
-            }
-        """
-        )
         status_layout = QVBoxLayout(status_card)
         status_layout.setContentsMargins(15, 15, 15, 15)
 

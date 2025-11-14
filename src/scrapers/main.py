@@ -49,7 +49,7 @@ if not is_gui_mode:
 
 # --- Core Logic Functions ---
 
-def run_scraping(file_path, progress_callback=None, log_callback=None, interactive=True, selected_sites=None, editor_callback=None, status_callback=None):
+def run_scraping(file_path, progress_callback=None, log_callback=None, interactive=True, selected_sites=None, editor_callback=None, status_callback=None, confirmation_callback=None):
     """Handles the entire scraping process for a given file."""
     # Determine log function
     if log_callback is None:
@@ -99,7 +99,7 @@ def run_scraping(file_path, progress_callback=None, log_callback=None, interacti
 
     # Run scraper
     log("🚀 Starting scraper...")
-    scraper = ProductScraper(file_path, interactive=interactive, selected_sites=selected_sites, log_callback=log_callback, progress_callback=progress_callback, editor_callback=editor_callback, status_callback=status_callback)
+    scraper = ProductScraper(file_path, interactive=interactive, selected_sites=selected_sites, log_callback=log_callback, progress_callback=progress_callback, editor_callback=editor_callback, status_callback=status_callback, confirmation_callback=confirmation_callback)
     if progress_callback:
         progress_callback.emit(40)
     scraper.run()

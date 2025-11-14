@@ -62,6 +62,52 @@ except ImportError:
 DB_PATH = Path(__file__).parent.parent.parent.parent / "data" / "databases" / "products.db"
 
 
+# Unified prompts for all LLM classifiers
+UNIFIED_SYSTEM_PROMPT = """You are an expert e-commerce product classifier for a retail store.
+
+{taxonomy_text}
+
+{pages_text}
+
+CLASSIFICATION RULES:
+1. **Prioritize the existing taxonomy.** If a product fits well into an existing category or product type, you must use it.
+2. If no suitable option exists, you may suggest a new one.
+3. If you are uncertain, it is better to choose the closest existing match rather than creating a new one.
+
+CRITICAL: You must respond with valid JSON only. No explanations, no markdown, no additional text.
+"""
+
+UNIFIED_SINGLE_PRODUCT_JSON_FORMAT = """
+Return classifications in this exact JSON format:
+{{
+    "category": "Main Category Name",
+    "product_type": "Product Type 1|Product Type 2",
+    "product_on_pages": "Page 1|Page 2|Page 3"
+}}
+
+Example valid response: {{"category": "Dog Food", "product_type": "Dry Dog Food|Adult Dog Food", "product_on_pages": "Dog Food|All Pets|Pet Supplies"}}"""
+
+UNIFIED_BATCH_JSON_FORMAT = """Return classifications in this exact JSON format:
+{
+  "classifications": [
+    {
+      "product_index": 1,
+      "category": "Main Category",
+      "product_type": "Type 1|Type 2",
+      "product_on_pages": "Page 1|Page 2|Page 3"
+    },
+    {
+      "product_index": 2,
+      "category": "Main Category",
+      "product_type": "Type 1|Type 2",
+      "product_on_pages": "Page 1|Page 2|Page 3"
+    }
+  ]
+}
+
+CRITICAL: Respond with valid JSON only. No explanations, no markdown, no additional text."""
+
+
 RECOMMEND_COLS = [
     ("Category", "Category"),
     ("Product_Type", "Product Type"),
@@ -113,34 +159,86 @@ def classify_products_batch(products_list, method=None):
         f"[CLASSIFY] Batch Classification: Using {method} approach for {len(products_list)} products..."
     )
 
+    # Special handling for llm method - use batch processing
+    if method == "llm":
+        try:
+            from src.core.classification.llm_classifier import get_llm_classifier
+        except ImportError:
+            try:
+                from llm_classifier import get_llm_classifier
+            except ImportError:
+                print(f"[WARNING] Could not import LLM classifier")
+                # Fall through to individual processing
+
+        try:
+            classifier = get_llm_classifier(product_taxonomy=GENERAL_PRODUCT_TAXONOMY, product_pages=PRODUCT_PAGES)
+            if classifier:
+                # Create batches with merging logic for last small batch
+                batch_size = 15
+                min_batch_size = 10
+                batches = [products_list[i:i + batch_size] for i in range(0, len(products_list), batch_size)]
+                if len(batches) > 1 and len(batches[-1]) < min_batch_size:
+                    batches[-2].extend(batches[-1])
+                    batches.pop()
+
+                # Process each batch
+                classified_products = []
+                for batch in batches:
+                    batch_results = classifier.classify_products_batch(batch)
+                    classified_products.extend(batch_results)
+
+                print(
+                    f"[SUCCESS] LLM batch classification complete! Processed {len(classified_products)} products\n"
+                )
+                return classified_products
+            else:
+                print("[WARNING] LLM classifier not available, leaving products unclassified")
+        except Exception as e:
+            print(f"[WARNING] LLM batch classification failed: {e}, leaving products unclassified")
+
     # Special handling for local_llm method - use batch processing
     if method == "local_llm":
         try:
             from src.core.classification.local_llm_classifier import get_local_llm_classifier
         except ImportError:
-            from local_llm_classifier import get_local_llm_classifier
+            try:
+                from local_llm_classifier import get_local_llm_classifier
+            except ImportError:
+                print(f"[WARNING] Could not import local LLM classifier")
+                # Fall through to individual processing
 
+        try:
             classifier = get_local_llm_classifier(product_taxonomy=GENERAL_PRODUCT_TAXONOMY, product_pages=PRODUCT_PAGES)
             if classifier:
-                # Convert products to format expected by batch classifier
-                batch_products = []
-                for product in products_list:
-                    batch_products.append({
-                        "Name": product.get("Name", ""),
-                        "Brand": product.get("Brand", "")
-                    })
+                # Create batches with merging logic for last small batch
+                batch_size = 15
+                min_batch_size = 10
+                batches = [products_list[i:i + batch_size] for i in range(0, len(products_list), batch_size)]
+                if len(batches) > 1 and len(batches[-1]) < min_batch_size:
+                    batches[-2].extend(batches[-1])
+                    batches.pop()
 
-                # Use batch classification
-                batch_results = classifier.classify_products_batch(batch_products)
-
-                # Convert results back to expected format
+                # Process each batch
                 classified_products = []
-                for product_info, result in zip(products_list, batch_results):
-                    product_copy = product_info.copy()
-                    product_copy["Category"] = result.get("category", "")
-                    product_copy["Product Type"] = result.get("product_type", "")
-                    product_copy["Product On Pages"] = result.get("product_on_pages", "")
-                    classified_products.append(product_copy)
+                for batch in batches:
+                    # Convert to format expected by batch classifier
+                    batch_products = []
+                    for product in batch:
+                        batch_products.append({
+                            "Name": product.get("Name", ""),
+                            "Brand": product.get("Brand", "")
+                        })
+
+                    # Use batch classification
+                    batch_results = classifier.classify_products_batch(batch_products)
+
+                    # Convert results back to expected format
+                    for product_info, result in zip(batch, batch_results):
+                        product_copy = product_info.copy()
+                        product_copy["Category"] = result.get("category", "")
+                        product_copy["Product Type"] = result.get("product_type", "")
+                        product_copy["Product On Pages"] = result.get("product_on_pages", "")
+                        classified_products.append(product_copy)
 
                 print(
                     f"[SUCCESS] Local_Llm batch classification complete! Processed {len(classified_products)} products\n"
@@ -193,8 +291,13 @@ def classify_single_product(product_info, method=None):
         try:
             from src.core.classification.llm_classifier import classify_product_llm
         except ImportError:
-            from llm_classifier import classify_product_llm
+            try:
+                from llm_classifier import classify_product_llm
+            except ImportError:
+                print(f"[WARNING] Could not import LLM classifier")
+                return product_info
 
+        try:
             llm_result = classify_product_llm(product_info)
 
             # Apply LLM results
@@ -208,7 +311,6 @@ def classify_single_product(product_info, method=None):
                 f"[LLM] LLM classification: {product_name[:40]}... -> {product_info.get('Category', 'N/A')}"
             )
             return product_info
-
         except Exception as e:
             print(f"[WARNING] LLM classification failed: {e}")
             # Leave product unclassified instead of falling back to fuzzy matching
@@ -218,20 +320,24 @@ def classify_single_product(product_info, method=None):
         try:
             from src.core.classification.local_llm_classifier import classify_product_local_llm
         except ImportError:
-            from local_llm_classifier import classify_product_local_llm
+            try:
+                from local_llm_classifier import classify_product_local_llm
+            except ImportError:
+                print(f"[WARNING] Could not import local LLM classifier")
+                return product_info
 
+        try:
             llm_result = classify_product_local_llm(product_info, product_taxonomy=GENERAL_PRODUCT_TAXONOMY, product_pages=PRODUCT_PAGES)
 
             # Apply LLM results
-            product_info["Category"] = llm_result.get("category", "")
-            product_info["Product Type"] = llm_result.get("product_type", "")
-            product_info["Product On Pages"] = llm_result.get("product_on_pages", "")
+            product_info["Category"] = llm_result.get("Category", "")
+            product_info["Product Type"] = llm_result.get("Product Type", "")
+            product_info["Product On Pages"] = llm_result.get("Product On Pages", "")
 
             print(
                 f"[LOCAL] Local LLM classification: {product_name[:40]}... -> {product_info.get('Category', 'N/A')}"
             )
             return product_info
-
         except Exception as e:
             print(f"[WARNING] Local LLM classification failed: {e}")
             # Leave product unclassified instead of falling back to fuzzy matching

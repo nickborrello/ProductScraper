@@ -91,147 +91,14 @@ class ProductEditor(QMainWindow):
         self.setWindowTitle(title)
         self.resize(1200, 800)
 
-        # Apply dark theme
-        self.setStyleSheet("""
-QMainWindow {
-    background-color: #1e1e1e;
-    color: #ffffff;
-}
-
-QMenuBar {
-    background-color: #2d2d2d;
-    color: #ffffff;
-    border-bottom: 1px solid #404040;
-}
-
-QMenuBar::item {
-    background-color: transparent;
-    padding: 4px 8px;
-    margin: 0px;
-}
-
-QMenuBar::item:selected {
-    background-color: #404040;
-}
-
-QMenu {
-    background-color: #2d2d2d;
-    color: #ffffff;
-    border: 1px solid #404040;
-}
-
-QMenu::item {
-    padding: 4px 20px;
-}
-
-QMenu::item:selected {
-    background-color: #404040;
-}
-
-QStatusBar {
-    background-color: #2d2d2d;
-    color: #ffffff;
-    border-top: 1px solid #404040;
-}
-
-QLabel {
-    color: #ffffff;
-}
-
-QCheckBox {
-    color: #ffffff;
-}
-
-QCheckBox::indicator {
-    border: 1px solid #ffffff;
-    background-color: #1e1e1e;
-}
-
-QCheckBox::indicator:checked {
-    background-color: #4CAF50;
-    border: 1px solid #4CAF50;
-}
-
-QMessageBox {
-    background-color: #1e1e1e;
-    color: #ffffff;
-}
-
-QMessageBox QLabel {
-    color: #ffffff;
-}
-
-QMessageBox QPushButton {
-    background-color: #404040;
-    color: #ffffff;
-    border: 1px solid #555555;
-    padding: 5px 15px;
-    border-radius: 3px;
-}
-
-QMessageBox QPushButton:hover {
-    background-color: #555555;
-}
-
-QDialog {
-    background-color: #1e1e1e;
-    color: #ffffff;
-}
-
-QDialog QLabel {
-    color: #ffffff;
-}
-
-QDialog QLineEdit {
-    background-color: #2d2d2d;
-    color: #ffffff;
-    border: 1px solid #404040;
-    padding: 4px;
-    border-radius: 3px;
-}
-
-QDialog QComboBox {
-    background-color: #2d2d2d;
-    color: #ffffff;
-    border: 1px solid #404040;
-    padding: 4px;
-    border-radius: 3px;
-}
-
-QDialog QComboBox::drop-down {
-    border: none;
-}
-
-QDialog QComboBox::down-arrow {
-    image: url(down_arrow.png);
-    width: 12px;
-    height: 12px;
-}
-
-QDialog QPushButton {
-    background-color: #404040;
-    color: #ffffff;
-    border: 1px solid #555555;
-    padding: 5px 15px;
-    border-radius: 3px;
-}
-
-QDialog QPushButton:hover {
-    background-color: #555555;
-}
-
-QListWidget {
-    background-color: #1e1e1e;
-    color: #ffffff;
-    border: 1px solid #404040;
-    alternate-background-color: #2d2d2d;
-}
-
-QListWidget::item:selected {
-    background-color: #4CAF50;
-    color: #ffffff;
-}
-""")
+        # Apply the global dark theme.
+        try:
+            from src.ui.styling import STYLESHEET
+            self.setStyleSheet(STYLESHEET)
+        except (ImportError, ModuleNotFoundError):
+            print("CRITICAL: Could not import stylesheet. UI will be unstyled.")
+            # Fallback to a very basic theme if the import fails
+            self.setStyleSheet("QMainWindow { background-color: #1e1e1e; color: #ffffff; }")
 
         # Build UI
         self._init_ui()
@@ -332,7 +199,6 @@ QListWidget::item:selected {
         self.image_label = QLabel("No image")
         self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.image_label.setMinimumSize(300, 300)
-        self.image_label.setStyleSheet("border: 1px solid #ccc;")
         layout.addWidget(self.image_label, 1)
 
         # Counter

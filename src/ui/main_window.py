@@ -113,7 +113,8 @@ class WorkerSignals(QObject):
     - progress: int
     - log: str
     - status: str (status message update)
-    - request_editor_sync: list (products to edit - blocks until editor closes)
+    - request_editor_sync: list (products), object (result container), str (editor type)
+    - request_confirmation_sync: str (title), str (text), object (result container)
     """
 
     finished = pyqtSignal()
@@ -122,7 +123,8 @@ class WorkerSignals(QObject):
     progress = pyqtSignal(int)
     log = pyqtSignal(str)
     status = pyqtSignal(str)
-    request_editor_sync = pyqtSignal(list, object)  # products_list, result_container
+    request_editor_sync = pyqtSignal(list, object, str)  # products_list, result_container, editor_type
+    request_confirmation_sync = pyqtSignal(str, str, object) # title, text, result_container
 
 
 class Worker(QThread):
@@ -150,8 +152,25 @@ class Worker(QThread):
         self.kwargs["progress_callback"] = self.signals.progress
         self.kwargs["log_callback"] = self.signals.log
         self.kwargs["status_callback"] = self.signals.status
-        self.kwargs["editor_callback"] = self._request_editor_sync  # Inject sync editor callback
-    def _request_editor_sync(self, products_list):
+        self.kwargs["editor_callback"] = self._request_editor_sync
+        self.kwargs["confirmation_callback"] = self._request_confirmation_sync
+
+    def _request_confirmation_sync(self, title, text):
+        """Request a confirmation dialog on the main thread and wait for the result."""
+        from PyQt6.QtCore import QEventLoop
+        result_container = {"result": None, "done": False}
+        self.signals.request_confirmation_sync.emit(title, text, result_container)
+        
+        loop = QEventLoop()
+        timer = QTimer()
+        timer.timeout.connect(lambda: result_container["done"] and loop.quit())
+        timer.start(100)
+        loop.exec()
+        timer.stop()
+        
+        return result_container["result"]
+
+    def _request_editor_sync(self, products_list, editor_type='product'):
         """Request editor on main thread and wait for result (synchronous from worker's perspective)"""
         from PyQt6.QtCore import QEventLoop
 
@@ -159,7 +178,7 @@ class Worker(QThread):
         result_container = {"result": None, "done": False}
 
         # Emit signal to main thread with products and result container
-        self.signals.request_editor_sync.emit(products_list, result_container)
+        self.signals.request_editor_sync.emit(products_list, result_container, editor_type)
 
         # Wait for main thread to complete
         loop = QEventLoop()
@@ -349,111 +368,18 @@ class MainWindow(QMainWindow):
         self.create_central_widget()
         self.create_status_bar()
         
-        # Force dark theme regardless of system settings
-        self.setStyleSheet("""
-            * {
-                color: #ffffff;
-            }
-            QMainWindow {
-                background-color: #1e1e1e;
-                color: #ffffff;
-            }
-            QMenuBar {
-                background-color: #2d2d2d;
-                color: #ffffff;
-                border-bottom: 1px solid #3e3e3e;
-            }
-            QMenuBar::item {
-                background-color: transparent;
-                color: #ffffff;
-                padding: 4px 8px;
-            }
-            QMenuBar::item:selected {
-                background-color: #4CAF50;
-                color: #ffffff;
-            }
-            QMenu {
-                background-color: #2d2d2d;
-                color: #ffffff;
-                border: 1px solid #3e3e3e;
-            }
-            QMenu::item {
-                background-color: transparent;
-                color: #ffffff;
-                padding: 4px 20px;
-            }
-            QMenu::item:selected {
-                background-color: #4CAF50;
-                color: #ffffff;
-            }
-            QStatusBar {
-                background-color: #2d2d2d;
-                color: #ffffff;
-                border-top: 1px solid #3e3e3e;
-            }
-            QLabel {
-                color: #ffffff;
-            }
-            QCheckBox {
-                color: #ffffff;
-            }
-            QCheckBox::indicator {
-                border: 1px solid #ffffff;
-                background-color: #2d2d2d;
-            }
-            QCheckBox::indicator:checked {
-                background-color: #4CAF50;
-            }
-            QMessageBox {
-                background-color: #1e1e1e;
-                color: #ffffff;
-            }
-            QMessageBox QLabel {
-                color: #ffffff;
-            }
-            QDialog {
-                background-color: #1e1e1e;
-                color: #ffffff;
-            }
-            QDialog QLabel {
-                color: #ffffff;
-            }
-            QListWidget {
-                background-color: #2d2d2d;
-                color: #ffffff;
-                border: 1px solid #3e3e3e;
-            }
-            QListWidget::item {
-                color: #ffffff;
-                padding: 2px;
-            }
-            QListWidget::item:selected {
-                background-color: #4CAF50;
-                color: #ffffff;
-            }
-            QListWidget::indicator {
-                width: 13px;
-                height: 13px;
-                border: 1px solid #888888;
-                background-color: #2d2d2d;
-            }
-            QListWidget::indicator:checked {
-                background-color: #3d3d3d;
-                border: 1px solid #ffffff;
-                image: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIHZpZXdCb3g9IjAgMCAxMCAxMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTggM0w2IDUgMiA5IiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPg==);
-            }
-            QListWidget::indicator:unchecked {
-                background-color: #2d2d2d;
-                border: 1px solid #888888;
-            }
-        """
-        )
+        # Apply the global dark theme.
+        try:
+            from src.ui.styling import STYLESHEET
+            self.setStyleSheet(STYLESHEET)
+        except (ImportError, ModuleNotFoundError):
+            print("CRITICAL: Could not import stylesheet. UI will be unstyled.")
+            # Fallback to a very basic theme if the import fails
+            self.setStyleSheet("QMainWindow { background-color: #1e1e1e; color: #ffffff; }")
+
         # Initial status
         self.log_message("Application started successfully", "SUCCESS")
         self.update_database_stats()
-
-        # Disable buttons that need redoing
-        self.classify_btn.setEnabled(False)
 
     def create_menu_bar(self):
         """Create the menu bar with all application menus"""
@@ -826,22 +752,45 @@ class MainWindow(QMainWindow):
         self.worker.signals.finished.connect(self.worker_finished)
         self.worker.signals.request_editor_sync.connect(
             self.open_editor_on_main_thread_sync
-        )  # Connect sync editor signal
+        )
+        self.worker.signals.request_confirmation_sync.connect(
+            self.open_confirmation_on_main_thread_sync
+        )
 
         # Start the worker thread
         self.worker.start()
 
-    def open_editor_on_main_thread_sync(self, products_list, result_container):
-        """Open the product editor on the main GUI thread (called via signal from worker) - synchronous"""
-        self.log_message(
-            f"📝 Opening product editor for {len(products_list)} products...", "INFO"
+    def open_confirmation_on_main_thread_sync(self, title, text, result_container):
+        """Show a confirmation dialog on the main thread and capture the result."""
+        reply = QMessageBox.question(
+            self,
+            title,
+            text,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
         )
+        result_container["result"] = (reply == QMessageBox.StandardButton.Yes)
+        result_container["done"] = True
+
+    def open_editor_on_main_thread_sync(self, products_list, result_container, editor_type):
+        """Open a specified editor on the main GUI thread (synchronous)."""
+        if editor_type == 'product':
+            from src.ui.product_editor import edit_products_in_batch as editor_func
+            log_msg = "product editor"
+        elif editor_type == 'classification':
+            from src.core.classification.ui import edit_classification_in_batch as editor_func
+            log_msg = "classification editor"
+        else:
+            self.log_message(f"❌ Unknown editor type requested: {editor_type}", "ERROR")
+            result_container["result"] = None
+            result_container["done"] = True
+            return
+
+        self.log_message(f"📝 Opening {log_msg} for {len(products_list)} products...", "INFO")
 
         try:
-            from src.ui.product_editor import edit_products_in_batch
-
             # Open editor - this runs on the main thread so it's safe
-            edited_products = edit_products_in_batch(products_list)
+            edited_products = editor_func(products_list)
 
             if edited_products:
                 self.log_message(
@@ -853,7 +802,7 @@ class MainWindow(QMainWindow):
                 result_container["result"] = None
 
         except Exception as e:
-            self.log_message(f"❌ Error opening product editor: {e}", "ERROR")
+            self.log_message(f"❌ Error opening {log_msg}: {e}", "ERROR")
             import traceback
 
             traceback.print_exc()
@@ -981,130 +930,121 @@ class MainWindow(QMainWindow):
         file_path,
         log_callback=None,
         progress_callback=None,
+        status_callback=None,
+        editor_callback=None,
     ):
         """Worker function to run classification"""
         import pandas as pd
         from src.core.classification.ui import edit_classification_in_batch
         from src.core.classification.manager import classify_products_batch
 
-        log = log_callback if log_callback else print
+        # Determine log function
+        if log_callback is None:
+            log = print
+        elif hasattr(log_callback, 'emit'):
+            # If it's a Qt signal object, use emit method
+            log = log_callback.emit
+        else:
+            # If it's already a callable (like emit method or function), use it directly
+            log = log_callback
 
         try:
             log("Loading Excel file...")
-            if progress_callback:
-                progress_callback.emit(10)
+            if progress_callback: progress_callback.emit(10)
 
-            df = pd.read_excel(file_path, dtype=str)
+            # Load the original DataFrame, keeping all original data
+            df = pd.read_excel(file_path, dtype=str).fillna('')
             log(f"Loaded {len(df)} rows from Excel file")
 
             if df.empty:
                 log("Excel file is empty")
                 return
 
-            if progress_callback:
-                progress_callback.emit(20)
-
-            # Check required columns
+            # Check for required columns for classification
             required_cols = ["SKU", "Name"]
-            missing_cols = [col for col in required_cols if col not in df.columns]
-            if missing_cols:
-                log(f"Missing required columns: {missing_cols}")
+            if not all(col in df.columns for col in required_cols):
+                missing_cols = [col for col in required_cols if col not in df.columns]
+                log(f"Missing required columns for classification: {missing_cols}")
                 return
 
-            if progress_callback:
-                progress_callback.emit(30)
+            if progress_callback: progress_callback.emit(20)
 
-            # Convert Excel columns to internal format
-            products_list = []
-            for _, row in df.iterrows():
-                product = {
-                    "SKU": str(row.get("SKU", "")).strip(),
-                    "Name": str(row.get("Name", "")).strip(),
-                    "Brand": str(row.get("Product Field 16", "")).strip(),
-                    "Price": str(row.get("Price", "")).strip(),
-                    "Weight": str(row.get("Weight", "")).strip(),
-                    "Images": str(row.get("Images", "")).strip(),
-                    "Special Order": (
-                        "yes"
-                        if str(row.get("Product Field 11", "")).strip().lower() == "yes"
-                        else ""
-                    ),
-                    "Category": "",
-                    "Product Type": "",
-                    "Product On Pages": "",
-                    "Product Cross Sell": str(row.get("Product Field 32", "")).strip(),
-                    "Product Disabled": (
-                        "checked"
-                        if str(row.get("ProductDisabled", "")).strip().lower()
-                        == "checked"
-                        else "uncheck"
-                    ),
-                }
-                products_list.append(product)
+            # Create a temporary list of dicts for the classification functions
+            products_for_classification = df.rename(columns={
+                "Product Field 16": "Brand",
+                "Product Field 11": "Special Order",
+                "Product Field 32": "Product Cross Sell",
+                "ProductDisabled": "Product Disabled"
+            }).to_dict('records')
+            log(f"Converted {len(products_for_classification)} products for classification")
 
-            log(f"Converted {len(products_list)} products to internal format")
+            if progress_callback: progress_callback.emit(40)
 
-            if progress_callback:
-                progress_callback.emit(50)
-
-            # Run automatic classification
-            log("Running automatic classification...")
-            products_list = classify_products_batch(products_list)
+            # --- Classification Process ---
+            from src.core.settings_manager import SettingsManager
+            settings = SettingsManager()
+            classification_method = settings.get("classification_method", "llm")
+            
+            log(f"Running automatic classification using {classification_method} method...")
+            classified_products = classify_products_batch(
+                products_for_classification, method=classification_method
+            )
             log("Automatic classification complete")
 
-            if progress_callback:
-                progress_callback.emit(70)
+            if progress_callback: progress_callback.emit(60)
 
-            # Save back to Excel
+            log("Opening manual classification editor...")
+            if editor_callback:
+                edited_products = editor_callback(classified_products, editor_type='classification')
+            else:
+                log("Editor callback not available, skipping manual edit.", "WARNING")
+                edited_products = classified_products # Proceed with auto-classified data
+
+            if edited_products is None:
+                log("Classification cancelled by user. No file will be saved.")
+                return
+
+            log("Manual classification complete")
+            if progress_callback: progress_callback.emit(80)
+            # --- End of Classification Process ---
+
+            # Create a DataFrame from the results
+            results_df = pd.DataFrame(edited_products)
+
+            # Set SKU as the index on both DataFrames to join the data
+            df = df.set_index('SKU')
+            results_df = results_df.set_index('SKU')
+
+            # Define the mapping from classification results to final Excel columns
+            column_mapping = {
+                "Category": "Product Field 24",
+                "Product Type": "Product Field 25",
+                "Product On Pages": "Product On Pages"
+            }
+            
+            results_to_update = results_df.rename(columns=column_mapping)
+            df.update(results_to_update)
+            
             from datetime import datetime
-
-            excel_data = []
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            df['Last Edited'] = timestamp
+            df.reset_index(inplace=True)
 
-            for product in products_list:
-                row = {
-                    "SKU": product.get("SKU", ""),
-                    "Name": product.get("Name", ""),
-                    "Price": product.get("Price", ""),
-                    "Images": product.get("Images", ""),
-                    "Weight": product.get("Weight", ""),
-                    "Product Field 16": product.get("Brand", ""),
-                    "Product Field 11": (
-                        "yes" if product.get("Special Order") == "yes" else ""
-                    ),
-                    "Product Field 24": product.get("Category", ""),
-                    "Product Field 25": product.get("Product Type", ""),
-                    "Product On Pages": product.get("Product On Pages", ""),
-                    "Product Field 32": product.get("Product Cross Sell", ""),
-                    "ProductDisabled": (
-                        "checked" if product.get("Product Disabled") == "checked" else "uncheck"
-                    ),
-                    "Last Edited": timestamp,
-                }
-                excel_data.append(row)
+            # --- Save back to Excel ---
+            save_path = Path(file_path)
+            if save_path.suffix.lower() == ".xls":
+                save_path = save_path.with_suffix(".xlsx")
+                log(f"Original was .xls, saving as .xlsx to preserve features: {save_path.name}")
 
-            if progress_callback:
-                progress_callback.emit(90)
-
-            # Save to Excel
-            save_path = file_path
-            if file_path.lower().endswith(".xls"):
-                save_path = file_path[:-4] + ".xlsx"
-                log(f"Converting to .xlsx format: {save_path}")
-
-            new_df = pd.DataFrame(excel_data)
-            new_df.to_excel(save_path, index=False)
-
-            log(f"Saved {len(products_list)} classified products to: {save_path}")
+            df.to_excel(save_path, index=False)
+            log(f"Saved {len(df)} classified products back to: {save_path}")
             log("Classification complete!")
 
-            if progress_callback:
-                progress_callback.emit(100)
+            if progress_callback: progress_callback.emit(100)
 
         except Exception as e:
             log(f"Error during classification: {e}")
             import traceback
-
             log(traceback.format_exc())
             raise
 

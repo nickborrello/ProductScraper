@@ -12,7 +12,7 @@ from tkinter import filedialog
 from pathlib import Path
 
 # Add project root to path
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
@@ -54,120 +54,94 @@ def classify_excel_file():
     print(f"📁 Selected file: {file_path}")
 
     try:
-        # Load Excel file
-        df = pd.read_excel(file_path, dtype=str)
+        # Load the original DataFrame, keeping all original data
+        df = pd.read_excel(file_path, dtype=str).fillna('')
         print(f"📊 Loaded {len(df)} rows from Excel file")
 
         if df.empty:
             print("❌ Excel file is empty")
             return
 
-        # Check required columns
+        # Check for required columns for classification
         required_cols = ["SKU", "Name"]
         missing_cols = [col for col in required_cols if col not in df.columns]
         if missing_cols:
-            print(f"❌ Missing required columns: {missing_cols}")
+            print(f"❌ Missing required columns for classification: {missing_cols}")
             return
 
-        # Convert Excel columns to internal format
-        products_list = []
-        for _, row in df.iterrows():
-            # Map Excel columns to internal format
-            # Exclude existing classifications since classifier.py will set fresh ones
-            product = {
-                "SKU": str(row.get("SKU", "")).strip(),
-                "Name": str(row.get("Name", "")).strip(),
-                "Brand": str(row.get("Product Field 16", "")).strip(),  # Brand
-                "Price": str(row.get("Price", "")).strip(),
-                "Weight": str(row.get("Weight", "")).strip(),
-                "Images": str(row.get("Images", "")).strip(),
-                "Special Order": (
-                    "yes"
-                    if str(row.get("Product Field 11", "")).strip().lower() == "yes"
-                    else ""
-                ),
-                "Category": "",  # Will be set by classifier.py
-                "Product Type": "",  # Will be set by classifier.py
-                "Product On Pages": "",  # Will be set by classifier.py
-                "Product Cross Sell": str(row.get("Product Field 32", "")).strip(),
-                "Product Disabled": (
-                    "checked"
-                    if str(row.get("ProductDisabled", "")).strip().lower() == "checked"
-                    else "uncheck"
-                ),
-            }
-            products_list.append(product)
+        # Create a temporary list of dicts for the classification functions
+        # This uses the specific column names the classifiers expect
+        products_for_classification = df.rename(columns={
+            "Product Field 16": "Brand",
+            "Product Field 11": "Special Order",
+            "Product Field 32": "Product Cross Sell",
+            "ProductDisabled": "Product Disabled"
+        }).to_dict('records')
 
-        print(f"✅ Converted {len(products_list)} products to internal format")
-
-        # Run automatic classification first
+        # --- Classification Process ---
         settings = SettingsManager()
         classification_method = settings.get("classification_method", "llm")
-        print(
-            f"🤖 Running automatic classification using {classification_method} method..."
-        )
-        products_list = classify_products_batch(
-            products_list, method=classification_method
+        
+        print(f"🤖 Running automatic classification using {classification_method} method...")
+        classified_products = classify_products_batch(
+            products_for_classification, method=classification_method
         )
         print("✅ Automatic classification complete")
 
-        # Run manual classification UI
         print("🖱️ Opening manual classification editor...")
-        products_list = edit_classification_in_batch(products_list)
+        edited_products = edit_classification_in_batch(classified_products)
 
-        if products_list is None:
-            print("❌ Classification cancelled by user")
+        if edited_products is None:
+            print("❌ Classification cancelled by user. No file will be saved.")
             return
 
         print("✅ Manual classification complete")
+        # --- End of Classification Process ---
 
-        # Convert back to Excel format
-        excel_data = []
+        # Create a DataFrame from the results
+        results_df = pd.DataFrame(edited_products)
+
+        # Set SKU as the index on both DataFrames to join the data
+        df = df.set_index('SKU')
+        results_df = results_df.set_index('SKU')
+
+        # Define the mapping from classification results to final Excel columns
+        column_mapping = {
+            "Category": "Product Field 24",
+            "Product Type": "Product Field 25",
+            "Product On Pages": "Product On Pages"
+        }
+        
+        # Rename the columns in the results DataFrame to match the target columns
+        results_to_update = results_df.rename(columns=column_mapping)
+
+        # Update the original DataFrame with the new classification data
+        # This only affects columns present in `results_to_update` and preserves all others
+        df.update(results_to_update)
+        
+        # Add/update the 'Last Edited' timestamp
         from datetime import datetime
-
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        df['Last Edited'] = timestamp
 
-        for product in products_list:
-            row = {
-                "SKU": product.get("SKU", ""),
-                "Name": product.get("Name", ""),
-                "Price": product.get("Price", ""),
-                "Images": product.get("Images", ""),
-                "Weight": product.get("Weight", ""),
-                "Product Field 16": product.get("Brand", ""),  # Brand
-                "Product Field 11": (
-                    "yes" if product.get("Special Order") == "yes" else ""
-                ),  # Special Order
-                "Product Field 24": product.get("Category", ""),  # Category
-                "Product Field 25": product.get("Product Type", ""),  # Product Type
-                "Product On Pages": product.get("Product On Pages", ""),
-                "Product Field 32": product.get("Product Cross Sell", ""),  # Cross-sell
-                "ProductDisabled": (
-                    "checked"
-                    if product.get("Product Disabled") == "checked"
-                    else "uncheck"
-                ),
-                "Last Edited": timestamp,
-            }
-            excel_data.append(row)
+        # Restore SKU from index to a column
+        df.reset_index(inplace=True)
 
-        # Save back to Excel file
-        # Always save as .xlsx since pandas can't write to .xls
-        save_path = file_path
-        if file_path.lower().endswith(".xls"):
-            save_path = file_path[:-4] + ".xlsx"
-            print(f"📝 Converting to .xlsx format: {save_path}")
+        # --- Save back to Excel ---
+        save_path = Path(file_path)
+        # Always save as .xlsx for compatibility, even if original was .xls
+        if save_path.suffix.lower() == ".xls":
+            save_path = save_path.with_suffix(".xlsx")
+            print(f"📝 Original was .xls, saving as .xlsx to preserve features: {save_path.name}")
 
-        new_df = pd.DataFrame(excel_data)
-        new_df.to_excel(save_path, index=False)
+        df.to_excel(save_path, index=False)
 
-        print(f"💾 Saved {len(products_list)} classified products back to: {save_path}")
+        print(f"💾 Saved {len(df)} classified products back to: {save_path}")
         print("🎉 Excel classification complete!")
 
     except Exception as e:
         print(f"❌ Error during classification: {e}")
         import traceback
-
         traceback.print_exc()
 
 

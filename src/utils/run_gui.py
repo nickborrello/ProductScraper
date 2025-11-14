@@ -31,15 +31,7 @@ from PyQt6.QtWidgets import (
 
 # Ensure project root is on sys.path so we can import from src
 import os
-
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
-
-# Ensure project root is on sys.path so we can import from scripts
-import os
-
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
@@ -53,14 +45,10 @@ except:
 
 # Conditional import for core logic to ensure GUI is runnable even if main fails.
 try:
-    from scripts.run_scraper import (
-        run_scraping,
-        run_db_refresh,
-        run_scraper_tests,
-        run_scraper_integration_tests,
-        run_shopsite_xml_download,
-        run_shopsite_publish
-    )
+    from src.scrapers.main import run_scraping
+    from src.core.database.refresh import refresh_database_from_xml as run_db_refresh
+    from src.utils.run_scraper import run_scraper_tests, run_scraper_integration_tests
+    from src.core.database.xml_import import import_from_shopsite_xml as run_shopsite_xml_download, publish_shopsite_changes as run_shopsite_publish
 except ImportError as e:
     if not is_gui_mode:
         print(f"Error importing from main: {e}")

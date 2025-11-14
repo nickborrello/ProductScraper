@@ -45,17 +45,6 @@ except ImportError as e:
     if not is_gui_mode:
         print(f"❌ ProductScraper module not available: {e}")
 
-try:
-    from src.scrapers.discontinued import DiscontinuedChecker
-
-    DISCONTINUED_CHECKER_AVAILABLE = True
-    if not is_gui_mode:
-        print("✅ DiscontinuedChecker module loaded")
-except ImportError as e:
-    DISCONTINUED_CHECKER_AVAILABLE = False
-    if not is_gui_mode:
-        print(f"❌ DiscontinuedChecker module not available: {e}")
-
 if not is_gui_mode:
     print("🔧 Module check complete")
 
