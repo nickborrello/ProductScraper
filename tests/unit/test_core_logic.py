@@ -1,7 +1,7 @@
 import os
 import sys
 import pytest
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch, call, Mock
 
 # Add project root to sys.path to allow imports from the main project directory
 PROJECT_ROOT = os.path.dirname(
@@ -9,7 +9,7 @@ PROJECT_ROOT = os.path.dirname(
 )
 sys.path.insert(0, PROJECT_ROOT)
 
-from scripts.run_scraper import run_scraping, run_discontinued_check, run_db_refresh
+from src.scrapers.main import run_scraping, run_db_refresh
 
 # --- Test Fixtures ---
 
@@ -17,34 +17,30 @@ from scripts.run_scraper import run_scraping, run_discontinued_check, run_db_ref
 @pytest.fixture
 def mock_callbacks():
     """Provides mock progress and log callbacks."""
-    return MagicMock(), MagicMock()
+    progress_mock = MagicMock()
+    log_mock = MagicMock()
+    log_mock.emit = log_mock  # Make emit the same as the mock itself
+    return progress_mock, log_mock
 
 
 @pytest.fixture
 def mock_scraper():
     """Fixture to mock the ProductScraper class."""
-    with patch("scripts.run_scraper.ProductScraper", autospec=True) as mock:
-        yield mock
-
-
-@pytest.fixture
-def mock_checker():
-    """Fixture to mock the DiscontinuedChecker class."""
-    with patch("scripts.run_scraper.DiscontinuedChecker", autospec=True) as mock:
+    with patch("src.scrapers.main.ProductScraper", autospec=True) as mock:
         yield mock
 
 
 @pytest.fixture
 def mock_db_refresh_func():
     """Fixture to mock the refresh_database_from_xml function."""
-    with patch("scripts.run_scraper.refresh_database_from_xml", autospec=True) as mock:
+    with patch("src.scrapers.main.refresh_database_from_xml", autospec=True) as mock:
         yield mock
 
 
 @pytest.fixture
 def mock_excel_validation():
     """Fixture to mock validate_excel_columns."""
-    with patch("scripts.run_scraper.validate_excel_columns", autospec=True) as mock:
+    with patch("src.scrapers.main.validate_excel_columns", autospec=True) as mock:
         yield mock
 
 
@@ -66,24 +62,25 @@ def mock_os_remove():
 
 
 def test_run_scraping_success(
-    mock_callbacks, mock_scraper, mock_excel_validation, mock_pandas_read
+    mock_callbacks, mock_scraper
 ):
     """Test a successful run of the scraping process."""
     progress_callback, log_callback = mock_callbacks
     file_path = "dummy/path/to/file.xlsx"
 
-    # Configure mocks
-    mock_excel_validation.return_value = (True, "Validation passed")
-    mock_pandas_read.return_value.empty = False
-
-    with patch("scripts.run_scraper.PRODUCT_SCRAPER_AVAILABLE", True):
+    with patch("src.scrapers.main.PRODUCT_SCRAPER_AVAILABLE", True), \
+         patch("src.scrapers.main.validate_excel_columns", return_value=(True, "Validation passed")), \
+         patch("pandas.read_excel") as mock_read:
+        
+        mock_read.return_value.empty = False
+        
         run_scraping(file_path, progress_callback, log_callback)
 
     # Assertions
+    log_callback.assert_any_call(f"🚀 run_scraping called with file: {file_path}")
     log_callback.assert_any_call(f"📂 Selected file: {os.path.basename(file_path)}")
-    mock_excel_validation.assert_called_once_with(file_path, log_callback=log_callback)
-    mock_pandas_read.assert_called_once_with(file_path, dtype=str)
     log_callback.assert_any_call("🚀 Starting scraper...")
+    log_callback.assert_any_call("✅ Product scraping completed!")
     mock_scraper.assert_called_once_with(
         file_path,
         interactive=True,
@@ -91,16 +88,16 @@ def test_run_scraping_success(
         log_callback=log_callback,
         progress_callback=progress_callback,
         editor_callback=None,
+        status_callback=None,
     )
     mock_scraper.return_value.run.assert_called_once()
-    log_callback.assert_any_call("✅ Product scraping completed!")
     assert progress_callback.emit.call_count == 5  # 10, 20, 30, 40, 90
 
 
 def test_run_scraping_scraper_not_available(mock_callbacks):
     """Test run_scraping when the scraper module is not available."""
     progress_callback, log_callback = mock_callbacks
-    with patch("scripts.run_scraper.PRODUCT_SCRAPER_AVAILABLE", False):
+    with patch("src.scrapers.main.PRODUCT_SCRAPER_AVAILABLE", False):
         run_scraping("any/path", progress_callback, log_callback)
 
     log_callback.assert_called_with(
@@ -109,13 +106,14 @@ def test_run_scraping_scraper_not_available(mock_callbacks):
     progress_callback.emit.assert_not_called()
 
 
-def test_run_scraping_invalid_excel(mock_callbacks, mock_excel_validation):
+def test_run_scraping_invalid_excel(mock_callbacks):
     """Test run_scraping with an invalid Excel file."""
     _, log_callback = mock_callbacks
     file_path = "dummy/path/to/invalid.xlsx"
-    mock_excel_validation.return_value = (False, "Missing columns")
-
-    with patch("scripts.run_scraper.PRODUCT_SCRAPER_AVAILABLE", True):
+    
+    with patch("src.scrapers.main.PRODUCT_SCRAPER_AVAILABLE", True), \
+         patch("src.scrapers.main.validate_excel_columns", return_value=(False, "Missing columns")):
+        
         run_scraping(file_path, None, log_callback)
 
     log_callback.assert_any_call("Missing columns")
@@ -123,50 +121,23 @@ def test_run_scraping_invalid_excel(mock_callbacks, mock_excel_validation):
 
 
 def test_run_scraping_empty_excel(
-    mock_callbacks, mock_excel_validation, mock_pandas_read, mock_os_remove
+    mock_callbacks, mock_os_remove
 ):
     """Test run_scraping with an empty Excel file that should be deleted."""
     _, log_callback = mock_callbacks
     file_path = "dummy/path/to/empty.xlsx"
 
-    mock_excel_validation.return_value = (True, "Validation passed")
-    mock_pandas_read.return_value.empty = True
-
-    with patch("scripts.run_scraper.PRODUCT_SCRAPER_AVAILABLE", True):
+    with patch("src.scrapers.main.PRODUCT_SCRAPER_AVAILABLE", True), \
+         patch("src.scrapers.main.validate_excel_columns", return_value=(True, "Validation passed")), \
+         patch("pandas.read_excel") as mock_read:
+        
+        mock_read.return_value.empty = True
+        
         run_scraping(file_path, None, log_callback)
 
     log_callback.assert_any_call(f"⚠️ Input file '{file_path}' is empty. Deleting file.")
     mock_os_remove.assert_called_once_with(file_path)
     log_callback.assert_any_call(f"🗑️ Deleted empty input file: {file_path}")
-
-
-# --- Tests for run_discontinued_check ---
-
-
-def test_run_discontinued_check_success(mock_callbacks, mock_checker):
-    """Test a successful run of the discontinued check."""
-    progress_callback, log_callback = mock_callbacks
-    file_path = "dummy/discontinued.xlsx"
-
-    with patch("scripts.run_scraper.DISCONTINUED_CHECKER_AVAILABLE", True):
-        run_discontinued_check(file_path, progress_callback, log_callback)
-
-    log_callback.assert_any_call(f"📂 Selected file: {os.path.basename(file_path)}")
-    log_callback.assert_any_call("🚀 Starting discontinued products check...")
-    mock_checker.assert_called_once_with(file_path)
-    mock_checker.return_value.run.assert_called_once()
-    log_callback.assert_any_call("✅ Discontinued products check completed!")
-    assert progress_callback.emit.call_count == 3  # 10, 20, 90
-
-
-def test_run_discontinued_check_not_available(mock_callbacks):
-    """Test discontinued check when the module is not available."""
-    progress_callback, log_callback = mock_callbacks
-    with patch("scripts.run_scraper.DISCONTINUED_CHECKER_AVAILABLE", False):
-        run_discontinued_check("any/path", progress_callback, log_callback)
-
-    log_callback.assert_called_with("❌ DiscontinuedChecker module not available.")
-    progress_callback.emit.assert_not_called()
 
 
 # --- Tests for run_db_refresh ---

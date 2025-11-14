@@ -89,7 +89,6 @@ For automation and scripting, you can use the command-line interface:
 python src/main.py --run scraper --file path/to/your/excel_file.xlsx
 ```
 
-
 ### Testing
 
 ```bash
@@ -177,7 +176,30 @@ DATABASE_PATH=data/databases/products.db
 DEBUG=false
 SELENIUM_HEADLESS=true
 SELENIUM_TIMEOUT=30
+
+# LLM Classification (optional - improves product categorization)
+OPENROUTER_API_KEY=your_openrouter_api_key
+OLLAMA_MODEL=llama3
 ```
+
+### LLM Classification Setup
+
+The application supports AI-powered product classification using either cloud APIs or local models:
+
+#### OpenRouter API (Cloud)
+
+1. Sign up at [OpenRouter.ai](https://openrouter.ai)
+2. Get your API key
+3. Set `OPENROUTER_API_KEY` in your environment or `settings.json`
+
+#### Local Ollama (Free, no API key required)
+
+1. Install Ollama: `winget install Ollama.Ollama`
+2. Pull a model: `ollama pull llama3` (or `mistral`, `codellama`, etc.)
+3. The application will automatically detect and use local models
+4. Configure model in `settings.json`: `"ollama_model": "llama3"`
+
+**Note**: Local models provide privacy and no API costs, but require more system resources.
 
 ## Safety & Best Practices
 

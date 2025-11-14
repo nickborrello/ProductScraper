@@ -24,247 +24,28 @@ MODEL = "openai/gpt-4o-mini"  # Cost-effective and capable
 MAX_TOKENS = 1000
 TEMPERATURE = 0.1  # Low temperature for consistent classifications
 
-# Comprehensive product taxonomy - includes both pet and general products
-GENERAL_PRODUCT_TAXONOMY = {
-    # Pet Products
-    "Dog Food": [
-        "Dry Dog Food",
-        "Wet Dog Food",
-        "Raw Dog Food",
-        "Freeze Dried Dog Food",
-        "Puppy Food",
-        "Adult Dog Food",
-        "Senior Dog Food",
-        "Grain Free Dog Food",
-        "Limited Ingredient Dog Food",
-        "Organic Dog Food",
-        "Dog Treats",
-        "Dog Biscuits",
-        "Dog Dental Chews",
-        "Dog Training Treats",
-    ],
-    "Cat Food": [
-        "Dry Cat Food",
-        "Wet Cat Food",
-        "Raw Cat Food",
-        "Freeze Dried Cat Food",
-        "Kitten Food",
-        "Adult Cat Food",
-        "Senior Cat Food",
-        "Hairball Cat Food",
-        "Grain Free Cat Food",
-        "Limited Ingredient Cat Food",
-        "Organic Cat Food",
-        "Cat Treats",
-        "Cat Hairball Treats",
-        "Cat Dental Treats",
-    ],
-    "Bird Supplies": [
-        "Bird Food",
-        "Bird Seed",
-        "Bird Pellets",
-        "Bird Treats",
-        "Bird Cages",
-        "Bird Toys",
-        "Bird Perches",
-        "Bird Healthcare",
-        "Bird Vitamins",
-        "Bird Supplements",
-    ],
-    "Fish Supplies": [
-        "Fish Food",
-        "Tropical Fish Flakes",
-        "Goldfish Food",
-        "Betta Food",
-        "Fish Tanks",
-        "Aquarium Filters",
-        "Fish Water Treatments",
-        "Fish Tank Decorations",
-        "Fish Nets",
-        "Fish Healthcare",
-    ],
-    "Small Pet Food": [
-        "Rabbit Food",
-        "Guinea Pig Food",
-        "Hamster Food",
-        "Gerbil Food",
-        "Mouse Food",
-        "Rat Food",
-        "Ferret Food",
-        "Chinchilla Food",
-        "Small Pet Treats",
-        "Small Pet Hay",
-        "Small Pet Bedding",
-    ],
-    "Reptile Supplies": [
-        "Reptile Food",
-        "Bearded Dragon Food",
-        "Leopard Gecko Food",
-        "Snake Food",
-        "Lizard Food",
-        "Turtle Food",
-        "Reptile Vitamins",
-        "Reptile Heating",
-        "Reptile Lighting",
-        "Reptile Substrates",
-        "Reptile Terrariums",
-        "Reptile Healthcare",
-    ],
-    "Pet Toys": [
-        "Dog Toys",
-        "Cat Toys",
-        "Bird Toys",
-        "Small Pet Toys",
-        "Chew Toys",
-        "Plush Toys",
-        "Interactive Toys",
-        "Puzzle Toys",
-    ],
-    "Pet Healthcare": [
-        "Dog Medications",
-        "Cat Medications",
-        "Bird Medications",
-        "Joint Supplements",
-        "Digestive Supplements",
-        "Skin Care",
-        "Flea & Tick",
-        "Heartworm Prevention",
-        "Dental Care",
-    ],
-    "Pet Grooming": [
-        "Dog Shampoos",
-        "Cat Shampoos",
-        "Pet Brushes",
-        "Pet Clippers",
-        "Nail Clippers",
-        "Ear Cleaners",
-        "Pet Cologne",
-    ],
-    "Pet Beds & Carriers": [
-        "Dog Beds",
-        "Cat Beds",
-        "Pet Carriers",
-        "Pet Crates",
-        "Pet Blankets",
-        "Pet Pillows",
-    ],
-    "Pet Bowls & Feeders": [
-        "Dog Bowls",
-        "Cat Bowls",
-        "Bird Bowls",
-        "Automatic Feeders",
-        "Pet Water Fountains",
-        "Slow Feed Bowls",
-    ],
-    # Non-Pet Products
-    "Hardware": [
-        "Tools",
-        "Fasteners",
-        "Plumbing",
-        "Electrical",
-        "HVAC",
-        "Paint",
-        "Lumber",
-        "Hardware Accessories",
-        "Power Tools",
-        "Hand Tools",
-    ],
-    "Lawn & Garden": [
-        "Seeds",
-        "Fertilizer",
-        "Tools",
-        "Plants",
-        "Gardening Supplies",
-        "Lawn Care",
-        "Outdoor Furniture",
-        "Grills",
-        "Pest Control",
-        "Irrigation",
-    ],
-    "Farm Supplies": [
-        "Fencing",
-        "Feeders",
-        "Equipment",
-        "Animal Health",
-        "Farm Tools",
-        "Livestock Supplies",
-        "Poultry Supplies",
-        "Barn Equipment",
-        "Tractor Parts",
-    ],
-    "Home & Kitchen": [
-        "Cleaning",
-        "Storage",
-        "Appliances",
-        "Decor",
-        "Kitchen Tools",
-        "Bathroom Supplies",
-        "Bedding",
-        "Furniture",
-        "Home Improvement",
-        "Organization",
-    ],
-    "Automotive": [
-        "Parts",
-        "Tools",
-        "Maintenance",
-        "Accessories",
-        "Tires",
-        "Batteries",
-        "Oil",
-        "Filters",
-        "Brakes",
-        "Engine Parts",
-    ],
-    "Farm Animal Supplies": [
-        "Chicken Feed",
-        "Goat Feed",
-        "Sheep Feed",
-        "Pig Feed",
-        "Livestock Medications",
-        "Animal Supplements",
-        "Farm Equipment",
-    ],
-}
-
-# Common product pages - includes both pet and general products
-PRODUCT_PAGES = [
-    # Pet Pages
-    "Dog Food Shop All",
-    "Cat Food Shop All",
-    "Bird Supplies Shop All",
-    "Fish Supplies Shop All",
-    "Small Pet Supplies Shop All",
-    "Reptile Supplies Shop All",
-    "Pet Toys Shop All",
-    "Pet Healthcare Shop All",
-    "Pet Grooming Shop All",
-    "Dog Supplies Shop All",
-    "Cat Supplies Shop All",
-    "Pet Beds Shop All",
-    # General Pages
-    "Hardware Shop All",
-    "Lawn & Garden Shop All",
-    "Farm Supplies Shop All",
-    "Home & Kitchen Shop All",
-    "Automotive Shop All",
-    "Farm Animal Supplies Shop All",
-    # Common Pages
-    "Brand Pages",
-    "Sale Items",
-    "New Arrivals",
-    "Best Sellers",
-]
-
 
 class LLMProductClassifier:
     """LLM-based product classifier using OpenRouter API with conversation threads."""
 
-    def __init__(self):
+    def __init__(self, product_taxonomy: Dict[str, List[str]] = None, product_pages: List[str] = None):
         if not OPENROUTER_API_KEY:
             raise ValueError(
                 "OpenRouter API key not found. Set OPENROUTER_API_KEY environment variable or add to settings.json"
             )
+
+        # Use provided taxonomy or import from manager
+        if product_taxonomy is None:
+            from .manager import GENERAL_PRODUCT_TAXONOMY
+            self.product_taxonomy = GENERAL_PRODUCT_TAXONOMY
+        else:
+            self.product_taxonomy = product_taxonomy
+
+        if product_pages is None:
+            from .manager import PRODUCT_PAGES
+            self.product_pages = PRODUCT_PAGES
+        else:
+            self.product_pages = product_pages
 
         self.api_key = OPENROUTER_API_KEY
         self.conversation_history = []
@@ -279,13 +60,13 @@ class LLMProductClassifier:
 
         # Create comprehensive system prompt
         taxonomy_text = "PRODUCT TAXONOMY:\n"
-        for category, product_types in GENERAL_PRODUCT_TAXONOMY.items():
+        for category, product_types in self.product_taxonomy.items():
             taxonomy_text += f"\n{category.upper()}:\n"
             for pt in product_types:
                 taxonomy_text += f"  - {pt}\n"
 
         pages_text = "COMMON PRODUCT PAGES:\n" + "\n".join(
-            f"  - {page}" for page in PRODUCT_PAGES
+            f"  - {page}" for page in self.product_pages
         )
 
         system_prompt = f"""You are an expert e-commerce product classifier for a retail store.
@@ -661,12 +442,12 @@ Be consistent and accurate in your classifications."""
 _llm_classifier = None
 
 
-def get_llm_classifier() -> LLMProductClassifier:
+def get_llm_classifier(product_taxonomy: Dict[str, List[str]] = None, product_pages: List[str] = None) -> LLMProductClassifier:
     """Get or create LLM classifier instance."""
     global _llm_classifier
     if _llm_classifier is None:
         try:
-            _llm_classifier = LLMProductClassifier()
+            _llm_classifier = LLMProductClassifier(product_taxonomy, product_pages)
             print("✅ LLM classifier initialized")
         except ValueError as e:
             print(f"❌ LLM classifier initialization failed: {e}")
