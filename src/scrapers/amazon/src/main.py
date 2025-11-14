@@ -10,6 +10,10 @@ import sys
 import time
 from typing import Any
 
+# Add the project root to the Python path for direct execution
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+sys.path.insert(0, project_root)
+
 from apify import Actor
 from fake_useragent import UserAgent
 from selenium import webdriver
@@ -29,7 +33,7 @@ HEADLESS = False  # Set to False for debugging and manual inspection
 DEBUG_MODE = False  # Set to True to pause for manual inspection during scraping
 ENABLE_DEVTOOLS = DEBUG_MODE  # Automatically enable DevTools when in debug mode
 DEVTOOLS_PORT = 9222  # Port for Chrome DevTools remote debugging
-TEST_SKU = "B01N7UHU93"  # Kong Classic Dog Toy ASIN
+TEST_SKU = "035585499741"  # KONG Pull A Partz Pals Koala SM - test SKU for Amazon
 
 
 def create_driver(proxy_url=None) -> webdriver.Chrome:

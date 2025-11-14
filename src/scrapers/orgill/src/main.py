@@ -19,6 +19,10 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 from fake_useragent import UserAgent
 import logging
 
+# Add the project root to the Python path for direct execution
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+sys.path.insert(0, project_root)
+
 # Load environment variables from .env file
 from dotenv import load_dotenv
 load_dotenv()
@@ -32,7 +36,7 @@ HEADLESS = False  # Now works in headless mode after fixing Chrome options  # Se
 DEBUG_MODE = False  # Set to True to pause for manual inspection during scraping
 ENABLE_DEVTOOLS = DEBUG_MODE  # Automatically enable DevTools when in debug mode
 DEVTOOLS_PORT = 9222  # Port for Chrome DevTools remote debugging
-TEST_SKU = "017800149372"
+TEST_SKU = "035585499741"  # KONG Pull A Partz Pals Koala SM - test SKU for Orgill
 
 # URLs and constants
 LOGIN_URL = 'https://www.orgill.com/index.aspx?tab=8'

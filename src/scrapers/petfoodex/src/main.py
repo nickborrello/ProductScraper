@@ -11,10 +11,9 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 import pathlib
 
-# Add the parent of ProductScraper to sys.path
-project_root = pathlib.Path(__file__).resolve().parents[2]
-if str(project_root) not in sys.path:
-    sys.path.insert(0, str(project_root))
+# Add the project root to the Python path for direct execution
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+sys.path.insert(0, project_root)
 
 from src.utils.scraping.scraping import get_standard_chrome_options
 from src.utils.scraping.browser import create_browser
@@ -25,6 +24,7 @@ HEADLESS = True
 DEBUG_MODE = False  # Set to True to pause for manual inspection during scraping
 ENABLE_DEVTOOLS = DEBUG_MODE  # Automatically enable DevTools when in debug mode
 DEVTOOLS_PORT = 9222  # Port for Chrome DevTools remote debugging
+TEST_SKU = "035585499741"  # KONG Pull A Partz Pals Koala SM - test SKU for Pet Food Experts
 
 LOGIN_URL = "https://orders.petfoodexperts.com/SignIn"
 HOME_URL = "https://orders.petfoodexperts.com/"
