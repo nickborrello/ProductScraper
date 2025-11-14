@@ -4,304 +4,58 @@ Handles product classification (Category, Product Type, Product On Pages) using 
 Separates business logic from basic product editing (product_editor.py).
 """
 
-import os
-import sqlite3
-import time
-import pandas as pd
 import re
 from pathlib import Path
 
-# Import product pages constant
-from ...config.shopsite_pages import SHOPSITE_PAGES
-
 # PyQt6 imports
+from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
     QApplication,
-    QMainWindow,
-    QWidget,
-    QVBoxLayout,
+    QCheckBox,
+    QFrame,
+    QGridLayout,
     QHBoxLayout,
     QLabel,
-    QPushButton,
     QLineEdit,
-    QScrollArea,
-    QFrame,
-    QCheckBox,
+    QMainWindow,
     QMessageBox,
+    QPushButton,
+    QScrollArea,
     QSplitter,
-    QProgressBar,
-    QSizePolicy,
-    QGridLayout,
-)
-from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QObject
-from PyQt6.QtGui import QFont, QPalette, QColor
-
-# Database path
-DB_PATH = (
-    Path(__file__).parent.parent.parent.parent / "data" / "databases" / "products.db"
+    QVBoxLayout,
+    QWidget,
 )
 
-# Cache for facet options to avoid repeated database queries
-_facet_cache = {
-    "category_product_types": None,
-    "product_on_pages_options": None,
-    "cache_timestamp": None,
-}
-CACHE_DURATION_SECONDS = 300  # 5 minutes
-
-
-def clear_facet_cache():
-    """Clear the facet options cache, forcing fresh database queries on next access."""
-    global _facet_cache
-    _facet_cache = {
-        "category_product_types": None,
-        "product_on_pages_options": None,
-        "cache_timestamp": None,
-    }
+# Import product pages from manager (which loads from JSON) - moved inside function to avoid relative import issues when run directly
+# from .manager import PRODUCT_PAGES
 
 
 def get_facet_options_from_db(force_refresh=False):
     """
-    Query facet options directly from the database with caching.
+    Load facet options from JSON files instead of database.
 
     Args:
-        force_refresh: If True, bypass cache and query database
+        force_refresh: Ignored (kept for compatibility)
 
     Returns:
         Tuple of (category_product_types_dict, product_on_pages_list)
     """
-    import time
-
-    # Check cache validity
-    current_time = time.time()
-    cache_valid = (
-        _facet_cache["cache_timestamp"] is not None
-        and (current_time - _facet_cache["cache_timestamp"]) < CACHE_DURATION_SECONDS
-        and not force_refresh
-    )
-
-    if cache_valid and _facet_cache["category_product_types"] is not None:
-        print(
-            f"DEBUG: Using cached facet options (age: {current_time - _facet_cache['cache_timestamp']:.1f}s)"
-        )
-        return (
-            _facet_cache["category_product_types"],
-            _facet_cache["product_on_pages_options"],
-        )
-
-    print(
-        f"DEBUG: Querying database for facet options (cache {'expired' if _facet_cache['cache_timestamp'] else 'empty'} or force_refresh={force_refresh})"
-    )
-
-    # Cache miss or expired - query database
-    if not DB_PATH.exists():
-        # Fallback defaults if database doesn't exist
-        default_categories = {
-            "Dog Food": ["Dry Dog Food", "Wet Dog Food", "Raw Dog Food", "Dog Treats"],
-            "Cat Food": ["Dry Cat Food", "Wet Cat Food", "Raw Cat Food", "Cat Treats"],
-            "Bird Supplies": [
-                "Bird Food",
-                "Bird Cages",
-                "Bird Toys",
-                "Bird Healthcare",
-            ],
-            "Small Pet Food": [
-                "Rabbit Food",
-                "Guinea Pig Food",
-                "Hamster Food",
-                "Rat Food",
-            ],
-            "Farm Animal Supplies": [
-                "Chicken Feed",
-                "Goat Feed",
-                "Sheep Feed",
-                "Pig Feed",
-            ],
-            "Pet Toys": ["Dog Toys", "Cat Toys", "Bird Toys", "Small Pet Toys"],
-            "Pet Healthcare": [
-                "Dog Medications",
-                "Cat Medications",
-                "Bird Medications",
-                "Small Pet Medications",
-            ],
-            "Pet Grooming": [
-                "Dog Shampoos",
-                "Cat Shampoos",
-                "Pet Brushes",
-                "Pet Clippers",
-            ],
-            "Pet Beds": ["Dog Beds", "Cat Beds", "Small Pet Beds"],
-            "Pet Bowls": ["Dog Bowls", "Cat Bowls", "Bird Bowls", "Small Pet Bowls"],
-            "Hardware": ["Tools", "Fasteners", "Plumbing", "Electrical", "HVAC"],
-            "Lawn & Garden": ["Seeds", "Fertilizer", "Tools", "Plants"],
-            "Farm Supplies": ["Fencing", "Feeders", "Equipment", "Animal Health"],
-            "Home & Kitchen": ["Cleaning", "Storage", "Appliances", "Decor"],
-            "Automotive": ["Parts", "Tools", "Maintenance", "Accessories"],
-        }
-        default_pages = SHOPSITE_PAGES
-        _facet_cache.update(
-            {
-                "category_product_types": default_categories,
-                "product_on_pages_options": default_pages,
-                "cache_timestamp": current_time,
-            }
-        )
-        return default_categories, default_pages
-
-    conn = sqlite3.connect(DB_PATH)
     try:
-        # Check if there are any products with facet data
-        cursor = conn.execute(
-            """
-            SELECT COUNT(*) FROM products
-            WHERE Category IS NOT NULL OR Product_Type IS NOT NULL
-        """
-        )
-        classified_count = cursor.fetchone()[0]
+        # Load taxonomy from JSON via taxonomy manager
+        from .taxonomy_manager import get_product_taxonomy
+        category_product_types = get_product_taxonomy()
 
-        if classified_count == 0:
-            # No products with facet data, return minimal defaults
-            default_categories = {
-                "Dog Food": [
-                    "Dry Dog Food",
-                    "Wet Dog Food",
-                    "Raw Dog Food",
-                    "Dog Treats",
-                ],
-                "Cat Food": [
-                    "Dry Cat Food",
-                    "Wet Cat Food",
-                    "Raw Cat Food",
-                    "Cat Treats",
-                ],
-                "Bird Supplies": [
-                    "Bird Food",
-                    "Bird Cages",
-                    "Bird Toys",
-                    "Bird Healthcare",
-                ],
-                "Small Pet Food": [
-                    "Rabbit Food",
-                    "Guinea Pig Food",
-                    "Hamster Food",
-                    "Rat Food",
-                ],
-                "Farm Animal Supplies": [
-                    "Chicken Feed",
-                    "Goat Feed",
-                    "Sheep Feed",
-                    "Pig Feed",
-                ],
-                "Pet Toys": ["Dog Toys", "Cat Toys", "Bird Toys", "Small Pet Toys"],
-                "Pet Healthcare": [
-                    "Dog Medications",
-                    "Cat Medications",
-                    "Bird Medications",
-                    "Small Pet Medications",
-                ],
-                "Pet Grooming": [
-                    "Dog Shampoos",
-                    "Cat Shampoos",
-                    "Pet Brushes",
-                    "Pet Clippers",
-                ],
-                "Pet Beds": ["Dog Beds", "Cat Beds", "Small Pet Beds"],
-                "Pet Bowls": [
-                    "Dog Bowls",
-                    "Cat Bowls",
-                    "Bird Bowls",
-                    "Small Pet Bowls",
-                ],
-                "Hardware": ["Tools", "Fasteners", "Plumbing", "Electrical", "HVAC"],
-                "Lawn & Garden": ["Seeds", "Fertilizer", "Tools", "Plants"],
-                "Farm Supplies": ["Fencing", "Feeders", "Equipment", "Animal Health"],
-                "Home & Kitchen": ["Cleaning", "Storage", "Appliances", "Decor"],
-                "Automotive": ["Parts", "Tools", "Maintenance", "Accessories"],
-            }
-            default_pages = SHOPSITE_PAGES
-            _facet_cache.update(
-                {
-                    "category_product_types": default_categories,
-                    "product_on_pages_options": default_pages,
-                    "cache_timestamp": current_time,
-                }
-            )
-            return default_categories, default_pages
+        # Load product pages from JSON via manager
+        from .manager import get_product_pages
+        product_on_pages_options = get_product_pages()
 
-        # Get category to product types mapping
-        cursor = conn.execute(
-            """
-            SELECT Category, Product_Type
-            FROM products
-            WHERE Category IS NOT NULL AND Product_Type IS NOT NULL
-        """
-        )
+        return category_product_types, product_on_pages_options
 
-        category_types = {}
-        for row in cursor.fetchall():
-            category_str, product_type_str = row
-            if category_str and product_type_str:
-                categories = [
-                    c.strip().title() for c in str(category_str).split("|") if c.strip()
-                ]
-                product_types = [
-                    pt.strip().title()
-                    for pt in str(product_type_str).split("|")
-                    if pt.strip()
-                ]
-
-                for category in categories:
-                    if category not in category_types:
-                        category_types[category] = set()
-                    category_types[category].update(product_types)
-
-        # Convert sets to sorted lists
-        CATEGORY_PRODUCT_TYPES = {
-            cat: sorted(list(set(types)), key=str.lower)
-            for cat, types in category_types.items()
-        }
-
-        # Get product on pages options
-        cursor = conn.execute(
-            """
-            SELECT DISTINCT Product_On_Pages
-            FROM products
-            WHERE Product_On_Pages IS NOT NULL
-        """
-        )
-
-        product_on_pages = set()
-        for row in cursor.fetchall():
-            if row[0]:
-                # Split on "|" separator and add individual pages
-                pages = [
-                    page.strip().title()
-                    for page in str(row[0]).split("|")
-                    if page.strip()
-                ]
-                product_on_pages.update(pages)
-
-        PRODUCT_ON_PAGES_OPTIONS = sorted(list(product_on_pages), key=str.lower)
-
-        # Always include all ShopSite pages, plus any additional pages found in database
-        all_pages = set(SHOPSITE_PAGES)
-        all_pages.update(PRODUCT_ON_PAGES_OPTIONS)
-        PRODUCT_ON_PAGES_OPTIONS = sorted(list(all_pages), key=str.lower)
-
-        # Update cache
-        _facet_cache.update(
-            {
-                "category_product_types": CATEGORY_PRODUCT_TYPES,
-                "product_on_pages_options": PRODUCT_ON_PAGES_OPTIONS,
-                "cache_timestamp": current_time,
-            }
-        )
-
-        return CATEGORY_PRODUCT_TYPES, PRODUCT_ON_PAGES_OPTIONS
-
-    except Exception as e:
-        print(f"DEBUG: Database query failed in get_facet_options_from_db: {e}")
-        # Database query failed, return comprehensive fallback defaults
+    except (ImportError, ModuleNotFoundError) as e:
+        # Handle relative import failures when run directly
+        print(f"⚠️ Relative import failed (running standalone), using fallback defaults: {e}")
+        # Fallback defaults if JSON files don't exist or are corrupted
         default_categories = {
             "Dog Food": ["Dry Dog Food", "Wet Dog Food", "Raw Dog Food", "Dog Treats"],
             "Cat Food": ["Dry Cat Food", "Wet Cat Food", "Raw Cat Food", "Cat Treats"],
@@ -344,18 +98,87 @@ def get_facet_options_from_db(force_refresh=False):
             "Home & Kitchen": ["Cleaning", "Storage", "Appliances", "Decor"],
             "Automotive": ["Parts", "Tools", "Maintenance", "Accessories"],
         }
-        default_pages = SHOPSITE_PAGES
-        _facet_cache.update(
-            {
-                "category_product_types": default_categories,
-                "product_on_pages_options": default_pages,
-                "cache_timestamp": current_time,
-            }
-        )
+        default_pages = [
+            "Dog Food Shop All",
+            "Cat Food Shop All",
+            "Bird Supplies Shop All",
+            "Small Pet Food Shop All",
+            "Farm Animal Supplies Shop All",
+            "Pet Toys Shop All",
+            "Pet Healthcare Shop All",
+            "Pet Grooming Shop All",
+            "Pet Beds Shop All",
+            "Pet Bowls Shop All",
+            "Hardware Shop All",
+            "Lawn & Garden Shop All",
+            "Farm Supplies Shop All",
+            "Home & Kitchen Shop All",
+            "Automotive Shop All",
+        ]
         return default_categories, default_pages
-
-    finally:
-        conn.close()
+    except Exception as e:
+        print(f"⚠️ Error loading facet options from JSON: {e}")
+        # Fallback defaults if JSON files don't exist or are corrupted
+        default_categories = {
+            "Dog Food": ["Dry Dog Food", "Wet Dog Food", "Raw Dog Food", "Dog Treats"],
+            "Cat Food": ["Dry Cat Food", "Wet Cat Food", "Raw Cat Food", "Cat Treats"],
+            "Bird Supplies": [
+                "Bird Food",
+                "Bird Cages",
+                "Bird Toys",
+                "Bird Healthcare",
+            ],
+            "Small Pet Food": [
+                "Rabbit Food",
+                "Guinea Pig Food",
+                "Hamster Food",
+                "Rat Food",
+            ],
+            "Farm Animal Supplies": [
+                "Chicken Feed",
+                "Goat Feed",
+                "Sheep Feed",
+                "Pig Feed",
+            ],
+            "Pet Toys": ["Dog Toys", "Cat Toys", "Bird Toys", "Small Pet Toys"],
+            "Pet Healthcare": [
+                "Dog Medications",
+                "Cat Medications",
+                "Bird Medications",
+                "Small Pet Medications",
+            ],
+            "Pet Grooming": [
+                "Dog Shampoos",
+                "Cat Shampoos",
+                "Pet Brushes",
+                "Pet Clippers",
+            ],
+            "Pet Beds": ["Dog Beds", "Cat Beds", "Small Pet Beds"],
+            "Pet Bowls": ["Dog Bowls", "Cat Bowls", "Bird Bowls", "Small Pet Bowls"],
+            "Hardware": ["Tools", "Fasteners", "Plumbing", "Electrical", "HVAC"],
+            "Lawn & Garden": ["Seeds", "Fertilizer", "Tools", "Plants"],
+            "Farm Supplies": ["Fencing", "Feeders", "Equipment", "Animal Health"],
+            "Home & Kitchen": ["Cleaning", "Storage", "Appliances", "Decor"],
+            "Automotive": ["Parts", "Tools", "Maintenance", "Accessories"],
+        }
+        default_pages = [
+            "Dog Food Shop All",
+            "Cat Food Shop All",
+            "Bird Supplies Shop All",
+            "Small Pet Food Shop All",
+            "Farm Animal Supplies Shop All",
+            "Pet Toys Shop All",
+            "Pet Healthcare Shop All",
+            "Pet Grooming Shop All",
+            "Pet Beds Shop All",
+            "Pet Bowls Shop All",
+            "Hardware Shop All",
+            "Lawn & Garden Shop All",
+            "Farm Supplies Shop All",
+            "Home & Kitchen Shop All",
+            "Automotive Shop All",
+        ]
+        return default_categories, default_pages
 
 
 def assign_classification_batch(products_list):

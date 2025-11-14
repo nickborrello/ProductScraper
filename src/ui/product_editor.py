@@ -26,16 +26,7 @@ import os
 import time
 import traceback
 
-# Import shopsite constants
-try:
-    from . import shopsite_constants
-except ImportError:
-    try:
-        from src.ui import shopsite_constants
-    except ImportError:
-        import shopsite_constants
 
-SHOPSITE_PAGES = shopsite_constants.SHOPSITE_PAGES
 
 # Database setup
 from pathlib import Path

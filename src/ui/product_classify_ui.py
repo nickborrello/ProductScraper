@@ -38,26 +38,26 @@ from PyQt6.QtGui import QFont, QPalette, QColor
 
 # Import local options
 try:
-    from .shopsite_constants import SHOPSITE_PAGES
+    from ..manager import PRODUCT_PAGES
 except ImportError:
     # Handle case when run as standalone script
     import sys
     import os
 
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    shopsite_constants_path = os.path.join(current_dir, "shopsite_constants.py")
-    if os.path.exists(shopsite_constants_path):
+    current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    manager_path = os.path.join(current_dir, "manager.py")
+    if os.path.exists(manager_path):
         import importlib.util
 
         spec = importlib.util.spec_from_file_location(
-            "shopsite_constants", shopsite_constants_path
+            "manager", manager_path
         )
-        shopsite_constants_module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(shopsite_constants_module)
-        SHOPSITE_PAGES = shopsite_constants_module.SHOPSITE_PAGES
+        manager_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(manager_module)
+        PRODUCT_PAGES = manager_module.PRODUCT_PAGES
     else:
         # Fallback if file doesn't exist
-        SHOPSITE_PAGES = []
+        PRODUCT_PAGES = []
 
 # Database path
 DB_PATH = Path(__file__).parent.parent.parent / "data" / "databases" / "products.db"
@@ -159,7 +159,7 @@ def get_facet_options_from_db(force_refresh=False):
             "Home & Kitchen": ["Cleaning", "Storage", "Appliances", "Decor"],
             "Automotive": ["Parts", "Tools", "Maintenance", "Accessories"],
         }
-        default_pages = sorted(list(SHOPSITE_PAGES), key=str.lower)
+        default_pages = sorted(list(PRODUCT_PAGES), key=str.lower)
         _facet_cache.update(
             {
                 "category_product_types": default_categories,
@@ -488,7 +488,7 @@ def get_facet_options_from_db(force_refresh=False):
         }
 
         # Get product on pages options - use static file instead of parsing from database
-        PRODUCT_ON_PAGES_OPTIONS = sorted(list(SHOPSITE_PAGES), key=str.lower)
+        PRODUCT_ON_PAGES_OPTIONS = sorted(list(PRODUCT_PAGES), key=str.lower)
 
         # Update cache
         _facet_cache.update(
@@ -546,7 +546,7 @@ def get_facet_options_from_db(force_refresh=False):
             "Home & Kitchen": ["Cleaning", "Storage", "Appliances", "Decor"],
             "Automotive": ["Parts", "Tools", "Maintenance", "Accessories"],
         }
-        default_pages = sorted(list(SHOPSITE_PAGES), key=str.lower)
+        default_pages = sorted(list(PRODUCT_PAGES), key=str.lower)
         _facet_cache.update(
             {
                 "category_product_types": default_categories,
