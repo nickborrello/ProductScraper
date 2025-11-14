@@ -1,0 +1,50 @@
+{
+  "amazon": {
+    "test_skus": ["035585499741"],
+    "expected_fields": ["SKU", "Name", "Brand", "Weight", "Image URLs"],
+    "description": "Amazon product scraper test data"
+  },
+  "bradley": {
+    "test_skus": ["035585499741"],
+    "expected_fields": ["SKU", "Name", "Brand", "Weight", "Image URLs"],
+    "description": "Bradley Caldwell scraper test data"
+  },
+  "central_pet": {
+    "test_skus": ["035585499741"],
+    "expected_fields": ["SKU", "Name", "Brand", "Weight", "Image URLs"],
+    "description": "Central Pet scraper test data"
+  },
+  "coastal": {
+    "test_skus": ["035585499741"],
+    "expected_fields": ["SKU", "Name", "Brand", "Weight", "Image URLs"],
+    "description": "Coastal Pet scraper test data"
+  },
+  "mazuri": {
+    "test_skus": ["035585499741"],
+    "expected_fields": ["SKU", "Name", "Brand", "Weight", "Image URLs"],
+    "description": "Mazuri scraper test data"
+  },
+  "petfoodex": {
+    "test_skus": ["035585499741"],
+    "expected_fields": ["SKU", "Name", "Brand", "Weight", "Image URLs"],
+    "description": "Pet Food Experts scraper test data"
+  },
+  "phillips": {
+    "test_skus": ["035585499741"],
+    "expected_fields": ["SKU", "Name", "Brand", "Weight", "Image URLs"],
+    "description": "Phillips scraper test data"
+  },
+  "orgill": {
+    "test_skus": ["035585499741"],
+    "expected_fields": ["SKU", "Name", "Brand", "Weight", "Image URLs"],
+    "description": "Orgill scraper test data"
+  },
+  "common_validation_rules": {
+    "required_fields": ["SKU", "Name"],
+    "weight_unit": "LB",
+    "image_format": "list_of_urls",
+    "price_format": "string",
+    "cross_sell_format": "pipe_separated",
+    "invalid_values": ["N/A", "n/a", "NA", "null", "NULL", ""]
+  }
+}

@@ -204,6 +204,115 @@ asyncio.run(main())
 - [ ] No sensitive data in logs or output
 - [ ] Ready for Apify hosting deployment
 
+## Scraper Testing and Debugging System
+
+The project includes a comprehensive testing system to ensure scrapers work properly before deployment to Apify. All testing must be done locally before pushing to Apify hosting.
+
+### Testing Tools
+
+#### Command-Line Test Runner (`test_scrapers.py`)
+
+The main testing tool is `test_scrapers.py` in the project root. It provides:
+
+```bash
+# Test all scrapers
+python test_scrapers.py --all
+
+# Test specific scraper
+python test_scrapers.py --scraper amazon
+
+# Test with custom SKUs
+python test_scrapers.py --scraper amazon --skus B07G5J5FYP B08N5WRWNW
+
+# List available scrapers
+python test_scrapers.py --list
+
+# Validate scraper structure only
+python test_scrapers.py --validate amazon
+
+# Verbose output for debugging
+python test_scrapers.py --scraper amazon --verbose
+```
+
+#### Test Fixtures (`tests/fixtures/`)
+
+- **`scraper_test_data.json`**: Contains test SKUs and expected fields for each scraper
+- **`scraper_validator.py`**: Validation utilities for checking output data format and quality
+
+#### Integration Tests (`tests/integration/`)
+
+- **`test_scraper_integration.py`**: Automated integration tests that run scrapers and validate output
+
+### Testing Workflow
+
+**CRITICAL**: Never deploy to Apify without running local tests first.
+
+1. **Structure Validation**:
+
+   ```bash
+   python test_scrapers.py --validate <scraper_name>
+   ```
+
+2. **Individual Scraper Testing**:
+
+   ```bash
+   python test_scrapers.py --scraper <scraper_name>
+   ```
+
+3. **Full Test Suite**:
+
+   ```bash
+   python test_scrapers.py --all
+   ```
+
+4. **Debugging Failed Tests**:
+   ```bash
+   python test_scrapers.py --scraper <scraper_name> --verbose
+   ```
+
+### Validation Checks
+
+The testing system validates:
+
+- **Data Format**: Required fields present (SKU, Name)
+- **Data Quality**: No invalid values (N/A, null, empty strings)
+- **Field Coverage**: Expected fields populated
+- **Weight Units**: Normalized to LB
+- **Image URLs**: Valid HTTP/HTTPS URLs
+- **Price Format**: Proper numeric format
+- **Cross-sell Data**: Pipe-separated format
+
+### Test Data
+
+Each scraper has predefined test SKUs that are known to work:
+
+- **amazon**: B07G5J5FYP, B08N5WRWNW, B07VDG2ZT4
+- **bradley**: 035585499741
+- **central_pet**: CP001, CP002
+- **coastal**: CO001, CO002
+- **mazuri**: MZ001, MZ002
+- **petfoodex**: PF001, PF002
+- **phillips**: PH001, PH002
+- **orgill**: OR001, OR002
+
+### Debugging Tips
+
+- **Check Logs**: Use `--verbose` flag to see scraper output
+- **Browser Issues**: Set `HEADLESS = False` in scraper code for visual debugging
+- **Network Problems**: Check browser developer tools for failed requests
+- **Data Issues**: Review validation errors for specific field problems
+- **Timeout Issues**: Increase timeout values for slow-loading sites
+
+### Pre-Apify Deployment Checklist
+
+- [ ] All scrapers pass `python test_scrapers.py --all`
+- [ ] No validation errors in output data
+- [ ] Data quality score > 80% for all scrapers
+- [ ] All required fields populated for test SKUs
+- [ ] Browser runs successfully in headless mode
+- [ ] No sensitive information in logs
+- [ ] Dependencies properly listed in requirements.txt
+
 ## Code Patterns
 
 - Use context managers for file operations and database connections

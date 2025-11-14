@@ -25,7 +25,18 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from selenium.webdriver.common.action_chains import ActionChains
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
-from src.utils.general.cookies import save_amazon_cookies, load_amazon_cookies
+
+# Import cookie functions - try multiple import paths for compatibility
+try:
+    from src.utils.general.cookies import save_amazon_cookies, load_amazon_cookies
+except ImportError:
+    try:
+        from utils.general.cookies import save_amazon_cookies, load_amazon_cookies
+    except ImportError:
+        # Fallback - import directly if running from project root
+        import sys
+        sys.path.insert(0, os.path.join(project_root, 'src'))
+        from utils.general.cookies import save_amazon_cookies, load_amazon_cookies
 
 
 # Amazon scraper configuration
@@ -1675,6 +1686,39 @@ async def main() -> None:
         await Actor.push_data(valid_products)
         
         Actor.log.info(f"Scraped {len(valid_products)} products successfully")
+
+
+# Local testing function
+def main_local():
+    """Run locally for testing with improved session management."""
+    import json
+
+    # Default test SKUs
+    skus = [TEST_SKU]
+
+    # Check command line arguments
+    if len(sys.argv) > 1:
+        try:
+            input_data = json.loads(sys.argv[1])
+            skus = input_data.get('skus', skus)
+
+            # Check for large scale testing mode
+            if input_data.get('large_scale_test', False):
+                return run_large_scale_test(input_data)
+        except json.JSONDecodeError:
+            print("Invalid JSON input, using default SKUs")
+
+    print(f"Starting local Amazon scraping for {len(skus)} SKUs: {skus}")
+
+    products = scrape_products(skus)
+    valid_products = [p for p in products if p]
+
+    print(f"Scraped {len(valid_products)} products successfully")
+    print("Results:")
+    for product in valid_products:
+        print(json.dumps(product, indent=2))
+
+    return valid_products
 
 
 def scrape_products(skus: list[str], progress_callback=None, headless=None) -> list[dict[str, Any] | None]:
