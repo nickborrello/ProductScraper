@@ -18,6 +18,8 @@ from src.core.classification.local_llm_classifier import (
     LocalLLMProductClassifier,
     get_local_llm_classifier,
     classify_product_local_llm,
+)
+from src.core.classification.manager import (
     GENERAL_PRODUCT_TAXONOMY,
     PRODUCT_PAGES,
 )
@@ -446,6 +448,347 @@ class TestLocalLLMClassifier:
 
         assert result == {"Category": "", "Product Type": "", "Product On Pages": ""}
 
+    @pytest.mark.parametrize("product_name,expected_category,expected_types", [
+        # Dog Food Products
+        ("Purina Pro Plan Adult Dog Food Chicken & Rice", "Dog Food", ["Dry Dog Food", "Adult Dog Food"]),
+        ("Royal Canin Labrador Retriever Adult Dog Food", "Dog Food", ["Dry Dog Food", "Adult Dog Food"]),
+        ("Blue Buffalo Wilderness High Protein Grain Free Dog Food", "Dog Food", ["Dry Dog Food", "Grain Free Dog Food"]),
+        ("Pedigree Puppy Growth Dog Food", "Dog Food", ["Dry Dog Food", "Puppy Food"]),
+        ("Hill's Science Diet Senior Dog Food", "Dog Food", ["Dry Dog Food", "Senior Dog Food"]),
+        ("Iams Proactive Health Adult MiniChunks Dog Food", "Dog Food", ["Dry Dog Food", "Adult Dog Food"]),
 
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
+        # Cat Food Products
+        ("Royal Canin Indoor Adult Cat Food", "Cat Food", ["Dry Cat Food", "Adult Cat Food"]),
+        ("Purina Fancy Feast Gravy Lovers Wet Cat Food", "Cat Food", ["Wet Cat Food", "Adult Cat Food"]),
+        ("Blue Buffalo Healthy Gourmet Wet Cat Food", "Cat Food", ["Wet Cat Food", "Adult Cat Food"]),
+        ("Hill's Science Diet Kitten Food", "Cat Food", ["Dry Cat Food", "Kitten Food"]),
+        ("Iams Hairball Care Adult Cat Food", "Cat Food", ["Dry Cat Food", "Hairball Cat Food"]),
+
+        # Bird Supplies
+        ("Kaytee Forti-Diet Pro Health Cockatiel Food", "Bird Supplies", ["Bird Food", "Cockatiel Food"]),
+        ("ZuPreem FruitBlend Flavor Small Bird Food", "Bird Supplies", ["Bird Food", "Small Bird Food"]),
+        ("Lafeber's Classic Avi-Cakes Bird Treats", "Bird Supplies", ["Bird Treats"]),
+        ("Volkman Avian Science Super African Grey Food", "Bird Supplies", ["Bird Food", "African Grey Food"]),
+
+        # Fish Supplies
+        ("TetraMin Tropical Flakes Fish Food", "Fish Supplies", ["Fish Food", "Tropical Fish Food"]),
+        ("API Goldfish Food Pellets", "Fish Supplies", ["Fish Food", "Goldfish Food"]),
+        ("Hikari Betta Bio-Gold Fish Food", "Fish Supplies", ["Fish Food", "Betta Food"]),
+        ("Omega One Freshwater Flakes", "Fish Supplies", ["Fish Food", "Freshwater Fish Food"]),
+
+        # Small Pet Food
+        ("Kaytee Timothy Hay Small Animal Food", "Small Pet Food", ["Small Pet Hay"]),
+        ("Oxbow Essentials Adult Guinea Pig Food", "Small Pet Food", ["Guinea Pig Food"]),
+        ("Supreme Petfoods Science Selective Hamster Food", "Small Pet Food", ["Hamster Food"]),
+        ("Hagen Vision Rat Food", "Small Pet Food", ["Rat Food"]),
+        ("Vitakraft Chinchilla Food", "Small Pet Food", ["Chinchilla Food"]),
+
+        # Pet Toys & Accessories
+        ("Kong Classic Dog Toy", "Pet Toys", ["Dog Toys", "Chew Toys"]),
+        ("Feather Wand Cat Toy", "Pet Toys", ["Cat Toys", "Interactive Toys"]),
+        ("Prevue Pet Products Bird Cage", "Bird Supplies", ["Bird Cages"]),
+        ("MidWest Quiet Time Dog Crate", "Pet Beds & Carriers", ["Dog Crates"]),
+        ("Armarkat Cat Tree", "Pet Beds & Carriers", ["Cat Beds"]),
+
+        # Pet Healthcare
+        ("Frontline Plus Flea & Tick Treatment for Dogs", "Pet Healthcare", ["Flea & Tick"]),
+        ("Heartgard Plus Chewables for Dogs", "Pet Healthcare", ["Heartworm Prevention"]),
+        ("NexGard Chewables for Dogs", "Pet Healthcare", ["Flea & Tick"]),
+        ("Zymox Otic Pet Ear Treatment", "Pet Healthcare", ["Ear Care"]),
+        ("Nutri-Vet Hip & Joint Chews for Dogs", "Pet Healthcare", ["Joint Supplements"]),
+
+        # Pet Grooming
+        ("Oster Clipmaster Variable Speed Clipper", "Pet Grooming", ["Pet Clippers"]),
+        ("Bio-Groom Flea & Tick Shampoo", "Pet Grooming", ["Pet Shampoos"]),
+        ("Furminator Undercoat Removal Tool", "Pet Grooming", ["Pet Brushes"]),
+        ("Sentry Pet Care Nail Clippers", "Pet Grooming", ["Nail Clippers"]),
+
+        # Hardware Products
+        ("Stanley 24oz Stainless Steel Hammer", "Hardware", ["Hand Tools"]),
+        ("Ridgid 12 Gallon Wet/Dry Vac", "Hardware", ["Power Tools"]),
+        ("Milwaukee M18 Cordless Drill", "Hardware", ["Power Tools"]),
+        ("Klein Tools Lineman Pliers", "Hardware", ["Hand Tools"]),
+        ("3M Super 77 Spray Adhesive", "Hardware", ["Hardware Accessories"]),
+
+        # Lawn & Garden
+        ("Scotts Turf Builder Lawn Fertilizer", "Lawn & Garden", ["Fertilizer"]),
+        ("Ortho Weed B Gon Weed Killer", "Lawn & Garden", ["Pest Control"]),
+        ("Milorganite Organic Nitrogen Fertilizer", "Lawn & Garden", ["Fertilizer"]),
+        ("Bonide Systemic Houseplant Insect Control", "Lawn & Garden", ["Pest Control"]),
+        ("Espoma Organic Garden Soil", "Lawn & Garden", ["Gardening Supplies"]),
+
+        # Home & Kitchen
+        ("Stanley Classic Vacuum Bottle", "Home & Kitchen", ["Kitchen Tools"]),
+        ("Glad Tall Kitchen Trash Bags", "Home & Kitchen", ["Storage"]),
+        ("Swiffer Sweeper Mop", "Home & Kitchen", ["Cleaning"]),
+        ("Reynolds Wrap Aluminum Foil", "Home & Kitchen", ["Kitchen Tools"]),
+        ("Clorox Disinfecting Wipes", "Home & Kitchen", ["Cleaning"]),
+
+        # Automotive
+        ("Pennzoil Platinum Full Synthetic Motor Oil", "Automotive", ["Oil"]),
+        ("ACDelco Professional Brake Pads", "Automotive", ["Brakes"]),
+        ("Rain-X Latitude Water Repellent", "Automotive", ["Maintenance"]),
+        ("Armor All Car Wash", "Automotive", ["Maintenance"]),
+        ("STP Oil Filter", "Automotive", ["Filters"]),
+    ])
+    @patch('ollama.list')
+    @patch('ollama.chat')
+    def test_comprehensive_product_classification(self, mock_chat, mock_list, product_name, expected_category, expected_types, unique_cache_file):
+        """Test comprehensive product classification across different categories."""
+        mock_list.return_value = {"models": []}
+
+        # Mock response with expected category and types
+        mock_response = {
+            "category": expected_category,
+            "product_type": "|".join(expected_types),
+            "product_on_pages": f"{expected_category} Shop All"
+        }
+        mock_chat.return_value = {"message": {"content": json.dumps(mock_response)}}
+
+        classifier = LocalLLMProductClassifier("llama2", cache_file=unique_cache_file)
+        result = classifier.classify_product(product_name)
+
+        assert result["category"] == expected_category
+        # Check that at least one expected type is in the result
+        result_types = result["product_type"].split("|")
+        assert any(expected_type in result_types for expected_type in expected_types)
+
+    @pytest.mark.parametrize("invalid_input,expected_empty", [
+        ("", True),  # Empty string
+        ("   ", True),  # Whitespace only
+        ("?!@#$%", True),  # Special characters only
+        ("a", True),  # Single character
+        ("the quick brown fox", True),  # Generic text
+        ("product", True),  # Generic word
+        ("123456789", True),  # Numbers only
+    ])
+    @patch('ollama.list')
+    @patch('ollama.chat')
+    def test_invalid_product_names(self, mock_chat, mock_list, invalid_input, expected_empty, unique_cache_file):
+        """Test classification with invalid or meaningless product names."""
+        mock_list.return_value = {"models": []}
+        mock_chat.return_value = {"message": {"content": '{"category": "", "product_type": "", "product_on_pages": ""}'}}
+
+        classifier = LocalLLMProductClassifier("llama2", cache_file=unique_cache_file)
+        result = classifier.classify_product(invalid_input)
+
+        if expected_empty:
+            assert result["category"] == ""
+            assert result["product_type"] == ""
+            assert result["product_on_pages"] == ""
+
+    @patch('ollama.list')
+    @patch('ollama.chat')
+    def test_brand_influence_on_classification(self, mock_chat, mock_list, unique_cache_file):
+        """Test that brand information influences classification appropriately."""
+        mock_list.return_value = {"models": []}
+
+        # Test products where brand is important for classification
+        test_cases = [
+            ("Frontline", "Dog Flea Treatment", "Pet Healthcare", ["Flea & Tick"]),
+            ("Royal Canin", "Veterinary Diet Dog Food", "Dog Food", ["Veterinary Diet"]),
+            ("Hill's", "Prescription Diet Cat Food", "Cat Food", ["Prescription Diet"]),
+            ("Science Diet", "Adult Dog Food", "Dog Food", ["Adult Dog Food"]),
+        ]
+
+        classifier = LocalLLMProductClassifier("llama2", cache_file=unique_cache_file)
+
+        for brand, product_name, expected_category, expected_types in test_cases:
+            full_name = f"{brand} {product_name}"
+
+            mock_response = {
+                "category": expected_category,
+                "product_type": "|".join(expected_types),
+                "product_on_pages": f"{expected_category} Shop All"
+            }
+            mock_chat.return_value = {"message": {"content": json.dumps(mock_response)}}
+
+            result = classifier.classify_product(full_name, brand)
+
+            assert result["category"] == expected_category
+            result_types = result["product_type"].split("|")
+            assert any(expected_type in result_types for expected_type in expected_types)
+
+    @patch('ollama.list')
+    @patch('ollama.chat')
+    def test_batch_classification_consistency(self, mock_chat, mock_list, unique_cache_file):
+        """Test that batch and individual classification give consistent results."""
+        mock_list.return_value = {"models": []}
+
+        products = [
+            {"Name": "Purina Dog Chow", "Brand": "Purina"},
+            {"Name": "Whiskas Cat Food", "Brand": "Whiskas"},
+            {"Name": "Kaytee Bird Seed", "Brand": "Kaytee"},
+        ]
+
+        classifier = LocalLLMProductClassifier("llama2", cache_file=unique_cache_file)
+
+        # Mock batch response
+        batch_response = {
+            "classifications": [
+                {
+                    "product_index": 1,
+                    "category": "Dog Food",
+                    "product_type": "Dry Dog Food",
+                    "product_on_pages": "Dog Food Shop All"
+                },
+                {
+                    "product_index": 2,
+                    "category": "Cat Food",
+                    "product_type": "Dry Cat Food",
+                    "product_on_pages": "Cat Food Shop All"
+                },
+                {
+                    "product_index": 3,
+                    "category": "Bird Supplies",
+                    "product_type": "Bird Food",
+                    "product_on_pages": "Bird Supplies Shop All"
+                }
+            ]
+        }
+        mock_chat.return_value = {"message": {"content": json.dumps(batch_response)}}
+
+        # Test batch classification
+        batch_results = classifier.classify_products_batch(products)
+
+        # Test individual classification with same mock
+        individual_results = []
+        for product in products:
+            mock_response = {
+                "category": batch_response["classifications"][len(individual_results)]["category"],
+                "product_type": batch_response["classifications"][len(individual_results)]["product_type"],
+                "product_on_pages": batch_response["classifications"][len(individual_results)]["product_on_pages"]
+            }
+            mock_chat.return_value = {"message": {"content": json.dumps(mock_response)}}
+            result = classifier.classify_product(product["Name"], product["Brand"])
+            individual_results.append(result)
+
+        # Results should be consistent
+        for batch_result, individual_result in zip(batch_results, individual_results):
+            assert batch_result["category"] == individual_result["category"]
+            assert batch_result["product_type"] == individual_result["product_type"]
+            assert batch_result["product_on_pages"] == individual_result["product_on_pages"]
+
+    @patch('ollama.list')
+    @patch('ollama.chat')
+    def test_malformed_json_recovery(self, mock_chat, mock_list, unique_cache_file):
+        """Test recovery from various malformed JSON responses."""
+        mock_list.return_value = {"models": []}
+
+        malformed_responses = [
+            # Missing closing brace
+            '{"category": "Dog Food", "product_type": "Dry Dog Food"',
+            # Extra text before JSON
+            'Let me classify this: {"category": "Cat Food", "product_type": "Wet Cat Food", "product_on_pages": "Cat Food Shop All"} Hope this helps!',
+            # JSON with extra fields
+            '{"category": "Bird Supplies", "product_type": "Bird Food", "product_on_pages": "Bird Supplies Shop All", "confidence": 0.95, "notes": "Good match"}',
+            # Nested JSON (should extract inner)
+            '{"response": {"category": "Dog Food", "product_type": "Dry Dog Food", "product_on_pages": "Dog Food Shop All"}}',
+            # Array response (should handle gracefully)
+            '[{"category": "Cat Food", "product_type": "Dry Cat Food", "product_on_pages": "Cat Food Shop All"}]',
+        ]
+
+        classifier = LocalLLMProductClassifier("llama2", cache_file=unique_cache_file)
+
+        for malformed_response in malformed_responses:
+            mock_chat.return_value = {"message": {"content": malformed_response}}
+
+            result = classifier.classify_product("Test Product")
+
+            # Should either parse successfully or return empty results
+            assert isinstance(result, dict)
+            assert "category" in result
+            assert "product_type" in result
+            assert "product_on_pages" in result
+
+    @patch('ollama.list')
+    @patch('ollama.chat')
+    def test_retry_logic_on_api_failure(self, mock_chat, mock_list, unique_cache_file):
+        """Test that the classifier retries on API failures."""
+        mock_list.return_value = {"models": []}
+
+        # First two calls fail, third succeeds
+        mock_chat.side_effect = [
+            Exception("Network error"),
+            Exception("Timeout"),
+            {"message": {"content": '{"category": "Dog Food", "product_type": "Dry Dog Food", "product_on_pages": "Dog Food Shop All"}'}}
+        ]
+
+        classifier = LocalLLMProductClassifier("llama2", cache_file=unique_cache_file)
+        result = classifier.classify_product("Test Dog Food")
+
+        # Should eventually succeed after retries
+        assert result["category"] == "Dog Food"
+        assert mock_chat.call_count == 3  # Should have tried 3 times
+
+    @patch('ollama.list')
+    @patch('ollama.chat')
+    def test_large_batch_processing(self, mock_chat, mock_list, unique_cache_file):
+        """Test processing of large batches of products."""
+        mock_list.return_value = {"models": []}
+
+        # Create a large batch of products
+        num_products = 50
+        products = [
+            {"Name": f"Test Product {i}", "Brand": f"Brand {i}"}
+            for i in range(num_products)
+        ]
+
+        # Mock batch response for all products
+        classifications = []
+        for i in range(num_products):
+            classifications.append({
+                "product_index": i + 1,
+                "category": "Test Category",
+                "product_type": "Test Type",
+                "product_on_pages": "Test Page"
+            })
+
+        mock_chat.return_value = {"message": {"content": json.dumps({"classifications": classifications})}}
+
+        classifier = LocalLLMProductClassifier("llama2", cache_file=unique_cache_file)
+        results = classifier.classify_products_batch(products, batch_size=10)
+
+        assert len(results) == num_products
+        assert all(result["category"] == "Test Category" for result in results)
+        assert all(result["product_type"] == "Test Type" for result in results)
+
+    @patch('ollama.list')
+    def test_taxonomy_validation(self, mock_list, unique_cache_file):
+        """Test that the classifier validates taxonomy structure."""
+        mock_list.return_value = {"models": []}
+
+        classifier = LocalLLMProductClassifier("llama2", cache_file=unique_cache_file)
+
+        # Verify taxonomy is loaded correctly
+        assert hasattr(classifier, 'product_taxonomy')
+        assert isinstance(classifier.product_taxonomy, dict)
+        assert len(classifier.product_taxonomy) > 0
+
+        # Check that system prompt contains taxonomy
+        system_prompt = classifier.conversation_history[0]["content"]
+        assert "PRODUCT TAXONOMY:" in system_prompt
+        assert "Dog Food" in system_prompt
+        assert "Cat Food" in system_prompt
+
+    @patch('ollama.list')
+    @patch('ollama.chat')
+    def test_cache_persistence_across_sessions(self, mock_chat, mock_list, unique_cache_file):
+        """Test that cache persists correctly across classifier instances."""
+        mock_list.return_value = {"models": []}
+
+        # First classifier session
+        mock_chat.return_value = {"message": {"content": '{"category": "Dog Food", "product_type": "Dry Dog Food", "product_on_pages": "Dog Food Shop All"}'}}
+        classifier1 = LocalLLMProductClassifier("llama2", cache_file=unique_cache_file)
+        result1 = classifier1.classify_product("Test Dog Food")
+
+        # Verify cache was saved
+        assert unique_cache_file.exists()
+
+        # Second classifier session (new instance)
+        classifier2 = LocalLLMProductClassifier("llama2", cache_file=unique_cache_file)
+        result2 = classifier2.classify_product("Test Dog Food")
+
+        # Should get cached result without calling Ollama
+        assert result1 == result2
+        assert mock_chat.call_count == 1  # Only called once total

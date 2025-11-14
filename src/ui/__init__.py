@@ -34,8 +34,6 @@ Usage in master.py:
 from src.core.classification.manager import (
     classify_products_batch,
     classify_single_product,
-    find_matching_products_and_recommendations,
-    load_classified_dataframe,
     RECOMMEND_COLS,
 )
 
@@ -51,8 +49,6 @@ from .product_editor import product_editor_interactive, edit_products_in_batch
 __all__ = [
     "classify_products_batch",
     "classify_single_product",
-    "find_matching_products_and_recommendations",
-    "load_classified_dataframe",
     "assign_cross_sells_batch",
     "assign_cross_sells_single",
     "product_editor_interactive",
