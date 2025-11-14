@@ -10,17 +10,28 @@ from typing import List, Dict, Any, Optional
 from pathlib import Path
 import requests
 
-# Configuration
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-if not OPENROUTER_API_KEY:
-    # Try to load from config file
-    config_path = Path(__file__).parent.parent.parent / "settings.json"
-    if config_path.exists():
-        with open(config_path, "r") as f:
-            config = json.load(f)
-            OPENROUTER_API_KEY = config.get("openrouter_api_key")
+# Import settings manager
+try:
+    from src.core.settings_manager import settings
+    OPENROUTER_API_KEY = settings.get("openrouter_api_key")
+except ImportError:
+    try:
+        # Fallback for when run as standalone
+        from ..settings_manager import settings
+        OPENROUTER_API_KEY = settings.get("openrouter_api_key")
+    except ImportError:
+        # Last resort - try to load from settings.json directly
+        import json
+        from pathlib import Path
+        config_path = Path(__file__).parent.parent.parent.parent / "settings.json"
+        if config_path.exists():
+            with open(config_path, "r") as f:
+                config = json.load(f)
+                OPENROUTER_API_KEY = config.get("openrouter_api_key")
+        else:
+            OPENROUTER_API_KEY = None
 
-MODEL = "openai/gpt-4o-mini"  # Cost-effective and capable
+MODEL = "google/gemini-2.5-flash"  # Cost-effective and excellent at JSON formatting
 MAX_TOKENS = 1000
 TEMPERATURE = 0.1  # Low temperature for consistent classifications
 
@@ -36,14 +47,33 @@ class LLMProductClassifier:
 
         # Use provided taxonomy or import from manager
         if product_taxonomy is None:
-            from .manager import GENERAL_PRODUCT_TAXONOMY
-            self.product_taxonomy = GENERAL_PRODUCT_TAXONOMY
+            try:
+                from .manager import GENERAL_PRODUCT_TAXONOMY
+                self.product_taxonomy = GENERAL_PRODUCT_TAXONOMY
+            except ImportError:
+                try:
+                    from src.core.classification.manager import GENERAL_PRODUCT_TAXONOMY
+                    self.product_taxonomy = GENERAL_PRODUCT_TAXONOMY
+                except ImportError:
+                    # Fallback - use a basic taxonomy
+                    self.product_taxonomy = {
+                        "Dog Food": ["Dry Dog Food", "Wet Dog Food", "Adult Dog Food", "Puppy Food"],
+                        "Cat Food": ["Dry Cat Food", "Wet Cat Food", "Adult Cat Food", "Kitten Food"],
+                    }
         else:
             self.product_taxonomy = product_taxonomy
 
         if product_pages is None:
-            from .manager import PRODUCT_PAGES
-            self.product_pages = PRODUCT_PAGES
+            try:
+                from .manager import PRODUCT_PAGES
+                self.product_pages = PRODUCT_PAGES
+            except ImportError:
+                try:
+                    from src.core.classification.manager import PRODUCT_PAGES
+                    self.product_pages = PRODUCT_PAGES
+                except ImportError:
+                    # Fallback - use basic pages
+                    self.product_pages = ["Dog Food", "Cat Food", "Bird Supplies", "All Pets"]
         else:
             self.product_pages = product_pages
 
@@ -83,6 +113,8 @@ CLASSIFICATION RULES:
 5. Consider the product purpose and target market
 6. If uncertain, choose the closest match from the taxonomy
 
+CRITICAL: You must respond with valid JSON only. No explanations, no markdown, no additional text.
+
 Return classifications in this exact JSON format:
 {{
     "category": "Main Category Name",
@@ -90,7 +122,7 @@ Return classifications in this exact JSON format:
     "product_on_pages": "Page 1|Page 2|Page 3"
 }}
 
-Be consistent and accurate in your classifications."""
+Example valid response: {{"category": "Dog Food", "product_type": "Dry Dog Food|Adult Dog Food", "product_on_pages": "Dog Food|All Pets|Pet Supplies"}}"""
 
         self.conversation_history = [{"role": "system", "content": system_prompt}]
 
@@ -278,13 +310,18 @@ Be consistent and accurate in your classifications."""
       "product_index": 1,
       "category": "Main Category",
       "product_type": "Type 1|Type 2",
-      "product_on_pages": "Page 1|Page 2|Page 3",
-      "confidence": "high|medium|low",
-      "reasoning": "Brief explanation"
+      "product_on_pages": "Page 1|Page 2|Page 3"
     },
-    ...
+    {
+      "product_index": 2,
+      "category": "Main Category",
+      "product_type": "Type 1|Type 2",
+      "product_on_pages": "Page 1|Page 2|Page 3"
+    }
   ]
-}"""
+}
+
+CRITICAL: Respond with valid JSON only. No explanations, no markdown, no additional text."""
 
         # Add to conversation
         self.conversation_history.append({"role": "user", "content": batch_prompt})
@@ -450,7 +487,7 @@ def get_llm_classifier(product_taxonomy: Dict[str, List[str]] = None, product_pa
             _llm_classifier = LLMProductClassifier(product_taxonomy, product_pages)
             print("✅ LLM classifier initialized")
         except ValueError as e:
-            print(f"❌ LLM classifier initialization failed: {e}")
+            print(f"[ERROR] LLM classifier initialization failed: {e}")
             return None
     return _llm_classifier
 
@@ -526,4 +563,4 @@ if __name__ == "__main__":
 
         print("\n✅ LLM classification test completed!")
     else:
-        print("❌ Could not initialize LLM classifier - check API key")
+        print("[ERROR] Could not initialize LLM classifier - check API key")

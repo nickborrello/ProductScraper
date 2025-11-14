@@ -10,9 +10,29 @@ from pathlib import Path
 import ollama
 
 # Configuration
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama2")  # Default to a good general model
+OLLAMA_MODEL = "llama2"  # Default fallback
 MAX_TOKENS = 1000
 TEMPERATURE = 0.1  # Low temperature for consistent classifications
+
+# Import settings manager
+try:
+    from src.core.settings_manager import settings
+    _settings_available = True
+except ImportError:
+    try:
+        # Fallback for when run as standalone
+        from ..settings_manager import settings
+        _settings_available = True
+    except ImportError:
+        # Last resort - try to load from settings.json directly
+        config_path = Path(__file__).parent.parent.parent.parent / "settings.json"
+        if config_path.exists():
+            with open(config_path, "r") as f:
+                _config = json.load(f)
+                _ollama_model = _config.get("ollama_model", OLLAMA_MODEL)
+        else:
+            _ollama_model = OLLAMA_MODEL
+        _settings_available = False
 
 
 class LocalLLMProductClassifier:
@@ -21,12 +41,11 @@ class LocalLLMProductClassifier:
     def __init__(self, model_name: str = None, cache_file: Path = None, product_taxonomy: Dict[str, List[str]] = None, product_pages: List[str] = None):
         # Try to get model name from settings first, then parameter, then environment, then default
         if model_name is None:
-            config_path = Path(__file__).parent.parent.parent / "settings.json"
-            if config_path.exists():
-                with open(config_path, "r") as f:
-                    config = json.load(f)
-                    model_name = config.get("ollama_model", OLLAMA_MODEL)
+            if _settings_available:
+                model_name = settings.get("ollama_model", OLLAMA_MODEL)
             else:
+                model_name = _ollama_model
+            if not model_name:
                 model_name = os.getenv("OLLAMA_MODEL", OLLAMA_MODEL)
 
         self.model_name = model_name or OLLAMA_MODEL
@@ -38,43 +57,36 @@ class LocalLLMProductClassifier:
 
         # Use provided taxonomy or import from taxonomy manager
         if product_taxonomy is None:
-            from .taxonomy_manager import get_product_taxonomy
-            self.product_taxonomy = get_product_taxonomy()
+            try:
+                from .taxonomy_manager import get_product_taxonomy
+                self.product_taxonomy = get_product_taxonomy()
+            except ImportError:
+                try:
+                    from src.core.classification.taxonomy_manager import get_product_taxonomy
+                    self.product_taxonomy = get_product_taxonomy()
+                except ImportError:
+                    # Fallback - use a basic taxonomy
+                    self.product_taxonomy = {
+                        "Dog Food": ["Dry Dog Food", "Wet Dog Food", "Adult Dog Food", "Puppy Food"],
+                        "Cat Food": ["Dry Cat Food", "Wet Cat Food", "Adult Cat Food", "Kitten Food"],
+                    }
         else:
             self.product_taxonomy = product_taxonomy
 
         if product_pages is None:
-            from .manager import PRODUCT_PAGES
-            self.product_pages = PRODUCT_PAGES
+            try:
+                from .manager import PRODUCT_PAGES
+                self.product_pages = PRODUCT_PAGES
+            except ImportError:
+                try:
+                    from src.core.classification.manager import PRODUCT_PAGES
+                    self.product_pages = PRODUCT_PAGES
+                except ImportError:
+                    # Fallback - use basic pages
+                    self.product_pages = ["Dog Food", "Cat Food", "Bird Supplies", "All Pets"]
         else:
             self.product_pages = product_pages
 
-        self._initialize_conversation()
-
-        # Test Ollama connection
-        try:
-            ollama.list()
-            print(f"✅ Ollama connection successful, using model: {self.model_name}")
-        except Exception as e:
-            raise ValueError(
-                f"Ollama not available. Please install Ollama and ensure it's running: {e}"
-            )
-        # Try to get model name from settings first, then parameter, then environment, then default
-        if model_name is None:
-            config_path = Path(__file__).parent.parent.parent / "settings.json"
-            if config_path.exists():
-                with open(config_path, "r") as f:
-                    config = json.load(f)
-                    model_name = config.get("ollama_model", OLLAMA_MODEL)
-            else:
-                model_name = os.getenv("OLLAMA_MODEL", OLLAMA_MODEL)
-
-        self.model_name = model_name or OLLAMA_MODEL
-        self.conversation_history = []
-        self.classification_cache = {}  # Cache for classifications
-        self.cache_file = cache_file or Path.home() / ".cache" / "productscraper_ollama_cache.json"
-        self.cache_file.parent.mkdir(parents=True, exist_ok=True)
-        self._load_cache()
         self._initialize_conversation()
 
         # Test Ollama connection
@@ -114,7 +126,7 @@ CLASSIFICATION RULES:
 5. Consider the product purpose and target market
 6. If uncertain, choose the closest match from the taxonomy
 
-Return classifications in this exact JSON format:
+Return classifications in this exact JSON format. Do not include any other text, explanations, or apologies in the response. Your response must be only the JSON object.
 {{
     "category": "Main Category Name",
     "product_type": "Product Type 1|Product Type 2",
@@ -161,8 +173,15 @@ Be consistent and accurate in your classifications."""
         # Check cache first
         cache_key = self._get_cache_key(product_name, product_brand)
         if cache_key in self.classification_cache:
-            print(f"📋 Using cached classification for: {product_name[:40]}...")
-            return self.classification_cache[cache_key].copy()
+            cached_result = self.classification_cache[cache_key]
+            # Only use cache if it has actual classification data
+            if any(cached_result.values()):
+                print(f"📋 Using cached classification for: {product_name[:40]}...")
+                return cached_result.copy()
+            else:
+                # Cached result is empty, remove it and re-classify
+                del self.classification_cache[cache_key]
+                self._save_cache()
 
         # Create user prompt
         user_prompt = f"Classify this product:\n"
@@ -185,9 +204,10 @@ Be consistent and accurate in your classifications."""
         # Parse JSON response
         result = self._parse_classification_response(response)
 
-        # Cache the result
-        self.classification_cache[cache_key] = result.copy()
-        self._save_cache()
+        # Only cache if result has actual data
+        if any(result.values()):
+            self.classification_cache[cache_key] = result.copy()
+            self._save_cache()
 
         return result
 
@@ -287,7 +307,7 @@ Be consistent and accurate in your classifications."""
 
             batch_prompt += "\n"
 
-        batch_prompt += "Return classifications in this exact JSON format:\n"
+        batch_prompt += "Return classifications in this exact JSON format. Do not include any other text, explanations, or apologies in the response. Your response must be only the JSON object.\n"
         batch_prompt += """{
   "classifications": [
     {
@@ -466,7 +486,7 @@ def get_local_llm_classifier(model_name: str = None, product_taxonomy: Dict[str,
             _local_llm_classifier = LocalLLMProductClassifier(model_name, product_taxonomy=product_taxonomy, product_pages=product_pages)
             print("✅ Local LLM classifier initialized")
         except ValueError as e:
-            print(f"❌ Local LLM classifier initialization failed: {e}")
+            print(f"[ERROR] Local LLM classifier initialization failed: {e}")
             return None
     return _local_llm_classifier
 
@@ -557,4 +577,4 @@ if __name__ == "__main__":
 
         print("\n✅ Local LLM classification test completed!")
     else:
-        print("❌ Could not initialize local LLM classifier - check Ollama installation")
+        print("[ERROR] Could not initialize local LLM classifier - check Ollama installation")

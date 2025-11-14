@@ -56,15 +56,6 @@ except ImportError as e:
             else:
                 log_callback("Error: Scraping logic not found.")
 
-    def run_discontinued_check(*args, **kwargs):
-        """Dummy function for discontinued check if import fails."""
-        log_callback = kwargs.get("log_callback")
-        if log_callback:
-            if hasattr(log_callback, 'emit'):
-                log_callback.emit("Error: Discontinued check logic not found.")
-            else:
-                log_callback("Error: Discontinued check logic not found.")
-
     def run_db_refresh(*args, **kwargs):
         """Dummy function for DB refresh if import fails."""
         log_callback = kwargs.get("log_callback")
@@ -462,7 +453,6 @@ class MainWindow(QMainWindow):
         self.update_database_stats()
 
         # Disable buttons that need redoing
-        self.check_discontinued_btn.setEnabled(False)
         self.classify_btn.setEnabled(False)
 
     def create_menu_bar(self):
@@ -612,12 +602,6 @@ class MainWindow(QMainWindow):
             "Select an Excel file and start scraping product data",
             "▶️",
         )
-        self.check_discontinued_btn = scraping_card.add_button(
-            "Check Discontinued",
-            self.start_discontinued_check,
-            "Check which products have been discontinued",
-            "🔍",
-        )
         layout.addWidget(scraping_card)
 
         # Database Operations Card
@@ -670,7 +654,6 @@ class MainWindow(QMainWindow):
         # Store buttons for enabling/disabling
         self.action_buttons = [
             self.start_scraping_btn,
-            self.check_discontinued_btn,
             self.refresh_db_btn,
             self.download_xml_btn,
             self.publish_shopsite_btn,
@@ -906,17 +889,6 @@ class MainWindow(QMainWindow):
                 interactive=False,
                 selected_sites=selected_sites,
             )
-
-    def start_discontinued_check(self):
-        """Open file dialog and start discontinued check"""
-        file_path = self.select_excel_file()
-        if file_path:
-            self.last_operation = "Discontinued Check"
-            self.log_message(
-                f"Starting discontinued check for: {os.path.basename(file_path)}",
-                "INFO",
-            )
-            self._run_worker(run_discontinued_check, file_path)
 
     def start_db_refresh(self):
         """Start database refresh from XML"""

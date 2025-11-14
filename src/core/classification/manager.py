@@ -13,7 +13,50 @@ from pathlib import Path
 from typing import List
 
 # Import taxonomy manager
-from .taxonomy_manager import get_product_taxonomy
+try:
+    # Try relative import first (when run as part of package)
+    from .taxonomy_manager import get_product_taxonomy
+except ImportError:
+    try:
+        # Try absolute import (when run as standalone script)
+        from src.core.classification.taxonomy_manager import get_product_taxonomy
+    except ImportError:
+        # Last resort - try direct import from current directory
+        import sys
+        import os
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        if current_dir not in sys.path:
+            sys.path.insert(0, current_dir)
+        from taxonomy_manager import get_product_taxonomy
+
+# Ensure src directory is in path for standalone execution
+import sys
+import os
+src_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if src_dir not in sys.path:
+    sys.path.insert(0, src_dir)
+
+# Import settings manager
+try:
+    from src.core.settings_manager import settings
+    _settings_available = True
+except ImportError:
+    try:
+        # Fallback for when run as standalone
+        from ..settings_manager import settings
+        _settings_available = True
+    except ImportError:
+        # Last resort - try to load from settings.json directly
+        import json
+        from pathlib import Path
+        config_path = Path(__file__).parent.parent.parent.parent / "settings.json"
+        if config_path.exists():
+            with open(config_path, "r") as f:
+                _config = json.load(f)
+                _classification_method = _config.get("classification_method", "llm")
+        else:
+            _classification_method = "llm"
+        _settings_available = False
 
 # Database path instead of Excel
 DB_PATH = Path(__file__).parent.parent.parent.parent / "data" / "databases" / "products.db"
@@ -41,32 +84,41 @@ def get_product_pages() -> List[str]:
         with open(pages_file, 'r', encoding='utf-8') as f:
             return json.load(f)
     except (json.JSONDecodeError, IOError) as e:
-        print(f"⚠️ Error loading product pages file: {e}")
+        print(f"[WARNING] Error loading product pages file: {e}")
         return []
 
 # Product pages from ShopSite
 PRODUCT_PAGES = get_product_pages()
 
 
-def classify_products_batch(products_list, method="llm"):
+def classify_products_batch(products_list, method=None):
     """
     Classify multiple products using specified method.
 
     Args:
         products_list: List of product_info dictionaries to classify
-        method: Classification method - "llm" (OpenRouter API) or "local_llm" (Ollama)
+        method: Classification method - "llm" (OpenRouter API), "local_llm" (Ollama), "mock" (for testing). If None, uses settings.
 
     Returns:
         List of product_info dictionaries with recommended facets added
     """
+    # Use settings if no method specified
+    if method is None:
+        if _settings_available:
+            method = settings.get("classification_method", "llm")
+        else:
+            method = _classification_method
+    
     print(
-        f"🤖 Batch Classification: Using {method} approach for {len(products_list)} products..."
+        f"[CLASSIFY] Batch Classification: Using {method} approach for {len(products_list)} products..."
     )
 
     # Special handling for local_llm method - use batch processing
     if method == "local_llm":
         try:
-            from .local_llm_classifier import get_local_llm_classifier
+            from src.core.classification.local_llm_classifier import get_local_llm_classifier
+        except ImportError:
+            from local_llm_classifier import get_local_llm_classifier
 
             classifier = get_local_llm_classifier(product_taxonomy=GENERAL_PRODUCT_TAXONOMY, product_pages=PRODUCT_PAGES)
             if classifier:
@@ -91,13 +143,13 @@ def classify_products_batch(products_list, method="llm"):
                     classified_products.append(product_copy)
 
                 print(
-                    f"\033[92m✅ Local_Llm batch classification complete! Processed {len(classified_products)} products\033[0m\n"
+                    f"[SUCCESS] Local_Llm batch classification complete! Processed {len(classified_products)} products\n"
                 )
                 return classified_products
             else:
-                print("⚠️ Local LLM classifier not available, leaving products unclassified")
+                print("[WARNING] Local LLM classifier not available, leaving products unclassified")
         except Exception as e:
-            print(f"⚠️ Local LLM batch classification failed: {e}, leaving products unclassified")
+            print(f"[WARNING] Local LLM batch classification failed: {e}, leaving products unclassified")
 
     # Default: process each product individually
     classified_products = []
@@ -111,28 +163,37 @@ def classify_products_batch(products_list, method="llm"):
         classified_products.append(classified_product)
 
     print(
-        f"\033[92m✅ {method.title()} batch classification complete! Processed {len(classified_products)} products\033[0m\n"
+        f"[SUCCESS] {method.title()} batch classification complete! Processed {len(classified_products)} products\n"
     )
     return classified_products
 
 
-def classify_single_product(product_info, method="llm"):
+def classify_single_product(product_info, method=None):
     """
     Classify a single product using LLM classification.
 
     Args:
         product_info: Dict with product details
-        method: Classification method - "llm" (OpenRouter API) or "local_llm" (Ollama)
+        method: Classification method - "llm" (OpenRouter API), "local_llm" (Ollama), "mock" (for testing). If None, uses settings.
 
     Returns:
         Dict: Product_info with recommended facets added
     """
+    # Use settings if no method specified
+    if method is None:
+        if _settings_available:
+            method = settings.get("classification_method", "llm")
+        else:
+            method = _classification_method
+    
     product_name = product_info.get("Name", "").strip()
 
     # LLM-based classification (most accurate)
     if method == "llm":
         try:
-            from .llm_classifier import classify_product_llm
+            from src.core.classification.llm_classifier import classify_product_llm
+        except ImportError:
+            from llm_classifier import classify_product_llm
 
             llm_result = classify_product_llm(product_info)
 
@@ -144,46 +205,79 @@ def classify_single_product(product_info, method="llm"):
                     product_info[label] = ""
 
             print(
-                f"🧠 LLM classification: {product_name[:40]}... → {product_info.get('Category', 'N/A')}"
+                f"[LLM] LLM classification: {product_name[:40]}... -> {product_info.get('Category', 'N/A')}"
             )
             return product_info
 
         except Exception as e:
-            print(f"⚠️ LLM classification failed: {e}")
+            print(f"[WARNING] LLM classification failed: {e}")
             # Leave product unclassified instead of falling back to fuzzy matching
 
     # Local LLM-based classification (Ollama - no API key required)
     elif method == "local_llm":
         try:
-            from .local_llm_classifier import classify_product_local_llm
+            from src.core.classification.local_llm_classifier import classify_product_local_llm
+        except ImportError:
+            from local_llm_classifier import classify_product_local_llm
 
             llm_result = classify_product_local_llm(product_info, product_taxonomy=GENERAL_PRODUCT_TAXONOMY, product_pages=PRODUCT_PAGES)
 
             # Apply LLM results
-            for label in ["Category", "Product Type", "Product On Pages"]:
-                if label in llm_result and llm_result[label]:
-                    product_info[label] = llm_result[label]
-                else:
-                    product_info[label] = ""
+            product_info["Category"] = llm_result.get("category", "")
+            product_info["Product Type"] = llm_result.get("product_type", "")
+            product_info["Product On Pages"] = llm_result.get("product_on_pages", "")
 
             print(
-                f"🏠 Local LLM classification: {product_name[:40]}... → {product_info.get('Category', 'N/A')}"
+                f"[LOCAL] Local LLM classification: {product_name[:40]}... -> {product_info.get('Category', 'N/A')}"
             )
             return product_info
 
         except Exception as e:
-            print(f"⚠️ Local LLM classification failed: {e}")
+            print(f"[WARNING] Local LLM classification failed: {e}")
             # Leave product unclassified instead of falling back to fuzzy matching
 
-    # No fallback - leave product unclassified
-    print(f"⚠️ No classification method available for: {product_name[:40]}...")
+    # Mock classification (for testing without API keys)
+    elif method == "mock":
+        # Return mock classification data for testing
+        product_info["Category"] = "Dog Food|Pet Food"
+        product_info["Product Type"] = "Dry Dog Food"
+        product_info["Product On Pages"] = "Dog Food|All Pets"
+
+        print(
+            f"[MOCK] Mock classification: {product_name[:40]}... -> {product_info.get('Category', 'N/A')}"
+        )
+        return product_info
+
     return product_info
 
 
 # Test section - run this file directly to test classification
 if __name__ == "__main__":
-    print("🧪 Testing Product Classification System")
+    print("TEST: Testing Product Classification System")
     print("=" * 50)
+
+    # Test 1: Verify manager doesn't open UI (pure business logic)
+    print("TEST 1: Verifying manager is pure business logic (no UI)...")
+    try:
+        # Import check - manager should not import any UI components
+        import sys
+        ui_modules = [name for name in sys.modules.keys() if 'ui' in name.lower() or 'qt' in name.lower() or 'tkinter' in name.lower()]
+        if ui_modules:
+            print(f"WARNING: Manager imported UI modules: {ui_modules}")
+        else:
+            print("PASS: Manager correctly imports no UI components")
+
+        # Function signature check - should return data, not show dialogs
+        result = classify_single_product({"Name": "Test Product"}, method="mock")
+        if isinstance(result, dict) and "Category" in result:
+            print("PASS: Manager returns classification data (not UI)")
+        else:
+            print("WARNING: Manager returned unexpected format")
+
+    except Exception as e:
+        print(f"FAIL: UI isolation test failed: {e}")
+
+    print()
 
     # Create a test product
     test_product = {
@@ -199,47 +293,99 @@ if __name__ == "__main__":
         "Product On Pages": "",  # Will be filled by classification
     }
 
-    print("📦 Test Product:")
+    print("PRODUCT: Test Product:")
     print(f"   Name: {test_product['Name']}")
     print(f"   Brand: {test_product['Brand']}")
     print()
 
-    # Test single product classification (LLM method)
-    print("🔍 Testing LLM classification...")
-    classified_product = classify_single_product(test_product.copy(), method="llm")
+    # Test 2: Single product classification (using settings method)
+    print("TEST 2: Testing classification with settings method...")
+    try:
+        classified_product = classify_single_product(test_product.copy())
 
-    print("📊 LLM Classification Results:")
-    print(f"   Category: {classified_product.get('Category', 'None')}")
-    print(f"   Product Type: {classified_product.get('Product Type', 'None')}")
-    print(f"   Product On Pages: {classified_product.get('Product On Pages', 'None')}")
+        print("RESULTS: Classification Results:")
+        print(f"   Category: {classified_product.get('Category', 'None')}")
+        print(f"   Product Type: {classified_product.get('Product Type', 'None')}")
+        print(f"   Product On Pages: {classified_product.get('Product On Pages', 'None')}")
+
+        # Verify classification added expected fields
+        expected_fields = ["Category", "Product Type", "Product On Pages"]
+        missing_fields = [field for field in expected_fields if not classified_product.get(field)]
+        if missing_fields:
+            print(f"WARNING: Missing classification fields: {missing_fields}")
+        else:
+            print("PASS: All expected classification fields present")
+
+    except Exception as e:
+        print(f"FAIL: Auto classification test failed: {e}")
+
     print()
 
-    # Test batch classification
-    print("📋 Testing batch classification...")
-    test_products = [
-        test_product.copy(),
-        {
-            "Name": "Royal Canin Indoor Adult Cat Food",
-            "Brand": "Royal Canin",
-            "SKU": "TEST002",
-            "Price": "$24.99",
-            "Weight": "15 LB",
-            "Images": "https://example.com/image2.jpg",
-            "Special Order": "",
-            "Category": "",
-            "Product Type": "",
-            "Product On Pages": "",
-        },
-    ]
+    # Test 3: Batch classification
+    print("TEST 3: Testing batch classification...")
+    try:
+        test_products = [
+            test_product.copy(),
+            {
+                "Name": "Royal Canin Indoor Adult Cat Food",
+                "Brand": "Royal Canin",
+                "SKU": "TEST002",
+                "Price": "$24.99",
+                "Weight": "15 LB",
+                "Images": "https://example.com/image2.jpg",
+                "Special Order": "",
+                "Category": "",
+                "Product Type": "",
+                "Product On Pages": "",
+            },
+        ]
 
-    classified_batch = classify_products_batch(test_products, method="llm")
+        classified_batch = classify_products_batch(test_products)
 
-    print("📊 Batch Classification Results:")
-    for i, product in enumerate(classified_batch, 1):
-        print(f"   Product {i}: {product['Name'][:40]}...")
-        print(f"      Category: {product.get('Category', 'None')}")
-        print(f"      Product Type: {product.get('Product Type', 'None')}")
-        print(f"      Product On Pages: {product.get('Product On Pages', 'None')}")
-        print()
+        print("RESULTS: Batch Classification Results:")
+        for i, product in enumerate(classified_batch, 1):
+            print(f"   Product {i}: {product['Name'][:40]}...")
+            print(f"      Category: {product.get('Category', 'None')}")
+            print(f"      Product Type: {product.get('Product Type', 'None')}")
+            print(f"      Product On Pages: {product.get('Product On Pages', 'None')}")
 
-    print("✅ Test completed!")
+        # Verify batch processing
+        if len(classified_batch) == len(test_products):
+            print("PASS: Batch processing returned correct number of products")
+        else:
+            print(f"FAIL: Batch processing failed: expected {len(test_products)}, got {len(classified_batch)}")
+
+        # Verify all products have classification
+        unclassified = [i for i, p in enumerate(classified_batch) if not any(p.get(field) for field in expected_fields)]
+        if unclassified:
+            print(f"WARNING: Products {unclassified} appear unclassified")
+        else:
+            print("PASS: All products in batch have classification data")
+
+    except Exception as e:
+        print(f"FAIL: Batch classification test failed: {e}")
+
+    print()
+
+    # Test 4: Error handling
+    print("TEST 4: Testing error handling...")
+    try:
+        # Test with invalid method
+        result = classify_single_product(test_product.copy(), method="invalid_method")
+        if result.get("Category") == "":  # Should be empty/unclassified
+            print("PASS: Invalid method handled gracefully")
+        else:
+            print("WARNING: Invalid method should leave product unclassified")
+
+        # Test with empty product
+        result = classify_single_product({})
+        if result.get("Category") == "":
+            print("PASS: Empty product handled gracefully")
+        else:
+            print("WARNING: Empty product should be unclassified")
+
+    except Exception as e:
+        print(f"FAIL: Error handling test failed: {e}")
+
+    print()
+    print("PASS: All tests completed!")

@@ -369,6 +369,148 @@ class ClassificationEditorWindow(QMainWindow):
         self.current_index = 0
         self.multi_select_widgets = {}
 
+        # Apply dark theme
+        self.setStyleSheet("""
+QMainWindow {
+    background-color: #1e1e1e;
+    color: #ffffff;
+}
+
+QMenuBar {
+    background-color: #2d2d2d;
+    color: #ffffff;
+    border-bottom: 1px solid #404040;
+}
+
+QMenuBar::item {
+    background-color: transparent;
+    padding: 4px 8px;
+    margin: 0px;
+}
+
+QMenuBar::item:selected {
+    background-color: #404040;
+}
+
+QMenu {
+    background-color: #2d2d2d;
+    color: #ffffff;
+    border: 1px solid #404040;
+}
+
+QMenu::item {
+    padding: 4px 20px;
+}
+
+QMenu::item:selected {
+    background-color: #404040;
+}
+
+QStatusBar {
+    background-color: #2d2d2d;
+    color: #ffffff;
+    border-top: 1px solid #404040;
+}
+
+QLabel {
+    color: #ffffff;
+}
+
+QCheckBox {
+    color: #ffffff;
+}
+
+QCheckBox::indicator {
+    border: 1px solid #ffffff;
+    background-color: #1e1e1e;
+}
+
+QCheckBox::indicator:checked {
+    background-color: #4CAF50;
+    border: 1px solid #4CAF50;
+}
+
+QMessageBox {
+    background-color: #1e1e1e;
+    color: #ffffff;
+}
+
+QMessageBox QLabel {
+    color: #ffffff;
+}
+
+QMessageBox QPushButton {
+    background-color: #404040;
+    color: #ffffff;
+    border: 1px solid #555555;
+    padding: 5px 15px;
+    border-radius: 3px;
+}
+
+QMessageBox QPushButton:hover {
+    background-color: #555555;
+}
+
+QDialog {
+    background-color: #1e1e1e;
+    color: #ffffff;
+}
+
+QDialog QLabel {
+    color: #ffffff;
+}
+
+QDialog QLineEdit {
+    background-color: #2d2d2d;
+    color: #ffffff;
+    border: 1px solid #404040;
+    padding: 4px;
+    border-radius: 3px;
+}
+
+QDialog QComboBox {
+    background-color: #2d2d2d;
+    color: #ffffff;
+    border: 1px solid #404040;
+    padding: 4px;
+    border-radius: 3px;
+}
+
+QDialog QComboBox::drop-down {
+    border: none;
+}
+
+QDialog QComboBox::down-arrow {
+    image: url(down_arrow.png);
+    width: 12px;
+    height: 12px;
+}
+
+QDialog QPushButton {
+    background-color: #404040;
+    color: #ffffff;
+    border: 1px solid #555555;
+    padding: 5px 15px;
+    border-radius: 3px;
+}
+
+QDialog QPushButton:hover {
+    background-color: #555555;
+}
+
+QListWidget {
+    background-color: #1e1e1e;
+    color: #ffffff;
+    border: 1px solid #404040;
+    alternate-background-color: #2d2d2d;
+}
+
+QListWidget::item:selected {
+    background-color: #4CAF50;
+    color: #ffffff;
+}
+""")
+
         self.setup_ui()
         self.load_product_into_ui(0)
 
