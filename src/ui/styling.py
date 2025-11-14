@@ -65,6 +65,25 @@ STYLESHEET = f"""
         background-color: #1a1a1a;
         color: #666666;
     }}
+    QCheckBox {{
+        color: {TEXT_COLOR};
+        spacing: 5px;
+    }}
+    QCheckBox::indicator {{
+        border: 1px solid {BORDER_COLOR};
+        background-color: {LIGHT_BACKGROUND};
+        width: 15px;
+        height: 15px;
+        border-radius: 3px;
+    }}
+    QCheckBox::indicator:hover {{
+        border: 1px solid {ACCENT_COLOR};
+    }}
+    QCheckBox::indicator:checked {{
+        background-color: {SUCCESS_COLOR};
+        border: 1px solid {SUCCESS_COLOR};
+        image: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAiIGhlaWdodD0iNyIgdmlld0JveD0iMCAwIDEwIDciIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgMy41TDQuMDggNi41TDkgMSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48L3N2Zz4=);
+    }}
     QTextEdit, QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox {{
         background-color: {LIGHT_BACKGROUND};
         border: 1px solid {BORDER_COLOR};
@@ -81,6 +100,86 @@ STYLESHEET = f"""
     }}
     QTableView {{
         gridline-color: {BORDER_COLOR};
+    }}
+    QFrame {{
+        background-color: {LIGHT_BACKGROUND};
+        border: 1px solid {BORDER_COLOR};
+        border-radius: 5px;
+    }}
+    QGroupBox {{
+        font-weight: bold;
+        border: 1px solid {BORDER_COLOR};
+        border-radius: 8px;
+        margin-top: 10px;
+    }}
+    QGroupBox::title {{
+        subcontrol-origin: margin;
+        subcontrol-position: top left;
+        padding: 0 5px;
+        left: 10px;
+    }}
+    QTableWidget {{
+        background-color: {LIGHT_BACKGROUND};
+        border: 1px solid {BORDER_COLOR};
+        gridline-color: {BORDER_COLOR};
+    }}
+    QTableWidget::item {{
+        padding: 5px;
+        border-bottom: 1px solid {BORDER_COLOR};
+    }}
+    QTableWidget::item:selected {{
+        background-color: {ACCENT_COLOR};
+        color: {TEXT_COLOR};
+    }}
+    QTabWidget::pane {{
+        border-top: 1px solid {BORDER_COLOR};
+        margin-top: -1px;
+    }}
+    QTabBar::tab {{
+        background-color: {DARK_BACKGROUND};
+        color: {MUTED_TEXT_COLOR};
+        border: 1px solid {BORDER_COLOR};
+        border-bottom: none;
+        padding: 8px 16px;
+        margin-right: 2px;
+        border-top-left-radius: 4px;
+        border-top-right-radius: 4px;
+    }}
+    QTabBar::tab:hover {{
+        background-color: {LIGHT_BACKGROUND};
+        color: {TEXT_COLOR};
+    }}
+    QTabBar::tab:selected {{
+        background-color: {LIGHT_BACKGROUND};
+        color: {TEXT_COLOR};
+        border: 1px solid {BORDER_COLOR};
+        border-bottom: 2px solid {ACCENT_COLOR};
+    }}
+    QSpinBox, QDoubleSpinBox {{
+        padding-right: 15px; /* make room for the arrows */
+    }}
+    QSpinBox::up-button, QSpinBox::down-button, 
+    QDoubleSpinBox::up-button, QDoubleSpinBox::down-button {{
+        subcontrol-origin: border;
+        background-color: {LIGHT_BACKGROUND};
+        border: 1px solid {BORDER_COLOR};
+        width: 18px;
+    }}
+    QSpinBox::up-button, QDoubleSpinBox::up-button {{
+        subcontrol-position: top right;
+    }}
+    QSpinBox::down-button, QDoubleSpinBox::down-button {{
+        subcontrol-position: bottom right;
+    }}
+    QSpinBox::up-arrow, QDoubleSpinBox::up-arrow {{
+        image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjQiPjxwYXRoIGQ9Ik00IDAgTDAgNEg4WiIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==);
+        width: 8px;
+        height: 4px;
+    }}
+    QSpinBox::down-arrow, QDoubleSpinBox::down-arrow {{
+        image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjQiPjxwYXRoIGQ9Ik00IDRMMCAwSDhaIiBmaWxsPSIjZmZmIi8+PC9zdmc+);
+        width: 8px;
+        height: 4px;
     }}
     QProgressBar {{
         border: 2px solid {BORDER_COLOR};
@@ -122,6 +221,30 @@ STYLESHEET = f"""
     QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
         width: 0px;
     }}
+    QListWidget {{
+        background-color: {LIGHT_BACKGROUND};
+        border: 1px solid {BORDER_COLOR};
+    }}
+    QListWidget::item {{
+        padding: 3px 5px;
+    }}
+    QListWidget::item:selected {{
+        background-color: {SUCCESS_COLOR};
+    }}
+    QListWidget::indicator {{
+        width: 15px;
+        height: 15px;
+        border-radius: 3px;
+    }}
+    QListWidget::indicator:unchecked {{
+        border: 1px solid {MUTED_TEXT_COLOR};
+        background-color: {LIGHT_BACKGROUND};
+    }}
+    QListWidget::indicator:checked {{
+        border: 1px solid {SUCCESS_COLOR};
+        background-color: {SUCCESS_COLOR};
+        image: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAiIGhlaWdodD0iNyIgdmlld0JveD0iMCAwIDEwIDciIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgMy41TDQuMDggNi41TDkgMSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48L3N2Zz4=);
+    }}
 """
 
 
@@ -134,23 +257,19 @@ class LogViewer(QTextEdit):
     """Professional log viewer with color-coded messages and filtering"""
 
     LOG_COLORS = {
-        {
-            "DEBUG": MUTED_TEXT_COLOR,
-            "INFO": ACCENT_COLOR,
-            "SUCCESS": SUCCESS_COLOR,
-            "WARNING": WARNING_COLOR,
-            "ERROR": ERROR_COLOR,
-        }
+        "DEBUG": MUTED_TEXT_COLOR,
+        "INFO": ACCENT_COLOR,
+        "SUCCESS": SUCCESS_COLOR,
+        "WARNING": WARNING_COLOR,
+        "ERROR": ERROR_COLOR,
     }
 
     LOG_ICONS = {
-        {
-            "DEBUG": "🔧",
-            "INFO": "ℹ️",
-            "SUCCESS": "✅",
-            "WARNING": "⚠️",
-            "ERROR": "❌",
-        }
+        "DEBUG": "🔧",
+        "INFO": "ℹ️",
+        "SUCCESS": "✅",
+        "WARNING": "⚠️",
+        "ERROR": "❌",
     }
 
     def __init__(self):

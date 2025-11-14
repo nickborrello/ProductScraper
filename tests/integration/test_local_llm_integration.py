@@ -55,8 +55,8 @@ class TestLocalLLMIntegration:
         """Test that local_llm method works in main classifier."""
         # Mock empty cache initially
         mock_load_cache.return_value = {}
-        
-        mock_list.return_value = [{'name': 'llama3.2', 'size': 1000000}]  # Mock successful list response
+
+        mock_list.return_value = [{'name': 'llama2', 'size': 1000000}]  # Mock successful list response
         mock_chat.return_value = mock_ollama_response
 
         # Test single product classification
@@ -79,8 +79,8 @@ class TestLocalLLMIntegration:
         """Test batch classification through main classifier."""
         # Mock empty cache initially
         mock_load_cache.return_value = {}
-        
-        mock_list.return_value = [{'name': 'llama3.2', 'size': 1000000}]  # Mock successful list response
+
+        mock_list.return_value = [{'name': 'llama2', 'size': 1000000}]  # Mock successful list response
         # Mock batch response for multiple products
         batch_response = {
             "message": {
@@ -121,7 +121,7 @@ class TestLocalLLMIntegration:
     @patch('src.core.classification.local_llm_classifier.LocalLLMProductClassifier._save_cache')
     def test_caching_integration(self, mock_save_cache, mock_load_cache, mock_chat, mock_list, mock_ollama_response, sample_products):
         """Test that caching works through main classifier."""
-        mock_list.return_value = [{'name': 'llama3.2', 'size': 1000000}]  # Mock successful list response
+        mock_list.return_value = [{'name': 'llama2', 'size': 1000000}]  # Mock successful list response
         # Mock empty cache initially
         mock_load_cache.return_value = {}
 
@@ -145,7 +145,7 @@ class TestLocalLLMIntegration:
     @patch('ollama.chat')
     def test_error_handling_integration(self, mock_chat, mock_list, sample_products):
         """Test error handling in main classifier."""
-        mock_list.return_value = [{'name': 'llama3.2', 'size': 1000000}]  # Mock successful list response
+        mock_list.return_value = [{'name': 'llama2', 'size': 1000000}]  # Mock successful list response
         # Mock Ollama failure
         mock_chat.side_effect = Exception("Ollama service unavailable")
 
@@ -171,7 +171,7 @@ class TestLocalLLMIntegration:
     @patch('ollama.chat')
     def test_response_parsing_integration(self, mock_chat, mock_list, sample_products):
         """Test JSON response parsing in integration context."""
-        mock_list.return_value = [{'name': 'llama3.2', 'size': 1000000}]  # Mock successful list response
+        mock_list.return_value = [{'name': 'llama2', 'size': 1000000}]  # Mock successful list response
         # Test valid JSON response
         valid_response = {
             "message": {
@@ -204,7 +204,7 @@ class TestLocalLLMIntegration:
     @patch('ollama.chat')
     def test_empty_product_handling(self, mock_chat, mock_list):
         """Test handling of empty or invalid products."""
-        mock_list.return_value = [{'name': 'llama3.2', 'size': 1000000}]  # Mock successful list response
+        mock_list.return_value = [{'name': 'llama2', 'size': 1000000}]  # Mock successful list response
         empty_product = {}
 
         result = classify_single_product(empty_product, method="local_llm")
@@ -220,7 +220,7 @@ class TestLocalLLMIntegration:
         # Mock empty cache initially
         mock_load_cache.return_value = {}
         
-        mock_list.return_value = [{'name': 'llama3.2', 'size': 1000000}]  # Mock successful list response
+        mock_list.return_value = [{'name': 'llama2', 'size': 1000000}]  # Mock successful list response
         # Create large batch of products
         large_batch = [
             {

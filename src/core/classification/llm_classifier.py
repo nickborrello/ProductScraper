@@ -87,11 +87,15 @@ class LLMProductClassifier:
 
     def _initialize_conversation(self):
         """Initialize conversation with taxonomy and instructions."""
+        try:
+            from src.core.classification.manager import UNIFIED_SYSTEM_PROMPT, UNIFIED_SINGLE_PRODUCT_JSON_FORMAT
+        except ImportError:
+            from .manager import UNIFIED_SYSTEM_PROMPT, UNIFIED_SINGLE_PRODUCT_JSON_FORMAT
 
         # Create comprehensive system prompt
         taxonomy_text = "PRODUCT TAXONOMY:\n"
         for category, product_types in self.product_taxonomy.items():
-            taxonomy_text += f"\n{category.upper()}:\n"
+            taxonomy_text += f"\n{category}:\n"
             for pt in product_types:
                 taxonomy_text += f"  - {pt}\n"
 
@@ -99,30 +103,10 @@ class LLMProductClassifier:
             f"  - {page}" for page in self.product_pages
         )
 
-        system_prompt = f"""You are an expert e-commerce product classifier for a retail store.
-
-{taxonomy_text}
-
-{pages_text}
-
-CLASSIFICATION RULES:
-1. Always choose from the provided taxonomy - do not create new categories or product types
-2. For Category: Choose the most specific main category that fits
-3. For Product Type: Choose 1-3 most relevant product types from that category
-4. For Product On Pages: Choose 2-4 most relevant pages where this product should appear
-5. Consider the product purpose and target market
-6. If uncertain, choose the closest match from the taxonomy
-
-CRITICAL: You must respond with valid JSON only. No explanations, no markdown, no additional text.
-
-Return classifications in this exact JSON format:
-{{
-    "category": "Main Category Name",
-    "product_type": "Product Type 1|Product Type 2",
-    "product_on_pages": "Page 1|Page 2|Page 3"
-}}
-
-Example valid response: {{"category": "Dog Food", "product_type": "Dry Dog Food|Adult Dog Food", "product_on_pages": "Dog Food|All Pets|Pet Supplies"}}"""
+        system_prompt = UNIFIED_SYSTEM_PROMPT.format(
+            taxonomy_text=taxonomy_text,
+            pages_text=pages_text
+        ) + UNIFIED_SINGLE_PRODUCT_JSON_FORMAT
 
         self.conversation_history = [{"role": "system", "content": system_prompt}]
 
@@ -208,14 +192,14 @@ Example valid response: {{"category": "Dog Food", "product_type": "Dry Dog Food|
         return result
 
     def classify_products_batch(
-        self, products: List[Dict[str, str]], batch_size: int = 5
+        self, products: List[Dict[str, str]], batch_size: int = 15
     ) -> List[Dict[str, str]]:
         """
         Classify multiple products in batch using efficient API calls.
 
         Args:
             products: List of product dicts with 'Name' and optional 'Brand'
-            batch_size: Number of products per API call (default 5 for optimal token usage)
+            batch_size: Number of products per API call (default 15 for optimal token usage)
 
         Returns:
             List of classification results
@@ -254,14 +238,14 @@ Example valid response: {{"category": "Dog Food", "product_type": "Dry Dog Food|
         return results
 
     def classify_products_batch_efficient(
-        self, products: List[Dict[str, Any]], batch_size: int = 5
+        self, products: List[Dict[str, Any]], batch_size: int = 15
     ) -> List[Dict[str, str]]:
         """
         Efficiently classify multiple products using batch API calls.
 
         Args:
             products: List of product dicts with essential fields (Name, Brand)
-            batch_size: Number of products per API call (default 5 for optimal token usage)
+            batch_size: Number of products per API call (default 15 for optimal token usage)
 
         Returns:
             List of classification results
@@ -286,6 +270,11 @@ Example valid response: {{"category": "Dog Food", "product_type": "Dry Dog Food|
         """Make a single API call for multiple products."""
         if not products:
             return []
+            
+        try:
+            from src.core.classification.manager import UNIFIED_BATCH_JSON_FORMAT
+        except ImportError:
+            from .manager import UNIFIED_BATCH_JSON_FORMAT
 
         # Create batch prompt with essential product information
         batch_prompt = "Classify these products. For each product, use the name and brand to determine the category and type.\n\n"
@@ -303,31 +292,14 @@ Example valid response: {{"category": "Dog Food", "product_type": "Dry Dog Food|
 
             batch_prompt += "\n"
 
-        batch_prompt += "Return classifications in this exact JSON format:\n"
-        batch_prompt += """{
-  "classifications": [
-    {
-      "product_index": 1,
-      "category": "Main Category",
-      "product_type": "Type 1|Type 2",
-      "product_on_pages": "Page 1|Page 2|Page 3"
-    },
-    {
-      "product_index": 2,
-      "category": "Main Category",
-      "product_type": "Type 1|Type 2",
-      "product_on_pages": "Page 1|Page 2|Page 3"
-    }
-  ]
-}
+        batch_prompt += UNIFIED_BATCH_JSON_FORMAT
 
-CRITICAL: Respond with valid JSON only. No explanations, no markdown, no additional text."""
-
-        # Add to conversation
-        self.conversation_history.append({"role": "user", "content": batch_prompt})
+        # Construct messages for this specific call to keep it stateless and manage token usage
+        messages_for_call = self.conversation_history[:1]  # Start with just the system prompt
+        messages_for_call.append({"role": "user", "content": batch_prompt})
 
         # Call API
-        response = self._call_openrouter(self.conversation_history)
+        response = self._call_openrouter(messages_for_call)
 
         if not response:
             # Return empty results for all products in batch
@@ -336,8 +308,8 @@ CRITICAL: Respond with valid JSON only. No explanations, no markdown, no additio
                 for _ in products
             ]
 
-        # Add assistant response to conversation
-        self.conversation_history.append({"role": "assistant", "content": response})
+        # NOTE: We do not append the assistant response to the instance's conversation history
+        # to keep each batch call stateless and prevent token usage from growing.
 
         # Parse batch JSON response
         try:
@@ -530,6 +502,12 @@ def classify_product_llm(product_info: Dict[str, Any]) -> Dict[str, str]:
 
 # Test the LLM classifier
 if __name__ == "__main__":
+    import sys
+    import os
+    # Add project root to path to allow direct script execution
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
+    from src.core.classification.llm_classifier import get_llm_classifier
+
     print("🧠 Testing LLM Product Classifier")
     print("=" * 50)
 

@@ -104,26 +104,11 @@ class MultiSelectWidget(QWidget):
         available_layout = QHBoxLayout()
         available_label = QLabel(f"Available {self.label}:")
         available_label.setFont(QFont("Arial", 12, QFont.Weight.Bold))
-        available_label.setStyleSheet("color: #ffffff;")
         available_layout.addWidget(available_label)
 
         self.search_edit = QLineEdit()
         self.search_edit.setFont(QFont("Arial", 12))
         self.search_edit.setPlaceholderText("Search...")
-        self.search_edit.setStyleSheet(
-            """
-            QLineEdit {
-                background-color: #2d2d2d;
-                color: #ffffff;
-                border: 1px solid #4a4a4a;
-                border-radius: 4px;
-                padding: 4px;
-            }
-            QLineEdit:focus {
-                border: 1px solid #2196F3;
-            }
-        """
-        )
         self.search_edit.textChanged.connect(self.filter_options)
         available_layout.addWidget(self.search_edit)
 
@@ -135,15 +120,6 @@ class MultiSelectWidget(QWidget):
         self.available_scroll.setHorizontalScrollBarPolicy(
             Qt.ScrollBarPolicy.ScrollBarAlwaysOff
         )
-        self.available_scroll.setStyleSheet(
-            """
-            QScrollArea {
-                background-color: #2d2d2d;
-                border: 1px solid #4a4a4a;
-                border-radius: 4px;
-            }
-        """
-        )
 
         available_widget = QWidget()
         self.available_layout = QVBoxLayout(available_widget)
@@ -154,22 +130,12 @@ class MultiSelectWidget(QWidget):
         # Selected options section
         selected_label = QLabel(f"Selected {self.label}:")
         selected_label.setFont(QFont("Arial", 12, QFont.Weight.Bold))
-        selected_label.setStyleSheet("color: #ffffff;")
         layout.addWidget(selected_label)
 
         self.selected_scroll = QScrollArea()
         self.selected_scroll.setWidgetResizable(True)
         self.selected_scroll.setHorizontalScrollBarPolicy(
             Qt.ScrollBarPolicy.ScrollBarAlwaysOff
-        )
-        self.selected_scroll.setStyleSheet(
-            """
-            QScrollArea {
-                background-color: #2d2d2d;
-                border: 1px solid #4a4a4a;
-                border-radius: 4px;
-            }
-        """
         )
 
         selected_widget = QWidget()
@@ -255,89 +221,14 @@ class CrossSellEditorWindow(QMainWindow):
         self.selected_cross_sells = [set() for _ in products_list]
         self.current_candidates = []  # Store current candidates for selected bar
 
-        # Apply dark theme styling
-        self.setStyleSheet(
-            """
-            QMainWindow {
-                background-color: #1e1e1e;
-                color: #ffffff;
-            }
-            QGroupBox {
-                font-weight: bold;
-                border: 2px solid #4a4a4a;
-                border-radius: 8px;
-                margin-top: 1ex;
-                background-color: #2d2d2d;
-                color: #ffffff;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 10px 0 10px;
-                color: #ffffff;
-                font-size: 14px;
-            }
-            QFrame {
-                background-color: #2d2d2d;
-                border: 1px solid #4a4a4a;
-                border-radius: 6px;
-                color: #ffffff;
-            }
-            QLabel {
-                color: #ffffff;
-                font-size: 12px;
-            }
-            QLineEdit {
-                background-color: #2d2d2d;
-                color: #ffffff;
-                border: 1px solid #4a4a4a;
-                border-radius: 4px;
-                padding: 4px;
-            }
-            QLineEdit:focus {
-                border: 1px solid #2196F3;
-            }
-            QCheckBox {
-                color: #ffffff;
-                font-size: 12px;
-            }
-            QCheckBox::indicator {
-                width: 16px;
-                height: 16px;
-                background-color: #2d2d2d;
-                border: 1px solid #4a4a4a;
-                border-radius: 3px;
-            }
-            QCheckBox::indicator:checked {
-                background-color: #2196F3;
-                border: 1px solid #2196F3;
-            }
-            QScrollArea {
-                background-color: #2d2d2d;
-                border: 1px solid #4a4a4a;
-                border-radius: 4px;
-            }
-            QScrollBar:vertical {
-                background-color: #2d2d2d;
-                width: 12px;
-                border-radius: 6px;
-            }
-            QScrollBar::handle:vertical {
-                background-color: #4a4a4a;
-                border-radius: 6px;
-                min-height: 20px;
-            }
-            QScrollBar::handle:vertical:hover {
-                background-color: #5a5a5a;
-            }
-            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-                background: none;
-            }
-            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
-                background: none;
-            }
-        """
-        )
+        # Apply the global dark theme.
+        try:
+            from src.ui.styling import STYLESHEET
+            self.setStyleSheet(STYLESHEET)
+        except (ImportError, ModuleNotFoundError):
+            print("CRITICAL: Could not import stylesheet. UI will be unstyled.")
+            # Fallback to a very basic theme if the import fails
+            self.setStyleSheet("QMainWindow { background-color: #1e1e1e; color: #ffffff; }")
 
         # Get all available options from database
         self.all_categories, self.all_product_types, self.all_pages = (
@@ -415,50 +306,12 @@ class CrossSellEditorWindow(QMainWindow):
         """Setup the filter panel on the left side."""
         # Filter Panel Card
         filter_card = QGroupBox("🔍 Filter Panel")
-        filter_card.setStyleSheet(
-            """
-            QGroupBox {
-                font-weight: bold;
-                border: 2px solid #4a4a4a;
-                border-radius: 8px;
-                margin-top: 1ex;
-                background-color: #2d2d2d;
-                color: #ffffff;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 10px 0 10px;
-                color: #ffffff;
-                font-size: 14px;
-            }
-        """
-        )
         filter_layout = QVBoxLayout(filter_card)
         filter_layout.setSpacing(10)
         filter_layout.setContentsMargins(15, 15, 15, 15)
 
         # Category filter
         category_group = QGroupBox("📁 Categories")
-        category_group.setStyleSheet(
-            """
-            QGroupBox {
-                font-weight: bold;
-                border: 1px solid #4a4a4a;
-                border-radius: 6px;
-                margin-top: 0.5ex;
-                background-color: #343a40;
-                color: #ffffff;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 5px 0 5px;
-                color: #ffffff;
-                font-size: 12px;
-            }
-        """
-        )
         category_layout = QVBoxLayout(category_group)
         category_layout.setContentsMargins(10, 10, 10, 10)
         self.category_multi_select = MultiSelectWidget(
@@ -470,25 +323,6 @@ class CrossSellEditorWindow(QMainWindow):
 
         # Product Type filter
         type_group = QGroupBox("🏷️ Product Types")
-        type_group.setStyleSheet(
-            """
-            QGroupBox {
-                font-weight: bold;
-                border: 1px solid #4a4a4a;
-                border-radius: 6px;
-                margin-top: 0.5ex;
-                background-color: #343a40;
-                color: #ffffff;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 5px 0 5px;
-                color: #ffffff;
-                font-size: 12px;
-            }
-        """
-        )
         type_layout = QVBoxLayout(type_group)
         type_layout.setContentsMargins(10, 10, 10, 10)
         self.type_multi_select = MultiSelectWidget(
@@ -500,25 +334,6 @@ class CrossSellEditorWindow(QMainWindow):
 
         # Pages filter
         pages_group = QGroupBox("📄 Pages")
-        pages_group.setStyleSheet(
-            """
-            QGroupBox {
-                font-weight: bold;
-                border: 1px solid #4a4a4a;
-                border-radius: 6px;
-                margin-top: 0.5ex;
-                background-color: #343a40;
-                color: #ffffff;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 5px 0 5px;
-                color: #ffffff;
-                font-size: 12px;
-            }
-        """
-        )
         pages_layout = QVBoxLayout(pages_group)
         pages_layout.setContentsMargins(10, 10, 10, 10)
         self.pages_multi_select = MultiSelectWidget("Pages", self.all_pages)
@@ -537,9 +352,6 @@ class CrossSellEditorWindow(QMainWindow):
                 border: none;
                 border-radius: 6px;
                 padding: 10px 20px;
-                font-size: 12px;
-                font-weight: bold;
-                min-width: 120px;
             }
             QPushButton:hover {
                 background-color: #1976D2;
@@ -559,32 +371,12 @@ class CrossSellEditorWindow(QMainWindow):
         """Setup the candidates panel on the right side."""
         # Candidates Panel Card
         candidates_card = QGroupBox("🔗 Cross-Sell Candidates")
-        candidates_card.setStyleSheet(
-            """
-            QGroupBox {
-                font-weight: bold;
-                border: 2px solid #4a4a4a;
-                border-radius: 8px;
-                margin-top: 1ex;
-                background-color: #2d2d2d;
-                color: #ffffff;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 10px 0 10px;
-                color: #ffffff;
-                font-size: 14px;
-            }
-        """
-        )
         candidates_layout = QVBoxLayout(candidates_card)
         candidates_layout.setContentsMargins(15, 15, 15, 15)
 
         # Header
         self.candidates_header = QLabel("Cross-Sell Candidates")
         self.candidates_header.setFont(QFont("Arial", 16, QFont.Weight.Bold))
-        self.candidates_header.setStyleSheet("color: #ffffff; margin-bottom: 10px;")
         self.candidates_header.setAlignment(Qt.AlignmentFlag.AlignCenter)
         candidates_layout.addWidget(self.candidates_header)
 
@@ -594,15 +386,6 @@ class CrossSellEditorWindow(QMainWindow):
         self.candidates_scroll.setHorizontalScrollBarPolicy(
             Qt.ScrollBarPolicy.ScrollBarAlwaysOff
         )
-        self.candidates_scroll.setStyleSheet(
-            """
-            QScrollArea {
-                background-color: #343a40;
-                border: 1px solid #4a4a4a;
-                border-radius: 6px;
-            }
-        """
-        )
 
         self.candidates_grid_widget = QWidget()
         self.candidates_grid_layout = QGridLayout(self.candidates_grid_widget)
@@ -611,25 +394,6 @@ class CrossSellEditorWindow(QMainWindow):
 
         # Selected cross-sells bar
         selected_group = QGroupBox("✅ Selected Cross-Sells")
-        selected_group.setStyleSheet(
-            """
-            QGroupBox {
-                font-weight: bold;
-                border: 1px solid #4a4a4a;
-                border-radius: 6px;
-                margin-top: 0.5ex;
-                background-color: #343a40;
-                color: #ffffff;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 5px 0 5px;
-                color: #ffffff;
-                font-size: 12px;
-            }
-        """
-        )
         selected_layout = QVBoxLayout(selected_group)
         selected_layout.setContentsMargins(10, 10, 10, 10)
 
@@ -644,15 +408,6 @@ class CrossSellEditorWindow(QMainWindow):
         )
         self.selected_scroll.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum
-        )
-        self.selected_scroll.setStyleSheet(
-            """
-            QScrollArea {
-                background-color: #2d2d2d;
-                border: 1px solid #4a4a4a;
-                border-radius: 4px;
-            }
-        """
         )
 
         self.selected_bar_widget = QWidget()
@@ -670,25 +425,6 @@ class CrossSellEditorWindow(QMainWindow):
         """Setup the navigation bar at the bottom."""
         # Navigation Card
         nav_card = QGroupBox("🧭 Navigation & Actions")
-        nav_card.setStyleSheet(
-            """
-            QGroupBox {
-                font-weight: bold;
-                border: 2px solid #4a4a4a;
-                border-radius: 8px;
-                margin-top: 1ex;
-                background-color: #2d2d2d;
-                color: #ffffff;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 10px 0 10px;
-                color: #ffffff;
-                font-size: 14px;
-            }
-        """
-        )
         nav_widget = QWidget()
         nav_widget.setFixedHeight(70)
         nav_layout = QHBoxLayout(nav_widget)
@@ -958,13 +694,13 @@ class CrossSellEditorWindow(QMainWindow):
 
         # Set border color based on selection
         is_selected = sku in self.selected_cross_sells[self.current_index]
-        border_color = "#1976d2" if is_selected else "#cccccc"
+        border_color = "#2196F3" if is_selected else "#3e3e3e" # ACCENT_COLOR or BORDER_COLOR
         card.setStyleSheet(
             f"""
             QFrame {{
                 border: 2px solid {border_color};
                 border-radius: 5px;
-                background-color: #ffffff;
+                background-color: #2d2d2d;
             }}
         """
         )
@@ -986,8 +722,8 @@ class CrossSellEditorWindow(QMainWindow):
         image_label.setStyleSheet(
             """
             QLabel {
-                background-color: #f8f9fa;
-                border: 1px solid #dee2e6;
+                background-color: #1e1e1e;
+                border: 1px solid #3e3e3e;
                 border-radius: 3px;
             }
         """
@@ -1015,7 +751,7 @@ class CrossSellEditorWindow(QMainWindow):
         # SKU
         sku_label = QLabel(f"SKU: {sku}")
         sku_label.setFont(QFont("Arial", 9))
-        sku_label.setStyleSheet("color: #6c757d;")
+        sku_label.setStyleSheet("color: #888888;") # MUTED_TEXT_COLOR
         sku_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(sku_label)
 
@@ -1076,22 +812,17 @@ class CrossSellEditorWindow(QMainWindow):
                     # Disable checkbox if max reached and not selected
                     checkbox.setEnabled(not (max_reached and not is_selected))
 
-                    # Update border color and opacity
-                    border_color = "#1976d2" if is_selected else "#cccccc"
-                    opacity = "1.0" if not max_reached or is_selected else "0.4"
-
-                    card.setStyleSheet(
-                        """
+                    # Update border color
+                    border_color = "#2196F3" if is_selected else "#3e3e3e" # ACCENT_COLOR or BORDER_COLOR
+                    
+                    card.setStyleSheet(f"""
                         QFrame {{
-                            border: 2px solid {};
+                            border: 2px solid {border_color};
                             border-radius: 5px;
-                            background-color: #ffffff;
-                            opacity: {};
+                            background-color: #2d2d2d;
                         }}
-                    """.format(
-                            border_color, opacity
-                        )
-                    )
+                    """)
+
 
     def update_selected_bar(self):
         """Update the selected cross-sells bar."""
@@ -1118,9 +849,9 @@ class CrossSellEditorWindow(QMainWindow):
                 selected_card.setStyleSheet(
                     """
                     QFrame {
-                        border: 2px solid #1976d2;
+                        border: 2px solid #2196F3;
                         border-radius: 3px;
-                        background-color: #ffffff;
+                        background-color: #2d2d2d;
                     }
                 """
                 )
@@ -1142,8 +873,8 @@ class CrossSellEditorWindow(QMainWindow):
                 image_label.setStyleSheet(
                     """
                     QLabel {
-                        background-color: #f8f9fa;
-                        border: 1px solid #dee2e6;
+                        background-color: #1e1e1e;
+                        border: 1px solid #3e3e3e;
                         border-radius: 2px;
                     }
                 """
@@ -1174,7 +905,7 @@ class CrossSellEditorWindow(QMainWindow):
                 # SKU
                 sku_label = QLabel(f"{sku}")
                 sku_label.setFont(QFont("Arial", 7))
-                sku_label.setStyleSheet("color: #6c757d;")
+                sku_label.setStyleSheet("color: #888888;") # MUTED_TEXT_COLOR
                 sku_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
                 layout.addWidget(sku_label)
 

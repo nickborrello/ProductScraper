@@ -342,7 +342,7 @@ def discover_scrapers():
 
 
 class ProductScraper:
-    def __init__(self, file_path, interactive=True, selected_sites=None, log_callback=None, progress_callback=None, editor_callback=None, status_callback=None):
+    def __init__(self, file_path, interactive=True, selected_sites=None, log_callback=None, progress_callback=None, editor_callback=None, status_callback=None, confirmation_callback=None):
         self.file_path = file_path
         self.interactive = interactive
         self.selected_sites = selected_sites
@@ -363,6 +363,7 @@ class ProductScraper:
         
         self.progress_callback = progress_callback
         self.editor_callback = editor_callback  # Callback to request editor on main thread
+        self.confirmation_callback = confirmation_callback # Callback for Yes/No dialogs
         
         # Initialize results folder (will be set during scraping)
         self.results_folder = None
@@ -1218,22 +1219,64 @@ class ProductScraper:
             if scrape_all_mode or not self.interactive:
                 break
 
-        # CONSOLIDATION PHASE: Merge data from multiple sites and present options to user
+        # --- POST-SCRAPING WORKFLOW ---
         if all_collected_products:
-            # Add final newline after all scraping progress
+            # 1. Consolidate data from multiple sites
             consolidated_products = self.consolidate_products_by_sku(
                 all_collected_products, rows
             )
 
             if consolidated_products:
+                # 2. Open product editor for manual review of scraped data
                 final_products = self.edit_consolidated_products(consolidated_products)
 
+                # 3. If user didn't cancel, proceed to classification and saving
                 if final_products:
+                    # 3a. Ask user if they want to classify
+                    do_classify = False
+                    if self.confirmation_callback:
+                        self.log_callback("🤔 Requesting user confirmation for classification...")
+                        do_classify = self.confirmation_callback(
+                            "Confirm Classification",
+                            f"Scraping complete. Would you like to classify the {len(final_products)} new products now?"
+                        )
+                    elif self.interactive:
+                        # Fallback for CLI mode
+                        classify_choice = input(f"\n🤖 Auto-classify {len(final_products)} products now? (y/n): ").strip().lower()
+                        do_classify = (classify_choice == 'y')
+
+                    # 3b. Run classification if confirmed
+                    if do_classify:
+                        self.log_callback(f"🤖 Auto-classifying {len(final_products)} products...")
+                        # Run LLM classification
+                        auto_classified_products = classify_products_batch(final_products)
+                        self.log_callback("✅ Auto-classification complete.")
+
+                        # 3c. ALWAYS open classification editor for review
+                        self.log_callback(f"📋 Opening classification editor for review...")
+                        if self.editor_callback:
+                            # This opens the UI and blocks until the user is done
+                            final_products = self.editor_callback(auto_classified_products, editor_type='classification')
+                        else:
+                            # Fallback for CLI mode
+                            from src.core.classification.ui import edit_classification_in_batch
+                            final_products = edit_classification_in_batch(auto_classified_products)
+                        
+                        if not final_products:
+                            self.log_callback("❌ Classification was cancelled by the user. Products will not be saved.")
+                            return # Exit early
+                    else:
+                        self.log_callback("ℹ️ Skipping classification step.")
+
+                    # 4. Save the final, reviewed products
                     self.save_final_products(final_products, rows)
                 else:
-                    pass
+                    self.log_callback("❌ Product editing was cancelled. No products will be saved.")
             else:
-                pass
+                self.log_callback("ℹ️ No products were consolidated after scraping.")
+        else:
+            self.log_callback("✅ Scraping finished. No new products were found.")
+
 
         # Calculate final session results
         all_found_skus = set(self.all_found_products.keys())
@@ -1638,80 +1681,9 @@ class ProductScraper:
 
     def save_final_products(self, final_products, rows):
         """Save the final user-selected products to the appropriate site spreadsheets."""
-
-        # Ask if user wants to run auto-classification
-        classify_choice = (
-            "y"
-            if not self.interactive
-            else input(
-                f"\n🤖 Auto-classify {len(final_products)} products using existing database? (y/n): "
-            )
-            .strip()
-            .lower()
-        )
-
-        if classify_choice == "y":
-            self.log_callback(
-                f"🤖 Auto-classifying {len(final_products)} products using existing database..."
-            )
-            from src.core.classification.manager import classify_products_batch
-
-            final_products = classify_products_batch(final_products)
-            self.log_callback(f"✅ Auto-classification complete")
-
-            # Ask if user wants to review/edit classifications
-            review_choice = (
-                "n"
-                if not self.interactive
-                else input(
-                    f"\n📋 Open classification editor to review/edit {len(final_products)} products? (y/n): "
-                )
-                .strip()
-                .lower()
-            )
-
-            if review_choice == "y":
-                self.log_callback(
-                    f"📋 Opening classification editor for {len(final_products)} final products..."
-                )
-                from src.core.classification.ui import edit_classification_in_batch
-
-                # Convert products from scraper format to classification UI format
-                classification_products = []
-                for product in final_products:
-                    # Convert Image URLs list to Images comma-separated string
-                    image_urls = product.get("Image URLs", [])
-                    images_string = ",".join(url for url in image_urls if url)
-
-                    classification_product = {
-                        "SKU": product.get("SKU", ""),
-                        "Name": product.get("Name", ""),
-                        "Brand": product.get("Brand", ""),
-                        "Price": product.get("Price", ""),
-                        "Weight": product.get("Weight", ""),
-                        "Images": images_string,
-                        # Preserve existing classification fields (may be populated by auto-classification)
-                        "Category": product.get("Category", ""),
-                        "Product Type": product.get("Product Type", ""),
-                        "Product On Pages": product.get("Product On Pages", ""),
-                    }
-                    classification_products.append(classification_product)
-
-                final_products = edit_classification_in_batch(classification_products)
-                if final_products is None:
-                    self.log_callback(
-                        "❌ User cancelled classification - aborting save"
-                    )
-                    return
-                self.log_callback(f"✅ Classification review complete")
-            else:
-                self.log_callback("ℹ️ Skipping classification review")
-        else:
-            self.log_callback("ℹ️ Skipping auto-classification")
-
-        # Cross-sell assignment disabled for now
-        # TODO: Re-enable cross-sell assignment after fixing UI issues
-        self.log_callback("ℹ️ Skipping cross-sell assignment (disabled)")
+        if not final_products:
+            self.log_callback("ℹ️ No final products to save.")
+            return
 
         # Proceed with saving products
         self.log_callback(f"\n💾 Saving {len(final_products)} products to database...")

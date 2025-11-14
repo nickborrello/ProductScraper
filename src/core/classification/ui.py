@@ -262,6 +262,7 @@ class MultiSelectWidget(QWidget):
 
         self.available_scroll = QScrollArea()
         self.available_scroll.setWidgetResizable(True)
+        self.available_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.available_scroll.setMinimumHeight(200)
         self.available_scroll.setMaximumHeight(300)
 
@@ -278,6 +279,7 @@ class MultiSelectWidget(QWidget):
 
         self.selected_scroll = QScrollArea()
         self.selected_scroll.setWidgetResizable(True)
+        self.selected_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.selected_scroll.setMinimumHeight(200)
         self.selected_scroll.setMaximumHeight(300)
 
@@ -349,6 +351,9 @@ class MultiSelectWidget(QWidget):
         self.update_display()
 
 
+from src.ui.styling import STYLESHEET
+
+
 class ClassificationEditorWindow(QMainWindow):
     """PyQt6 main window for batch classification editing."""
 
@@ -369,147 +374,8 @@ class ClassificationEditorWindow(QMainWindow):
         self.current_index = 0
         self.multi_select_widgets = {}
 
-        # Apply dark theme
-        self.setStyleSheet("""
-QMainWindow {
-    background-color: #1e1e1e;
-    color: #ffffff;
-}
-
-QMenuBar {
-    background-color: #2d2d2d;
-    color: #ffffff;
-    border-bottom: 1px solid #404040;
-}
-
-QMenuBar::item {
-    background-color: transparent;
-    padding: 4px 8px;
-    margin: 0px;
-}
-
-QMenuBar::item:selected {
-    background-color: #404040;
-}
-
-QMenu {
-    background-color: #2d2d2d;
-    color: #ffffff;
-    border: 1px solid #404040;
-}
-
-QMenu::item {
-    padding: 4px 20px;
-}
-
-QMenu::item:selected {
-    background-color: #404040;
-}
-
-QStatusBar {
-    background-color: #2d2d2d;
-    color: #ffffff;
-    border-top: 1px solid #404040;
-}
-
-QLabel {
-    color: #ffffff;
-}
-
-QCheckBox {
-    color: #ffffff;
-}
-
-QCheckBox::indicator {
-    border: 1px solid #ffffff;
-    background-color: #1e1e1e;
-}
-
-QCheckBox::indicator:checked {
-    background-color: #4CAF50;
-    border: 1px solid #4CAF50;
-}
-
-QMessageBox {
-    background-color: #1e1e1e;
-    color: #ffffff;
-}
-
-QMessageBox QLabel {
-    color: #ffffff;
-}
-
-QMessageBox QPushButton {
-    background-color: #404040;
-    color: #ffffff;
-    border: 1px solid #555555;
-    padding: 5px 15px;
-    border-radius: 3px;
-}
-
-QMessageBox QPushButton:hover {
-    background-color: #555555;
-}
-
-QDialog {
-    background-color: #1e1e1e;
-    color: #ffffff;
-}
-
-QDialog QLabel {
-    color: #ffffff;
-}
-
-QDialog QLineEdit {
-    background-color: #2d2d2d;
-    color: #ffffff;
-    border: 1px solid #404040;
-    padding: 4px;
-    border-radius: 3px;
-}
-
-QDialog QComboBox {
-    background-color: #2d2d2d;
-    color: #ffffff;
-    border: 1px solid #404040;
-    padding: 4px;
-    border-radius: 3px;
-}
-
-QDialog QComboBox::drop-down {
-    border: none;
-}
-
-QDialog QComboBox::down-arrow {
-    image: url(down_arrow.png);
-    width: 12px;
-    height: 12px;
-}
-
-QDialog QPushButton {
-    background-color: #404040;
-    color: #ffffff;
-    border: 1px solid #555555;
-    padding: 5px 15px;
-    border-radius: 3px;
-}
-
-QDialog QPushButton:hover {
-    background-color: #555555;
-}
-
-QListWidget {
-    background-color: #1e1e1e;
-    color: #ffffff;
-    border: 1px solid #404040;
-    alternate-background-color: #2d2d2d;
-}
-
-QListWidget::item:selected {
-    background-color: #4CAF50;
-    color: #ffffff;
-}
-""")
+        # Apply global dark theme
+        self.setStyleSheet(STYLESHEET)
 
         self.setup_ui()
         self.load_product_into_ui(0)
@@ -550,28 +416,17 @@ QListWidget::item:selected {
         # Product header
         header_frame = QFrame()
         header_frame.setFrameStyle(QFrame.Shape.Box)
-        header_frame.setStyleSheet(
-            """
-            QFrame {
-                background-color: #f8f9fa;
-                border: 2px solid #dee2e6;
-                border-radius: 8px;
-            }
-        """
-        )
         header_layout = QVBoxLayout(header_frame)
 
         # Product title
         self.product_name_label = QLabel("")
         self.product_name_label.setFont(QFont("Arial", 16, QFont.Weight.Bold))
-        self.product_name_label.setStyleSheet("color: #2c3e50; margin: 5px;")
         self.product_name_label.setWordWrap(True)
         header_layout.addWidget(self.product_name_label)
 
         # SKU
         self.product_sku_label = QLabel("")
         self.product_sku_label.setFont(QFont("Arial", 12, QFont.Weight.Normal, True))
-        self.product_sku_label.setStyleSheet("color: #7f8c8d; margin: 5px;")
         header_layout.addWidget(self.product_sku_label)
 
         info_layout.addWidget(header_frame)
@@ -579,15 +434,6 @@ QListWidget::item:selected {
         # Product details grid
         details_frame = QFrame()
         details_frame.setFrameStyle(QFrame.Shape.Box)
-        details_frame.setStyleSheet(
-            """
-            QFrame {
-                background-color: #ffffff;
-                border: 1px solid #e9ecef;
-                border-radius: 5px;
-            }
-        """
-        )
         details_layout = QVBoxLayout(details_frame)
 
         # Create a grid for product details
@@ -607,13 +453,11 @@ QListWidget::item:selected {
             # Label
             label = QLabel(label_text)
             label.setFont(QFont("Arial", 11, QFont.Weight.Bold))
-            label.setStyleSheet("color: #495057;")
             grid_layout.addWidget(label, i, 0, Qt.AlignmentFlag.AlignTop)
 
             # Value
             value_label = QLabel("")
             value_label.setFont(QFont("Arial", 11))
-            value_label.setStyleSheet("color: #212529;")
             value_label.setWordWrap(True)
             grid_layout.addWidget(value_label, i, 1)
             self.detail_labels[key] = value_label
@@ -624,36 +468,15 @@ QListWidget::item:selected {
         # Product image display
         image_frame = QFrame()
         image_frame.setFrameStyle(QFrame.Shape.Box)
-        image_frame.setStyleSheet(
-            """
-            QFrame {
-                background-color: #f8f9fa;
-                border: 1px solid #dee2e6;
-                border-radius: 5px;
-            }
-        """
-        )
         image_layout = QVBoxLayout(image_frame)
 
         image_label = QLabel("Product Image:")
         image_label.setFont(QFont("Arial", 11, QFont.Weight.Bold))
-        image_label.setStyleSheet("color: #495057;")
         image_layout.addWidget(image_label)
 
         # Placeholder for image
         self.image_display = QLabel("No image available")
         self.image_display.setFixedSize(200, 200)
-        self.image_display.setStyleSheet(
-            """
-            QLabel {
-                background-color: #e9ecef;
-                border: 2px dashed #adb5bd;
-                border-radius: 5px;
-                color: #6c757d;
-                font-size: 12px;
-            }
-        """
-        )
         self.image_display.setAlignment(Qt.AlignmentFlag.AlignCenter)
         image_layout.addWidget(self.image_display)
 
@@ -672,7 +495,6 @@ QListWidget::item:selected {
         # Classification header
         class_header = QLabel("Product Classification")
         class_header.setFont(QFont("Arial", 18, QFont.Weight.Bold))
-        class_header.setStyleSheet("color: #2c3e50; margin-bottom: 10px;")
         classification_layout.addWidget(class_header)
 
         # Classification selection area - horizontal splitter for three columns
@@ -683,7 +505,6 @@ QListWidget::item:selected {
         category_layout = QVBoxLayout(category_widget)
         category_label = QLabel("📁 Category")
         category_label.setFont(QFont("Arial", 14, QFont.Weight.Bold))
-        category_label.setStyleSheet("color: #2c3e50; margin-bottom: 5px;")
         category_layout.addWidget(category_label)
 
         self.category_multi_select = MultiSelectWidget(
@@ -698,7 +519,6 @@ QListWidget::item:selected {
         type_layout = QVBoxLayout(type_widget)
         type_label = QLabel("🏷️ Product Type")
         type_label.setFont(QFont("Arial", 14, QFont.Weight.Bold))
-        type_label.setStyleSheet("color: #2c3e50; margin-bottom: 5px;")
         type_layout.addWidget(type_label)
 
         self.type_multi_select = MultiSelectWidget(
@@ -712,7 +532,6 @@ QListWidget::item:selected {
         pages_layout = QVBoxLayout(pages_widget)
         pages_label = QLabel("📄 Product On Pages")
         pages_label.setFont(QFont("Arial", 14, QFont.Weight.Bold))
-        pages_label.setStyleSheet("color: #2c3e50; margin-bottom: 5px;")
         pages_layout.addWidget(pages_label)
 
         self.pages_multi_select = MultiSelectWidget(
