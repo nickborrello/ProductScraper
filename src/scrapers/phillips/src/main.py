@@ -97,50 +97,47 @@ async def main() -> None:
     """
     Apify Actor for scraping Phillips products.
     """
-    async with apify.Actor:
+    async with apify.Actor as actor:
         # Get input
-        actor_input = await apify.get_input()
+        actor_input = await actor.get_input()
         skus = actor_input.get('skus', [])
 
         if not skus:
-            await apify.log.error('No SKUs provided in input')
+            await actor.log.error('No SKUs provided in input')
             return
 
-        await apify.log.info(f'Starting Phillips scraper for {len(skus)} SKUs')
-
-        # Initialize the Actor
-        actor = apify.Actor()
+        await actor.log.info(f'Starting Phillips scraper for {len(skus)} SKUs')
 
         # Create browser
         driver = create_browser("Phillips", headless=HEADLESS, enable_devtools=ENABLE_DEVTOOLS, devtools_port=DEVTOOLS_PORT)
         if driver is None:
-            await apify.log.error("Could not create browser for Phillips")
+            await actor.log.error("Could not create browser for Phillips")
             return
 
         try:
             # Handle login
             if not is_logged_in(driver):
-                await apify.log.info("Logging in to Phillips...")
+                await actor.log.info("Logging in to Phillips...")
                 login(driver)
-                await apify.log.info("Login successful")
+                await actor.log.info("Login successful")
             else:
-                await apify.log.info("Already logged in to Phillips")
+                await actor.log.info("Already logged in to Phillips")
 
             products = []
 
             for sku in skus:
-                await apify.log.info(f'Processing SKU: {sku}')
+                await actor.log.info(f'Processing SKU: {sku}')
 
                 product_info = scrape_single_product(sku, driver)
 
                 if product_info:
                     products.append(product_info)
-                    await apify.log.info(f'Successfully scraped product: {product_info["Name"]}')
+                    await actor.log.info(f'Successfully scraped product: {product_info["Name"]}')
 
                     # Push data to dataset
                     await actor.push_data(product_info)
                 else:
-                    await apify.log.warning(f'No product found for SKU: {sku}')
+                    await actor.log.warning(f'No product found for SKU: {sku}')
 
         finally:
             if driver:
@@ -149,7 +146,7 @@ async def main() -> None:
                 except:
                     pass
 
-        await apify.log.info(f'Phillips scraping completed. Found {len(products)} products.')
+        await actor.log.info(f'Phillips scraping completed. Found {len(products)} products.')
 
 def scrape_products(skus, progress_callback=None, headless=None):
     """

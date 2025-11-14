@@ -524,11 +524,11 @@ class OrgillScraper:
         cleaned = re.sub(r'\s+', ' ', text.strip())
         return cleaned if cleaned else 'N/A'
 
-def main():
+async def main() -> None:
     """Main actor function."""
-    with Actor:
+    async with Actor:
         # Get input
-        actor_input = Actor.get_input() or {}
+        actor_input = await Actor.get_input() or {}
         skus = actor_input.get('skus', [TEST_SKU])
 
         logger.info(f"Starting Orgill scraper for {len(skus)} SKUs")
@@ -545,7 +545,7 @@ def main():
             with OrgillScraper(headless=HEADLESS) as scraper:
                 # Login
                 if not scraper.login():
-                    Actor.fail("Failed to login to Orgill")
+                    await Actor.fail("Failed to login to Orgill")
 
                 # Process each SKU
                 for i, sku in enumerate(skus, 1):
@@ -558,18 +558,18 @@ def main():
                         metrics.successful_products += 1
 
                         # Push to dataset
-                        Actor.push_data(product_data)
+                        await Actor.push_data(product_data)
                     else:
                         failed_skus.append(sku)
                         metrics.failed_products += 1
 
                     # Log progress
                     progress = (i / len(skus)) * 100
-                    Actor.set_status_message(f"Processed {i}/{len(skus)} SKUs ({progress:.1f}%)")
+                    await Actor.set_status_message(f"Processed {i}/{len(skus)} SKUs ({progress:.1f}%)")
 
         except Exception as e:
             logger.error(f"Scraper execution failed: {e}")
-            Actor.fail(f"Scraper execution failed: {e}")
+            await Actor.fail(f"Scraper execution failed: {e}")
 
         finally:
             # Update final metrics
@@ -586,7 +586,7 @@ def main():
                 logger.warning(f"Failed SKUs: {failed_skus}")
 
             # Set final status
-            Actor.set_status_message(
+            await Actor.set_status_message(
                 f"Completed: {metrics.successful_products}/{metrics.total_products} products scraped successfully"
             )
 

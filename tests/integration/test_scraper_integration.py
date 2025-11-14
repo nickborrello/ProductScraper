@@ -84,7 +84,7 @@ class ScraperIntegrationTester:
         try:
             # Set environment variables
             env = os.environ.copy()
-            env["PYTHONPATH"] = str(self.project_root)
+            env["PYTHONPATH"] = str(self.project_root) + os.pathsep + str(scraper_dir)
             env["APIFY_INPUT"] = json.dumps(input_data)
 
             # Run the scraper
