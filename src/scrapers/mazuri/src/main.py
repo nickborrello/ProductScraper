@@ -14,8 +14,8 @@ import pathlib
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 sys.path.insert(0, project_root)
 
-from src.utils.scraping.scraping import get_standard_chrome_options, clean_string
-from src.utils.scraping.browser import create_browser
+from utils.scraping.scraping import get_standard_chrome_options, clean_string
+from utils.scraping.browser import create_browser
 
 # HEADLESS is set to True for production deployment
 HEADLESS = True
@@ -28,43 +28,40 @@ async def main() -> None:
     """
     Apify Actor for scraping Mazuri products.
     """
-    async with apify.Actor:
+    async with apify.Actor as actor:
         # Get input
-        actor_input = await apify.get_input()
+        actor_input = await actor.get_input()
         skus = actor_input.get('skus', [])
 
         if not skus:
-            await apify.log.error('No SKUs provided in input')
+            await actor.log.error('No SKUs provided in input')
             return
 
-        await apify.log.info(f'Starting Mazuri scraper for {len(skus)} SKUs')
-
-        # Initialize the Actor
-        actor = apify.Actor()
+        await actor.log.info(f'Starting Mazuri scraper for {len(skus)} SKUs')
 
         # Create browser
         driver = create_browser("Mazuri", headless=HEADLESS, enable_devtools=ENABLE_DEVTOOLS, devtools_port=DEVTOOLS_PORT)
         if driver is None:
-            await apify.log.error("Could not create browser for Mazuri")
+            await actor.log.error("Could not create browser for Mazuri")
             return
 
         try:
             products = []
 
             for sku in skus:
-                await apify.log.info(f'Processing SKU: {sku}')
+                await actor.log.info(f'Processing SKU: {sku}')
 
                 product_info_list = scrape_single_product(sku, driver)
 
                 if product_info_list:
                     for product_info in product_info_list:
                         products.append(product_info)
-                        await apify.log.info(f'Successfully scraped product: {product_info["Name"]}')
+                        await actor.log.info(f'Successfully scraped product: {product_info["Name"]}')
 
                         # Push data to dataset
                         await actor.push_data(product_info)
                 else:
-                    await apify.log.warning(f'No product found for SKU: {sku}')
+                    await actor.log.warning(f'No product found for SKU: {sku}')
 
         finally:
             if driver:
@@ -73,7 +70,7 @@ async def main() -> None:
                 except:
                     pass
 
-        await apify.log.info(f'Mazuri scraping completed. Found {len(products)} products.')
+        await actor.log.info(f'Mazuri scraping completed. Found {len(products)} products.')
 
 def scrape_products(skus, progress_callback=None, headless=None):
     """
