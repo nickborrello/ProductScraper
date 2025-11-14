@@ -18,7 +18,7 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 # Import classification module (after ensuring project root is first on sys.path)
-from src.core.classification.classifier import (
+from src.core.classification.manager import (
     classify_products_batch,
     classify_single_product,
 )
@@ -1653,7 +1653,7 @@ class ProductScraper:
             self.log_callback(
                 f"🤖 Auto-classifying {len(final_products)} products using existing database..."
             )
-            from src.core.classification.classifier import classify_products_batch
+            from src.core.classification.manager import classify_products_batch
 
             final_products = classify_products_batch(final_products)
             self.log_callback(f"✅ Auto-classification complete")

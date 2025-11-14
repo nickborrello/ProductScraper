@@ -18,7 +18,7 @@ if PROJECT_ROOT not in sys.path:
 
 # Import classification functions
 from src.ui.product_classify_ui import edit_classification_in_batch
-from src.core.classification.classifier import classify_products_batch
+from src.core.classification.manager import classify_products_batch
 from src.core.settings_manager import SettingsManager
 
 

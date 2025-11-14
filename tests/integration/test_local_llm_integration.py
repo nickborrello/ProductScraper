@@ -1,7 +1,7 @@
 import pytest
 import json
 from unittest.mock import patch, MagicMock
-from src.core.classification.classifier import classify_single_product, classify_products_batch
+from src.core.classification.manager import classify_single_product, classify_products_batch
 from src.core.classification.local_llm_classifier import LocalLLMProductClassifier, reset_local_llm_classifier
 
 

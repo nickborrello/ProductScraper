@@ -51,43 +51,64 @@ except ImportError as e:
         """Dummy function for scraping if import fails."""
         log_callback = kwargs.get("log_callback")
         if log_callback:
-            log_callback("Error: Scraping logic not found.")
+            if hasattr(log_callback, 'emit'):
+                log_callback.emit("Error: Scraping logic not found.")
+            else:
+                log_callback("Error: Scraping logic not found.")
 
     def run_discontinued_check(*args, **kwargs):
         """Dummy function for discontinued check if import fails."""
         log_callback = kwargs.get("log_callback")
         if log_callback:
-            log_callback("Error: Discontinued check logic not found.")
+            if hasattr(log_callback, 'emit'):
+                log_callback.emit("Error: Discontinued check logic not found.")
+            else:
+                log_callback("Error: Discontinued check logic not found.")
 
     def run_db_refresh(*args, **kwargs):
         """Dummy function for DB refresh if import fails."""
         log_callback = kwargs.get("log_callback")
         if log_callback:
-            log_callback("Error: DB refresh logic not found.")
+            if hasattr(log_callback, 'emit'):
+                log_callback.emit("Error: DB refresh logic not found.")
+            else:
+                log_callback("Error: DB refresh logic not found.")
 
     def run_scraper_tests(*args, **kwargs) -> bool:
         """Dummy function for scraper tests if import fails."""
         log_callback = kwargs.get("log_callback")
         if log_callback:
-            log_callback("Error: Scraper test logic not found.")
+            if hasattr(log_callback, 'emit'):
+                log_callback.emit("Error: Scraper test logic not found.")
+            else:
+                log_callback("Error: Scraper test logic not found.")
         return False
 
     def run_scraper_integration_tests(*args, **kwargs):
         """Dummy function for scraper integration tests if import fails."""
         log_callback = kwargs.get("log_callback")
         if log_callback:
-            log_callback("Error: Scraper integration test logic not found.")
+            if hasattr(log_callback, 'emit'):
+                log_callback.emit("Error: Scraper integration test logic not found.")
+            else:
+                log_callback("Error: Scraper integration test logic not found.")
         return False
     def run_shopsite_xml_download(*args, **kwargs):
         """Dummy function for ShopSite XML download if import fails."""
         log_callback = kwargs.get("log_callback")
         if log_callback:
-            log_callback("Error: ShopSite XML download logic not found.")
+            if hasattr(log_callback, 'emit'):
+                log_callback.emit("Error: ShopSite XML download logic not found.")
+            else:
+                log_callback("Error: ShopSite XML download logic not found.")
     def run_shopsite_publish(*args, **kwargs):
         """Dummy function for ShopSite publish if import fails."""
         log_callback = kwargs.get("log_callback")
         if log_callback:
-            log_callback("Error: ShopSite publish logic not found.")
+            if hasattr(log_callback, 'emit'):
+                log_callback.emit("Error: ShopSite publish logic not found.")
+            else:
+                log_callback("Error: ShopSite publish logic not found.")
 
 
 class WorkerSignals(QObject):
@@ -948,7 +969,7 @@ class MainWindow(QMainWindow):
     def show_database_statistics(self):
         """Show database statistics dialog"""
         try:
-            from src.core.database_queries import ProductDatabase
+            from src.core.database.queries import ProductDatabase
 
             db = ProductDatabase()
             db.connect()
@@ -992,7 +1013,7 @@ class MainWindow(QMainWindow):
         """Worker function to run classification"""
         import pandas as pd
         from src.ui.product_classify_ui import edit_classification_in_batch
-        from src.core.classification.classifier import classify_products_batch
+        from src.core.classification.manager import classify_products_batch
 
         log = log_callback if log_callback else print
 
@@ -1303,7 +1324,7 @@ class MainWindow(QMainWindow):
     def update_database_stats(self):
         """Update database statistics in the UI"""
         try:
-            from src.core.database_queries import ProductDatabase
+            from src.core.database.queries import ProductDatabase
 
             db = ProductDatabase()
             db.connect()

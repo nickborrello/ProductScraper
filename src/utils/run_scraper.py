@@ -17,8 +17,8 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from src.core.database_import import import_from_shopsite_xml, publish_shopsite_changes
-from src.core.database_refresh import refresh_database_from_xml
+from src.core.database.xml_import import import_from_shopsite_xml, publish_shopsite_changes
+from src.core.database.refresh import refresh_database_from_xml
 
 # Conditional imports for core modules
 log = print  # Default log function

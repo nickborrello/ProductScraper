@@ -971,7 +971,7 @@ class MainWindow(QMainWindow):
     def show_database_statistics(self):
         """Show database statistics dialog"""
         try:
-            from src.core.database_queries import ProductDatabase
+            from src.core.database.queries import ProductDatabase
 
             db = ProductDatabase()
             db.connect()
@@ -1012,7 +1012,7 @@ class MainWindow(QMainWindow):
         """Worker function to run classification"""
         import pandas as pd
         from src.ui.product_classify_ui import edit_classification_in_batch
-        from src.core.classification.classifier import classify_products_batch
+        from src.core.classification.manager import classify_products_batch
 
         log = log_callback if log_callback else print
 
@@ -1322,7 +1322,7 @@ class MainWindow(QMainWindow):
     def update_database_stats(self):
         """Update database statistics in the UI"""
         try:
-            from src.core.database_queries import ProductDatabase
+            from src.core.database.queries import ProductDatabase
 
             db = ProductDatabase()
             db.connect()

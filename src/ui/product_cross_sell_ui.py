@@ -33,7 +33,7 @@ from PyQt6.QtCore import QUrl, Qt, pyqtSignal
 from PyQt6.QtGui import QPalette, QColor
 
 # Import non-UI logic
-from src.core.classification.cross_sell_logic import (
+from src.core.cross_sell.logic import (
     get_facet_options_from_db,
     query_cross_sell_candidates,
     get_first_image_url,
