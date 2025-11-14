@@ -991,7 +991,7 @@ class ProductScraper:
             return False
 
     def prompt_for_input_spreadsheet_tk(self):
-        input_dir = os.path.join(PROJECT_ROOT, "data", "input")
+        input_dir = os.path.join(PROJECT_ROOT, "data", "spreadsheets")
         root = tk.Tk()
         root.withdraw()
         file_path = filedialog.askopenfilename(
