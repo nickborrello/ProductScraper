@@ -106,29 +106,37 @@ class ScraperIntegrationTester:
             results["return_code"] = process.returncode
 
             if process.returncode == 0:
-                # Try to parse output as JSON
+                # For Apify scrapers, data is stored in local dataset
                 try:
-                    # Look for JSON output in stdout
-                    output_lines = process.stdout.strip().split('\n')
-                    json_output = None
-
-                    for line in reversed(output_lines):
-                        line = line.strip()
-                        if line.startswith('{') or line.startswith('['):
-                            try:
-                                json_output = json.loads(line)
-                                break
-                            except json.JSONDecodeError:
-                                continue
-
-                    if json_output and isinstance(json_output, list):
-                        results["products"] = json_output
-                        results["success"] = True
+                    # Apify stores data in storage/datasets/default/
+                    dataset_dir = scraper_dir / "storage" / "datasets" / "default"
+                    
+                    if dataset_dir.exists():
+                        products = []
+                        # Read all JSON files in the dataset directory, excluding metadata
+                        for json_file in dataset_dir.glob("*.json"):
+                            if json_file.name.startswith('__'):
+                                continue  # Skip metadata files
+                            with open(json_file, 'r', encoding='utf-8') as f:
+                                try:
+                                    data = json.load(f)
+                                    if isinstance(data, list):
+                                        products.extend(data)
+                                    else:
+                                        products.append(data)
+                                except json.JSONDecodeError:
+                                    continue
+                        
+                        if products:
+                            results["products"] = products
+                            results["success"] = True
+                        else:
+                            results["errors"].append("No products found in dataset")
                     else:
-                        results["errors"].append("No valid JSON output found")
+                        results["errors"].append("Dataset directory not found")
 
                 except Exception as e:
-                    results["errors"].append(f"Failed to parse output: {e}")
+                    results["errors"].append(f"Failed to read dataset: {e}")
             else:
                 results["errors"].append(f"Scraper exited with code {process.returncode}")
                 if process.stderr:
@@ -288,8 +296,12 @@ class ScraperIntegrationTester:
 
             if validation_results.get("errors"):
                 print(f"   Errors: {len(validation_results['errors'])}")
+                for error in validation_results['errors'][:3]:  # Show first 3 errors
+                    print(f"     - {error}")
             if validation_results.get("warnings"):
                 print(f"   Warnings: {len(validation_results['warnings'])}")
+                for warning in validation_results['warnings'][:3]:  # Show first 3 warnings
+                    print(f"     - {warning}")
 
         # Overall result
         if test_results["overall_success"]:

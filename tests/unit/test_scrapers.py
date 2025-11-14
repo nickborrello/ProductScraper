@@ -1,183 +1,228 @@
-import pytest
+#!/usr/bin/env python3
+"""
+Command-line tool for testing and debugging scrapers locally.
+
+This script provides an easy way to:
+- Test individual scrapers with validation
+- Run all scrapers and get a comprehensive report
+- Debug scraper output and identify issues
+- Validate data format and quality before deployment
+
+Usage:
+    python test_scrapers.py --all                    # Test all scrapers
+    python test_scrapers.py --scraper amazon         # Test specific scraper
+    python test_scrapers.py --scraper amazon --skus B07G5J5FYP B08N5WRWNW  # Test with custom SKUs
+    python test_scrapers.py --list                   # List available scrapers
+    python test_scrapers.py --validate amazon        # Validate scraper structure only
+"""
 import os
 import sys
-import importlib.util
-import glob
-from unittest.mock import patch, MagicMock
+import json
+import argparse
+from pathlib import Path
+from typing import List, Optional
 
 # Add project root to path
-PROJECT_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
+PROJECT_ROOT = Path(__file__).parent.parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from tests.integration.test_scraper_integration import ScraperIntegrationTester
+from tests.fixtures.scraper_validator import ScraperValidator
 
 
-class TestScrapers:
-    """Test suite for all scraper modules.
+def list_available_scrapers():
+    """List all available scrapers."""
+    tester = ScraperIntegrationTester()
+    scrapers = tester.get_available_scrapers()
 
-    To add integration testing for a scraper:
-    1. Add a TEST_SKU variable to the scraper module with a SKU that exists on that site
-    2. Example: TEST_SKU = "035585499741"  # KONG Pull A Partz Pals Koala SM
-    3. Run tests with RUN_INTEGRATION_TESTS=true to include live scraping tests
-    """
+    print("Available Scrapers:")
+    print("=" * 40)
 
-    @pytest.fixture(scope="class")
-    def scraper_modules(self):
-        """Discover all Apify scraper modules dynamically."""
-        scrapers_dir = os.path.join(PROJECT_ROOT, "src", "scrapers")
-        
-        # Only look for Apify scrapers in subdirectories
-        scraper_dirs = []
-        for item in os.listdir(scrapers_dir):
-            item_path = os.path.join(scrapers_dir, item)
-            if os.path.isdir(item_path) and not item.startswith('.') and item != 'archive':
-                # Check if it has Apify structure (has .actor directory or main.py with apify import)
-                if self._is_apify_scraper(item_path):
-                    scraper_dirs.append(item_path)
+    for scraper in scrapers:
+        config = tester.test_config.get(scraper, {})
+        test_skus = config.get("test_skus", [])
+        description = config.get("description", "No description")
 
-        modules = {}
-        for scraper_dir in scraper_dirs:
-            module_name = os.path.basename(scraper_dir)
-            main_py_path = os.path.join(scraper_dir, "src", "main.py")
-            
-            if os.path.exists(main_py_path):
-                try:
-                    # Import the Apify scraper module
-                    spec = importlib.util.spec_from_file_location(module_name, main_py_path)
-                    if spec is None or spec.loader is None:
-                        pytest.fail(f"Failed to create module spec for {module_name}")
-                    
-                    module = importlib.util.module_from_spec(spec)
-                    spec.loader.exec_module(module)
-                    
-                    # Check if it has the scrape_products function (Apify scrapers)
-                    if hasattr(module, 'scrape_products'):
-                        modules[module_name] = module
-                    else:
-                        pytest.fail(f"Apify scraper {module_name} does not have scrape_products function")
-                        
-                except Exception as e:
-                    pytest.fail(f"Failed to import Apify scraper module {module_name}: {e}")
+        print(f"📦 {scraper}")
+        print(f"   Description: {description}")
+        print(f"   Test SKUs: {', '.join(test_skus) if test_skus else 'None'}")
+        print()
 
-        return modules
 
-    def _is_apify_scraper(self, scraper_path):
-        """Check if a directory contains an Apify scraper with scrape_products function."""
-        main_py = os.path.join(scraper_path, "src", "main.py")
-        if os.path.exists(main_py):
-            try:
-                with open(main_py, 'r', encoding='utf-8') as f:
-                    content = f.read()
-                    # Must have both apify import AND scrape_products function
-                    has_apify = 'from apify import Actor' in content or 'import apify' in content
-                    has_scrape_products = 'def scrape_products' in content
-                    return has_apify and has_scrape_products
-            except:
-                pass
+def validate_scraper_structure(scraper_name: str):
+    """Validate that a scraper has the correct structure."""
+    scraper_dir = PROJECT_ROOT / "src" / "scrapers" / scraper_name
+
+    print(f"Validating structure for: {scraper_name}")
+    print("=" * 50)
+
+    checks = {
+        "Scraper directory exists": scraper_dir.exists(),
+        "src/ directory exists": (scraper_dir / "src").exists(),
+        "__main__.py exists": (scraper_dir / "src" / "__main__.py").exists(),
+        "main.py exists": (scraper_dir / "src" / "main.py").exists(),
+        ".actor/ directory exists": (scraper_dir / ".actor").exists(),
+        "actor.json exists": (scraper_dir / ".actor" / "actor.json").exists(),
+        "input_schema.json exists": (scraper_dir / ".actor" / "input_schema.json").exists(),
+        "output_schema.json exists": (scraper_dir / ".actor" / "output_schema.json").exists(),
+        "dataset_schema.json exists": (scraper_dir / ".actor" / "dataset_schema.json").exists(),
+        "requirements.txt exists": (scraper_dir / "requirements.txt").exists(),
+        "Dockerfile exists": (scraper_dir / "Dockerfile").exists(),
+    }
+
+    all_passed = True
+    for check_name, passed in checks.items():
+        status = "✅" if passed else "❌"
+        print(f"{status} {check_name}")
+        if not passed:
+            all_passed = False
+
+    print()
+    if all_passed:
+        print("✅ Scraper structure is valid!")
+    else:
+        print("❌ Scraper structure has issues. Check the failed items above.")
+
+    return all_passed
+
+
+def test_single_scraper(scraper_name: str, skus: Optional[List[str]] = None, verbose: bool = False):
+    """Test a single scraper."""
+    tester = ScraperIntegrationTester()
+
+    # First validate structure
+    if not validate_scraper_structure(scraper_name):
+        print(f"\n❌ Skipping execution test due to structure issues")
         return False
 
-    def test_scraper_imports(self, scraper_modules):
-        """Test that all Apify scraper modules can be imported successfully."""
-        assert len(scraper_modules) > 0, "No Apify scraper modules found"
+    print(f"\n{'='*60}")
+    print(f"EXECUTING SCRAPER TEST: {scraper_name.upper()}")
+    print(f"{'='*60}")
 
-        found_modules = list(scraper_modules.keys())
-        print(f"Found Apify scraper modules: {found_modules}")
+    try:
+        result = tester.test_single_scraper(scraper_name, skus)
 
-        # Verify each module has the required scrape_products function
-        for name, module in scraper_modules.items():
-            assert hasattr(module, 'scrape_products'), f"Apify scraper {name} missing scrape_products function"
-            assert callable(getattr(module, 'scrape_products')), f"scrape_products in {name} is not callable"
+        if verbose and result["run_results"]["output"]:
+            print(f"\n📄 SCRAPER OUTPUT:")
+            print("-" * 40)
+            print(result["run_results"]["output"][:2000])  # Limit output
+            if len(result["run_results"]["output"]) > 2000:
+                print("... (output truncated)")
+            print("-" * 40)
 
-    def test_scraper_functions_exist(self, scraper_modules):
-        """Test that each Apify scraper module has the expected scrape_products function."""
-        for module_name, module in scraper_modules.items():
-            scrape_func = getattr(module, 'scrape_products')
-            assert callable(scrape_func), f"scrape_products function in {module_name} is not callable"
+        return result["overall_success"]
 
-            # Check function signature - should accept skus parameter
-            import inspect
-            sig = inspect.signature(scrape_func)
-            assert "skus" in sig.parameters, f"scrape_products function in {module_name} should have 'skus' parameter"
+    except Exception as e:
+        print(f"❌ Test failed with exception: {e}")
+        return False
 
-            print(f"✅ {module_name}: Found scrape_products function")
 
-    def test_scraper_dependencies(self, scraper_modules):
-        """Test that Apify scraper modules have required dependencies."""
-        required_imports = ["selenium", "apify"]
+def test_all_scrapers(verbose: bool = False):
+    """Test all available scrapers."""
+    tester = ScraperIntegrationTester()
+    scrapers = tester.get_available_scrapers()
 
-        for module_name, module in scraper_modules.items():
-            missing_deps = []
-            for dep in required_imports:
-                try:
-                    __import__(dep)
-                except ImportError:
-                    missing_deps.append(dep)
+    print(f"🧪 RUNNING COMPREHENSIVE SCRAPER TESTS")
+    print(f"Testing {len(scrapers)} scrapers: {', '.join(scrapers)}")
+    print(f"{'='*80}")
 
-            if missing_deps:
-                pytest.fail(
-                    f"Apify scraper {module_name} missing required dependencies: {missing_deps}"
-                )
+    results = tester.test_all_scrapers(skip_failing=True)
 
-            print(f"✅ {module_name}: Required dependencies available")
+    if verbose:
+        print(f"\n📊 DETAILED RESULTS:")
+        print("-" * 50)
+        for scraper_name, result in results["scraper_results"].items():
+            status = "✅" if result.get("overall_success", False) else "❌"
+            products = len(result.get("run_results", {}).get("products", []))
+            print(f"{status} {scraper_name}: {products} products")
 
-    def test_scraper_with_test_product(self, scraper_modules):
-        """Test each Apify scraper with a test product."""
-        for scraper_name, module in scraper_modules.items():
-            # Use the TEST_SKU from the scraper module, fallback to default
-            test_sku = getattr(module, 'TEST_SKU', '035585499741')
-            test_skus = [test_sku]
+    print(f"\n{'='*80}")
+    print("FINAL REPORT")
+    print(f"{'='*80}")
+    print(f"Total Scrapers Tested: {results['total_scrapers']}")
+    print(f"Passed: {results['successful_scrapers']}")
+    print(f"Failed: {results['failed_scrapers']}")
+    print(".1f")
 
-            print(f"Testing {scraper_name} with SKU: {test_sku}")
+    if results["failed_scrapers"] > 0:
+        print(f"\n❌ FAILED SCRAPERS:")
+        for name in results["summary"]["failed_scrapers_list"]:
+            print(f"  • {name}")
 
-            # Call the scrape_products function (Apify interface)
-            try:
-                products = module.scrape_products(test_skus)
+        print(f"\n🔧 COMMON ISSUES:")
+        common_errors = results["summary"]["common_errors"]
+        for error, count in sorted(common_errors.items(), key=lambda x: x[1], reverse=True)[:5]:
+            print(f"  • {error} ({count} times)")
 
-                # Validate the response
-                assert isinstance(products, list), f"{scraper_name}: scrape_products should return a list"
-                assert len(products) > 0, f"{scraper_name}: scrape_products returned empty list"
+    if results["successful_scrapers"] > 0:
+        print(".1f")
 
-                # Check that we got at least one valid product
-                valid_products = [p for p in products if p is not None]
-                assert len(valid_products) > 0, f"{scraper_name}: No valid products returned"
+    success = results["failed_scrapers"] == 0
+    if success:
+        print(f"\n🎉 ALL SCRAPERS PASSED! Ready for deployment to Apify.")
+    else:
+        print(f"\n⚠️  SOME SCRAPERS FAILED. Fix issues before deploying to Apify.")
 
-                # Validate product structure
-                product = valid_products[0]
-                assert isinstance(product, dict), f"{scraper_name}: Product should be a dictionary"
+    return success
 
-                # Check for required fields (basic validation)
-                required_fields = ['SKU', 'Name']
-                for field in required_fields:
-                    assert field in product, f"{scraper_name}: Product missing required field '{field}'"
-                    assert product[field] is not None, f"{scraper_name}: Product field '{field}' is None"
-                    assert str(product[field]).strip() != "", f"{scraper_name}: Product field '{field}' is empty"
-                    assert str(product[field]).strip().upper() != "N/A", f"{scraper_name}: Product field '{field}' is 'N/A'"
 
-                print(f"✓ {scraper_name}: Successfully scraped test product")
+def show_help():
+    """Show help information."""
+    print(__doc__)
 
-            except Exception as e:
-                pytest.fail(f"{scraper_name}: Failed to scrape test product: {e}")
 
-    def test_scraper_standard_dependencies(self, scraper_modules):
-        """Test that scraper modules have required dependencies."""
-        required_imports = ["selenium", "time", "os", "sys"]
+def main():
+    """Main entry point."""
+    parser = argparse.ArgumentParser(
+        description="Test and debug ProductScraper scrapers locally",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python test_scrapers.py --all                    # Test all scrapers
+  python test_scrapers.py --scraper amazon         # Test amazon scraper
+  python test_scrapers.py --scraper amazon --skus B07G5J5FYP B08N5WRWNW
+  python test_scrapers.py --list                   # List available scrapers
+  python test_scrapers.py --validate amazon        # Validate structure only
+        """
+    )
 
-        for module_name, module in scraper_modules.items():
-            missing_deps = []
-            for dep in required_imports:
-                try:
-                    __import__(dep)
-                except ImportError:
-                    missing_deps.append(dep)
+    parser.add_argument("--all", action="store_true",
+                       help="Test all available scrapers")
+    parser.add_argument("--scraper", type=str,
+                       help="Test specific scraper by name")
+    parser.add_argument("--skus", nargs="+",
+                       help="Custom SKUs to test with (space-separated)")
+    parser.add_argument("--list", action="store_true",
+                       help="List all available scrapers")
+    parser.add_argument("--validate", type=str,
+                       help="Validate scraper structure without running")
+    parser.add_argument("--verbose", action="store_true",
+                       help="Show detailed output and debug information")
 
-            if missing_deps:
-                pytest.fail(
-                    f"Module {module_name} missing required dependencies: {missing_deps}"
-                )
+    args = parser.parse_args()
 
-            print(f"✅ {module_name}: Required dependencies available")
+    # Handle different modes
+    if args.list:
+        list_available_scrapers()
+        return 0
+
+    if args.validate:
+        success = validate_scraper_structure(args.validate)
+        return 0 if success else 1
+
+    if args.scraper:
+        success = test_single_scraper(args.scraper, args.skus, args.verbose)
+        return 0 if success else 1
+
+    if args.all:
+        success = test_all_scrapers(args.verbose)
+        return 0 if success else 1
+
+    # No arguments provided
+    show_help()
+    return 1
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
+    sys.exit(main())
