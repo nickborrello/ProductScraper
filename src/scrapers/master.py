@@ -266,74 +266,53 @@ def discover_scrapers():
     scraping_options = {}
     headless_settings = {}  # Store headless preference per site
 
-    # Mapping from function names to display names
+    # Mapping from subdirectory names to display names
     name_mapping = {
-        "scrape_amazon": "Amazon",
-        "scrape_bradley_caldwell": "Bradley Caldwell",
-        "scrape_central": "Central Pet",
-        "scrape_coastal_pet": "Coastal Pet",
-        "scrape_generic": "Generic Search",
-        "scrape_mazuri": "Mazuri",
-        "scrape_nassau_candy": "Nassau",
-        "scrape_orgill": "Orgill",
-        "scrape_petfood_experts": "Pet Food Experts",
-        "scrape_phillips": "Phillips",
+        "amazon": "Amazon",
+        "bradley": "Bradley Caldwell",
+        "central_pet": "Central Pet",
+        "coastal": "Coastal Pet",
+        "mazuri": "Mazuri",
+        "nassau": "Nassau",
+        "orgill": "Orgill",
+        "petfoodex": "Pet Food Experts",
+        "phillips": "Phillips",
     }
 
-    # Find all .py files in scrapers directory, excluding __init__.py and archived files
-    scraper_files = glob.glob(os.path.join(scrapers_dir, "*.py"))
-    scraper_files = [f for f in scraper_files if not f.endswith("__init__.py")]
+    # Find all subdirectories in scrapers directory (excluding archive and __pycache__)
+    subdirs = []
+    for item in os.listdir(scrapers_dir):
+        item_path = os.path.join(scrapers_dir, item)
+        if os.path.isdir(item_path) and item not in ["archive", "__pycache__", "output"]:
+            subdirs.append(item)
 
-    # Exclude archived scrapers
-    archive_dir = os.path.join(scrapers_dir, "archive")
-    if os.path.exists(archive_dir):
-        archived_files = glob.glob(os.path.join(archive_dir, "*.py"))
-        archived_names = [os.path.basename(f) for f in archived_files]
-        scraper_files = [
-            f for f in scraper_files if os.path.basename(f) not in archived_names
-        ]
+    for subdir in subdirs:
+        # Look for main.py in src/ subdirectory
+        main_py_path = os.path.join(scrapers_dir, subdir, "src", "main.py")
+        if not os.path.exists(main_py_path):
+            continue
 
-    for scraper_file in scraper_files:
-        module_name = os.path.basename(scraper_file)[:-3]  # Remove .py extension
+        module_name = f"{subdir}_scraper"
 
-        module = None  # Initialize module to avoid unbound variable
         try:
             # Import the module
-            spec = importlib.util.spec_from_file_location(module_name, scraper_file)
+            spec = importlib.util.spec_from_file_location(module_name, main_py_path)
             if spec and spec.loader:
                 module = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(module)
 
-            # Find the scrape function - only if it's defined in this module
-            scrape_func = None
-            if module is not None:  # Only proceed if module was successfully loaded
-                for attr_name in dir(module):
-                    if attr_name.startswith("scrape_"):
-                        func = getattr(module, attr_name)
-                        # Check if the function is defined in this module (not imported)
-                        if (
-                            hasattr(func, "__module__")
-                            and func.__module__ == module_name
-                        ):
-                            scrape_func = func
-                            break
+            # Look for scrape_products function
+            scrape_func = getattr(module, "scrape_products", None)
 
             if scrape_func and callable(scrape_func):
                 # Get display name
-                func_name = scrape_func.__name__
-                display_name = name_mapping.get(
-                    func_name,
-                    func_name.replace("scrape_", "").replace("_", " ").title(),
-                )
+                display_name = name_mapping.get(subdir, subdir.replace("_", " ").title())
 
                 scraping_options[display_name] = scrape_func
 
                 # Check for headless preference (default to True if not specified)
                 headless_pref = getattr(module, "HEADLESS", True)
                 headless_settings[display_name] = headless_pref
-
-            else:
-                pass
 
         except Exception as e:
             pass
@@ -1385,7 +1364,7 @@ class ProductScraper:
 
         try:
             # NEW ARCHITECTURE: Call scraper with SKU array
-            scraped_products = scraping_function(skus_to_process, log_callback=self.log_callback, progress_tracker=self.progress_tracker, status_callback=self.status_callback)
+            scraped_products = scraping_function(skus_to_process)
 
             # Handle different return types
             if scraped_products is None:
