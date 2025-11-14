@@ -41,8 +41,8 @@ from src.core.cross_sell.logic import (
 
 CROSS_SELL_FIELD = "Product Cross Sell"
 MAX_CROSS_SELLS = 4
-# Database path - Adjusted for the new location: UI/product_cross_sell_ui.py
-# It needs to go up two levels (UI, ProductScraper) and then into data
+# Database path - Adjusted for the new location: core/cross_sell/ui.py
+# It needs to go up four levels (cross_sell, core, src, ProductScraper) and then into data
 DB_PATH = (
     Path(__file__).parent.parent.parent.parent / "data" / "databases" / "products.db"
 )

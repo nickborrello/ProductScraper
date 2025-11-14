@@ -23,7 +23,7 @@ from src.core.classification.manager import (
     classify_single_product,
 )
 from src.ui.product_editor import product_editor_interactive, edit_products_in_batch
-from src.ui.product_cross_sell_ui import assign_cross_sells_batch
+from src.core.cross_sell.ui import assign_cross_sells_batch
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -709,7 +709,8 @@ class ProductScraper:
         """Query the SQLite database directly for existing SKUs."""
         try:
             # Import database path from classification module
-            from src.ui.product_classify_ui import DB_PATH
+            from pathlib import Path
+            DB_PATH = Path(__file__).parent.parent.parent / "data" / "databases" / "products.db"
             import sqlite3
 
             if not DB_PATH.exists():
@@ -1673,7 +1674,7 @@ class ProductScraper:
                 self.log_callback(
                     f"📋 Opening classification editor for {len(final_products)} final products..."
                 )
-                from src.ui.product_classify_ui import edit_classification_in_batch
+                from src.core.classification.ui import edit_classification_in_batch
 
                 # Convert products from scraper format to classification UI format
                 classification_products = []

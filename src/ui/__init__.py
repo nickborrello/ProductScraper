@@ -37,7 +37,7 @@ from src.core.classification.manager import (
     RECOMMEND_COLS,
 )
 
-from .product_cross_sell_ui import (
+from src.core.cross_sell.ui import (
     assign_cross_sells_batch,
     assign_cross_sells_single,
     CROSS_SELL_FIELD,
