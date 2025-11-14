@@ -255,6 +255,57 @@ async def main() -> None:
 
         await apify.log.info(f'Pet Food Experts scraping completed. Found {len(products)} products.')
 
+def scrape_products(skus, progress_callback=None, headless=None):
+    """
+    Scrape multiple products from Pet Food Experts website.
+    Returns a list of product dictionaries.
+    """
+    # Use provided headless setting, fallback to module default
+    if headless is None:
+        headless = HEADLESS
+    
+    products = []
+    
+    # Create browser
+    driver = create_browser("Pet Food Experts", headless=headless, enable_devtools=ENABLE_DEVTOOLS, devtools_port=DEVTOOLS_PORT)
+    if driver is None:
+        print("Could not create browser for Pet Food Experts")
+        return products
+
+    try:
+        # Handle login
+        if not is_logged_in(driver):
+            print("Logging in to Pet Food Experts...")
+            login(driver)
+            print("Login successful")
+        else:
+            print("Already logged in to Pet Food Experts")
+        
+        total_skus = len(skus)
+        for i, sku in enumerate(skus):
+            if progress_callback:
+                progress_callback(i, f"Processing SKU {sku}")
+            
+            product_info = scrape_single_product(sku, driver)
+            
+            if product_info:
+                products.append(product_info)
+                print(f'Successfully scraped product: {product_info["Name"]}')
+            else:
+                print(f'No product found for SKU: {sku}')
+                
+        if progress_callback:
+            progress_callback(total_skus, f"Completed scraping {total_skus} SKUs")
+            
+    finally:
+        if driver:
+            try:
+                driver.quit()
+            except:
+                pass
+    
+    return products
+
 def scrape_single_product(sku, driver):
     """
     Scrape a single product from Pet Food Experts website.

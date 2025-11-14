@@ -618,12 +618,14 @@ def main_local():
     return valid_products
 
 
-def scrape_products(skus: List[str]) -> List[Optional[Dict[str, Any]]]:
+def scrape_products(skus: List[str], progress_callback=None, headless=None) -> List[Optional[Dict[str, Any]]]:
     """Scrape multiple Orgill products with session management and monitoring.
     
     This function provides a direct interface for testing and can be called
     independently of the Apify actor framework.
     """
+    if headless is None:
+        headless = HEADLESS
     logger.info(f"Starting Orgill scraper for {len(skus)} SKUs")
     
     # Initialize metrics
@@ -634,7 +636,7 @@ def scrape_products(skus: List[str]) -> List[Optional[Dict[str, Any]]]:
     products = []
     
     try:
-        with OrgillScraper(headless=HEADLESS) as scraper:
+        with OrgillScraper(headless=headless) as scraper:
             # Login
             if not scraper.login():
                 logger.error("Failed to login to Orgill")
@@ -642,6 +644,10 @@ def scrape_products(skus: List[str]) -> List[Optional[Dict[str, Any]]]:
             
             # Process each SKU
             for i, sku in enumerate(skus, 1):
+                # Update progress callback if provided
+                if progress_callback:
+                    progress_callback(i-1, f"Processing SKU {sku}")
+
                 logger.info(f"Processing SKU {i}/{len(skus)}: {sku}")
                 
                 product_data = scraper.scrape_product(sku)
@@ -652,6 +658,10 @@ def scrape_products(skus: List[str]) -> List[Optional[Dict[str, Any]]]:
                 else:
                     products.append(None)
                     metrics.failed_products += 1
+        
+        # Final progress update
+        if progress_callback:
+            progress_callback(len(skus), "Completed processing all SKUs")
         
     except Exception as e:
         logger.error(f"Scraper execution failed: {e}")

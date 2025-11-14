@@ -34,10 +34,12 @@ DEVTOOLS_PORT = 9222  # Port for Chrome DevTools remote debugging
 TEST_SKU = "035585499741"  # KONG Pull A Partz Pals Koala SM - test SKU for Bradley Caldwell
 
 
-def create_driver(proxy_url=None) -> webdriver.Chrome:
+def create_driver(proxy_url=None, headless=None) -> webdriver.Chrome:
     """Create Chrome driver with enhanced anti-detection measures and proxy support."""
     options = Options()
-    if HEADLESS:
+    if headless is None:
+        headless = HEADLESS
+    if headless:
         options.add_argument("--headless")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
@@ -99,7 +101,8 @@ class RateLimiter:
 class BrowserSession:
     """Manages browser session with automatic rotation."""
 
-    def __init__(self):
+    def __init__(self, headless=None):
+        self.headless = headless if headless is not None else HEADLESS
         self.driver = None
         self.created_at = time.time()
         self.request_count = 0
@@ -121,7 +124,7 @@ class BrowserSession:
         if self.driver:
             monitoring.record_session_rotated()
             self.driver.quit()
-        self.driver = create_driver()
+        self.driver = create_driver(headless=self.headless)
         monitoring.record_session_created()
         self.created_at = time.time()
         self.request_count = 0
@@ -1475,16 +1478,22 @@ async def main() -> None:
         Actor.log.info(f"Scraped {len(valid_products)} products successfully")
 
 
-def scrape_products(skus: list[str]) -> list[dict[str, Any] | None]:
+def scrape_products(skus: list[str], progress_callback=None, headless=None) -> list[dict[str, Any] | None]:
     """Scrape multiple products with session management, rate limiting, data validation, circuit breaker, and monitoring."""
-    session = BrowserSession()
+    if headless is None:
+        headless = HEADLESS
+    session = BrowserSession(headless=headless)
     rate_limiter = RateLimiter()
     circuit_breaker = CircuitBreaker(failure_threshold=3, recovery_timeout=60)  # 3 failures, 60 second timeout
     products = []
     validation_stats = {"total": 0, "valid": 0, "errors": []}
 
     try:
-        for sku in skus:
+        for i, sku in enumerate(skus):
+            # Update progress callback if provided
+            if progress_callback:
+                progress_callback(i, f"Processing SKU {sku}")
+
             # Record request start
             monitoring.record_request_start(sku)
             request_start_time = time.time()
@@ -1532,6 +1541,10 @@ def scrape_products(skus: list[str]) -> list[dict[str, Any] | None]:
 
             # Track session usage
             session.increment_counter()
+
+        # Final progress update
+        if progress_callback:
+            progress_callback(len(skus), "Completed processing all SKUs")
 
         # Log validation summary
         success_rate = (validation_stats["valid"] / validation_stats["total"]) * 100 if validation_stats["total"] > 0 else 0

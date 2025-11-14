@@ -1176,7 +1176,7 @@ class MainWindow(QMainWindow):
         file_path, _ = QFileDialog.getOpenFileName(
             self,
             "Select Excel File",
-            os.path.join(project_root, "data", "spreadsheets"),
+            os.path.join(project_root, "src", "data", "spreadsheets"),
             "Excel Files (*.xlsx *.xls);;All Files (*)",
         )
         return file_path
