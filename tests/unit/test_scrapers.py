@@ -124,25 +124,28 @@ class TestScrapers:
     def test_scraper_with_test_product(self, scraper_modules):
         """Test each Apify scraper with a test product."""
         for scraper_name, module in scraper_modules.items():
-            # Use the default test SKU from the scraper's main_local function
-            test_skus = ["035585499741"]
-            
+            # Use the TEST_SKU from the scraper module, fallback to default
+            test_sku = getattr(module, 'TEST_SKU', '035585499741')
+            test_skus = [test_sku]
+
+            print(f"Testing {scraper_name} with SKU: {test_sku}")
+
             # Call the scrape_products function (Apify interface)
             try:
                 products = module.scrape_products(test_skus)
-                
+
                 # Validate the response
                 assert isinstance(products, list), f"{scraper_name}: scrape_products should return a list"
                 assert len(products) > 0, f"{scraper_name}: scrape_products returned empty list"
-                
+
                 # Check that we got at least one valid product
                 valid_products = [p for p in products if p is not None]
                 assert len(valid_products) > 0, f"{scraper_name}: No valid products returned"
-                
+
                 # Validate product structure
                 product = valid_products[0]
                 assert isinstance(product, dict), f"{scraper_name}: Product should be a dictionary"
-                
+
                 # Check for required fields (basic validation)
                 required_fields = ['SKU', 'Name']
                 for field in required_fields:
@@ -150,9 +153,9 @@ class TestScrapers:
                     assert product[field] is not None, f"{scraper_name}: Product field '{field}' is None"
                     assert str(product[field]).strip() != "", f"{scraper_name}: Product field '{field}' is empty"
                     assert str(product[field]).strip().upper() != "N/A", f"{scraper_name}: Product field '{field}' is 'N/A'"
-                
+
                 print(f"✓ {scraper_name}: Successfully scraped test product")
-                
+
             except Exception as e:
                 pytest.fail(f"{scraper_name}: Failed to scrape test product: {e}")
 

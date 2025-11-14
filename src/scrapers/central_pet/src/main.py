@@ -8,7 +8,7 @@ import random
 import re
 import sys
 import time
-from typing import Any
+from typing import Any, cast
 
 from apify import Actor
 from fake_useragent import UserAgent
@@ -1217,7 +1217,7 @@ def clean_string(text: str) -> str:
 
 def extract_product_data(driver: webdriver.Chrome, sku: str) -> dict[str, Any] | None:
     """Extract product data from Central Pet page."""
-    product_info = {"SKU": sku}
+    product_info = cast(dict[str, Any], {"SKU": sku})
 
     try:
         # Brand extraction
