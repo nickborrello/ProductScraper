@@ -76,7 +76,7 @@ python src/main.py --run gui
 
 **Available Operations:**
 
-- **Scraping Operations**: Start scraping, check discontinued products
+- **Scraping Operations**: Start scraping
 - **Database Management**: Refresh from XML, download XML, view/edit products, database statistics
 - **Tools**: Classify Excel files, run automated tests
 

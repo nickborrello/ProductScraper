@@ -27,10 +27,14 @@ class SettingsManager:
         "shopsite_auth_url": "https://yourstore.shopsite.com/xml/",
         "shopsite_username": "",
         "shopsite_password": "",
+        "shopsite_base_url": "",
+        "shopsite_store_id": "",
+        # Cloud Settings
+        "google_cloud_project_id": "",
         # AI/ML Settings
         "openrouter_api_key": "",
         "ollama_model": "llama3.2",
-        "classification_method": "llm",  # 'llm' or 'fuzzy'
+        "classification_method": "llm",  # 'llm' (OpenRouter), 'local_llm' (Ollama), 'fuzzy' (legacy)
         # Application Settings
         "debug_mode": False,
         "database_path": "data/databases/products.db",
@@ -46,8 +50,29 @@ class SettingsManager:
         # Use organization and application name for settings storage
         self.settings = QSettings("BayStatePet", "ProductScraper")
 
+        # Load from settings.json if it exists (for initial setup)
+        self._load_from_json()
+
         # Load environment variables if they exist (for backward compatibility)
         self._load_from_env()
+
+    def _load_from_json(self):
+        """Load settings from settings.json file for initial setup."""
+        try:
+            import json
+            from pathlib import Path
+            settings_file = Path(__file__).parent.parent.parent / "settings.json"
+            if settings_file.exists():
+                with open(settings_file, "r") as f:
+                    json_settings = json.load(f)
+                
+                # Load values from JSON (always override with JSON values for consistency)
+                for key, value in json_settings.items():
+                    if key in self.DEFAULTS:
+                        self.set(key, value)
+        except Exception as e:
+            # Silently ignore JSON loading errors
+            pass
 
     def _load_from_env(self):
         """Load settings from environment variables for backward compatibility."""
@@ -64,6 +89,9 @@ class SettingsManager:
             "shopsite_auth_url": "SHOPSITE_AUTH_URL",
             "shopsite_username": "SHOPSITE_USERNAME",
             "shopsite_password": "SHOPSITE_PASSWORD",
+            "shopsite_base_url": "SHOPSITE_BASE_URL",
+            "shopsite_store_id": "SHOPSITE_STORE_ID",
+            "google_cloud_project_id": "GOOGLE_CLOUD_PROJECT_ID",
             "openrouter_api_key": "OPENROUTER_API_KEY",
         }
 
@@ -155,6 +183,8 @@ class SettingsManager:
             "auth_url": self.get("shopsite_auth_url"),
             "username": self.get("shopsite_username"),
             "password": self.get("shopsite_password"),
+            "base_url": self.get("shopsite_base_url"),
+            "store_id": self.get("shopsite_store_id"),
         }
 
     @property

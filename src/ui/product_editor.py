@@ -91,6 +91,148 @@ class ProductEditor(QMainWindow):
         self.setWindowTitle(title)
         self.resize(1200, 800)
 
+        # Apply dark theme
+        self.setStyleSheet("""
+QMainWindow {
+    background-color: #1e1e1e;
+    color: #ffffff;
+}
+
+QMenuBar {
+    background-color: #2d2d2d;
+    color: #ffffff;
+    border-bottom: 1px solid #404040;
+}
+
+QMenuBar::item {
+    background-color: transparent;
+    padding: 4px 8px;
+    margin: 0px;
+}
+
+QMenuBar::item:selected {
+    background-color: #404040;
+}
+
+QMenu {
+    background-color: #2d2d2d;
+    color: #ffffff;
+    border: 1px solid #404040;
+}
+
+QMenu::item {
+    padding: 4px 20px;
+}
+
+QMenu::item:selected {
+    background-color: #404040;
+}
+
+QStatusBar {
+    background-color: #2d2d2d;
+    color: #ffffff;
+    border-top: 1px solid #404040;
+}
+
+QLabel {
+    color: #ffffff;
+}
+
+QCheckBox {
+    color: #ffffff;
+}
+
+QCheckBox::indicator {
+    border: 1px solid #ffffff;
+    background-color: #1e1e1e;
+}
+
+QCheckBox::indicator:checked {
+    background-color: #4CAF50;
+    border: 1px solid #4CAF50;
+}
+
+QMessageBox {
+    background-color: #1e1e1e;
+    color: #ffffff;
+}
+
+QMessageBox QLabel {
+    color: #ffffff;
+}
+
+QMessageBox QPushButton {
+    background-color: #404040;
+    color: #ffffff;
+    border: 1px solid #555555;
+    padding: 5px 15px;
+    border-radius: 3px;
+}
+
+QMessageBox QPushButton:hover {
+    background-color: #555555;
+}
+
+QDialog {
+    background-color: #1e1e1e;
+    color: #ffffff;
+}
+
+QDialog QLabel {
+    color: #ffffff;
+}
+
+QDialog QLineEdit {
+    background-color: #2d2d2d;
+    color: #ffffff;
+    border: 1px solid #404040;
+    padding: 4px;
+    border-radius: 3px;
+}
+
+QDialog QComboBox {
+    background-color: #2d2d2d;
+    color: #ffffff;
+    border: 1px solid #404040;
+    padding: 4px;
+    border-radius: 3px;
+}
+
+QDialog QComboBox::drop-down {
+    border: none;
+}
+
+QDialog QComboBox::down-arrow {
+    image: url(down_arrow.png);
+    width: 12px;
+    height: 12px;
+}
+
+QDialog QPushButton {
+    background-color: #404040;
+    color: #ffffff;
+    border: 1px solid #555555;
+    padding: 5px 15px;
+    border-radius: 3px;
+}
+
+QDialog QPushButton:hover {
+    background-color: #555555;
+}
+
+QListWidget {
+    background-color: #1e1e1e;
+    color: #ffffff;
+    border: 1px solid #404040;
+    alternate-background-color: #2d2d2d;
+}
+
+QListWidget::item:selected {
+    background-color: #4CAF50;
+    color: #ffffff;
+}
+""")
+
         # Build UI
         self._init_ui()
 
@@ -196,27 +338,38 @@ class ProductEditor(QMainWindow):
         # Counter
         self.img_counter_label = QLabel("No images")
         self.img_counter_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(self.img_counter_label)
 
-        # Controls
-        ctrl1 = QHBoxLayout()
+        # Navigation controls container (fixed width)
+        nav_container = QWidget()
+        nav_container.setFixedWidth(250)  # Fixed width for compact layout
+        nav_layout = QHBoxLayout(nav_container)
+        nav_layout.setContentsMargins(0, 0, 0, 0)
+        nav_layout.setSpacing(5)  # Reduce spacing between elements
+
         self.prev_img_btn = QPushButton("< Prev")
         self.prev_img_btn.clicked.connect(self.prev_image)
-        ctrl1.addWidget(self.prev_img_btn)
+        nav_layout.addWidget(self.prev_img_btn)
+
+        # Counter in the middle
+        nav_layout.addWidget(self.img_counter_label, 1)  # Give counter stretch factor
 
         self.next_img_btn = QPushButton("Next >")
         self.next_img_btn.clicked.connect(self.next_image)
-        ctrl1.addWidget(self.next_img_btn)
+        nav_layout.addWidget(self.next_img_btn)
 
+        layout.addWidget(nav_container, 0, Qt.AlignmentFlag.AlignCenter)
+
+        # Position controls
+        pos_layout = QHBoxLayout()
         self.left_pos_btn = QPushButton("Move Left")
         self.left_pos_btn.clicked.connect(self.move_image_left)
-        ctrl1.addWidget(self.left_pos_btn)
+        pos_layout.addWidget(self.left_pos_btn)
 
         self.right_pos_btn = QPushButton("Move Right")
         self.right_pos_btn.clicked.connect(self.move_image_right)
-        ctrl1.addWidget(self.right_pos_btn)
+        pos_layout.addWidget(self.right_pos_btn)
 
-        layout.addLayout(ctrl1)
+        layout.addLayout(pos_layout)
 
         # Management
         ctrl2 = QHBoxLayout()
