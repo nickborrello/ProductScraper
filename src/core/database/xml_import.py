@@ -16,14 +16,14 @@ PROJECT_ROOT = os.path.dirname(
 
 # Import field mapping configuration
 try:
-    from .field_mapping import map_shopsite_fields, REQUIRED_FIELDS
+    from ..field_mapping import map_shopsite_fields, REQUIRED_FIELDS
 except ImportError:
     # Fallback for standalone execution
     from field_mapping import map_shopsite_fields, REQUIRED_FIELDS
 
 # Import settings manager
 try:
-    from .settings_manager import SettingsManager
+    from ..settings_manager import SettingsManager
 except ImportError:
     # Fallback for standalone execution
     from settings_manager import SettingsManager
@@ -177,7 +177,16 @@ class ShopSiteXMLClient:
     def __init__(self, log_callback=None):
         self.session = requests.Session()
         self.config = SHOPSITE_CONFIG
-        self.log_callback = log_callback
+        
+        # Handle log callback properly
+        if log_callback is None:
+            self.log = print
+        elif hasattr(log_callback, 'emit'):
+            # If it's a Qt signal object, use emit method
+            self.log = log_callback.emit
+        else:
+            # If it's already a callable (like emit method or function), use it directly
+            self.log = log_callback
 
     def _estimate_download_size(self) -> int:
         """Estimate download size based on previous downloads."""
@@ -238,10 +247,8 @@ class ShopSiteXMLClient:
                 # Look for previous download sizes in the log or saved files
                 estimated_size = self._estimate_download_size()
                 if estimated_size > 0:
-                    if self.log_callback:
-                        self.log_callback(f"📊 Estimated download size: ~{estimated_size:,} bytes (based on previous downloads)")
-                    else:
-                        print(f"📊 Estimated download size: ~{estimated_size:,} bytes (based on previous downloads)")
+                    estimated_mb = estimated_size / (1024 * 1024)
+                    self.log(f"📊 Estimated download size: ~{estimated_mb:.1f} MB (based on previous downloads)")
 
                 total_size = int(response.headers.get("content-length", 0))
                 downloaded_size = 0
@@ -249,15 +256,10 @@ class ShopSiteXMLClient:
                 start_time = time.time()
 
                 if total_size > 0:
-                    if self.log_callback:
-                        self.log_callback(f"📊 Downloading {total_size:,} bytes...")
-                    else:
-                        print(f"📊 Downloading {total_size:,} bytes...")
+                    total_mb = total_size / (1024 * 1024)
+                    self.log(f"📊 Downloading {total_mb:.1f} MB...")
                 else:
-                    if self.log_callback:
-                        self.log_callback(f"📊 Downloading (size unknown - showing progress info)...")
-                    else:
-                        print(f"📊 Downloading (size unknown - showing progress info)...")
+                    self.log(f"📊 Downloading (size unknown - showing progress info)...")
 
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:
@@ -287,19 +289,19 @@ class ShopSiteXMLClient:
                             current_time = time.time()
                             if (downloaded_size % (1024 * 1024) < 8192 or  # Every ~1MB
                                 current_time - (getattr(self, 'last_progress_time', 0)) > 5):  # Or every 5 seconds
-                                progress_msg = f"📥 Progress: {progress:.1f}% ({downloaded_size:,}/{total_size:,} bytes){eta_str}"
-                                if self.log_callback:
-                                    self.log_callback(progress_msg)
-                                else:
-                                    print(f"\r{progress_msg}", end="", flush=True)
+                                downloaded_mb = downloaded_size / (1024 * 1024)
+                                total_mb = total_size / (1024 * 1024)
+                                progress_msg = f"📥 Progress: {progress:.1f}% ({downloaded_mb:.1f}/{total_mb:.1f} MB){eta_str}"
+                                self.log(progress_msg)
                                 self.last_progress_time = current_time
                         else:
                             # Show download speed and time elapsed when size unknown
                             elapsed = time.time() - start_time
                             if elapsed > 0:
                                 speed = downloaded_size / elapsed
+                                speed_mbps = speed / (1024 * 1024)
                                 speed_str = (
-                                    f" @ {speed/1024:.0f}KB/s" if speed > 0 else ""
+                                    f" @ {speed_mbps:.2f} MB/s" if speed > 0 else ""
                                 )
                             else:
                                 speed_str = ""
@@ -307,19 +309,16 @@ class ShopSiteXMLClient:
                             # Send progress update to log callback (every 5 seconds)
                             current_time = time.time()
                             if current_time - getattr(self, 'last_progress_time', 0) > 5:
-                                progress_msg = f"📥 Downloaded: {downloaded_size:,} bytes{speed_str} ({elapsed:.1f}s elapsed)"
-                                if self.log_callback:
-                                    self.log_callback(progress_msg)
-                                else:
-                                    print(f"\r{progress_msg}", end="", flush=True)
+                                downloaded_mb = downloaded_size / (1024 * 1024)
+                                progress_msg = f"📥 Downloaded: {downloaded_mb:.1f} MB{speed_str} ({elapsed:.1f}s elapsed)"
+                                self.log(progress_msg)
                                 self.last_progress_time = current_time
 
                 # Send final download complete message
-                final_msg = f"📥 Downloaded: {downloaded_size:,} bytes @ {downloaded_size/(time.time()-start_time)/1024:.0f}KB/s ({time.time()-start_time:.1f}s elapsed)"
-                if self.log_callback:
-                    self.log_callback(final_msg)
-                else:
-                    print(final_msg)
+                downloaded_mb = downloaded_size / (1024 * 1024)
+                speed_mbps = (downloaded_size / (time.time() - start_time)) / (1024 * 1024)
+                final_msg = f"📥 Downloaded: {downloaded_mb:.1f} MB @ {speed_mbps:.2f} MB/s ({time.time()-start_time:.1f}s elapsed)"
+                self.log(final_msg)
 
                 # Combine chunks into full content
                 full_content = b"".join(content_chunks).decode(
@@ -829,13 +828,22 @@ def publish_shopsite_changes(
     Returns:
         Tuple of (success: bool, message: str)
     """
+    # Handle log callback properly
+    if log_callback is None:
+        log = print
+    elif hasattr(log_callback, 'emit'):
+        # If it's a Qt signal object, use emit method
+        log = log_callback.emit
+    else:
+        # If it's already a callable (like emit method or function), use it directly
+        log = log_callback
+    
     try:
         # Get ShopSite credentials
         config = SHOPSITE_CONFIG
         if not (config.get("username") and config.get("password")):
             error_msg = "❌ ShopSite credentials not found in environment variables"
-            if log_callback:
-                log_callback(error_msg)
+            log(error_msg)
             return False, error_msg
 
         # Build parameters for generate.cgi
@@ -856,14 +864,9 @@ def publish_shopsite_changes(
 
         publish_url = "https://www.baystatepet.com/cgi-baystatepet/bo/generate.cgi"
 
-        if log_callback:
-            log_callback("🚀 Publishing changes to ShopSite...")
-            log_callback(f"URL: {publish_url}")
-            log_callback(f"Parameters: {params}")
-        else:
-            logging.info("🚀 Publishing changes to ShopSite...")
-            logging.info(f"URL: {publish_url}")
-            logging.info(f"Parameters: {params}")
+        log("🚀 Publishing changes to ShopSite...")
+        log(f"URL: {publish_url}")
+        log(f"Parameters: {params}")
 
         # Create session with authentication
         session = requests.Session()
@@ -874,41 +877,26 @@ def publish_shopsite_changes(
 
         if response.status_code == 200:
             success_msg = "✅ ShopSite publish completed successfully"
-            if log_callback:
-                log_callback(success_msg)
-            else:
-                logging.info(success_msg)
+            log(success_msg)
 
             # Check response content for any messages
             if response.text.strip():
                 content_msg = f"📄 Response: {response.text.strip()[:200]}{'...' if len(response.text.strip()) > 200 else ''}"
-                if log_callback:
-                    log_callback(content_msg)
-                else:
-                    logging.info(content_msg)
+                log(content_msg)
 
             return True, success_msg
         else:
             error_msg = f"❌ Publish failed: {response.status_code} - {response.text[:200]}"
-            if log_callback:
-                log_callback(error_msg)
-            else:
-                logging.error(error_msg)
+            log(error_msg)
             return False, error_msg
 
     except requests.RequestException as e:
         error_msg = f"❌ Publish request failed: {e}"
-        if log_callback:
-            log_callback(error_msg)
-        else:
-            logging.error(error_msg)
+        log(error_msg)
         return False, error_msg
     except Exception as e:
         error_msg = f"❌ Unexpected error during publish: {e}"
-        if log_callback:
-            log_callback(error_msg)
-        else:
-            logging.error(error_msg)
+        log(error_msg)
         return False, error_msg
     """
     Import products from a saved ShopSite XML file (for testing/debugging).
