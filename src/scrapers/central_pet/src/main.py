@@ -10,6 +10,10 @@ import sys
 import time
 from typing import Any, cast
 
+# Add the project root to the Python path for direct execution
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+sys.path.insert(0, project_root)
+
 from apify import Actor
 from fake_useragent import UserAgent
 from selenium import webdriver
