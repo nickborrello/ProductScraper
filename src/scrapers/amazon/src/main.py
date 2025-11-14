@@ -21,6 +21,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from selenium.webdriver.common.action_chains import ActionChains
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from src.utils.general.cookies import save_amazon_cookies, load_amazon_cookies
 
 
 # Amazon scraper configuration
@@ -178,7 +179,6 @@ class BrowserSession:
         self.driver = None
         self.created_at = time.time()
         self.request_count = 0
-        self.cookies_file = "amazon_cookies.pkl"
         self.session_profiles = []
         self.current_profile_index = 0
 
@@ -219,10 +219,7 @@ class BrowserSession:
         if not self.driver:
             return
         try:
-            import pickle
-            cookies = self.driver.get_cookies()
-            with open(self.cookies_file, 'wb') as f:
-                pickle.dump(cookies, f)
+            save_amazon_cookies(self.driver)
             Actor.log.info("🍪 Cookies saved successfully")
         except Exception as e:
             Actor.log.warning(f"⚠️ Failed to save cookies: {e}")
@@ -232,16 +229,11 @@ class BrowserSession:
         if not self.driver:
             return
         try:
-            import pickle
-            if os.path.exists(self.cookies_file):
-                with open(self.cookies_file, 'rb') as f:
-                    cookies = pickle.load(f)
-                for cookie in cookies:
-                    try:
-                        self.driver.add_cookie(cookie)
-                    except Exception as e:
-                        Actor.log.warning(f"⚠️ Failed to add cookie: {e}")
+            loaded = load_amazon_cookies(self.driver)
+            if loaded:
                 Actor.log.info("🍪 Cookies loaded successfully")
+            else:
+                Actor.log.info("🍪 No saved cookies found")
         except Exception as e:
             Actor.log.warning(f"⚠️ Failed to load cookies: {e}")
 

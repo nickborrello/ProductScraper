@@ -5,14 +5,14 @@ import pickle
 
 
 def save_cookies(driver, filename):
-    os.makedirs("cookies", exist_ok=True)
-    filepath = os.path.join("cookies", filename)
+    os.makedirs("data/cookies", exist_ok=True)
+    filepath = os.path.join("data", "cookies", filename)
     with open(filepath, "wb") as f:
         pickle.dump(driver.get_cookies(), f)
 
 
 def load_cookies(driver, filename, domain_url):
-    filepath = os.path.join("cookies", filename)
+    filepath = os.path.join("data", "cookies", filename)
     if not os.path.exists(filepath):
         return False
     try:
@@ -52,24 +52,32 @@ def load_petfood_cookies(driver, path="petfood_cookies.pkl"):
 
 
 def save_orgill_cookies(driver):
-    save_cookies(driver, "orgill.pkl")
+    save_cookies(driver, "orgill_cookies.pkl")
 
 
 def load_orgill_cookies(driver):
-    return load_cookies(driver, "orgill.pkl", "https://www.orgill.com")
+    return load_cookies(driver, "orgill_cookies.pkl", "https://www.orgill.com")
 
 
 def save_petfood_experts_cookies(driver):
-    save_cookies(driver, "petfood_experts.pkl")
+    save_cookies(driver, "petfoodex_cookies.pkl")
 
 
 def load_petfood_experts_cookies(driver):
-    return load_cookies(driver, "petfood_experts.pkl", "https://www.petfoodexperts.com")
+    return load_cookies(driver, "petfoodex_cookies.pkl", "https://www.petfoodexperts.com")
 
 
 def save_phillips_cookies(driver):
-    save_cookies(driver, "phillips.pkl")
+    save_cookies(driver, "phillips_cookies.pkl")
 
 
 def load_phillips_cookies(driver):
-    return load_cookies(driver, "phillips.pkl", "https://www.phillipspet.com")
+    return load_cookies(driver, "phillips_cookies.pkl", "https://www.phillipspet.com")
+
+
+def save_amazon_cookies(driver):
+    save_cookies(driver, "amazon_cookies.pkl")
+
+
+def load_amazon_cookies(driver):
+    return load_cookies(driver, "amazon_cookies.pkl", "https://www.amazon.com")
