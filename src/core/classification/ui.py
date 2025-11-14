@@ -181,6 +181,14 @@ def get_facet_options_from_db(force_refresh=False):
         return default_categories, default_pages
 
 
+def clear_facet_cache():
+    """
+    Clear the facet options cache (dummy function for compatibility).
+    In the new JSON-based system, there's no cache to clear.
+    """
+    pass  # No-op since we don't cache in the JSON system
+
+
 def assign_classification_batch(products_list):
     """
     Assign classification (Category, Product Type, Product On Pages) to multiple products using the interactive batch UI.

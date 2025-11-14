@@ -17,7 +17,7 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 # Import classification functions
-from src.ui.product_classify_ui import edit_classification_in_batch
+from src.core.classification.ui import edit_classification_in_batch
 from src.core.classification.manager import classify_products_batch
 from src.core.settings_manager import SettingsManager
 

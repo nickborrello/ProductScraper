@@ -12,7 +12,7 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 # Import classification module
-from src.ui.product_classify_ui import (
+from src.core.classification.ui import (
     get_facet_options_from_db,
     assign_classification_batch,
     assign_classification_single,
@@ -76,7 +76,7 @@ class TestClassification:
 
         # Mock the edit_classification_in_batch function
         with patch(
-            "src.ui.product_classify_ui.edit_classification_in_batch"
+            "src.core.classification.ui.edit_classification_in_batch"
         ) as mock_edit:
             mock_edit.return_value = [product]
 
@@ -91,7 +91,7 @@ class TestClassification:
 
         # Mock the edit_classification_in_batch function
         with patch(
-            "src.ui.product_classify_ui.edit_classification_in_batch"
+            "src.core.classification.ui.edit_classification_in_batch"
         ) as mock_edit:
             mock_edit.return_value = products
 
@@ -218,7 +218,7 @@ class TestClassification:
         single_parsed = [c.strip() for c in single_str.split("|") if c.strip()]
         assert single_parsed == ["Dog Food"]
 
-    @patch("src.ui.product_classify_ui.edit_classification_in_batch")
+    @patch("src.core.classification.ui.edit_classification_in_batch")
     def test_batch_processing_with_mixed_data(self, mock_edit, sample_products):
         """Test batch processing with products having different classification states."""
         # Mix of classified and unclassified products
