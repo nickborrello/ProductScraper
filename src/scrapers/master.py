@@ -197,7 +197,7 @@ class ScrapingProgressTracker:
         print(progress_line)
 
 
-def get_browser(site, headless_settings=None):
+def get_browser(site, headless_settings=None, force_headless=False):
     """Create and retrieve browser instance per site with a custom profile directory."""
     # Excel scraper doesn't need a browser
     if site == "Excel":
@@ -210,7 +210,7 @@ def get_browser(site, headless_settings=None):
             unique_profile = f"{site.replace(' ', '_')}_{timestamp}"
 
             # Get headless preference for this site
-            headless = headless_settings.get(site, True) if headless_settings else True
+            headless = force_headless or headless_settings.get(site, True)
 
             # Check if site has its own init_browser function
             try:
@@ -349,6 +349,10 @@ class ProductScraper:
         
         # Dynamically discover and load scraper modules
         self.scraping_options, self.headless_settings = discover_scrapers()
+
+        # Force headless mode for GUI usage (non-interactive)
+        if not self.interactive:
+            self.headless_settings = {site: True for site in self.headless_settings.keys()}
 
         self.site_locks = defaultdict(lambda: None)
         self.all_found_products = {}  # SKU -> list of product results
@@ -991,7 +995,7 @@ class ProductScraper:
             return False
 
     def prompt_for_input_spreadsheet_tk(self):
-        input_dir = os.path.join(PROJECT_ROOT, "data", "spreadsheets")
+        input_dir = os.path.join(PROJECT_ROOT, "src", "data", "spreadsheets")
         root = tk.Tk()
         root.withdraw()
         file_path = filedialog.askopenfilename(
@@ -1358,13 +1362,41 @@ class ProductScraper:
         if not scraping_function:
             return []
 
+        # Update status to show "Scraping {Site}"
+        if self.status_callback:
+            self.status_callback(f"Scraping {site}")
+
         # Initialize site progress tracking
         self.progress_tracker.start_site_progress(site, len(skus_to_process))
         self.progress_tracker.update_sku_progress(0, f"Starting {site}")
 
         try:
-            # NEW ARCHITECTURE: Call scraper with SKU array
-            scraped_products = scraping_function(skus_to_process)
+            # Check if scraper supports progress callbacks and headless override
+            import inspect
+            sig = inspect.signature(scraping_function)
+            supports_progress = 'progress_callback' in sig.parameters
+            supports_headless = 'headless' in sig.parameters
+
+            # Get headless setting for this site
+            site_headless = self.headless_settings.get(site, True)
+
+            if supports_progress and supports_headless:
+                # Create progress callback for this scraper
+                def progress_callback(current_index, status_message=""):
+                    self.progress_tracker.update_sku_progress(current_index, status_message)
+
+                # Call scraper with both progress callback and headless setting
+                scraped_products = scraping_function(skus_to_process, progress_callback=progress_callback, headless=site_headless)
+            elif supports_progress:
+                # Create progress callback for this scraper
+                def progress_callback(current_index, status_message=""):
+                    self.progress_tracker.update_sku_progress(current_index, status_message)
+
+                # NEW ARCHITECTURE: Call scraper with SKU array and progress callback
+                scraped_products = scraping_function(skus_to_process, progress_callback=progress_callback)
+            else:
+                # Fallback for scrapers that don't support progress callbacks
+                scraped_products = scraping_function(skus_to_process)
 
             # Handle different return types
             if scraped_products is None:

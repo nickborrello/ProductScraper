@@ -21,7 +21,7 @@ def convert_xlsx_to_xls_with_excel(results_folder=None):
     if results_folder:
         folder = os.path.join(results_folder, "data")
     else:
-        folder = os.path.join(PROJECT_ROOT, "data", "spreadsheets")
+        folder = os.path.join(PROJECT_ROOT, "src", "data", "spreadsheets")
     # Check if output folder exists
     if not os.path.exists(folder):
         print(f"⚠️ Output folder not found: {folder}")

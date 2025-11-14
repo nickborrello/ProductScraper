@@ -18,7 +18,7 @@ def select_excel_file():
         file_path, _ = QFileDialog.getOpenFileName(
             None,
             "Select Excel File",
-            os.path.join(PROJECT_ROOT, "data", "spreadsheets"),
+            os.path.join(PROJECT_ROOT, "src", "data", "spreadsheets"),
             "Excel Files (*.xlsx *.xls);;All Files (*)",
         )
 
@@ -34,7 +34,7 @@ def select_excel_file():
 
 def select_excel_file_text():
     """Text-based file selection fallback when GUI is not available."""
-    input_dir = os.path.join(PROJECT_ROOT, "data", "spreadsheets")
+    input_dir = os.path.join(PROJECT_ROOT, "src", "data", "spreadsheets")
     print(f"📁 Looking for Excel files in: {input_dir}")
 
     # List available Excel files

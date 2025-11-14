@@ -75,6 +75,50 @@ async def main() -> None:
 
         await apify.log.info(f'Mazuri scraping completed. Found {len(products)} products.')
 
+def scrape_products(skus, progress_callback=None, headless=None):
+    """
+    Scrape multiple products from Mazuri website.
+    Returns a list of product dictionaries.
+    """
+    # Use provided headless setting, fallback to module default
+    if headless is None:
+        headless = HEADLESS
+    
+    products = []
+    
+    # Create browser
+    driver = create_browser("Mazuri", headless=headless, enable_devtools=ENABLE_DEVTOOLS, devtools_port=DEVTOOLS_PORT)
+    if driver is None:
+        print("Could not create browser for Mazuri")
+        return products
+
+    try:
+        total_skus = len(skus)
+        for i, sku in enumerate(skus):
+            if progress_callback:
+                progress_callback(i, f"Processing SKU {sku}")
+            
+            product_info_list = scrape_single_product(sku, driver)
+            
+            if product_info_list:
+                for product_info in product_info_list:
+                    products.append(product_info)
+                    print(f'Successfully scraped product: {product_info["Name"]}')
+            else:
+                print(f'No product found for SKU: {sku}')
+                
+        if progress_callback:
+            progress_callback(total_skus, f"Completed scraping {total_skus} SKUs")
+            
+    finally:
+        if driver:
+            try:
+                driver.quit()
+            except:
+                pass
+    
+    return products
+
 def scrape_single_product(SKU, driver):
     """
     Scrape a single product from Mazuri website.
