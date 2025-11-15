@@ -74,6 +74,16 @@ class ScraperIntegrationTester:
             results["errors"].append(f"Scraper directory not found: {scraper_dir}")
             return results
 
+        # Clean up any existing dataset from previous runs
+        dataset_dir = scraper_dir / "storage" / "datasets" / "default"
+        if dataset_dir.exists():
+            import shutil
+            try:
+                shutil.rmtree(dataset_dir)
+                print(f"DEBUG: Cleaned existing dataset directory: {dataset_dir}")
+            except Exception as e:
+                print(f"DEBUG: Failed to clean dataset directory: {e}")
+
         # Create temporary input file
         input_data = {"skus": skus}
 
@@ -86,6 +96,10 @@ class ScraperIntegrationTester:
             env = os.environ.copy()
             env["PYTHONPATH"] = str(self.project_root) + os.pathsep + str(scraper_dir)
             env["APIFY_INPUT"] = json.dumps(input_data)
+            # Set HEADLESS environment variable to control browser mode
+            env["HEADLESS"] = "False" if not headless else "True"
+            # Disable cookie loading for testing to ensure fresh sessions
+            env["DISABLE_COOKIE_LOADING"] = "true"
 
             # Run the scraper
             cmd = [
@@ -256,7 +270,7 @@ class ScraperIntegrationTester:
         print(f"Total Scrapers: {results['total_scrapers']}")
         print(f"Successful: {results['successful_scrapers']}")
         print(f"Failed: {results['failed_scrapers']}")
-        print(".1f")
+        print(f"Success Rate: {results['summary']['success_rate']:.1f}%")
 
         if results["failed_scrapers"] > 0:
             print(f"\n❌ FAILED SCRAPERS:")
@@ -292,7 +306,15 @@ class ScraperIntegrationTester:
             score = validation_results.get("data_quality_score", 0)
 
             print(f"🔍 Validation: {valid}/{total} products valid")
-            print(".1f")
+            print(f"   Data Quality Score: {score:.1f}")
+
+            # Print field coverage
+            field_coverage = validation_results.get("field_coverage", {})
+            if field_coverage:
+                print(f"   Field Coverage:")
+                for field, coverage in field_coverage.items():
+                    status = "✅" if coverage == 100.0 else "⚠️" if coverage > 0 else "❌"
+                    print(f"     {status} {field}: {coverage:.1f}%")
 
             if validation_results.get("errors"):
                 print(f"   Errors: {len(validation_results['errors'])}")

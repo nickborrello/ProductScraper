@@ -3,65 +3,128 @@ import sys
 import time
 from typing import Iterator, Dict, Any
 import apify
+from apify import Actor
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from fake_useragent import UserAgent
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+import asyncio
+import random
+import re
 import pathlib
 
 # Add the project root to the Python path for direct execution
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 sys.path.insert(0, project_root)
 
-from utils.scraping.scraping import get_standard_chrome_options, clean_string
-from utils.scraping.browser import create_browser
+def clean_string(text: str) -> str:
+    """Clean and normalize string."""
+    if not text:
+        return ""
+    return " ".join(text.split()).strip()
+
+def create_browser(profile_suffix: str = "default", headless: bool = True, enable_devtools: bool = False, devtools_port: int = 9222) -> webdriver.Chrome:
+    """Create Chrome driver with enhanced anti-detection measures and proxy support."""
+    options = Options()
+    if headless:
+        options.add_argument("--headless")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--disable-gpu")
+
+    # Dynamic viewport to avoid detection
+    width = random.randint(1024, 1920)
+    height = random.randint(768, 1080)
+    options.add_argument(f"--window-size={width},{height}")
+
+    # Rotate user agents
+    try:
+        ua = UserAgent()
+        user_agent = ua.random
+    except:
+        # Fallback user agent if fake-useragent fails
+        user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
+    options.add_argument(f'--user-agent={user_agent}')
+
+    # Enable Chrome DevTools remote debugging if configured
+    if enable_devtools:
+        options.add_argument(f"--remote-debugging-port={devtools_port}")
+        options.add_argument("--remote-debugging-address=0.0.0.0")
+        Actor.log.info(f"🔧 DevTools enabled on port {devtools_port}")
+
+    service = Service()
+    driver = webdriver.Chrome(service=service, options=options)
+
+    # Execute script to remove webdriver property
+    driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+
+    return driver
 
 # HEADLESS is set to True for production deployment
-HEADLESS = True
+HEADLESS = os.getenv('HEADLESS', 'True').lower() == 'true'
 DEBUG_MODE = False  # Set to True to pause for manual inspection during scraping
 ENABLE_DEVTOOLS = DEBUG_MODE  # Automatically enable DevTools when in debug mode
 DEVTOOLS_PORT = 9222  # Port for Chrome DevTools remote debugging
-TEST_SKU = "035585499741"  # KONG Pull A Partz Pals Koala SM - test SKU for Mazuri
+TEST_SKU = "3002770745"  # Valid Mazuri SKU
 
 async def main() -> None:
     """
     Apify Actor for scraping Mazuri products.
     """
     async with apify.Actor as actor:
-        # Get input
-        actor_input = await actor.get_input()
+        # Get input - try multiple methods for local testing
+        actor_input = await actor.get_input() or {}
+        Actor.log.info(f"Received input from actor.get_input(): {actor_input}")
+        
+        # For local testing, also check environment variables
+        if not actor_input.get('skus'):
+            import os
+            input_json = os.getenv('APIFY_INPUT')
+            if input_json:
+                import json
+                try:
+                    actor_input = json.loads(input_json)
+                    Actor.log.info(f"Loaded input from APIFY_INPUT env var: {actor_input}")
+                except json.JSONDecodeError:
+                    Actor.log.warning("Failed to parse APIFY_INPUT as JSON")
+        
         skus = actor_input.get('skus', [])
-
+        
         if not skus:
-            await actor.log.error('No SKUs provided in input')
+            Actor.log.error('No SKUs provided in input')
             return
 
-        await actor.log.info(f'Starting Mazuri scraper for {len(skus)} SKUs')
+        Actor.log.info(f'Starting Mazuri scraper for {len(skus)} SKUs')
 
         # Create browser
         driver = create_browser("Mazuri", headless=HEADLESS, enable_devtools=ENABLE_DEVTOOLS, devtools_port=DEVTOOLS_PORT)
         if driver is None:
-            await actor.log.error("Could not create browser for Mazuri")
+            Actor.log.error("Could not create browser for Mazuri")
             return
 
         try:
             products = []
 
             for sku in skus:
-                await actor.log.info(f'Processing SKU: {sku}')
+                Actor.log.info(f'Processing SKU: {sku}')
 
                 product_info_list = scrape_single_product(sku, driver)
 
                 if product_info_list:
                     for product_info in product_info_list:
                         products.append(product_info)
-                        await actor.log.info(f'Successfully scraped product: {product_info["Name"]}')
+                        Actor.log.info(f'Successfully scraped product: {product_info["Name"]}')
 
                         # Push data to dataset
                         await actor.push_data(product_info)
                 else:
-                    await actor.log.warning(f'No product found for SKU: {sku}')
+                    Actor.log.warning(f'No product found for SKU: {sku}')
 
         finally:
             if driver:
@@ -70,7 +133,7 @@ async def main() -> None:
                 except:
                     pass
 
-        await actor.log.info(f'Mazuri scraping completed. Found {len(products)} products.')
+        Actor.log.info(f'Mazuri scraping completed. Found {len(products)} products.')
 
 def scrape_products(skus, progress_callback=None, headless=None):
     """
@@ -128,7 +191,7 @@ def scrape_single_product(SKU, driver):
     try:
         driver.get(url)
     except Exception as e:
-        apify.log.error(f'[{SKU}] Error loading URL {url}: {e}')
+        Actor.log.error(f'[{SKU}] Error loading URL {url}: {e}')
         return None
 
     # No cookie/terms check
@@ -142,7 +205,7 @@ def scrape_single_product(SKU, driver):
             )
         )
     except Exception as e:
-        apify.log.error(f'[{SKU}] Timeout waiting for product or no-results message: {e}')
+        Actor.log.error(f'[{SKU}] Timeout waiting for product or no-results message: {e}')
         return None
 
     # Robust no-results detection
@@ -152,7 +215,7 @@ def scrape_single_product(SKU, driver):
             if "didn't match any results" in elem.text:
                 return None
     except Exception as e:
-        apify.log.error(f'[{SKU}] Error checking no-results elements: {e}')
+        Actor.log.error(f'[{SKU}] Error checking no-results elements: {e}')
 
     if "didn't match any results" in driver.page_source:
         return None
@@ -161,7 +224,7 @@ def scrape_single_product(SKU, driver):
     try:
         product_li = driver.find_element(By.CSS_SELECTOR, "li.snize-product")
     except Exception as e:
-        apify.log.error(f'[{SKU}] No product found for SKU: {e}')
+        Actor.log.error(f'[{SKU}] No product found for SKU: {e}')
         return None
 
     # Click the product link to go to the detail page
@@ -177,13 +240,13 @@ def scrape_single_product(SKU, driver):
                 EC.presence_of_element_located((By.CSS_SELECTOR, "img"))
             )
     except Exception as e:
-        apify.log.error(f'[{SKU}] Error clicking product link or loading detail page: {e}')
+        Actor.log.error(f'[{SKU}] Error clicking product link or loading detail page: {e}')
         return None
 
     # DEBUG MODE: Pause for manual inspection
     if DEBUG_MODE:
-        apify.log.info(f"🐛 DEBUG MODE: Product page loaded for SKU {SKU}")
-        apify.log.info("Press Enter in the terminal to continue with data extraction...")
+        Actor.log.info(f"🐛 DEBUG MODE: Product page loaded for SKU {SKU}")
+        Actor.log.info("Press Enter in the terminal to continue with data extraction...")
         input("🐛 DEBUG MODE: Inspect the product page, then press Enter to continue...")
 
     # Try to parse embedded product JSON for robust extraction
@@ -198,7 +261,7 @@ def scrape_single_product(SKU, driver):
             import json
             product_json = json.loads(script_tag.string)
     except Exception as e:
-        apify.log.error(f'[{SKU}] Error parsing embedded product JSON: {e}')
+        Actor.log.error(f'[{SKU}] Error parsing embedded product JSON: {e}')
         product_json = None
 
     if product_json:
@@ -317,14 +380,14 @@ def scrape_single_product(SKU, driver):
             brand_element = soup.find("a", class_=re.compile("product-brand"))
             product_info['Brand'] = clean_string(brand_element.text) if brand_element and brand_element.text.strip() else "N/A"
         except Exception as e:
-            apify.log.error(f"[{SKU}] Error extracting Brand: {e}")
+            Actor.log.error(f"[{SKU}] Error extracting Brand: {e}")
             product_info['Brand'] = "N/A"
         # Extract Name (append weight with 'lb.' if available)
         try:
             name_element = soup.find("h1")
             base_name = clean_string(name_element.text) if name_element and name_element.text.strip() else "N/A"
         except Exception as e:
-            apify.log.error(f"[{SKU}] Error extracting Name: {e}")
+            Actor.log.error(f"[{SKU}] Error extracting Name: {e}")
             base_name = "N/A"
         weight_str = product_info.get('Weight', None)
         if weight_str and weight_str != "N/A":
@@ -364,7 +427,7 @@ def scrape_single_product(SKU, driver):
                         m = re.search(r'(\d+(?:\.\d+)?)', weight_raw)
                         weight = m.group(1) if m else "N/A"
             except Exception as e:
-                apify.log.error(f"[{SKU}] Error extracting Weight (fallback): {e}")
+                Actor.log.error(f"[{SKU}] Error extracting Weight (fallback): {e}")
                 weight = "N/A"
         product_info['Weight'] = weight if weight else "N/A"
         # Extract Images (carousel images in order, fallback if <7)
@@ -408,7 +471,7 @@ def scrape_single_product(SKU, driver):
                     break
             product_info['Image URLs'] = deduped_imgs
         except Exception as e:
-            apify.log.error(f"[{SKU}] Error extracting Image URLs: {e}")
+            Actor.log.error(f"[{SKU}] Error extracting Image URLs: {e}")
         # Always return the required fields, even if some are missing
         # Print missing fields for debugging
         missing = []
@@ -416,7 +479,7 @@ def scrape_single_product(SKU, driver):
             if not product_info.get(key):
                 missing.append(key)
         if missing:
-            apify.log.warning(f"[{SKU}] Missing fields in extracted product_info: {', '.join(missing)}")
+            Actor.log.warning(f"[{SKU}] Missing fields in extracted product_info: {', '.join(missing)}")
 
         # Check for critical missing data - return None if essential fields are missing
         critical_fields_missing = (
@@ -430,5 +493,5 @@ def scrape_single_product(SKU, driver):
         return [product_info]
 
     except Exception as e:
-        apify.log.error(f'[{SKU}] Error extracting product info: {e}')
+        Actor.log.error(f'[{SKU}] Error extracting product info: {e}')
         return None
