@@ -44,7 +44,7 @@ HEADLESS = os.getenv('HEADLESS', 'True').lower() == 'true'  # Default to True fo
 DEBUG_MODE = False  # Set to True to pause for manual inspection during scraping
 ENABLE_DEVTOOLS = DEBUG_MODE  # Automatically enable DevTools when in debug mode
 DEVTOOLS_PORT = 9222  # Port for Chrome DevTools remote debugging
-TEST_SKU = "B07G5J5FYP"  # Valid Amazon ASIN for testing
+TEST_SKU = "035585499741"  # Valid Amazon ASIN for testing
 
 
 def create_driver(proxy_url=None, headless=None) -> webdriver.Chrome:
