@@ -41,6 +41,9 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
 
+from src.core.scrapers.apify_client import ApifyScraperClient, ApifyJobError, ApifyTimeoutError, ApifyAuthError
+
+
 class ScrapingProgressTracker:
     """Tracks and displays persistent progress bars for scraping operations."""
 
@@ -545,9 +548,9 @@ class ProductScraper:
 
         return failed_modules
 
-    def run(self):
+    async def run(self):
         try:
-            self.scrape()
+            await self.scrape()
         except KeyboardInterrupt:
             pass
 
@@ -1008,7 +1011,7 @@ class ProductScraper:
         else:
             return None
 
-    def scrape(self):
+    async def scrape(self):
         # Convert input file to normalized format before scraping
         self.convert_input_file_to_new_format(self.file_path)
         # Read with dtype=str to preserve leading zeros
@@ -1030,6 +1033,9 @@ class ProductScraper:
             if col not in df.columns:
                 return
         df = df[required_cols]
+
+        # Instantiate the ApifyScraperClient
+        client = ApifyScraperClient()
 
         # Check for existing products in database and filter them out
         self.log_callback("🔍 Checking for existing products in database...")
@@ -1172,21 +1178,26 @@ class ProductScraper:
                     str(row["SKU"]).strip() for _, row in rows
                 ]  # Process all SKUs for this site
 
-                existing_count = len(
-                    [
-                        str(row["SKU"]).strip()
-                        for _, row in rows
-                        if str(row["SKU"]).strip()
-                        in current_existing_skus.get(site, set())
-                    ]
-                )
-                site_results = self.process_site(
-                    site, skus_for_this_site, current_existing_skus, rows
-                )
-                if site_results:
-                    all_collected_products.extend(site_results)
-                else:
-                    pass
+                try:
+                    scraped_products = await client.scrape_skus(site, skus_for_this_site, progress_callback=self.progress_callback)
+                    site_results = []
+                    for product_info in scraped_products:
+                        sku = product_info.get("SKU", "Unknown")
+                        input_row = next(
+                            (r[1] for r in rows if str(r[1]["SKU"]).strip() == sku), {}
+                        )
+                        site_results.append((product_info, site, input_row))
+
+                        # Still track in all_found_products for progress reporting
+                        if sku not in self.all_found_products:
+                            self.all_found_products[sku] = []
+                        self.all_found_products[sku].append((product_info, site, input_row))
+
+                    if site_results:
+                        all_collected_products.extend(site_results)
+                except (ApifyJobError, ApifyTimeoutError, ApifyAuthError) as e:
+                    self.log_callback(f"❌ Error processing {site}: {e}")
+
                 completed_sites.add(site)
                 self.progress_tracker.complete_site()
 
