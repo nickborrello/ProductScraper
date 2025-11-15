@@ -1,6 +1,6 @@
 {
   "amazon": {
-    "test_skus": ["B07G5J5FYP"],
+    "test_skus": ["035585499741"],
     "expected_fields": ["SKU", "Name", "Brand", "Weight", "Image URLs"],
     "description": "Amazon product scraper test data"
   },
