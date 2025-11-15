@@ -37,11 +37,15 @@ class ScraperIntegrationTester:
         scrapers_dir = self.project_root / "src" / "scrapers"
         scrapers = []
 
+        if not scrapers_dir.exists():
+            return scrapers
+
         for item in scrapers_dir.iterdir():
             if item.is_dir() and not item.name.startswith('.') and item.name != 'archive':
                 # Check if it has the required Apify structure
                 main_py = item / "src" / "__main__.py"
                 actor_dir = item / ".actor"
+
                 if main_py.exists() and actor_dir.exists():
                     scrapers.append(item.name)
 
@@ -80,7 +84,6 @@ class ScraperIntegrationTester:
             import shutil
             try:
                 shutil.rmtree(dataset_dir)
-                print(f"DEBUG: Cleaned existing dataset directory: {dataset_dir}")
             except Exception as e:
                 print(f"DEBUG: Failed to clean dataset directory: {e}")
 
@@ -137,7 +140,19 @@ class ScraperIntegrationTester:
             # Run the async main() function using local storage patterns
             start_time = time.time()
             try:
-                asyncio.run(module.main())
+                # Handle asyncio event loop conflicts with pytest
+                try:
+                    # Check if there's already a running event loop (e.g., from pytest)
+                    asyncio.get_running_loop()
+                    # If we get here, there's a running loop, so we need to run in a separate thread
+                    import concurrent.futures
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        future = executor.submit(asyncio.run, module.main())
+                        future.result()  # Wait for completion
+                except RuntimeError:
+                    # No running loop, safe to use asyncio.run()
+                    asyncio.run(module.main())
+                
                 results["execution_time"] = time.time() - start_time
                 results["success"] = True
                 results["output"] = "Scraper executed successfully using local storage simulation"

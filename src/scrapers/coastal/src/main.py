@@ -184,7 +184,7 @@ def scrape_single_product(SKU, driver):
     if driver is None:
         return None
 
-    url = f'https://www.coastalpet.com/search?q={SKU}'
+    url = f'https://coastalpet.com/products/search/?q={SKU}&currentPage=1'
 
     try:
         driver.get(url)

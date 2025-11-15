@@ -14,7 +14,24 @@ from typing import Any
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 sys.path.insert(0, project_root)
 
-from apify import Actor
+# Import Actor - use local implementation for testing, real Apify SDK for platform
+try:
+    # Check if we're running on Apify platform
+    if os.getenv('APIFY_ACTOR_ID') or os.getenv('APIFY_TOKEN'):
+        from apify import Actor
+    else:
+        # Use local storage simulation for local development
+        from src.core.local_apify import Actor
+        # Create a logger wrapper for compatibility
+        class LoggerWrapper:
+            def info(self, msg): print(f"[INFO] {msg}")
+            def warning(self, msg): print(f"[WARNING] {msg}")
+            def error(self, msg): print(f"[ERROR] {msg}")
+            def debug(self, msg): print(f"[DEBUG] {msg}")
+        Actor.log = LoggerWrapper()
+except ImportError:
+    # Fallback to real Apify SDK if local not available
+    from apify import Actor
 from fake_useragent import UserAgent
 from selenium import webdriver
 from selenium.webdriver.common.by import By
