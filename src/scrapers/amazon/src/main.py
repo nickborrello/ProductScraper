@@ -1909,7 +1909,7 @@ if __name__ == "__main__":
     
     # Set default input if not provided
     if not os.getenv('APIFY_INPUT'):
-        os.environ['APIFY_INPUT'] = '{"skus": ["B07G5J5FYP"]}'
+        os.environ['APIFY_INPUT'] = f'{{"skus": ["{TEST_SKU}"]}}'
     
     # Run the scraper
     asyncio.run(main())
