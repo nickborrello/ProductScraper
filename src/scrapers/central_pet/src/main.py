@@ -28,7 +28,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 
 # Central Pet scraper configuration
 HEADLESS = os.getenv('HEADLESS', 'True').lower() == 'true'  # Set to False only if CAPTCHA solving requires visible browser
-DEBUG_MODE = False  # Set to True to pause for manual inspection during scraping
+DEBUG_MODE = os.getenv('DEBUG_MODE', 'False').lower() == 'true'  # Set to True to pause for manual inspection during scraping
 ENABLE_DEVTOOLS = DEBUG_MODE  # Automatically enable DevTools when in debug mode
 DEVTOOLS_PORT = 9222  # Port for Chrome DevTools remote debugging
 TEST_SKU = "035585499741"  # KONG Pull A Partz Pals Koala SM - test SKU for Central Pet
@@ -1588,4 +1588,13 @@ def run_large_scale_test(input_data: dict) -> dict:
 
 
 if __name__ == "__main__":
-    main_local()
+    # Set debug mode when running directly
+    os.environ['HEADLESS'] = 'False'
+    os.environ['DEBUG_MODE'] = 'True'
+    
+    # Set default input if not provided
+    if not os.getenv('APIFY_INPUT'):
+        os.environ['APIFY_INPUT'] = '{"skus": ["CP001"]}'
+    
+    # Run the scraper
+    asyncio.run(main())

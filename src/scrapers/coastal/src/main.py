@@ -324,3 +324,16 @@ def scrape_single_product(SKU, driver):
     except Exception as e:
         Actor.log.error(f'[{SKU}] Error extracting product info: {e}')
         return None
+
+
+if __name__ == "__main__":
+    # Set debug mode when running directly
+    os.environ['HEADLESS'] = 'False'
+    os.environ['DEBUG_MODE'] = 'True'
+    
+    # Set default input if not provided
+    if not os.getenv('APIFY_INPUT'):
+        os.environ['APIFY_INPUT'] = '{"skus": ["CO001"]}'
+    
+    # Run the scraper
+    asyncio.run(main())

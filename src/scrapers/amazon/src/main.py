@@ -53,7 +53,7 @@ from utils.general.cookies import save_amazon_cookies, load_amazon_cookies
 
 # Amazon scraper configuration
 HEADLESS = os.getenv('HEADLESS', 'True').lower() == 'true'  # Default to True for headless operation, can be overridden by env var
-DEBUG_MODE = False  # Set to True to pause for manual inspection during scraping
+DEBUG_MODE = os.getenv('DEBUG_MODE', 'False').lower() == 'true'  # Set to True to pause for manual inspection during scraping
 ENABLE_DEVTOOLS = DEBUG_MODE  # Automatically enable DevTools when in debug mode
 DEVTOOLS_PORT = 9222  # Port for Chrome DevTools remote debugging
 TEST_SKU = "035585499741"  # Valid Amazon ASIN for testing
@@ -1903,4 +1903,13 @@ def run_large_scale_test(input_data: dict) -> dict:
 
 
 if __name__ == "__main__":
-    main_local()
+    # Set debug mode when running directly
+    os.environ['HEADLESS'] = 'False'
+    os.environ['DEBUG_MODE'] = 'True'
+    
+    # Set default input if not provided
+    if not os.getenv('APIFY_INPUT'):
+        os.environ['APIFY_INPUT'] = '{"skus": ["B07G5J5FYP"]}'
+    
+    # Run the scraper
+    asyncio.run(main())
