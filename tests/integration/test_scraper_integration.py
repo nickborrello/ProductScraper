@@ -4,9 +4,9 @@ Integration tests for running scrapers locally and validating output.
 import os
 import sys
 import json
-import subprocess
 import tempfile
 import shutil
+import time
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 import pytest
@@ -49,7 +49,7 @@ class ScraperIntegrationTester:
 
     def run_scraper_locally(self, scraper_name: str, skus: List[str], headless: bool = True) -> Dict[str, Any]:
         """
-        Run a scraper locally with given SKUs.
+        Run a scraper locally with given SKUs using Apify SDK patterns.
 
         Args:
             scraper_name: Name of the scraper to run
@@ -84,7 +84,7 @@ class ScraperIntegrationTester:
             except Exception as e:
                 print(f"DEBUG: Failed to clean dataset directory: {e}")
 
-        # Create temporary input file
+        # Create temporary input file (for compatibility, though not used in direct execution)
         input_data = {"skus": skus}
 
         with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
@@ -92,7 +92,7 @@ class ScraperIntegrationTester:
             input_file = f.name
 
         try:
-            # Set environment variables
+            # Set environment variables for Apify SDK
             env = os.environ.copy()
             env["PYTHONPATH"] = str(self.project_root) + os.pathsep + str(scraper_dir)
             env["APIFY_INPUT"] = json.dumps(input_data)
@@ -101,65 +101,90 @@ class ScraperIntegrationTester:
             # Disable cookie loading for testing to ensure fresh sessions
             env["DISABLE_COOKIE_LOADING"] = "true"
 
-            # Run the scraper
-            cmd = [
-                sys.executable, "-m", "src"
-            ]
+            # Update current environment with these vars
+            os.environ.update(env)
 
-            # Change to scraper directory
-            process = subprocess.run(
-                cmd,
-                cwd=str(scraper_dir),
-                env=env,
-                capture_output=True,
-                text=True,
-                timeout=300  # 5 minute timeout
-            )
+            # Change to scraper directory for local storage
+            original_cwd = os.getcwd()
+            os.chdir(str(scraper_dir))
 
-            results["output"] = process.stdout + process.stderr
-            results["return_code"] = process.returncode
+            # Import local apify implementation for testing
+            import sys
+            sys.path.insert(0, str(self.project_root / "src" / "core"))
+            import local_apify
 
-            if process.returncode == 0:
-                # For Apify scrapers, data is stored in local dataset
-                try:
-                    # Apify stores data in storage/datasets/default/
-                    dataset_dir = scraper_dir / "storage" / "datasets" / "default"
+            # Replace apify module with local implementation
+            sys.modules['apify'] = local_apify
+
+            # Import and run the scraper directly using local storage patterns
+            import importlib.util
+            import asyncio
+
+            main_py_path = scraper_dir / "src" / "main.py"
+            if not main_py_path.exists():
+                results["errors"].append(f"main.py not found: {main_py_path}")
+                return results
+
+            # Load the module dynamically
+            spec = importlib.util.spec_from_file_location("main", str(main_py_path))
+            if spec is None or spec.loader is None:
+                results["errors"].append(f"Failed to load module from {main_py_path}")
+                return results
+
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+
+            # Run the async main() function using local storage patterns
+            start_time = time.time()
+            try:
+                asyncio.run(module.main())
+                results["execution_time"] = time.time() - start_time
+                results["success"] = True
+                results["output"] = "Scraper executed successfully using local storage simulation"
+            except Exception as e:
+                results["errors"].append(f"Scraper execution failed: {e}")
+                results["output"] = f"Error: {e}"
+                return results
+            finally:
+                # Restore original working directory
+                os.chdir(original_cwd)
+
+            # Read results from local storage dataset
+            try:
+                # Local storage stores data in storage/datasets/default/
+                dataset_dir = scraper_dir / "storage" / "datasets" / "default"
+                
+                if dataset_dir.exists():
+                    products = []
+                    # Read all JSON files in the dataset directory, excluding metadata
+                    for json_file in dataset_dir.glob("*.json"):
+                        if json_file.name.startswith('__'):
+                            continue  # Skip metadata files
+                        with open(json_file, 'r', encoding='utf-8') as f:
+                            try:
+                                data = json.load(f)
+                                if isinstance(data, list):
+                                    products.extend(data)
+                                else:
+                                    products.append(data)
+                            except json.JSONDecodeError:
+                                continue
                     
-                    if dataset_dir.exists():
-                        products = []
-                        # Read all JSON files in the dataset directory, excluding metadata
-                        for json_file in dataset_dir.glob("*.json"):
-                            if json_file.name.startswith('__'):
-                                continue  # Skip metadata files
-                            with open(json_file, 'r', encoding='utf-8') as f:
-                                try:
-                                    data = json.load(f)
-                                    if isinstance(data, list):
-                                        products.extend(data)
-                                    else:
-                                        products.append(data)
-                                except json.JSONDecodeError:
-                                    continue
-                        
-                        if products:
-                            results["products"] = products
-                            results["success"] = True
-                        else:
-                            results["errors"].append("No products found in dataset")
+                    if products:
+                        results["products"] = products
                     else:
-                        results["errors"].append("Dataset directory not found")
+                        results["errors"].append("No products found in dataset")
+                        results["success"] = False
+                else:
+                    results["errors"].append("Dataset directory not found")
+                    results["success"] = False
 
-                except Exception as e:
-                    results["errors"].append(f"Failed to read dataset: {e}")
-            else:
-                results["errors"].append(f"Scraper exited with code {process.returncode}")
-                if process.stderr:
-                    results["errors"].append(f"Stderr: {process.stderr}")
+            except Exception as e:
+                results["errors"].append(f"Failed to read dataset: {e}")
+                results["success"] = False
 
-        except subprocess.TimeoutExpired:
-            results["errors"].append("Scraper timed out after 5 minutes")
         except Exception as e:
-            results["errors"].append(f"Execution failed: {e}")
+            results["errors"].append(f"Execution setup failed: {e}")
         finally:
             # Clean up temp file
             try:

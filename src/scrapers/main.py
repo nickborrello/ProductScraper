@@ -49,7 +49,7 @@ if not is_gui_mode:
 
 # --- Core Logic Functions ---
 
-def run_scraping(file_path, progress_callback=None, log_callback=None, interactive=True, selected_sites=None, editor_callback=None, status_callback=None, confirmation_callback=None):
+def run_scraping(file_path, progress_callback=None, log_callback=None, interactive=True, selected_sites=None, editor_callback=None, status_callback=None, confirmation_callback=None, metrics_callback=None):
     """Handles the entire scraping process for a given file."""
     # Determine log function
     if log_callback is None:
@@ -99,7 +99,7 @@ def run_scraping(file_path, progress_callback=None, log_callback=None, interacti
 
     # Run scraper
     log("🚀 Starting scraper...")
-    scraper = ProductScraper(file_path, interactive=interactive, selected_sites=selected_sites, log_callback=log_callback, progress_callback=progress_callback, editor_callback=editor_callback, status_callback=status_callback, confirmation_callback=confirmation_callback)
+    scraper = ProductScraper(file_path, interactive=interactive, selected_sites=selected_sites, log_callback=log_callback, progress_callback=progress_callback, editor_callback=editor_callback, status_callback=status_callback, confirmation_callback=confirmation_callback, metrics_callback=metrics_callback)
     if progress_callback:
         progress_callback.emit(40)
     scraper.run()
@@ -107,7 +107,7 @@ def run_scraping(file_path, progress_callback=None, log_callback=None, interacti
         progress_callback.emit(90)
     log("✅ Product scraping completed!")
 
-def run_db_refresh(progress_callback=None, log_callback=None, editor_callback=None, status_callback=None):
+def run_db_refresh(progress_callback=None, log_callback=None, editor_callback=None, status_callback=None, metrics_callback=None):
     """Processes the downloaded XML and refreshes the database, with callbacks."""
     # Determine log function
     if log_callback is None:
@@ -148,7 +148,7 @@ def run_db_refresh(progress_callback=None, log_callback=None, editor_callback=No
         raise
 
 
-def run_shopsite_xml_download(progress_callback=None, log_callback=None, editor_callback=None, status_callback=None):
+def run_shopsite_xml_download(progress_callback=None, log_callback=None, editor_callback=None, status_callback=None, metrics_callback=None):
     """Downloads and saves XML from ShopSite."""
     # Determine log function
     if log_callback is None:
@@ -177,7 +177,7 @@ def run_shopsite_xml_download(progress_callback=None, log_callback=None, editor_
         raise
 
 
-def run_shopsite_publish(progress_callback=None, log_callback=None, editor_callback=None, status_callback=None):
+def run_shopsite_publish(progress_callback=None, log_callback=None, editor_callback=None, status_callback=None, metrics_callback=None):
     """Publishes changes to ShopSite by regenerating website content."""
     # Determine log function
     if log_callback is None:

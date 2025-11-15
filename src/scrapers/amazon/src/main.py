@@ -26,17 +26,12 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from selenium.webdriver.common.action_chains import ActionChains
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
-# Import cookie functions - try multiple import paths for compatibility
-try:
-    from src.utils.general.cookies import save_amazon_cookies, load_amazon_cookies
-except ImportError:
-    try:
-        from utils.general.cookies import save_amazon_cookies, load_amazon_cookies
-    except ImportError:
-        # Fallback - import directly if running from project root
-        import sys
-        sys.path.insert(0, os.path.join(project_root, 'src'))
-        from utils.general.cookies import save_amazon_cookies, load_amazon_cookies
+# Import cookie functions - ensure project root is in path
+import sys
+if os.path.join(project_root, 'src') not in sys.path:
+    sys.path.insert(0, os.path.join(project_root, 'src'))
+
+from utils.general.cookies import save_amazon_cookies, load_amazon_cookies
 
 
 # Amazon scraper configuration
