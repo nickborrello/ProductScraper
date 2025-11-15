@@ -21,8 +21,296 @@ These instructions guide GitHub Copilot's behavior when working in this reposito
 - Save cookies and profiles to maintain session state
 - Parse weights from product names and normalize to consistent units (LB)
 - Ensure cross-sell relationships are properly saved to Excel output
-- **Scraper Development**: When creating new scrapers, add `HEADLESS = True` (default) or `HEADLESS = False` at module level. Set to `False` only if the scraper requires visible browser for CAPTCHA solving, user interaction, or other visual elements.
-- **Testing Protocol**: Always test scraping functionality locally before pushing to Apify hosting. Never run scrapes with Apify hosting during testing phases - use local execution only for development and validation.
+- **Apify SDK Integration**: All scrapers use Apify SDK patterns with async main() functions, actor context management, and data pushing via await actor.push_data()
+- **Local Storage Simulation**: Use local storage APIs that mimic Apify platform storage for development and testing
+- **Testing Protocol**: Always test scraping functionality locally first using the enhanced testing framework. Use local storage simulation for development, platform testing only when necessary with proper API authentication.
+
+## Scraper Structure Requirements
+
+**CRITICAL**: All scrapers must follow the Apify actor format structure. Never modify or break this structure, as it is required for deployment on the Apify platform.
+
+### Required Directory Structure for Each Scraper:
+
+```
+src/scrapers/{scraper_name}/
+├── src/
+│   ├── __main__.py          # Entry point: asyncio.run(main())
+│   └── main.py              # Main actor logic with async main()
+├── .actor/
+│   ├── actor.json           # Actor configuration
+│   ├── input_schema.json    # Input validation schema
+│   ├── output_schema.json   # Output schema
+│   └── dataset_schema.json  # Dataset schema
+├── Dockerfile               # Containerization
+├── requirements.txt         # Python dependencies
+└── README.md                # Documentation
+```
+
+### Required Files and Formats:
+
+#### `src/__main__.py` (Entry Point)
+
+```python
+import asyncio
+
+from .main import main
+
+# Execute the Actor entry point.
+asyncio.run(main())
+```
+
+#### `src/main.py` (Main Actor Logic)
+
+- Must contain `async def main() -> None:` function
+- Must use `async with apify.Actor:` context manager
+- Must call `await apify.get_input()` for input
+- Must call `await actor.push_data()` to output results
+- Must handle SKUs from input: `skus = actor_input.get('skus', [])`
+
+#### `.actor/actor.json` (Actor Configuration)
+
+```json
+{
+  "actorSpecification": 1,
+  "name": "{scraper_name}-scraper",
+  "title": "{Scraper Title} Product Scraper",
+  "description": "Scrape product data from {Site Name} for given SKUs.",
+  "version": "0.0",
+  "buildTag": "latest",
+  "meta": {
+    "templateId": "python-start",
+    "model": "<FILL-IN-MODEL>"
+  },
+  "input": "./input_schema.json",
+  "output": "./output_schema.json",
+  "storages": {
+    "dataset": "./dataset_schema.json"
+  },
+  "dockerfile": "../Dockerfile"
+}
+```
+
+#### Schema Files
+
+- `input_schema.json`: Must include "skus" array field for SKU input
+- `output_schema.json`: Standard output schema format
+- `dataset_schema.json`: Standard dataset schema format
+
+### Critical Rules:
+
+- **NEVER** modify the `__main__.py` format - it must always be `asyncio.run(main())`
+- **NEVER** change the `main()` function signature - it must be `async def main() -> None:`
+- **NEVER** remove the `async with apify.Actor:` context manager
+- **NEVER** modify the input/output handling without updating schemas
+- **ALWAYS** maintain the exact directory structure for Apify compatibility
+- **ALWAYS** test locally before any changes to ensure Apify deployment works
+
+### When Adding New Scrapers:
+
+1. Copy the structure from an existing scraper (amazon, bradley, etc.)
+2. Update all `{scraper_name}` placeholders in files
+3. Update titles and descriptions in actor.json and schemas
+4. Ensure main.py follows the exact async pattern
+5. Test locally before committing
+
+## Building and Testing Scrapers Locally
+
+### Local Development Setup
+
+1. **Install Dependencies**: Each scraper has its own `requirements.txt` file. Install dependencies from the scraper's directory:
+
+   ```bash
+   cd src/scrapers/{scraper_name}
+   pip install -r requirements.txt
+   ```
+
+2. **Environment Variables**: Create a `.env` file in the scraper directory if needed for API keys or configuration:
+   ```bash
+   cd src/scrapers/{scraper_name}
+   cp .env.example .env  # If .env.example exists
+   # Edit .env with your actual values
+   ```
+
+### Running Scrapers Locally
+
+1. **Navigate to Scraper Directory**:
+
+   ```bash
+   cd src/scrapers/{scraper_name}
+   ```
+
+2. **Run with Test SKUs**: Use the enhanced testing framework:
+
+   ```bash
+   # Local testing (recommended for development)
+   python test_scrapers.py --scraper {scraper_name}
+
+   # Platform testing (requires Apify API token)
+   python platform_test_scrapers.py --platform --scraper {scraper_name}
+   ```
+
+3. **Run Specific Scraper**: From the scraper directory:
+   ```bash
+   python -m src
+   ```
+
+### Testing Protocol
+
+**CRITICAL**: Always test scraping functionality locally before pushing to Apify hosting. Never run scrapes with Apify hosting during testing phases - use local execution only for development and validation.
+
+1. **Use Test SKUs**: Test with products that have all needed fields filled in (e.g., SKU: 035585499741)
+2. **Verify Output**: Check that scraped data includes:
+
+   - Product name
+   - Price
+   - Images (comma-separated URLs)
+   - Weight (normalized to LB)
+   - Brand
+   - Category and product type
+   - Cross-sell relationships
+
+3. **Quality Validation**: Ensure data quality scores >85% using the DataQualityScorer
+4. **Performance Checks**: Verify <5 min execution time with <500MB memory usage
+
+### Enhanced Testing Framework
+
+The project includes a comprehensive testing system with multiple modes:
+
+#### Local Testing Mode (Default)
+- Uses Apify SDK patterns with local storage simulation
+- No API keys required
+- File-based storage for datasets, key-value stores, request queues
+- Full quality scoring and validation
+
+#### Platform Testing Mode (Optional)
+- Integrates with Apify platform APIs
+- Requires `APIFY_API_TOKEN` environment variable
+- Cloud validation and deployment testing
+- Cost monitoring and usage tracking
+
+#### Testing Commands
+```bash
+# Run all scrapers locally
+python test_scrapers.py --all
+
+# Test specific scraper
+python test_scrapers.py --scraper amazon
+
+# Platform testing
+python platform_test_scrapers.py --platform --scraper amazon
+
+# Quality validation
+python -m pytest tests/unit/test_data_quality_scorer.py
+
+# Performance testing
+python -m pytest tests/unit/test_performance.py
+```
+
+### Validation Checks
+
+The testing system validates:
+
+- **Data Format**: Required fields present (SKU, Name)
+- **Data Quality**: No invalid values (N/A, null, empty strings)
+- **Field Coverage**: Expected fields populated
+- **Weight Units**: Normalized to LB
+- **Image URLs**: Valid HTTP/HTTPS URLs
+- **Price Format**: Proper numeric format
+- **Cross-sell Data**: Pipe-separated format
+- **Quality Score**: >85% threshold met
+
+### Pre-Apify Deployment Checklist
+
+- [ ] All scrapers pass `python test_scrapers.py --all`
+- [ ] No validation errors in output data
+- [ ] Data quality score > 85% for all scrapers
+- [ ] All required fields populated for test SKUs
+- [ ] Local storage simulation works correctly
+- [ ] Platform testing optional and properly authenticated
+- [ ] Ready for Apify hosting deployment
+
+## GUI Development Guidelines
+
+- **Async Threading**: Use the enhanced Worker class that supports async operations with asyncio event loops
+- **Progress Updates**: Implement real-time progress signals with metrics (elapsed time, processed count, current operation, ETA)
+- **Cancellation Support**: Add cancel buttons with proper cleanup of worker threads and resources
+- **UI Responsiveness**: Ensure GUI remains responsive during long-running operations
+
+## Code Patterns
+
+- Use context managers for file operations and database connections
+- Implement retry logic for network requests
+- Validate data before saving to prevent corrupted outputs
+- Separate scraping logic from data processing logic
+
+## Database
+
+- Our database uses SQLite and is managed with SQLAlchemy
+- These are the columns:
+  - id INTEGER PRIMARY KEY AUTOINCREMENT, // Auto-incrementing primary key
+  - SKU TEXT UNIQUE, // Unique Stock Keeping Unit
+  - Name TEXT, // Product name
+  - Price TEXT, // Price
+  - Images TEXT, // Comma-separated list of image URLs
+  - Weight TEXT, // Product weight
+  - Product_Field_16 TEXT, // Brand
+  - Product_Field_11 TEXT, // Special Order
+  - Product_Field_24 TEXT, // Category
+  - Product_Field_25 TEXT, // Product Type
+  - Product_On_Pages TEXT, // Pages where the product appears, separated by |
+  - Product_Field_32 TEXT, // Product Cross Sells, separated by |
+  - last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP // Timestamp of last update
+  - ProductDisabled TEXT, // Indicates if the product is disabled (checked or uncheck)
+
+## ShopSite XML API
+
+### Downloading Data
+
+- **Program**: `db_xml.cgi`
+- **Parameters**:
+  - `clientApp=1` (required) - Client application version identifier
+  - `dbname=products` (required) - Database to access (products/pages)
+  - `version=14.0` (optional) - XML format version (14.0, 12.0, 11.2, 11.1, 11.0, 10.2, 10.1, 10.0, 9.0, 8.3, 8.2, 8.1, 8.0, 7.1)
+  - `fields` (optional) - Comma-separated list of fields to download, or "all" for everything
+  - `fieldmap` (optional) - Predefined field mapping name
+- **Authentication**: Basic HTTP authentication (username/password)
+- **Response**: Uses chunked transfer encoding (no Content-Length header available)
+- **Current Implementation**: Downloads all product fields, shows progress with speed/time estimates
+
+### Uploading Data
+
+- **Program**: `dbupload.cgi`
+- **Parameters**:
+  - `clientApp=1` (required) - Client application version identifier
+  - `dbname=products` (required) - Database to upload to (products/pages)
+  - `filename` (optional) - Name of XML file previously uploaded to ShopSite's HTML output directory
+  - `uniqueName` (optional) - Unique database key field (defaults to "Name", can be "SKU", "Product GUID", "File Name", or "(none)" for duplicates)
+  - `newRecords=yes/no` (optional) - Whether to include new records (default: yes)
+  - `defer_linking=yes/no` (optional) - Defer record linking for batch uploads (default: no)
+  - `restart=1` (optional) - Restart interrupted upload from where it left off
+- **Authentication**: Basic HTTP authentication (username/password)
+- **Notes**:
+  - For large databases (>10,000 records), break uploads into batches
+  - Use `defer_linking=yes` for all files except the last in a batch
+  - Can upload MIME-encoded XML or reference pre-uploaded files
+
+### Publishing Changes
+
+- **Program**: `generate.cgi`
+- **Parameters**:
+  - `clientApp=1` (required) - Client application version identifier
+  - `htmlpages=1` (optional) - Generate HTML pages
+  - `custompages=1` (optional) - Generate custom pages
+  - `index=1` (optional) - Update search index
+  - `regen=1` (optional) - Regenerate all content (overrides incremental updates)
+  - `sitemap=1` (optional) - Generate Google XML sitemap
+- **Notes**: If publish times out, call again with same parameters to restart from interruption point
+
+### Current Usage
+
+- **Download**: ✅ Implemented and working (`import_from_shopsite_xml()`)
+- **Upload**: ❌ Not implemented (could be useful for bulk product updates)
+- **Publish**: ✅ Implemented and working (`publish_shopsite_changes()`)
 
 ## Scraper Structure Requirements
 

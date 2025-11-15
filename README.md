@@ -1,34 +1,38 @@
 # ProductScraper
 
-A comprehensive product data management and scraping tool built with Python. This application scrapes product information from multiple e-commerce sites, manages product databases, and provides both CLI and GUI interfaces for data processing.
+A comprehensive product data management and scraping platform built with Python and Apify SDK. This application scrapes product information from multiple e-commerce sites, manages product databases, and provides both CLI and GUI interfaces with advanced testing and deployment capabilities.
 
 ## Features
 
-### 🔍 Multi-Site Scraping
+### 🔍 Multi-Site Scraping with Apify SDK
 
 - **8 Active Scrapers**: Amazon, Bradley Caldwell, Central Pet, Coastal, Orgill, PetFoodEx, Phillips, and more
-- **Automated Data Extraction**: Intelligent parsing of product information
-- **Data Normalization**: Consistent formatting across different sources
-- **Excel Integration**: Smart column mapping for input/output
+- **Apify SDK Integration**: Industry-standard actor lifecycle management with async operations
+- **Local Storage Simulation**: Platform-independent testing with file-based dataset, key-value store, and request queue APIs
+- **Automated Data Extraction**: Intelligent parsing of product information with quality scoring
+- **Data Normalization**: Consistent formatting across different sources with >85% quality threshold
 
 ### 💾 Database Management
 
 - **SQLite Database**: Local storage with SQLAlchemy ORM
-- **ShopSite Integration**: XML import/export capabilities
-- **Product Classification**: Interactive UI for categorizing products
+- **ShopSite Integration**: XML import/export capabilities with publish automation
+- **Product Classification**: Interactive UI with LLM-powered categorization
 - **Cross-sell Relationships**: Advanced product relationship mapping
 
-### 🧪 Testing Framework
+### 🧪 Advanced Testing Framework
 
-- **Unit Tests**: Comprehensive test coverage for all scrapers
-- **Integration Tests**: Real network call validation
-- **Field Validation**: Granular data quality checks
+- **Apify SDK Testing**: Local execution with platform API simulation
+- **Data Quality Scoring**: Comprehensive validation with completeness, accuracy, and consistency metrics
+- **Performance Monitoring**: <5 min execution time with <500MB memory usage
+- **Platform Testing**: Optional Apify platform integration for cloud validation
+- **CI/CD Integration**: Automated testing and deployment pipelines
 
-### 🖥️ User Interfaces
+### 🖥️ Enhanced User Interfaces
 
-- **Command Line Interface**: Full-featured CLI for automation
-- **Graphical User Interface**: User-friendly desktop application
-- **Batch Processing**: Handle large datasets efficiently
+- **Modern GUI**: Real-time progress updates, cancellation support, and async threading
+- **Command Line Interface**: Full-featured CLI with unified local/platform testing
+- **Batch Processing**: Handle large datasets efficiently with progress tracking
+- **Status Monitoring**: Live execution metrics (elapsed time, processed count, ETA)
 
 ## Installation
 
@@ -36,6 +40,7 @@ A comprehensive product data management and scraping tool built with Python. Thi
 
 - Python 3.8+
 - PyQt6 (for GUI components)
+- Apify account (optional, for platform testing)
 
 ### Setup
 
@@ -47,9 +52,6 @@ cd ProductScraper
 # Install Python dependencies
 pip install -r requirements.txt
 
-# Install Node.js dependencies (for APM - optional)
-npm install
-
 # Set up environment configuration
 cp .env.example .env
 # Edit .env with your actual credentials
@@ -59,181 +61,186 @@ cp .env.example .env
 
 ### Desktop Application (Recommended)
 
-The ProductScraper now features a modern, professional desktop application interface:
+The ProductScraper features a modern, professional desktop application with enhanced capabilities:
 
 ```bash
 # Launch the GUI application
 python src/main.py --run gui
 ```
 
-**Features:**
+**New Features:**
 
-- 🎨 Modern, intuitive interface with organized action cards
-- 📊 Real-time status updates and database statistics
-- 📋 Professional log viewer with color-coded messages
-- ⚡ All operations accessible through menu bar and buttons
-- 💾 Progress tracking for all operations
+- 🎨 Modern interface with real-time progress updates and cancellation support
+- 📊 Live execution metrics (elapsed time, processed count, current operation, ETA)
+- 📋 Enhanced log viewer with async operation handling
+- ⚡ Responsive threading for long-running scraper operations
+- 💾 Progress tracking with graceful cancellation
 
 **Available Operations:**
 
-- **Scraping Operations**: Start scraping
-- **Database Management**: Refresh from XML, download XML, view/edit products, database statistics
-- **Tools**: Classify Excel files, run automated tests
+- **Scraping Operations**: Start scraping with progress monitoring
+- **Database Management**: Refresh from XML, download XML, view/edit products
+- **Testing Framework**: Run comprehensive tests with quality validation
+- **Platform Integration**: Optional Apify platform testing and deployment
 
 ### Command-Line Interface
 
-For automation and scripting, you can use the command-line interface:
+For automation and advanced usage:
 
 ```bash
-# Run the scraper
+# Run scraper with progress tracking
 python src/main.py --run scraper --file path/to/your/excel_file.xlsx
+
+# Run comprehensive tests
+python test_scrapers.py --all
+
+# Run platform testing (requires Apify API token)
+python platform_test_scrapers.py --platform --scraper amazon
 ```
 
-### Testing
+### Testing Framework
+
+The enhanced testing framework provides multiple testing modes:
 
 ```bash
-# Run all tests
-python -m pytest tests/
+# Local testing (default, no API required)
+python test_scrapers.py --scraper amazon
 
-# Run specific test file
-python -m pytest tests/unit/test_scrapers.py
+# Platform testing (requires Apify API token)
+python platform_test_scrapers.py --platform --scraper amazon
 
-# Run integration tests (makes real network calls)
-python -m pytest tests/integration/ -v
+# Quality validation
+python -m pytest tests/unit/test_data_quality_scorer.py
 
-# Test with coverage
-python -m pytest --cov=src
+# Performance testing
+python -m pytest tests/unit/test_performance.py
 ```
+
+**Testing Features:**
+
+- **Local Mode**: Uses Apify SDK patterns with local storage simulation
+- **Platform Mode**: Integrates with Apify platform for cloud validation
+- **Quality Scoring**: >85% threshold validation for data completeness and accuracy
+- **Performance Monitoring**: Ensures <5 min execution with <500MB memory usage
+- **CI/CD Integration**: Automated testing in GitHub Actions workflows
 
 ## Project Structure
 
 ```
 ProductScraper/
 ├── src/                    # Main source code
-│   ├── main.py            # Main entry point for the application
-│   ├── core/              # Business logic and database
-│   │   ├── classification/ # Product classification system
-│   │   └── database_import.py
-│   ├── scrapers/          # Web scraping modules
-│   │   ├── amazon/
-│   │   ├── bradley/
-│   │   ├── ...
-│   │   └── main.py        # Main scraping orchestrator
-│   ├── ui/                # User interface components
-│   │   ├── main_window.py # Main application window
-│   │   ├── product_editor.py
+│   ├── main.py            # Main entry point
+│   ├── core/              # Business logic and APIs
+│   │   ├── apify_platform_client.py    # Platform API integration
+│   │   ├── data_quality_scorer.py      # Quality scoring algorithms
+│   │   ├── local_storage/              # Local storage simulation
+│   │   ├── platform_testing_client.py  # Unified testing interface
+│   │   └── classification/             # Product classification
+│   ├── scrapers/          # Apify SDK scrapers
+│   │   ├── amazon/        # Apify actor structure
+│   │   ├── bradley/       # Async main() with SDK patterns
+│   │   └── main.py        # Scraping orchestrator
+│   ├── ui/                # Enhanced GUI components
+│   │   ├── main_window.py # Async threading and progress updates
 │   │   └── ...
 │   └── utils/             # Utility functions
-│       ├── tests.py       # Test utilities
-│       └── ...
-├── tests/                 # Test suites
-│   ├── unit/             # Unit tests
-│   ├── integration/      # Integration tests
-│   └── fixtures/         # Test data
-├── data/                  # Data files and databases
-│   ├── databases/        # SQLite databases
-│   ├── input/            # Input Excel files
-│   ├── output/           # Generated output files
-│   ├── images/           # Downloaded product images
-│   └── exports/          # Export files
-├── docs/                  # Documentation
+├── tests/                 # Comprehensive test suite
+│   ├── unit/             # Unit tests with quality validation
+│   ├── integration/      # SDK integration tests
+│   └── fixtures/         # Test data and quality scoring
+├── docs/                  # Complete documentation
+│   ├── TESTING_GUIDE.md  # Testing procedures
+│   ├── DEPLOYMENT_GUIDE.md # Production deployment
+│   ├── MAINTENANCE_GUIDE.md # Ongoing maintenance
+│   └── API_INTEGRATION.md # Platform API details
+├── scripts/               # Deployment and maintenance
+│   ├── deploy_scrapers.py # Automated deployment
+│   ├── validate_deployment.py # Post-deployment validation
+│   └── rollback.py       # Rollback procedures
+├── .github/workflows/    # CI/CD pipelines
+│   ├── ci-testing.yml    # Automated testing
+│   ├── cd-deployment.yml # Deployment pipeline
+│   └── platform-testing.yml # Platform validation
 └── requirements.txt      # Python dependencies
 ```
 
 ## Configuration
 
-The application uses environment-based configuration. Sensitive settings can be configured through environment variables or a `.env` file:
+### Environment Variables
 
-1. Copy `.env.example` to `.env`
-2. Fill in your actual credentials and settings
-3. The application will automatically load variables from `.env`
-
-### Required Environment Variables
-
+**Required for Scrapers:**
 ```env
-# Scraper Credentials (required for respective scrapers)
 PETFOOD_USERNAME=your_username
 PETFOOD_PASSWORD=your_password
 PHILLIPS_USERNAME=your_username
 PHILLIPS_PASSWORD=your_password
 ORGILL_USERNAME=your_username
 ORGILL_PASSWORD=your_password
+```
 
-# ShopSite API Credentials (required for database sync)
+**Required for ShopSite Integration:**
+```env
 SHOPSITE_CLIENT_ID=your_client_id
 SHOPSITE_SECRET_KEY=your_secret_key
 SHOPSITE_AUTHORIZATION_CODE=your_auth_code
 SHOPSITE_AUTH_URL=https://yourstore.shopsite.com/xml/
 ```
 
-### Optional Environment Variables
-
+**Optional for Platform Testing:**
 ```env
-# Database settings
-DATABASE_PATH=data/databases/products.db
+APIFY_API_TOKEN=your_apify_token  # For platform testing and deployment
+```
 
-# Scraping settings
-DEBUG=false
-SELENIUM_HEADLESS=true
-SELENIUM_TIMEOUT=30
-
-# LLM Classification (optional - improves product categorization)
+**Optional for LLM Classification:**
+```env
 OPENROUTER_API_KEY=your_openrouter_api_key
 OLLAMA_MODEL=llama3
 ```
 
-### LLM Classification Setup
+### Apify Platform Setup (Optional)
 
-The application supports AI-powered product classification using either cloud APIs or local models:
+For platform testing and deployment capabilities:
 
-#### OpenRouter API (Cloud)
-
-1. Sign up at [OpenRouter.ai](https://openrouter.ai)
-2. Get your API key
-3. Set `OPENROUTER_API_KEY` in your environment or `settings.json`
-
-#### Local Ollama (Free, no API key required)
-
-1. Install Ollama: `winget install Ollama.Ollama`
-2. Pull a model: `ollama pull llama3` (or `mistral`, `codellama`, etc.)
-3. The application will automatically detect and use local models
-4. Configure model in `settings.json`: `"ollama_model": "llama3"`
-
-**Note**: Local models provide privacy and no API costs, but require more system resources.
+1. Create an Apify account at [apify.com](https://apify.com)
+2. Get your API token from the dashboard
+3. Set `APIFY_API_TOKEN` in your environment
+4. Use platform testing: `python platform_test_scrapers.py --platform`
 
 ## Safety & Best Practices
 
 ⚠️ **Important**: This tool accesses live e-commerce data
 
-- **Test First**: Always test with small batches using SKU `035585499741`
-- **Rate Limiting**: Respect website terms of service and robots.txt
-- **Data Privacy**: Handle customer data responsibly
+- **Test Locally First**: Always use local testing mode before platform deployment
+- **Quality Thresholds**: Ensure >85% data quality scores before production use
+- **Rate Limiting**: Respect website terms and robots.txt files
 - **Environment Variables**: Never commit credentials to version control
-- **Browser Profiles**: Use separate profiles for different sites to avoid conflicts
+- **Platform Costs**: Monitor Apify platform usage for cloud testing
 
 ## Development
 
 ### Adding New Scrapers
 
-1. Create a new scraper in `src/scrapers/`
-2. Follow the existing pattern with proper error handling
-3. Add unit tests in `tests/unit/`
-4. Update the scraper discovery in `src/scrapers/master.py`
+1. Create new scraper following Apify actor structure in `src/scrapers/`
+2. Implement async main() with Apify SDK patterns
+3. Add comprehensive unit tests with quality validation
+4. Update testing framework integration
+5. Test locally before platform deployment
 
 ### Code Quality
 
-- Use type hints and docstrings
-- Follow PEP 8 style guidelines
-- Add comprehensive error handling
-- Write tests for new functionality
+- Use type hints and comprehensive docstrings
+- Follow PEP 8 with modern Python patterns
+- Implement proper async/await error handling
+- Write tests with >85% quality validation
+- Use Apify SDK patterns for all scraping operations
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+1. Follow the established Apify SDK patterns
+2. Test locally with quality validation
+3. Update documentation for new features
+4. Ensure CI/CD pipelines pass
+5. Create comprehensive test coverage
 
 ## License
 
@@ -241,4 +248,4 @@ This project is private and proprietary. All rights reserved.
 
 ## Support
 
-For questions or issues, please create an issue in this repository.
+For questions or issues, please create an issue in this repository or refer to the documentation in the `docs/` directory.
