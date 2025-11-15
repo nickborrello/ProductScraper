@@ -32,11 +32,11 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 # Module configuration
-HEADLESS = False  # Now works in headless mode after fixing Chrome options  # Set to False only if CAPTCHA solving requires visible browser
+HEADLESS = os.getenv('HEADLESS', 'True').lower() == 'true'  # Now works in headless mode after fixing Chrome options  # Set to False only if CAPTCHA solving requires visible browser
 DEBUG_MODE = False  # Set to True to pause for manual inspection during scraping
 ENABLE_DEVTOOLS = DEBUG_MODE  # Automatically enable DevTools when in debug mode
 DEVTOOLS_PORT = 9222  # Port for Chrome DevTools remote debugging
-TEST_SKU = "035585499741"  # KONG Pull A Partz Pals Koala SM - test SKU for Orgill
+TEST_SKU = "755625011305"  # Valid Orgill test SKU
 
 # URLs and constants
 LOGIN_URL = 'https://www.orgill.com/index.aspx?tab=8'

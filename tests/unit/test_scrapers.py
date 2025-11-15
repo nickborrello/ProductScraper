@@ -143,7 +143,7 @@ def test_all_scrapers(verbose: bool = False):
     print(f"Total Scrapers Tested: {results['total_scrapers']}")
     print(f"Passed: {results['successful_scrapers']}")
     print(f"Failed: {results['failed_scrapers']}")
-    print(".1f")
+    print(f"Success Rate: {results['summary']['success_rate']:.1f}%")
 
     if results["failed_scrapers"] > 0:
         print(f"\n❌ FAILED SCRAPERS:")
@@ -156,7 +156,7 @@ def test_all_scrapers(verbose: bool = False):
             print(f"  • {error} ({count} times)")
 
     if results["successful_scrapers"] > 0:
-        print(".1f")
+        print(f"Average Quality Score: {results['summary']['average_quality_score']:.1f}")
 
     success = results["failed_scrapers"] == 0
     if success:

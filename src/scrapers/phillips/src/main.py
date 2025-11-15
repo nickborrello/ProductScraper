@@ -6,23 +6,70 @@ import re
 import pandas as pd
 from typing import Iterator, Dict, Any
 import apify
+from apify import Actor
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from fake_useragent import UserAgent
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+import asyncio
+import random
 import pathlib
 
 # Add the project root to the Python path for direct execution
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 sys.path.insert(0, project_root)
 
-from src.utils.scraping.scraping import get_standard_chrome_options
-from src.utils.scraping.browser import create_browser
-from src.core.settings_manager import settings
+def clean_string(text: str) -> str:
+    """Clean and normalize string."""
+    if not text:
+        return ""
+    return " ".join(text.split()).strip()
+
+def create_browser(profile_suffix: str = "default", headless: bool = True, enable_devtools: bool = False, devtools_port: int = 9222) -> webdriver.Chrome:
+    """Create Chrome driver with enhanced anti-detection measures and proxy support."""
+    options = Options()
+    if headless:
+        options.add_argument("--headless")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--disable-gpu")
+
+    # Dynamic viewport to avoid detection
+    width = random.randint(1024, 1920)
+    height = random.randint(768, 1080)
+    options.add_argument(f"--window-size={width},{height}")
+
+    # Rotate user agents
+    try:
+        ua = UserAgent()
+        user_agent = ua.random
+    except:
+        # Fallback user agent if fake-useragent fails
+        user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
+    options.add_argument(f'--user-agent={user_agent}')
+
+    # Enable Chrome DevTools remote debugging if configured
+    if enable_devtools:
+        options.add_argument(f"--remote-debugging-port={devtools_port}")
+        options.add_argument("--remote-debugging-address=0.0.0.0")
+        Actor.log.info(f"🔧 DevTools enabled on port {devtools_port}")
+
+    service = Service()
+    driver = webdriver.Chrome(service=service, options=options)
+
+    # Execute script to remove webdriver property
+    driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+
+    return driver
 
 # HEADLESS is set to True for production deployment
-HEADLESS = True
+HEADLESS = os.getenv('HEADLESS', 'True').lower() == 'true'
 DEBUG_MODE = False  # Set to True to pause for manual inspection during scraping
 ENABLE_DEVTOOLS = DEBUG_MODE  # Automatically enable DevTools when in debug mode
 DEVTOOLS_PORT = 9222  # Port for Chrome DevTools remote debugging
@@ -75,13 +122,20 @@ def is_logged_in(driver):
 def login(driver):
     driver.get(LOGIN_URL)
 
+    # Try to get credentials from environment variables
+    username = os.getenv('PHILLIPS_USERNAME')
+    password = os.getenv('PHILLIPS_PASSWORD')
+
+    if not username or not password:
+        raise ValueError("Phillips credentials not configured. Set PHILLIPS_USERNAME and PHILLIPS_PASSWORD environment variables.")
+
     WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.ID, "emailField"))
-    ).send_keys(settings.phillips_credentials[0])
+    ).send_keys(username)
 
     WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.ID, "passwordField"))
-    ).send_keys(settings.phillips_credentials[1])
+    ).send_keys(password)
 
     WebDriverWait(driver, 10).until(
         EC.element_to_be_clickable((By.ID, "send2Dsk"))
@@ -98,46 +152,82 @@ async def main() -> None:
     Apify Actor for scraping Phillips products.
     """
     async with apify.Actor as actor:
-        # Get input
-        actor_input = await actor.get_input()
+        # Get input - try multiple methods for local testing
+        actor_input = await actor.get_input() or {}
+        Actor.log.info(f"Received input from actor.get_input(): {actor_input}")
+        
+        # For local testing, also check environment variables
+        if not actor_input.get('skus'):
+            import os
+            input_json = os.getenv('APIFY_INPUT')
+            if input_json:
+                import json
+                try:
+                    actor_input = json.loads(input_json)
+                    Actor.log.info(f"Loaded input from APIFY_INPUT env var: {actor_input}")
+                except json.JSONDecodeError:
+                    Actor.log.warning("Failed to parse APIFY_INPUT as JSON")
+        
         skus = actor_input.get('skus', [])
-
+        
         if not skus:
-            await actor.log.error('No SKUs provided in input')
+            Actor.log.error('No SKUs provided in input')
             return
 
-        await actor.log.info(f'Starting Phillips scraper for {len(skus)} SKUs')
+        Actor.log.info(f'Starting Phillips scraper for {len(skus)} SKUs')
 
         # Create browser
         driver = create_browser("Phillips", headless=HEADLESS, enable_devtools=ENABLE_DEVTOOLS, devtools_port=DEVTOOLS_PORT)
         if driver is None:
-            await actor.log.error("Could not create browser for Phillips")
+            Actor.log.error("Could not create browser for Phillips")
             return
 
         try:
             # Handle login
             if not is_logged_in(driver):
-                await actor.log.info("Logging in to Phillips...")
+                Actor.log.info("Logging in to Phillips...")
                 login(driver)
-                await actor.log.info("Login successful")
+                Actor.log.info("Login successful")
             else:
-                await actor.log.info("Already logged in to Phillips")
+                Actor.log.info("Already logged in to Phillips")
 
             products = []
 
             for sku in skus:
-                await actor.log.info(f'Processing SKU: {sku}')
+                Actor.log.info(f'Processing SKU: {sku}')
 
                 product_info = scrape_single_product(sku, driver)
 
                 if product_info:
                     products.append(product_info)
-                    await actor.log.info(f'Successfully scraped product: {product_info["Name"]}')
+                    Actor.log.info(f'Successfully scraped product: {product_info["Name"]}')
 
                     # Push data to dataset
                     await actor.push_data(product_info)
                 else:
-                    await actor.log.warning(f'No product found for SKU: {sku}')
+                    Actor.log.warning(f'No product found for SKU: {sku}')
+
+        except ValueError as e:
+            if "credentials not configured" in str(e):
+                Actor.log.warning("Phillips credentials not configured - skipping login and attempting direct access")
+                # Continue without login
+                products = []
+
+                for sku in skus:
+                    Actor.log.info(f'Processing SKU: {sku}')
+
+                    product_info = scrape_single_product(sku, driver)
+
+                    if product_info:
+                        products.append(product_info)
+                        Actor.log.info(f'Successfully scraped product: {product_info["Name"]}')
+
+                        # Push data to dataset
+                        await actor.push_data(product_info)
+                    else:
+                        Actor.log.warning(f'No product found for SKU: {sku}')
+            else:
+                raise
 
         finally:
             if driver:
@@ -146,7 +236,7 @@ async def main() -> None:
                 except:
                     pass
 
-        await actor.log.info(f'Phillips scraping completed. Found {len(products)} products.')
+        Actor.log.info(f'Phillips scraping completed. Found {len(products)} products.')
 
 def scrape_products(skus, progress_callback=None, headless=None):
     """

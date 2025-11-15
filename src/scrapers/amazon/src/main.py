@@ -40,11 +40,11 @@ except ImportError:
 
 
 # Amazon scraper configuration
-HEADLESS = False  # Set to False for debugging and manual inspection
+HEADLESS = os.getenv('HEADLESS', 'True').lower() == 'true'  # Default to True for headless operation, can be overridden by env var
 DEBUG_MODE = False  # Set to True to pause for manual inspection during scraping
 ENABLE_DEVTOOLS = DEBUG_MODE  # Automatically enable DevTools when in debug mode
 DEVTOOLS_PORT = 9222  # Port for Chrome DevTools remote debugging
-TEST_SKU = "035585499741"  # KONG Pull A Partz Pals Koala SM - test SKU for Amazon
+TEST_SKU = "B07G5J5FYP"  # Valid Amazon ASIN for testing
 
 
 def create_driver(proxy_url=None, headless=None) -> webdriver.Chrome:
@@ -224,8 +224,12 @@ class BrowserSession:
         self.created_at = time.time()
         self.request_count = 0
 
-        # Load existing cookies if available
-        self._load_cookies()
+        # Load existing cookies if available (unless disabled for testing)
+        disable_cookies = os.getenv('DISABLE_COOKIE_LOADING', 'false').lower() in ('true', '1', 'yes')
+        if not disable_cookies:
+            self._load_cookies()
+        else:
+            Actor.log.info("🍪 Cookie loading disabled for testing - starting with fresh session")
 
         # Accept cookies/privacy notices if present
         self._handle_privacy_notices()

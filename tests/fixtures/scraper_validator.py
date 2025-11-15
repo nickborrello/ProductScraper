@@ -70,8 +70,7 @@ class ScraperValidator:
                 elif str(product[field]).strip() in self.common_rules.get("invalid_values", []):
                     product_errors.append(f"Invalid value for required field {field}: '{product[field]}'")
                     product_valid = False
-                else:
-                    field_counts[field] += 1
+                # Note: field_counts increment moved to expected fields loop below
 
             # Check expected fields
             for field in expected_fields:
@@ -110,7 +109,7 @@ class ScraperValidator:
         if results["total_products"] > 0:
             valid_ratio = results["valid_products"] / results["total_products"]
             field_coverage_avg = sum(results["field_coverage"].values()) / len(results["field_coverage"]) if results["field_coverage"] else 0
-            results["data_quality_score"] = (valid_ratio * 0.6 + field_coverage_avg * 0.4) / 100
+            results["data_quality_score"] = (valid_ratio * 0.6 + (field_coverage_avg / 100) * 0.4)
 
         return results
 
@@ -231,7 +230,7 @@ class ScraperValidator:
         print(f"Total Products: {results['total_products']}")
         print(f"Valid Products: {results['valid_products']}")
         print(f"Invalid Products: {results['invalid_products']}")
-        print(".1f")
+        print(f"Data Quality Score: {results['data_quality_score']:.1f}")
 
         if results.get("dataframe_shape"):
             print(f"DataFrame Shape: {results['dataframe_shape']}")
@@ -239,7 +238,7 @@ class ScraperValidator:
         if results["field_coverage"]:
             print(f"\nField Coverage:")
             for field, coverage in results["field_coverage"].items():
-                print(".1f")
+                print(f"  {field}: {coverage:.1f}%")
 
         if results["errors"]:
             print(f"\n❌ ERRORS ({len(results['errors'])}):")

@@ -27,11 +27,11 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 
 
 # Bradley Caldwell scraper configuration
-HEADLESS = False  # Set to False for debugging and manual inspection
+HEADLESS = os.getenv('HEADLESS', 'True').lower() == 'true'  # Set to False for debugging and manual inspection
 DEBUG_MODE = False  # Set to True to pause for manual inspection during scraping
 ENABLE_DEVTOOLS = DEBUG_MODE  # Automatically enable DevTools when in debug mode
 DEVTOOLS_PORT = 9222  # Port for Chrome DevTools remote debugging
-TEST_SKU = "035585499741"  # KONG Pull A Partz Pals Koala SM - test SKU for Bradley Caldwell
+TEST_SKU = "791611038437"  # Valid Bradley Caldwell SKU
 
 
 def create_driver(proxy_url=None, headless=None) -> webdriver.Chrome:
@@ -205,11 +205,15 @@ class DataValidator:
         if not weight or weight == "N/A":
             errors.append("Missing product weight")
         else:
-            # Validate weight format (should be numeric)
-            try:
-                float(weight)
-                cleaned_data["Weight"] = weight
-            except ValueError:
+            # Check if it's a valid weight format: number or number unit
+            match = re.search(r'^(\d*\.?\d+)(\s+(lbs?|kg|oz))?$', weight, re.IGNORECASE)
+            if match:
+                try:
+                    float(match.group(1))
+                    cleaned_data["Weight"] = weight
+                except ValueError:
+                    errors.append(f"Invalid weight format: {weight}")
+            else:
                 errors.append(f"Invalid weight format: {weight}")
 
         # Check data completeness score
@@ -1320,7 +1324,8 @@ def extract_product_data(driver: webdriver.Chrome, sku: str) -> dict[str, Any] |
             if weight_html:
                 match = re.search(r'(\d*\.?\d+)\s*(lbs?|kg|oz)?', weight_html, re.IGNORECASE)
                 if match:
-                    product_info['Weight'] = f"{match.group(1)} {match.group(2) or ''}".strip()
+                    unit = match.group(2) or 'LB'
+                    product_info['Weight'] = f"{match.group(1)} {unit}".strip().upper()
                 else:
                     product_info['Weight'] = ''  # Return empty if not parseable
             else:
