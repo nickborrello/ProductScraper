@@ -64,3 +64,5 @@ src/scrapers/**/storage/
 
 # Generated test result files
 src/scrapers/**/large_scale_test_results_*.json
+
+.apm/

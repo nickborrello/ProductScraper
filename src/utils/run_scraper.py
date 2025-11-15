@@ -2,6 +2,8 @@ import os
 import sys
 import subprocess
 import pandas as pd
+import asyncio
+import argparse
 
 # Try to import PyQt6 for GUI file dialogs, fall back to text-based if not available
 try:
@@ -19,6 +21,7 @@ if PROJECT_ROOT not in sys.path:
 
 from src.core.database.xml_import import import_from_shopsite_xml, publish_shopsite_changes
 from src.core.database.refresh import refresh_database_from_xml
+from src.core.scrapers.apify_client import ApifyScraperClient, ApifyAuthError, ApifyTimeoutError, ApifyJobError
 
 # Conditional imports for core modules
 log = print  # Default log function
@@ -394,6 +397,34 @@ def run_scraper_tests(run_integration=False, log_callback=None, progress_callbac
 # Core logic functions remain above
 # CLI code removed - use main.py for GUI
 # ===================================
+
+
+async def main():
+    parser = argparse.ArgumentParser(description="Run scraper for specific site and SKUs using ApifyScraperClient")
+    parser.add_argument("--site", required=True, help="The site to scrape (e.g., amazon, bradley)")
+    parser.add_argument("--skus", nargs='+', required=True, help="List of SKUs to scrape")
+    
+    args = parser.parse_args()
+    
+    client = ApifyScraperClient()
+    
+    try:
+        results = await client.scrape_skus(site=args.site, skus=args.skus)
+        print("Scraping completed successfully!")
+        for result in results:
+            print(result)
+    except ApifyAuthError as e:
+        print(f"Authentication error: {e}")
+    except ApifyTimeoutError as e:
+        print(f"Timeout error: {e}")
+    except ApifyJobError as e:
+        print(f"Job error: {e}")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
 
 
 # ===================================
