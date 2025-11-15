@@ -297,11 +297,21 @@ def scrape_single_product(SKU, driver):
             # Weight: always use size_weight if available, and clean to just the number
             if size_weight:
                 m = re.search(r'(\d+(?:\.\d+)?)', str(size_weight))
-                v['Weight'] = m.group(1) if m else "N/A"
+                weight_value = m.group(1) if m else "N/A"
+                # Normalize weight to include LB unit
+                if weight_value != "N/A":
+                    v['Weight'] = f"{weight_value} LB"
+                else:
+                    v['Weight'] = "N/A"
             else:
                 weight_raw = variant.get('option1', '') or variant.get('title', '')
                 m = re.search(r'(\d+(?:\.\d+)?)', weight_raw)
-                v['Weight'] = m.group(1) if m else "N/A"
+                weight_value = m.group(1) if m else "N/A"
+                # Normalize weight to include LB unit
+                if weight_value != "N/A":
+                    v['Weight'] = f"{weight_value} LB"
+                else:
+                    v['Weight'] = "N/A"
             # Name: append weight with 'lb.' if not already present
             base_name = title if title else "N/A"
             weight_str = v['Weight']
@@ -416,7 +426,12 @@ def scrape_single_product(SKU, driver):
                     if weight_raw:
                         weight_raw = str(weight_raw).strip()
                         m = re.search(r'(\d+(?:\.\d+)?)', weight_raw)
-                        weight = m.group(1) if m else "N/A"
+                        weight_value = m.group(1) if m else "N/A"
+                        # Normalize weight to include LB unit
+                        if weight_value != "N/A":
+                            weight = f"{weight_value} LB"
+                        else:
+                            weight = "N/A"
         if not weight:
             try:
                 weight_elem = soup.find("select", class_=re.compile("single-option-selector"))
@@ -425,7 +440,12 @@ def scrape_single_product(SKU, driver):
                     if selected_option:
                         weight_raw = selected_option.text.strip()
                         m = re.search(r'(\d+(?:\.\d+)?)', weight_raw)
-                        weight = m.group(1) if m else "N/A"
+                        weight_value = m.group(1) if m else "N/A"
+                        # Normalize weight to include LB unit
+                        if weight_value != "N/A":
+                            weight = f"{weight_value} LB"
+                        else:
+                            weight = "N/A"
             except Exception as e:
                 Actor.log.error(f"[{SKU}] Error extracting Weight (fallback): {e}")
                 weight = "N/A"
