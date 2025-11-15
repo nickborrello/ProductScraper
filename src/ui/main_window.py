@@ -113,6 +113,7 @@ class WorkerSignals(QObject):
     - progress: int
     - log: str
     - status: str (status message update)
+    - metrics: dict (execution metrics like elapsed time, processed count, etc.)
     - request_editor_sync: list (products), object (result container), str (editor type)
     - request_confirmation_sync: str (title), str (text), object (result container)
     """
@@ -123,6 +124,7 @@ class WorkerSignals(QObject):
     progress = pyqtSignal(int)
     log = pyqtSignal(str)
     status = pyqtSignal(str)
+    metrics = pyqtSignal(dict)
     request_editor_sync = pyqtSignal(list, object, str)  # products_list, result_container, editor_type
     request_confirmation_sync = pyqtSignal(str, str, object) # title, text, result_container
 
@@ -146,14 +148,22 @@ class Worker(QThread):
         self.args = args
         self.kwargs = kwargs
         self.signals = WorkerSignals()
+        self._is_cancelled = False
 
         # Inject progress and log callbacks into the target function's kwargs
         # Pass signal objects directly - run_scraper.py expects objects with .emit()
         self.kwargs["progress_callback"] = self.signals.progress
         self.kwargs["log_callback"] = self.signals.log
         self.kwargs["status_callback"] = self.signals.status
+        self.kwargs["metrics_callback"] = self.signals.metrics
         self.kwargs["editor_callback"] = self._request_editor_sync
         self.kwargs["confirmation_callback"] = self._request_confirmation_sync
+
+    def cancel(self):
+        """Cancel the running task"""
+        self._is_cancelled = True
+        self.requestInterruption()
+        self.quit()
 
     def _request_confirmation_sync(self, title, text):
         """Request a confirmation dialog on the main thread and wait for the result."""
@@ -203,17 +213,33 @@ class Worker(QThread):
         """
         Execute the worker's target function and emit signals.
 
+        Supports both synchronous and asynchronous functions.
+        For async functions, creates a new event loop in the thread.
         Emits 'error' on exception, 'result' on success, and 'finished'
         once the execution is complete.
         """
+        import asyncio
+        import inspect
+
         try:
-            result = self.fn(*self.args, **self.kwargs)
+            if inspect.iscoroutinefunction(self.fn):
+                # Async function: create new event loop in this thread
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                try:
+                    result = loop.run_until_complete(self.fn(*self.args, **self.kwargs))
+                finally:
+                    loop.close()
+            else:
+                # Synchronous function
+                result = self.fn(*self.args, **self.kwargs)
         except Exception as e:
             # Emit error signal with exception details
             self.signals.error.emit((type(e), e, traceback.format_exc()))
         else:
             # Emit result signal with the function's return value
-            self.signals.result.emit(result)
+            if not self._is_cancelled:
+                self.signals.result.emit(result)
         finally:
             # Emit finished signal regardless of outcome
             self.signals.finished.emit()
@@ -528,6 +554,13 @@ class MainWindow(QMainWindow):
             "Select an Excel file and start scraping product data",
             "▶️",
         )
+        self.cancel_scraping_btn = scraping_card.add_button(
+            "Cancel Scraping",
+            self.cancel_scraping,
+            "Cancel the currently running scraping operation",
+            "⏹️",
+        )
+        self.cancel_scraping_btn.setEnabled(False)  # Disabled by default
         layout.addWidget(scraping_card)
 
         # Database Operations Card
@@ -589,9 +622,21 @@ class MainWindow(QMainWindow):
             self.run_tests_btn,
         ]
 
+        # Cancel button is handled separately - enabled when worker is running
+        self.cancel_scraping_btn.setEnabled(False)
+
         layout.addStretch()
         scroll_area.setWidget(container)
         return scroll_area
+
+    def cancel_scraping(self):
+        """Cancel the currently running scraping operation"""
+        if self.worker and self.worker.isRunning():
+            self.log_message("⏹️ Cancelling scraping operation...", "WARNING")
+            self.worker.cancel()
+            self.update_status("Cancelling...", "working")
+        else:
+            self.log_message("No active scraping operation to cancel", "INFO")
 
     def create_right_panel(self):
         """Create the right panel with status and logs"""
@@ -638,6 +683,27 @@ class MainWindow(QMainWindow):
         self.last_operation_label.setFont(QFont("Arial", 9))
         self.last_operation_label.setStyleSheet("color: #ffffff;")
         status_layout.addWidget(self.last_operation_label)
+
+        # Execution metrics labels
+        self.elapsed_label = QLabel("⏱️ Elapsed: 00:00:00")
+        self.elapsed_label.setFont(QFont("Arial", 9))
+        self.elapsed_label.setStyleSheet("color: #ffffff;")
+        status_layout.addWidget(self.elapsed_label)
+
+        self.processed_label = QLabel("📦 Processed: 0/0")
+        self.processed_label.setFont(QFont("Arial", 9))
+        self.processed_label.setStyleSheet("color: #ffffff;")
+        status_layout.addWidget(self.processed_label)
+
+        self.current_op_label = QLabel("🔄 Current: Idle")
+        self.current_op_label.setFont(QFont("Arial", 9))
+        self.current_op_label.setStyleSheet("color: #ffffff;")
+        status_layout.addWidget(self.current_op_label)
+
+        self.eta_label = QLabel("⏳ ETA: --")
+        self.eta_label.setFont(QFont("Arial", 9))
+        self.eta_label.setStyleSheet("color: #ffffff;")
+        status_layout.addWidget(self.eta_label)
 
         status_card.setLayout(status_layout)
         layout.addWidget(status_card)
@@ -739,7 +805,14 @@ class MainWindow(QMainWindow):
         """Generic method to run a function in the worker thread"""
         self.progress_bar.setValue(0)
         self._set_buttons_enabled(False)
+        self.cancel_scraping_btn.setEnabled(True)  # Enable cancel button when worker starts
         self.update_status("Running...", "working")
+        
+        # Reset metrics labels
+        self.elapsed_label.setText("⏱️ Elapsed: 00:00:00")
+        self.processed_label.setText("📦 Processed: 0/0")
+        self.current_op_label.setText("🔄 Current: Starting...")
+        self.eta_label.setText("⏳ ETA: --")
 
         # Create and configure the worker thread
         self.worker = Worker(fn, *args, **kwargs)
@@ -748,6 +821,7 @@ class MainWindow(QMainWindow):
         self.worker.signals.log.connect(self.log_message)
         self.worker.signals.progress.connect(self.update_progress)
         self.worker.signals.status.connect(self.update_status_message)
+        self.worker.signals.metrics.connect(self.update_metrics)
         self.worker.signals.error.connect(self.handle_error)
         self.worker.signals.finished.connect(self.worker_finished)
         self.worker.signals.request_editor_sync.connect(
@@ -932,6 +1006,7 @@ class MainWindow(QMainWindow):
         progress_callback=None,
         status_callback=None,
         editor_callback=None,
+        metrics_callback=None,
     ):
         """Worker function to run classification"""
         import pandas as pd
@@ -1219,9 +1294,17 @@ class MainWindow(QMainWindow):
         """Update the progress bar value"""
         self.progress_bar.setValue(value)
         
-    def update_status_message(self, message):
-        """Update the status indicator message (called from worker thread)"""
-        self.update_status(message, "working")
+    def update_metrics(self, metrics_dict):
+        """Update execution metrics labels"""
+        elapsed = metrics_dict.get('elapsed', '00:00:00')
+        processed = metrics_dict.get('processed', '0/0')
+        current_op = metrics_dict.get('current_op', 'Idle')
+        eta = metrics_dict.get('eta', '--')
+
+        self.elapsed_label.setText(f"⏱️ Elapsed: {elapsed}")
+        self.processed_label.setText(f"📦 Processed: {processed}")
+        self.current_op_label.setText(f"🔄 Current: {current_op}")
+        self.eta_label.setText(f"⏳ ETA: {eta}")
     def update_status(self, message, status_type="ready"):
         """Update the status indicator"""
         colors = {"ready": "#4CAF50", "working": "#FF9800", "error": "#F44336"}
@@ -1314,7 +1397,14 @@ class MainWindow(QMainWindow):
 
     def worker_finished(self, is_error=False):
         """Called when the worker thread is finished"""
-        if not is_error:
+        if self.worker and self.worker._is_cancelled:
+            # Operation was cancelled
+            self.log_message(f"{self.last_operation} was cancelled by user", "WARNING")
+            self.update_status("Cancelled", "ready")
+            self.last_operation_label.setText(
+                f"📋 Last Operation: {self.last_operation} (Cancelled)"
+            )
+        elif not is_error:
             self.progress_bar.setValue(100)
             self.log_message(f"{self.last_operation} completed successfully", "SUCCESS")
             self.update_status("Ready", "ready")
@@ -1332,4 +1422,5 @@ class MainWindow(QMainWindow):
             )
 
         self._set_buttons_enabled(True)
+        self.cancel_scraping_btn.setEnabled(False)  # Disable cancel button when worker finishes
         self.worker = None

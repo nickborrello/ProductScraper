@@ -66,3 +66,18 @@ src/scrapers/**/storage/
 src/scrapers/**/large_scale_test_results_*.json
 
 .apm/
+
+# AI assistant prompt files
+.github/prompts/
+.gemini/
+
+# Scrape results (large generated data)
+results/
+
+# Pytest cache
+.pytest_cache/
+
+# Python distribution files
+*.egg-info/
+dist/
+build/

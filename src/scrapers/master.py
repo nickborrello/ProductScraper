@@ -47,7 +47,7 @@ from src.core.scrapers.apify_client import ApifyScraperClient, ApifyJobError, Ap
 class ScrapingProgressTracker:
     """Tracks and displays persistent progress bars for scraping operations."""
 
-    def __init__(self, progress_callback=None, log_callback=None):
+    def __init__(self, progress_callback=None, log_callback=None, metrics_callback=None):
         self.start_time = time.time()
         self.last_update_time = self.start_time
         self.current_site = ""
@@ -59,6 +59,7 @@ class ScrapingProgressTracker:
         self.total_processed_skus = 0
         self.progress_callback = progress_callback
         self.log_callback = log_callback
+        self.metrics_callback = metrics_callback
 
     def start_overall_progress(self, total_sites, total_input_skus):
         """Initialize overall progress tracking."""
@@ -117,7 +118,51 @@ class ScrapingProgressTracker:
             else:
                 self.progress_callback(site_progress)
 
+        # Emit metrics update
+        if self.metrics_callback:
+            elapsed = time.time() - self.start_time
+            elapsed_str = self._format_time(elapsed)
+            processed_str = f"{self.total_processed_skus}/{self.total_input_skus}"
+            current_op = f"{self.current_site}: {status_message}" if status_message else self.current_site
+            eta_str = self._calculate_eta()
+            
+            metrics = {
+                'elapsed': elapsed_str,
+                'processed': processed_str,
+                'current_op': current_op,
+                'eta': eta_str
+            }
+            
+            if hasattr(self.metrics_callback, "emit"):
+                self.metrics_callback.emit(metrics)
+            else:
+                self.metrics_callback(metrics)
+
         self._display_progress(status_message)
+
+    def _format_time(self, seconds):
+        """Format seconds into HH:MM:SS or MM:SS"""
+        hours = int(seconds // 3600)
+        minutes = int((seconds % 3600) // 60)
+        secs = int(seconds % 60)
+        if hours > 0:
+            return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+        else:
+            return f"{minutes:02d}:{secs:02d}"
+
+    def _calculate_eta(self):
+        """Calculate estimated time remaining"""
+        elapsed = time.time() - self.start_time
+        if elapsed > 10 and self.total_processed_skus > 0 and self.total_input_skus > 0:
+            progress = self.total_processed_skus / self.total_input_skus
+            if progress > 0:
+                total_estimated = elapsed / progress
+                remaining = total_estimated - elapsed
+                if remaining < 3600:  # Less than 1 hour
+                    return f"{remaining/60:.1f}m"
+                else:  # More than 1 hour
+                    return f"{remaining/3600:.1f}h"
+        return "--"
 
     def complete_site(self):
         """Mark current site as completed."""
@@ -324,7 +369,7 @@ def discover_scrapers():
 
 
 class ProductScraper:
-    def __init__(self, file_path, interactive=True, selected_sites=None, log_callback=None, progress_callback=None, editor_callback=None, status_callback=None, confirmation_callback=None):
+    def __init__(self, file_path, interactive=True, selected_sites=None, log_callback=None, progress_callback=None, editor_callback=None, status_callback=None, confirmation_callback=None, metrics_callback=None):
         self.file_path = file_path
         self.interactive = interactive
         self.selected_sites = selected_sites
@@ -346,6 +391,7 @@ class ProductScraper:
         self.progress_callback = progress_callback
         self.editor_callback = editor_callback  # Callback to request editor on main thread
         self.confirmation_callback = confirmation_callback # Callback for Yes/No dialogs
+        self.metrics_callback = metrics_callback  # Callback for execution metrics
         
         # Initialize results folder (will be set during scraping)
         self.results_folder = None
@@ -361,7 +407,7 @@ class ProductScraper:
         self.all_found_products = {}  # SKU -> list of product results
 
         # Initialize progress tracker
-        self.progress_tracker = ScrapingProgressTracker(progress_callback, log_callback)
+        self.progress_tracker = ScrapingProgressTracker(progress_callback, log_callback, metrics_callback)
 
     def run_granular_field_tests(self):
         """Run granular field-level tests for all scrapers to identify specific failures."""
