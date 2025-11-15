@@ -50,7 +50,7 @@ if not is_gui_mode:
 
 # --- Core Logic Functions ---
 
-def run_scraper_integration_tests(log_callback=None, progress_callback=None, editor_callback=None, status_callback=None, confirmation_callback=None):
+def run_scraper_integration_tests(log_callback=None, progress_callback=None, editor_callback=None, status_callback=None, confirmation_callback=None, metrics_callback=None):
     """Run integration tests for all scrapers with known working products.
 
     This function tests every scraper with a product we know works on that site,

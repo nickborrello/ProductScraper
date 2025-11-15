@@ -820,7 +820,7 @@ class MainWindow(QMainWindow):
         # Connect worker signals to the appropriate slots in the main window
         self.worker.signals.log.connect(self.log_message)
         self.worker.signals.progress.connect(self.update_progress)
-        self.worker.signals.status.connect(self.update_status_message)
+        self.worker.signals.status.connect(self.update_status)
         self.worker.signals.metrics.connect(self.update_metrics)
         self.worker.signals.error.connect(self.handle_error)
         self.worker.signals.finished.connect(self.worker_finished)

@@ -36,7 +36,8 @@ class LocalActor:
     async def __aenter__(self):
         """Enter the actor context."""
         # Initialize storage components
-        self._dataset = LocalDataset(dataset_id="default", storage_dir=self.storage_dir)
+        datasets_dir = os.path.join(self.storage_dir, "datasets")
+        self._dataset = LocalDataset(dataset_id="default", storage_dir=datasets_dir)
         self._key_value_store = LocalKeyValueStore(store_id="default", storage_dir=self.storage_dir)
         self._request_queue = LocalRequestQueue(queue_id="default", storage_dir=self.storage_dir)
 
