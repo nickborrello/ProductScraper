@@ -68,7 +68,7 @@ def create_browser(profile_suffix: str = "default", headless: bool = True, enabl
 
 # HEADLESS is set to True for production deployment
 HEADLESS = os.getenv('HEADLESS', 'True').lower() == 'true'
-DEBUG_MODE = False  # Set to True to pause for manual inspection during scraping
+DEBUG_MODE = os.getenv('DEBUG_MODE', 'False').lower() == 'true'  # Set to True to pause for manual inspection during scraping
 ENABLE_DEVTOOLS = DEBUG_MODE  # Automatically enable DevTools when in debug mode
 DEVTOOLS_PORT = 9222  # Port for Chrome DevTools remote debugging
 TEST_SKU = "10852301008912"  # Valid Pet Food Experts SKU
@@ -516,3 +516,16 @@ def scrape_single_product(sku, driver):
     except Exception as e:
         Actor.log.error(f"PetFoodExperts scrape error for SKU {sku}: {e}")
         return None
+
+
+if __name__ == "__main__":
+    # Set debug mode when running directly
+    os.environ['HEADLESS'] = 'False'
+    os.environ['DEBUG_MODE'] = 'True'
+    
+    # Set default input if not provided
+    if not os.getenv('APIFY_INPUT'):
+        os.environ['APIFY_INPUT'] = '{"skus": ["10852301008912"]}'
+    
+    # Run the scraper
+    asyncio.run(main())

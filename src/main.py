@@ -11,7 +11,13 @@ def main():
     parser = argparse.ArgumentParser(description="ProductScraper")
     parser.add_argument("--run", type=str, help="Run a specific part of the application", choices=["gui", "scraper"])
     parser.add_argument("--file", type=str, help="Path to the Excel file to be processed by the scraper")
+    parser.add_argument("--debug", action="store_true", help="Enable debug mode for scrapers (sets HEADLESS=False and DEBUG_MODE=True)")
     args = parser.parse_args()
+
+    # Set debug environment variables if --debug is used
+    if args.debug:
+        os.environ['HEADLESS'] = 'False'
+        os.environ['DEBUG_MODE'] = 'True'
 
     if args.run == "gui":
         from src.ui.main_window import MainWindow

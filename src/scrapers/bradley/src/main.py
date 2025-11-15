@@ -28,7 +28,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 
 # Bradley Caldwell scraper configuration
 HEADLESS = os.getenv('HEADLESS', 'True').lower() == 'true'  # Set to False for debugging and manual inspection
-DEBUG_MODE = False  # Set to True to pause for manual inspection during scraping
+DEBUG_MODE = os.getenv('DEBUG_MODE', 'False').lower() == 'true'  # Set to True to pause for manual inspection during scraping
 ENABLE_DEVTOOLS = DEBUG_MODE  # Automatically enable DevTools when in debug mode
 DEVTOOLS_PORT = 9222  # Port for Chrome DevTools remote debugging
 TEST_SKU = "791611038437"  # Valid Bradley Caldwell SKU
@@ -1649,4 +1649,13 @@ def run_large_scale_test(input_data: dict) -> dict:
 
 
 if __name__ == "__main__":
-    main_local()
+    # Set debug mode when running directly
+    os.environ['HEADLESS'] = 'False'
+    os.environ['DEBUG_MODE'] = 'True'
+    
+    # Set default input if not provided
+    if not os.getenv('APIFY_INPUT'):
+        os.environ['APIFY_INPUT'] = '{"skus": ["035585499741"]}'
+    
+    # Run the scraper
+    asyncio.run(main())
