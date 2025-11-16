@@ -572,7 +572,11 @@ class MultiSelectWidget(QWidget):
         self.update_display()
 
 
-from src.ui.styling import STYLESHEET
+# Conditional import for STYLESHEET to avoid PyQt6 dependency in CI/testing environments
+try:
+    from src.ui.styling import STYLESHEET
+except ImportError:
+    STYLESHEET = ""
 
 
 class ClassificationEditorWindow(QMainWindow):
