@@ -262,6 +262,67 @@ def get_facet_options_from_db(force_refresh=False):
     Returns:
         Tuple of (category_product_types_dict, product_on_pages_list)
     """
+    # Default fallback data
+    default_categories = {
+        "Dog Food": ["Dry Dog Food", "Wet Dog Food", "Raw Dog Food", "Dog Treats"],
+        "Cat Food": ["Dry Cat Food", "Wet Cat Food", "Raw Cat Food", "Cat Treats"],
+        "Bird Supplies": [
+            "Bird Food",
+            "Bird Cages",
+            "Bird Toys",
+            "Bird Healthcare",
+        ],
+        "Small Pet Food": [
+            "Rabbit Food",
+            "Guinea Pig Food",
+            "Hamster Food",
+            "Rat Food",
+        ],
+        "Farm Animal Supplies": [
+            "Chicken Feed",
+            "Goat Feed",
+            "Sheep Feed",
+            "Pig Feed",
+        ],
+        "Pet Toys": ["Dog Toys", "Cat Toys", "Bird Toys", "Small Pet Toys"],
+        "Pet Healthcare": [
+            "Dog Medications",
+            "Cat Medications",
+            "Bird Medications",
+            "Small Pet Medications",
+        ],
+        "Pet Grooming": [
+            "Dog Shampoos",
+            "Cat Shampoos",
+            "Pet Brushes",
+            "Pet Clippers",
+        ],
+        "Pet Beds": ["Dog Beds", "Cat Beds", "Small Pet Beds"],
+        "Pet Bowls": ["Dog Bowls", "Cat Bowls", "Bird Bowls", "Small Pet Bowls"],
+        "Hardware": ["Tools", "Fasteners", "Plumbing", "Electrical", "HVAC"],
+        "Lawn & Garden": ["Seeds", "Fertilizer", "Tools", "Plants"],
+        "Farm Supplies": ["Fencing", "Feeders", "Equipment", "Animal Health"],
+        "Home & Kitchen": ["Cleaning", "Storage", "Appliances", "Decor"],
+        "Automotive": ["Parts", "Tools", "Maintenance", "Accessories"],
+    }
+    default_pages = [
+        "Dog Food Shop All",
+        "Cat Food Shop All",
+        "Bird Supplies Shop All",
+        "Small Pet Food Shop All",
+        "Farm Animal Supplies Shop All",
+        "Pet Toys Shop All",
+        "Pet Healthcare Shop All",
+        "Pet Grooming Shop All",
+        "Pet Beds Shop All",
+        "Pet Bowls Shop All",
+        "Hardware Shop All",
+        "Lawn & Garden Shop All",
+        "Farm Supplies Shop All",
+        "Home & Kitchen Shop All",
+        "Automotive Shop All",
+    ]
+
     try:
         # Load taxonomy from JSON via taxonomy manager
         from .taxonomy_manager import get_product_taxonomy
@@ -271,134 +332,19 @@ def get_facet_options_from_db(force_refresh=False):
         from .manager import get_product_pages
         product_on_pages_options = get_product_pages()
 
+        # Check if loaded data is valid (not empty)
+        if not category_product_types or not product_on_pages_options:
+            print(f"⚠️ Loaded facet options are empty, using fallback defaults")
+            return default_categories, default_pages
+
         return category_product_types, product_on_pages_options
 
     except (ImportError, ModuleNotFoundError) as e:
         # Handle relative import failures when run directly
         print(f"⚠️ Relative import failed (running standalone), using fallback defaults: {e}")
-        # Fallback defaults if JSON files don't exist or are corrupted
-        default_categories = {
-            "Dog Food": ["Dry Dog Food", "Wet Dog Food", "Raw Dog Food", "Dog Treats"],
-            "Cat Food": ["Dry Cat Food", "Wet Cat Food", "Raw Cat Food", "Cat Treats"],
-            "Bird Supplies": [
-                "Bird Food",
-                "Bird Cages",
-                "Bird Toys",
-                "Bird Healthcare",
-            ],
-            "Small Pet Food": [
-                "Rabbit Food",
-                "Guinea Pig Food",
-                "Hamster Food",
-                "Rat Food",
-            ],
-            "Farm Animal Supplies": [
-                "Chicken Feed",
-                "Goat Feed",
-                "Sheep Feed",
-                "Pig Feed",
-            ],
-            "Pet Toys": ["Dog Toys", "Cat Toys", "Bird Toys", "Small Pet Toys"],
-            "Pet Healthcare": [
-                "Dog Medications",
-                "Cat Medications",
-                "Bird Medications",
-                "Small Pet Medications",
-            ],
-            "Pet Grooming": [
-                "Dog Shampoos",
-                "Cat Shampoos",
-                "Pet Brushes",
-                "Pet Clippers",
-            ],
-            "Pet Beds": ["Dog Beds", "Cat Beds", "Small Pet Beds"],
-            "Pet Bowls": ["Dog Bowls", "Cat Bowls", "Bird Bowls", "Small Pet Bowls"],
-            "Hardware": ["Tools", "Fasteners", "Plumbing", "Electrical", "HVAC"],
-            "Lawn & Garden": ["Seeds", "Fertilizer", "Tools", "Plants"],
-            "Farm Supplies": ["Fencing", "Feeders", "Equipment", "Animal Health"],
-            "Home & Kitchen": ["Cleaning", "Storage", "Appliances", "Decor"],
-            "Automotive": ["Parts", "Tools", "Maintenance", "Accessories"],
-        }
-        default_pages = [
-            "Dog Food Shop All",
-            "Cat Food Shop All",
-            "Bird Supplies Shop All",
-            "Small Pet Food Shop All",
-            "Farm Animal Supplies Shop All",
-            "Pet Toys Shop All",
-            "Pet Healthcare Shop All",
-            "Pet Grooming Shop All",
-            "Pet Beds Shop All",
-            "Pet Bowls Shop All",
-            "Hardware Shop All",
-            "Lawn & Garden Shop All",
-            "Farm Supplies Shop All",
-            "Home & Kitchen Shop All",
-            "Automotive Shop All",
-        ]
         return default_categories, default_pages
     except Exception as e:
         print(f"⚠️ Error loading facet options from JSON: {e}")
-        # Fallback defaults if JSON files don't exist or are corrupted
-        default_categories = {
-            "Dog Food": ["Dry Dog Food", "Wet Dog Food", "Raw Dog Food", "Dog Treats"],
-            "Cat Food": ["Dry Cat Food", "Wet Cat Food", "Raw Cat Food", "Cat Treats"],
-            "Bird Supplies": [
-                "Bird Food",
-                "Bird Cages",
-                "Bird Toys",
-                "Bird Healthcare",
-            ],
-            "Small Pet Food": [
-                "Rabbit Food",
-                "Guinea Pig Food",
-                "Hamster Food",
-                "Rat Food",
-            ],
-            "Farm Animal Supplies": [
-                "Chicken Feed",
-                "Goat Feed",
-                "Sheep Feed",
-                "Pig Feed",
-            ],
-            "Pet Toys": ["Dog Toys", "Cat Toys", "Bird Toys", "Small Pet Toys"],
-            "Pet Healthcare": [
-                "Dog Medications",
-                "Cat Medications",
-                "Bird Medications",
-                "Small Pet Medications",
-            ],
-            "Pet Grooming": [
-                "Dog Shampoos",
-                "Cat Shampoos",
-                "Pet Brushes",
-                "Pet Clippers",
-            ],
-            "Pet Beds": ["Dog Beds", "Cat Beds", "Small Pet Beds"],
-            "Pet Bowls": ["Dog Bowls", "Cat Bowls", "Bird Bowls", "Small Pet Bowls"],
-            "Hardware": ["Tools", "Fasteners", "Plumbing", "Electrical", "HVAC"],
-            "Lawn & Garden": ["Seeds", "Fertilizer", "Tools", "Plants"],
-            "Farm Supplies": ["Fencing", "Feeders", "Equipment", "Animal Health"],
-            "Home & Kitchen": ["Cleaning", "Storage", "Appliances", "Decor"],
-            "Automotive": ["Parts", "Tools", "Maintenance", "Accessories"],
-        }
-        default_pages = [
-            "Dog Food Shop All",
-            "Cat Food Shop All",
-            "Bird Supplies Shop All",
-            "Small Pet Food Shop All",
-            "Farm Animal Supplies Shop All",
-            "Pet Toys Shop All",
-            "Pet Healthcare Shop All",
-            "Pet Grooming Shop All",
-            "Pet Beds Shop All",
-            "Pet Bowls Shop All",
-            "Hardware Shop All",
-            "Lawn & Garden Shop All",
-            "Farm Supplies Shop All",
-            "Home & Kitchen Shop All",
-            "Automotive Shop All",
-        ]
         return default_categories, default_pages
 
 

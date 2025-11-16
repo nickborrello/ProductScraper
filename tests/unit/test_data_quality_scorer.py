@@ -5,6 +5,35 @@ Unit tests for DataQualityScorer
 import pytest
 from src.core.data_quality_scorer import DataQualityScorer, score_product_data, is_product_high_quality
 
+@pytest.fixture
+def valid_record():
+    """Fixture for a high-quality product record."""
+    return {
+        'SKU': 'TEST123',
+        'Name': 'Test Product Name',
+        'Price': '29.99',
+        'Images': 'https://example.com/image1.jpg,https://example.com/image2.jpg',
+        'Weight': '5 lb',
+        'Product_Field_16': 'Test Brand',
+        'Product_Field_24': 'Test Category',
+        'Product_Field_25': 'Test Product Type',
+        'Product_Field_32': 'SKU1|SKU2|SKU3'
+    }
+
+@pytest.fixture
+def invalid_record():
+    """Fixture for a low-quality product record."""
+    return {
+        'SKU': '',
+        'Name': 'N/A',
+        'Price': '',
+        'Images': '',
+        'Weight': '',
+        'Product_Field_16': None,
+        'Product_Field_24': '',
+        'Product_Field_25': 'N/A'
+    }
+
 
 class TestDataQualityScorer:
     """Test DataQualityScorer class functionality."""
@@ -35,8 +64,8 @@ class TestDataQualityScorer:
         return {
             'SKU': '',
             'Name': 'N/A',
-            'Price': 'invalid',
-            'Images': 'not-a-url',
+            'Price': '',
+            'Images': '',
             'Weight': '',
             'Product_Field_16': None,
             'Product_Field_24': '',

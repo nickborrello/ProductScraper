@@ -26,7 +26,7 @@ def mock_callbacks():
 @pytest.fixture
 def mock_scraper():
     """Fixture to mock the ProductScraper class."""
-    with patch("src.scrapers.main.ProductScraper", autospec=True) as mock:
+    with patch("src.scrapers.master.ProductScraper", autospec=True) as mock:
         yield mock
 
 

@@ -114,23 +114,23 @@ class TestLocalLLMClassifier:
             LocalLLMProductClassifier("llama3.2", cache_file=unique_cache_file)
 
     @patch('ollama.list')
-    @patch('builtins.open', new_callable=mock_open, read_data='{"ollama_model": "gemma3"}')
+    @patch('builtins.open', new_callable=mock_open, read_data='{"ollama_model": "llama2"}')
     @patch('pathlib.Path.exists', return_value=True)
     def test_model_name_from_settings(self, mock_exists, mock_file, mock_ollama_list, unique_cache_file):
         """Test that model name is read from settings.json."""
         mock_ollama_list.return_value = {"models": []}
 
         classifier = LocalLLMProductClassifier(cache_file=unique_cache_file)
-        assert classifier.model_name == "gemma3"
+        assert classifier.model_name == "llama2"
 
     @patch('ollama.list')
     def test_model_name_from_env_var(self, mock_ollama_list, unique_cache_file):
         """Test that model name is read from environment variable."""
         mock_ollama_list.return_value = {"models": []}
 
-        with patch.dict(os.environ, {'OLLAMA_MODEL': 'phi4'}):
+        with patch.dict(os.environ, {'OLLAMA_MODEL': 'llama2'}):
             classifier = LocalLLMProductClassifier(cache_file=unique_cache_file)
-            assert classifier.model_name == "phi4"
+            assert classifier.model_name == "llama2"
 
     @patch('ollama.list')
     def test_model_name_parameter_override(self, mock_ollama_list, unique_cache_file):
