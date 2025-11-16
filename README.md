@@ -38,7 +38,7 @@ A comprehensive product data management and scraping platform built with Python 
 
 ### Prerequisites
 
-- Python 3.9+
+- Python 3.11
 - PyQt6 (for GUI components)
 - Apify account (optional, for platform testing)
 
@@ -48,6 +48,10 @@ A comprehensive product data management and scraping platform built with Python 
 # Clone the repository
 git clone https://github.com/nickborrello/ProductScraper.git
 cd ProductScraper
+
+# Create and activate virtual environment
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
 # Install Python dependencies
 pip install -r requirements.txt

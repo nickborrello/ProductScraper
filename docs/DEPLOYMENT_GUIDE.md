@@ -21,7 +21,7 @@ This guide covers the deployment procedures for ProductScraper scrapers to the A
    - API token with appropriate permissions
 
 2. **Local Environment**
-   - Python 3.8+ with all dependencies
+   - Python 3.11 with all dependencies
    - Apify CLI installed: `npm install -g apify-cli`
    - Valid scraper structure (see testing guide)
 

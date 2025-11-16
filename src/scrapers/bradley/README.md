@@ -71,7 +71,7 @@ The scraper outputs product data in the following format:
 
 ### Prerequisites
 
-- Python 3.8+
+- Python 3.11
 - Google Chrome browser
 - Apify CLI (optional, for deployment)
 

@@ -16,7 +16,7 @@ Local testing runs scrapers using simulated Apify environment without platform c
 
 ### Prerequisites
 
-1. **Python Environment**: Python 3.8+ with required dependencies
+1. **Python Environment**: Python 3.11 with required dependencies
 2. **Test Data**: Valid test SKUs in `tests/fixtures/scraper_test_data.json`
 3. **Scraper Structure**: Proper Apify actor directory structure
 
