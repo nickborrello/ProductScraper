@@ -91,9 +91,19 @@ jobs:
         for scraper, data in test_data.items():
             if 'test_skus' in data:
                 for sku in data['test_skus'][:5]:  # Test first 5 SKUs per scraper
-                    # Mock record with SKU
-                    record = {'SKU': sku, 'Name': f'Test {scraper} product'}
+                    # Mock record with minimal required fields for validation
+                    record = {
+                        'SKU': sku,
+                        'Name': f'Test {scraper} product',
+                        'Price': '19.99',
+                        'Images': 'https://example.com/image.jpg',
+                        'Weight': '1 lb',
+                        'Product_Field_16': 'Test Brand',  # Brand
+                        'Product_Field_24': 'Test Category',  # Category
+                        'Product_Field_25': 'Test Type'   # Product Type
+                    }
                     score, _ = scorer.score_record(record)
+                    print(f'  SKU {sku}: score {score:.1f}%')
                     total_records += 1
                     if is_product_high_quality(record):
                         high_quality_records += 1
@@ -101,7 +111,7 @@ jobs:
         quality_rate = high_quality_records / total_records if total_records > 0 else 0
         print(f'Quality validation: {high_quality_records}/{total_records} records pass quality gate ({quality_rate:.1%})')
 
-        # Quality gate: at least 60% of test records should pass (allowing for incomplete mock data)
+        # Quality gate: at least 60% of test records should pass
         assert quality_rate >= 0.6, f'Quality gate failed: only {quality_rate:.1%} records pass validation'
         "
 
