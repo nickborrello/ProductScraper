@@ -14,6 +14,12 @@ from src.core.settings_manager import settings
 
 logger = logging.getLogger(__name__)
 
+# Validate httpx import for debugging
+try:
+    logger.debug(f"httpx version {httpx.__version__} imported successfully")
+except AttributeError:
+    logger.debug("httpx imported successfully (version not available)")
+
 
 class ApifyPlatformError(Exception):
     """Base exception for Apify platform API errors."""
