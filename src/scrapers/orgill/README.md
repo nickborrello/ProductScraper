@@ -199,12 +199,14 @@ docker run -e ORGILL_USERNAME="your_username" -e ORGILL_PASSWORD="your_password"
 
 ### Debug Mode
 
-Enable detailed logging for troubleshooting:
+To run the scraper in debug mode, you can use the `HEADLESS` and `DEBUG_MODE` environment variables. This will run the browser in a visible window and pause the script at certain points for manual inspection.
 
-```python
-import logging
-logging.basicConfig(level=logging.DEBUG)
+```bash
+# Run the Orgill scraper in debug mode
+HEADLESS=False DEBUG_MODE=True python src/scrapers/orgill/src/main.py
 ```
+
+This is useful for observing the scraper's behavior and debugging issues with selectors or site changes.
 
 ## 🧪 Testing
 

@@ -177,7 +177,14 @@ python test_large_scale.py --skus 1000 --batch-size 50
 
 ### Debug Mode
 
-Set `HEADLESS = False` in the scraper code to run with visible browser for debugging.
+To run the scraper in debug mode, you can use the `HEADLESS` and `DEBUG_MODE` environment variables. This will run the browser in a visible window and pause the script at certain points for manual inspection.
+
+```bash
+# Run the Bradley Caldwell scraper in debug mode
+HEADLESS=False DEBUG_MODE=True python src/scrapers/bradley/src/main.py
+```
+
+This is useful for observing the scraper's behavior and debugging issues with selectors or site changes.
 
 ## Contributing
 
