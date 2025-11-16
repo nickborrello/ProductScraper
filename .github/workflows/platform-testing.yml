@@ -93,7 +93,7 @@ jobs:
 
     - name: Upload test report
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: platform-test-report
         path: test_report.md
@@ -160,7 +160,7 @@ jobs:
         echo "Test results archived on $(date)" > test-results-archive/archive_info.txt
 
     - name: Upload test results archive
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: test-results-archive
         path: test-results-archive/

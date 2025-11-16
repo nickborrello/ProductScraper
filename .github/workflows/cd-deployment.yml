@@ -85,7 +85,7 @@ jobs:
         echo "- **Status:** ✅ Successful" >> deployment_report.md
 
     - name: Upload deployment report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: deployment-report
         path: deployment_report.md

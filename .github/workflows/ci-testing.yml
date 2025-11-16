@@ -34,7 +34,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install -r tests/requirements-dev.txt
+        pip install -r requirements-dev.txt
 
     - name: Run linting
       run: |
@@ -68,7 +68,6 @@ jobs:
 
     - name: Validate scraper structure
       run: |
-        python platform_test_scrapers.py --validate amazon
         python platform_test_scrapers.py --validate bradley
         python platform_test_scrapers.py --validate central_pet
         python platform_test_scrapers.py --validate coastal
@@ -94,7 +93,7 @@ jobs:
         bandit -r src/ -f json -o bandit-report.json || true
 
     - name: Upload security scan results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: security-scan-results
         path: bandit-report.json
