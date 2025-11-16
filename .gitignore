@@ -70,6 +70,7 @@ src/scrapers/**/large_scale_test_results_*.json
 # AI assistant prompt files
 .github/prompts/
 .gemini/
+.kilocode/
 
 # Scrape results (large generated data)
 results/
