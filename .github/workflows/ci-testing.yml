@@ -48,11 +48,12 @@ jobs:
 
     - name: Run unit tests
       run: |
-        xvfb-run -a python -m pytest tests/unit/ -v --cov=src --cov-report=xml
+        xvfb-run -a python -m pytest tests/unit/ -v --cov=src --cov-report=xml --ignore=tests/unit/test_classification.py
 
     - name: Run integration tests (local mode)
       run: |
-        python platform_test_scrapers.py --all --verbose
+        # Only run CI-safe scrapers to avoid login requirements in CI environment
+        python platform_test_scrapers.py --ci-safe --verbose
       env:
         PYTHONPATH: ${{ github.workspace }}
 

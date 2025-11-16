@@ -32,6 +32,12 @@ from src.core.platform_testing_integration import PlatformScraperIntegrationTest
 from src.core.platform_testing_client import TestingMode
 from tests.fixtures.scraper_validator import ScraperValidator
 
+# CI-safe scrapers that don't require login/authentication
+CI_SAFE_SCRAPERS = ["amazon", "central_pet", "coastal", "mazuri", "bradley"]
+
+# Scrapers that require login/authentication and should be excluded from CI
+LOGIN_REQUIRED_SCRAPERS = ["phillips", "petfoodex", "orgill"]
+
 
 def list_available_scrapers():
     """List all available scrapers."""
@@ -120,10 +126,13 @@ async def test_single_scraper(scraper_name: str, skus: Optional[List[str]] = Non
         return False
 
 
-async def test_all_scrapers(mode: TestingMode = TestingMode.LOCAL, verbose: bool = False):
+async def test_all_scrapers(mode: TestingMode = TestingMode.LOCAL, verbose: bool = False, scrapers_to_test: Optional[List[str]] = None):
     """Test all available scrapers."""
     tester = PlatformScraperIntegrationTester(mode=mode)
     scrapers = tester.get_available_scrapers()
+
+    if scrapers_to_test:
+        scrapers = [s for s in scrapers if s in scrapers_to_test]
 
     print(f"🧪 RUNNING {mode.value.upper()} COMPREHENSIVE SCRAPER TESTS")
     print(f"Testing {len(scrapers)} scrapers: {', '.join(scrapers)}")
@@ -201,11 +210,27 @@ async def main():
     parser.add_argument("--list", action="store_true",
                        help="List all available scrapers")
     parser.add_argument("--validate", type=str,
-                       help="Validate scraper structure without running")
+                        help="Validate scraper structure without running")
     parser.add_argument("--verbose", action="store_true",
-                       help="Show detailed output and debug information")
+                        help="Show detailed output and debug information")
+    parser.add_argument("--force-all", action="store_true",
+                        help="Force testing all scrapers including login-required ones (overrides CI restrictions)")
+    parser.add_argument("--ci-safe", action="store_true",
+                        help="Test only CI-safe scrapers (no login required)")
 
     args = parser.parse_args()
+
+    # Determine which scrapers to test based on CI environment and flags
+    is_ci = os.environ.get('CI') == 'true'
+    if args.ci_safe:
+        scrapers_to_test = CI_SAFE_SCRAPERS
+    elif args.force_all:
+        scrapers_to_test = None  # test all
+    else:
+        if is_ci:
+            scrapers_to_test = CI_SAFE_SCRAPERS
+        else:
+            scrapers_to_test = None  # test all
 
     # Determine testing mode
     mode = TestingMode.PLATFORM if args.platform else TestingMode.LOCAL
@@ -232,7 +257,7 @@ async def main():
         return 0 if success else 1
 
     if args.all:
-        success = await test_all_scrapers(mode, args.verbose)
+        success = await test_all_scrapers(mode, args.verbose, scrapers_to_test)
         return 0 if success else 1
 
     # No arguments provided

@@ -94,7 +94,6 @@ Based on the current project state, these files still need to be moved:
 
 - `inventory/field_mapping.py` → `src/core/field_mapping.py`
 - `inventory/final_db_check.py` → `src/core/database_validation.py`
-- `inventory/test_special_order.py` → `tests/unit/test_special_order.py`
 - `inventory/verify_db.py` → `src/core/database_verification.py`
 
 ### From inventory/classify/ → src/core/classification/
@@ -137,7 +136,6 @@ mkdir -p docs
 mv inventory/field_mapping.py src/core/
 mv inventory/final_db_check.py src/core/database_validation.py
 mv inventory/verify_db.py src/core/database_verification.py
-mv inventory/test_special_order.py tests/unit/
 ```
 
 **Batch 2: Classification**
