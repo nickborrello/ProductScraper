@@ -1,3 +1,4 @@
 flask==3.1.2
 requests==2.32.5
 beautifulsoup4==4.12.2
+pytest-mock>=3.10.0
