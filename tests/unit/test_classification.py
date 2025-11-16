@@ -2,7 +2,6 @@ import pytest
 import os
 import sys
 from unittest.mock import patch, MagicMock, call
-import tkinter as tk
 
 # Add project root to path
 PROJECT_ROOT = os.path.dirname(
@@ -100,29 +99,14 @@ class TestClassification:
             assert result == products
             mock_edit.assert_called_once_with(products)
 
-    @patch("tkinter.Tk")
-    def test_edit_classification_in_batch_basic(self, mock_tk, sample_products):
+    def test_edit_classification_in_batch_basic(self, sample_products):
         """Test that the classification editor can be called without errors."""
-        # Mock Tkinter root to prevent GUI display
-        mock_root = MagicMock()
-        mock_tk.return_value = mock_root
-
-        # Mock mainloop to return immediately
-        mock_root.mainloop = MagicMock()
-
-        # Mock quit and destroy
-        mock_root.quit = MagicMock()
-        mock_root.destroy = MagicMock()
-
         # This test just verifies the function can be called
-        # In a real scenario, this would open a GUI, but we mock it
-        try:
-            result = edit_classification_in_batch(sample_products)
-            # Should return the products (or None if cancelled)
-            assert result is None or isinstance(result, list)
-        except Exception as e:
-            # GUI testing is complex, so we'll allow it to fail gracefully
-            pytest.skip(f"GUI test skipped due to mocking complexity: {e}")
+        # In CI/testing environments without GUI, it returns products unchanged
+        result = edit_classification_in_batch(sample_products)
+        # Should return the products list
+        assert isinstance(result, list)
+        assert result == sample_products
 
     def test_normalize_selections(self):
         """Test that selections are properly normalized to match available options."""

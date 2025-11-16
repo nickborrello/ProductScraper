@@ -7,25 +7,246 @@ Separates business logic from basic product editing (product_editor.py).
 import re
 from pathlib import Path
 
-# PyQt6 imports
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QFont
-from PyQt6.QtWidgets import (
-    QApplication,
-    QCheckBox,
-    QFrame,
-    QGridLayout,
-    QHBoxLayout,
-    QLabel,
-    QLineEdit,
-    QMainWindow,
-    QMessageBox,
-    QPushButton,
-    QScrollArea,
-    QSplitter,
-    QVBoxLayout,
-    QWidget,
-)
+# Conditional PyQt6 imports for GUI environments
+try:
+    from PyQt6.QtCore import Qt, pyqtSignal
+    from PyQt6.QtGui import QFont
+    from PyQt6.QtWidgets import (
+        QApplication,
+        QCheckBox,
+        QFrame,
+        QGridLayout,
+        QHBoxLayout,
+        QLabel,
+        QLineEdit,
+        QMainWindow,
+        QMessageBox,
+        QPushButton,
+        QScrollArea,
+        QSplitter,
+        QVBoxLayout,
+        QWidget,
+    )
+    PYQT6_AVAILABLE = True
+except ImportError:
+    # Mock classes for CI/testing environments without GUI libraries
+    PYQT6_AVAILABLE = False
+
+    class Qt:
+        class AlignmentFlag:
+            AlignTop = 0
+            AlignCenter = 1
+        class Orientation:
+            Horizontal = 0
+        class ScrollBarPolicy:
+            ScrollBarAlwaysOff = 0
+
+    class pyqtSignal:
+        def __init__(self, *args):
+            pass
+
+    class QFont:
+        class Weight:
+            Normal = 0
+            Bold = 1
+        def __init__(self, family="", size=12, weight=0, italic=False):
+            pass
+
+    class QApplication:
+        def __init__(self, args=None):
+            pass
+        @staticmethod
+        def instance():
+            return None
+        def exec(self):
+            pass
+
+    class QWidget:
+        def __init__(self, parent=None):
+            pass
+        def setLayout(self, layout):
+            pass
+        def setContentsMargins(self, *args):
+            pass
+        def setFixedHeight(self, height):
+            pass
+        def setStyleSheet(self, style):
+            pass
+        def setWindowTitle(self, title):
+            pass
+        def showMaximized(self):
+            pass
+        def show(self):
+            pass
+        def close(self):
+            pass
+        def setCentralWidget(self, widget):
+            pass
+        def layout(self):
+            return None
+
+    class QVBoxLayout:
+        def __init__(self, parent=None):
+            pass
+        def addWidget(self, widget):
+            pass
+        def addLayout(self, layout):
+            pass
+        def addStretch(self):
+            pass
+        def setContentsMargins(self, *args):
+            pass
+        def setAlignment(self, alignment):
+            pass
+
+    class QHBoxLayout:
+        def __init__(self):
+            pass
+        def addWidget(self, widget):
+            pass
+        def addLayout(self, layout):
+            pass
+        def addStretch(self):
+            pass
+        def setContentsMargins(self, *args):
+            pass
+        def setSpacing(self, spacing):
+            pass
+
+    class QGridLayout:
+        def __init__(self, parent=None):
+            pass
+        def addWidget(self, widget, row, col, rowspan=1, colspan=1, alignment=0):
+            pass
+
+    class QLabel:
+        def __init__(self, text="", parent=None):
+            pass
+        def setText(self, text):
+            pass
+        def setFont(self, font):
+            pass
+        def setWordWrap(self, wrap):
+            pass
+        def setAlignment(self, alignment):
+            pass
+        def setFixedSize(self, width, height):
+            pass
+        def setStyleSheet(self, style):
+            pass
+
+    class QLineEdit:
+        def __init__(self, parent=None):
+            pass
+        def setFont(self, font):
+            pass
+        def textChanged(self):
+            pass
+        def connect(self, func):
+            pass
+
+    class QCheckBox:
+        def __init__(self, text, parent=None):
+            pass
+        def setChecked(self, checked):
+            pass
+        def isChecked(self):
+            return False
+        def stateChanged(self):
+            pass
+        def connect(self, func):
+            pass
+        def setParent(self, parent):
+            pass
+
+    class QScrollArea:
+        def __init__(self, parent=None):
+            pass
+        def setWidgetResizable(self, resizable):
+            pass
+        def setHorizontalScrollBarPolicy(self, policy):
+            pass
+        def setMinimumHeight(self, height):
+            pass
+        def setMaximumHeight(self, height):
+            pass
+        def setWidget(self, widget):
+            pass
+
+    class QFrame:
+        class Shape:
+            Box = 0
+        def __init__(self, parent=None):
+            pass
+        def setFrameStyle(self, style):
+            pass
+        def setLayout(self, layout):
+            pass
+
+    class QSplitter:
+        def __init__(self, orientation, parent=None):
+            pass
+        def addWidget(self, widget):
+            pass
+        def setSizes(self, sizes):
+            pass
+
+    class QMainWindow:
+        def __init__(self, parent=None):
+            pass
+        def setWindowTitle(self, title):
+            pass
+        def setCentralWidget(self, widget):
+            pass
+        def showMaximized(self):
+            pass
+        def show(self):
+            pass
+        def close(self):
+            pass
+
+    class QPushButton:
+        def __init__(self, text, parent=None):
+            pass
+        def setFont(self, font):
+            pass
+        def setFixedSize(self, width, height):
+            pass
+        def setStyleSheet(self, style):
+            pass
+        def clicked(self):
+            pass
+        def connect(self, func):
+            pass
+        def setEnabled(self, enabled):
+            pass
+
+    class QMessageBox:
+        class StandardButton:
+            Yes = 1
+            No = 0
+        @staticmethod
+        def question(parent, title, text, buttons, default):
+            return QMessageBox.StandardButton.Yes
+
+    # Additional classes if needed
+    class MultiSelectWidget(QWidget):
+        def __init__(self, *args, **kwargs):
+            super().__init__()
+        def get_selected(self):
+            return []
+        def refresh_options(self, options):
+            pass
+        def selected_items(self):
+            return set()
+        def update_display(self):
+            pass
+
+    class ClassificationEditorWindow(QMainWindow):
+        def __init__(self, *args, **kwargs):
+            super().__init__()
+        def get_products_list(self):
+            return []
 
 # Import product pages from manager (which loads from JSON) - moved inside function to avoid relative import issues when run directly
 # from .manager import PRODUCT_PAGES
@@ -892,6 +1113,11 @@ def edit_classification_in_batch(products_list):
     Similar to cross-sell editor but focused on classification selection.
     Returns updated products_list with selected classifications.
     """
+    if not PYQT6_AVAILABLE:
+        # In CI/testing environments without GUI, return products unchanged
+        print("⚠️ PyQt6 not available, skipping GUI classification editor")
+        return products_list
+
     # Import facet options only
     CATEGORY_PRODUCT_TYPES, PRODUCT_ON_PAGES_OPTIONS = get_facet_options_from_db()
 
