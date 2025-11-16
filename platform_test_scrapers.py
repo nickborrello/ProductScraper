@@ -42,7 +42,7 @@ def list_available_scrapers():
     print("=" * 40)
 
     for scraper in scrapers:
-        print(f"📦 {scraper}")
+        print(f"[SCRAPER] {scraper}")
         print()
 
     return scrapers
@@ -71,16 +71,16 @@ def validate_scraper_structure(scraper_name: str):
 
     all_passed = True
     for check_name, passed in checks.items():
-        status = "✅" if passed else "❌"
+        status = "[PASS]" if passed else "[FAIL]"
         print(f"{status} {check_name}")
         if not passed:
             all_passed = False
 
     print()
     if all_passed:
-        print("✅ Scraper structure is valid!")
+        print("[PASS] Scraper structure is valid!")
     else:
-        print("❌ Scraper structure has issues. Check the failed items above.")
+        print("[FAIL] Scraper structure has issues. Check the failed items above.")
 
     return all_passed
 
@@ -91,7 +91,7 @@ async def test_single_scraper(scraper_name: str, skus: Optional[List[str]] = Non
 
     # First validate structure
     if not validate_scraper_structure(scraper_name):
-        print(f"\n❌ Skipping execution test due to structure issues")
+        print(f"\n[FAIL] Skipping execution test due to structure issues")
         return False
 
     print(f"\n{'='*60}")
@@ -102,7 +102,7 @@ async def test_single_scraper(scraper_name: str, skus: Optional[List[str]] = Non
         result = await tester.run_scraper_test(scraper_name, skus)
 
         if verbose and result["run_results"]["products"]:
-            print(f"\n📄 SCRAPER OUTPUT:")
+            print(f"\n[OUTPUT] SCRAPER OUTPUT:")
             print("-" * 40)
             # Show first few products
             for i, product in enumerate(result["run_results"]["products"][:3]):
@@ -116,7 +116,7 @@ async def test_single_scraper(scraper_name: str, skus: Optional[List[str]] = Non
         return result["overall_success"]
 
     except Exception as e:
-        print(f"❌ Test failed with exception: {e}")
+        print(f"[FAIL] Test failed with exception: {e}")
         return False
 
 
@@ -125,17 +125,17 @@ async def test_all_scrapers(mode: TestingMode = TestingMode.LOCAL, verbose: bool
     tester = PlatformScraperIntegrationTester(mode=mode)
     scrapers = tester.get_available_scrapers()
 
-    print(f"🧪 RUNNING {mode.value.upper()} COMPREHENSIVE SCRAPER TESTS")
+    print(f"[TEST] RUNNING {mode.value.upper()} COMPREHENSIVE SCRAPER TESTS")
     print(f"Testing {len(scrapers)} scrapers: {', '.join(scrapers)}")
     print(f"{'='*80}")
 
     results = await tester.run_all_scrapers_test(skip_failing=True)
 
     if verbose:
-        print(f"\n📊 DETAILED RESULTS:")
+        print(f"\n[RESULTS] DETAILED RESULTS:")
         print("-" * 50)
         for scraper_name, result in results["scraper_results"].items():
-            status = "✅" if result.get("overall_success", False) else "❌"
+            status = "[PASS]" if result.get("overall_success", False) else "[FAIL]"
             products = len(result.get("run_results", {}).get("products", []))
             print(f"{status} {scraper_name}: {products} products")
 
@@ -149,11 +149,11 @@ async def test_all_scrapers(mode: TestingMode = TestingMode.LOCAL, verbose: bool
     print(f"Testing Mode: {mode.value.upper()}")
 
     if results["failed_scrapers"] > 0:
-        print(f"\n❌ FAILED SCRAPERS:")
+        print(f"\n[FAIL] FAILED SCRAPERS:")
         for name in results["summary"]["failed_scrapers_list"]:
             print(f"  • {name}")
 
-        print(f"\n🔧 COMMON ISSUES:")
+        print(f"\n[ISSUES] COMMON ISSUES:")
         common_errors = results["summary"]["common_errors"]
         for error, count in sorted(common_errors.items(), key=lambda x: x[1], reverse=True)[:5]:
             print(f"  • {error} ({count} times)")
@@ -163,9 +163,9 @@ async def test_all_scrapers(mode: TestingMode = TestingMode.LOCAL, verbose: bool
 
     success = results["failed_scrapers"] == 0
     if success:
-        print(f"\n🎉 ALL SCRAPERS PASSED {mode.value.upper()} TESTS! Ready for deployment.")
+        print(f"\n[SUCCESS] ALL SCRAPERS PASSED {mode.value.upper()} TESTS! Ready for deployment.")
     else:
-        print(f"\n⚠️  SOME SCRAPERS FAILED {mode.value.upper()} TESTS. Fix issues before deploying.")
+        print(f"\n[WARNING] SOME SCRAPERS FAILED {mode.value.upper()} TESTS. Fix issues before deploying.")
 
     return success
 
@@ -214,7 +214,7 @@ async def main():
         # Check if API token is configured
         from src.core.settings_manager import settings
         if not settings.get("apify_api_token"):
-            print("❌ ERROR: Apify API token not configured. Please set 'apify_api_token' in settings.")
+            print("[ERROR] Apify API token not configured. Please set 'apify_api_token' in settings.")
             print("   You can configure it in settings.json or environment variable APIFY_API_TOKEN")
             return 1
 
