@@ -72,6 +72,8 @@ src/scrapers/**/large_scale_test_results_*.json
 .gemini/
 .kilocode/
 
+mcp.json
+
 # Scrape results (large generated data)
 results/
 
