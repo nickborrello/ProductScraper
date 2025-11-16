@@ -38,7 +38,7 @@ A comprehensive product data management and scraping platform built with Python 
 
 ### Prerequisites
 
-- Python 3.8+
+- Python 3.9+
 - PyQt6 (for GUI components)
 - Apify account (optional, for platform testing)
 
