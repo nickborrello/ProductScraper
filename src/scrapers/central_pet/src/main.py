@@ -1225,6 +1225,7 @@ def clean_string(text: str) -> str:
 def extract_product_data(driver: webdriver.Chrome, sku: str) -> dict[str, Any] | None:
     """Extract product data from Central Pet page."""
     product_info = cast(dict[str, Any], {"SKU": sku})
+    Actor.log.info(f"🔍 Starting data extraction for SKU: {sku}")
 
     try:
         # Brand extraction
@@ -1233,8 +1234,10 @@ def extract_product_data(driver: webdriver.Chrome, sku: str) -> dict[str, Any] |
             if brand_elements:
                 brand_name = brand_elements[0].get_attribute('title') or brand_elements[0].text
                 product_info['Brand'] = brand_name.strip() if brand_name else 'No brand found'
+                Actor.log.info(f"✅ Brand extracted: {product_info['Brand']}")
             else:
                 product_info['Brand'] = 'No brand found'
+                Actor.log.warning("⚠️ Brand not found.")
         except Exception as e:
             Actor.log.error(f"Error extracting brand for SKU {sku}: {e}")
             product_info['Brand'] = 'N/A'
@@ -1243,6 +1246,7 @@ def extract_product_data(driver: webdriver.Chrome, sku: str) -> dict[str, Any] |
         try:
             name_element = driver.find_element(By.ID, "tst_productDetail_erpDescription")
             product_info['Name'] = clean_string(name_element.text) if name_element else 'No name found'
+            Actor.log.info(f"✅ Name extracted: {product_info['Name']}")
         except Exception:
             Actor.log.error(f"Error extracting name for SKU {sku}")
             product_info['Name'] = 'N/A'
@@ -1251,6 +1255,7 @@ def extract_product_data(driver: webdriver.Chrome, sku: str) -> dict[str, Any] |
         try:
             short_description_element = driver.find_element(By.ID, "tst_productDetail_shortDescription")
             product_info['Short Description'] = short_description_element.text if short_description_element else 'No short description found'
+            Actor.log.info(f"✅ Short Description extracted: {product_info['Short Description']}")
         except Exception:
             product_info['Short Description'] = ''
 
@@ -1270,14 +1275,16 @@ def extract_product_data(driver: webdriver.Chrome, sku: str) -> dict[str, Any] |
         name_clean = re.sub(r'\bpk\b', 'Pack', name_clean, flags=re.IGNORECASE)
         
         product_info['Name'] = clean_string(name_clean)
+        Actor.log.info(f"✨ Cleaned name: {product_info['Name']}")
 
         # Weight extraction
         try:
             weight_element = driver.find_element(By.XPATH, "//div[@class='specification-container']//li[strong[contains(text(), 'Product Gross Weight')]]/span")
             weight_text = driver.execute_script("return arguments[0].innerHTML;", weight_element).strip()
             product_info['Weight'] = f"{float(weight_text.replace('lb', '').strip()):.2f}" if weight_text else 'N/A'
+            Actor.log.info(f"⚖️ Weight extracted: {product_info['Weight']}")
         except Exception as e:
-            Actor.log.error(f"Error extracting weight for SKU {sku}: {e}")
+            Actor.log.warning(f"⚠️ Weight not found for SKU {sku}: {e}")
             product_info['Weight'] = 'N/A'
 
         # Image extraction
@@ -1285,6 +1292,7 @@ def extract_product_data(driver: webdriver.Chrome, sku: str) -> dict[str, Any] |
         try:
             thumbnails = driver.find_elements(By.CSS_SELECTOR, "li[id^='tst_productDetailPage_mainThumbnail']")
             if thumbnails:
+                Actor.log.info(f"🖼️ Found {len(thumbnails)} image thumbnails.")
                 for thumbnail in thumbnails:
                     driver.execute_script("arguments[0].scrollIntoView();", thumbnail)
                     driver.execute_script("arguments[0].click();", thumbnail)
@@ -1297,6 +1305,7 @@ def extract_product_data(driver: webdriver.Chrome, sku: str) -> dict[str, Any] |
                 main_image_url = main_image_element.get_attribute('ng-src')
                 if main_image_url:
                     product_info['Image URLs'].append(main_image_url)
+            Actor.log.info(f"🖼️ Extracted {len(product_info['Image URLs'])} images.")
         except Exception as e:
             Actor.log.error(f"Error extracting images for SKU {sku}: {e}")
             product_info['Image URLs'] = []
@@ -1312,8 +1321,10 @@ def extract_product_data(driver: webdriver.Chrome, sku: str) -> dict[str, Any] |
     )
 
     if critical_fields_missing:
+        Actor.log.warning(f"SKU {sku} is missing critical data. Discarding.")
         return None
 
+    Actor.log.info(f"📊 Extracted data summary: Name={product_info.get('Name', 'N/A')[:30]}..., Brand={product_info.get('Brand', 'N/A')}, Images={len(product_info.get('Image URLs', []))}, Weight={product_info.get('Weight', 'N/A')}")
     return product_info
 
 

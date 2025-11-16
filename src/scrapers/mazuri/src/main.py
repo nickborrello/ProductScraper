@@ -188,6 +188,7 @@ def scrape_single_product(SKU, driver):
         return None
 
     url = f'https://mazuri.com/pages/search-results-page?q={SKU}'
+    Actor.log.info(f"Navigating to search URL: {url}")
     try:
         driver.get(url)
     except Exception as e:
@@ -213,16 +214,19 @@ def scrape_single_product(SKU, driver):
         no_results_elements = driver.find_elements(By.CSS_SELECTOR, "li.snize-no-products-found")
         for elem in no_results_elements:
             if "didn't match any results" in elem.text:
+                Actor.log.info(f"No results found for SKU: {SKU}")
                 return None
     except Exception as e:
         Actor.log.error(f'[{SKU}] Error checking no-results elements: {e}')
 
     if "didn't match any results" in driver.page_source:
+        Actor.log.info(f"No results found for SKU: {SKU}")
         return None
 
     # Find first product result
     try:
         product_li = driver.find_element(By.CSS_SELECTOR, "li.snize-product")
+        Actor.log.info("Found product on search results page.")
     except Exception as e:
         Actor.log.error(f'[{SKU}] No product found for SKU: {e}')
         return None
@@ -235,6 +239,7 @@ def scrape_single_product(SKU, driver):
             # Mazuri links are relative, so prepend domain if needed
             if product_url.startswith("/"):
                 product_url = "https://mazuri.com" + product_url
+            Actor.log.info(f"Navigating to product page: {product_url}")
             driver.get(product_url)
             WebDriverWait(driver, 10).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, "img"))
@@ -255,11 +260,13 @@ def scrape_single_product(SKU, driver):
     soup = BeautifulSoup(driver.page_source, "html.parser")
     product_json = None
     product_dicts = []
+    Actor.log.info("Attempting to extract data from embedded JSON...")
     try:
         script_tag = soup.find("script", {"type": "application/json", "id": re.compile(r"ProductJson")})
         if script_tag and script_tag.string:
             import json
             product_json = json.loads(script_tag.string)
+            Actor.log.info("✅ Successfully parsed embedded product JSON.")
     except Exception as e:
         Actor.log.error(f'[{SKU}] Error parsing embedded product JSON: {e}')
         product_json = None
@@ -270,6 +277,7 @@ def scrape_single_product(SKU, driver):
         images = product_json.get("images", [])
         title = product_json.get("title", "Mazuri Product")
         brand = product_json.get("vendor", "Mazuri")
+        Actor.log.info(f"Found {len(variants)} variants in JSON data.")
         # Try to get weight from SIZE selector (visible dropdown)
         size_weight = None
         size_labels = soup.find_all('label')
@@ -288,12 +296,15 @@ def scrape_single_product(SKU, driver):
                     size_weight = selected_option.get('value') or selected_option.text
                     if size_weight:
                         size_weight = str(size_weight).strip()
+                        Actor.log.info(f"Found size/weight from dropdown: {size_weight}")
         seen = set()
-        for variant in variants:
+        for i, variant in enumerate(variants):
+            Actor.log.info(f"--- Processing variant {i+1}/{len(variants)} ---")
             v = {}
             # Set the SKU for each variant
             v['SKU'] = SKU
             v['Brand'] = brand if brand else "N/A"
+            Actor.log.info(f"  - Brand: {v['Brand']}")
             # Weight: always use size_weight if available, and clean to just the number
             if size_weight:
                 m = re.search(r'(\d+(?:\.\d+)?)', str(size_weight))
@@ -312,6 +323,7 @@ def scrape_single_product(SKU, driver):
                     v['Weight'] = f"{weight_value} LB"
                 else:
                     v['Weight'] = "N/A"
+            Actor.log.info(f"  - Weight: {v['Weight']}")
             # Name: append weight with 'lb.' if not already present
             base_name = title if title else "N/A"
             weight_str = v['Weight']
@@ -322,6 +334,7 @@ def scrape_single_product(SKU, driver):
                     v['Name'] = base_name
             else:
                 v['Name'] = base_name
+            Actor.log.info(f"  - Name: {v['Name']}")
             # Images: carousel images in order, fallback to other sources if <7
             image_list = []
             # Carousel images (in order)
@@ -366,6 +379,7 @@ def scrape_single_product(SKU, driver):
                 if len(deduped_imgs) == 7:
                     break
             v['Image URLs'] = deduped_imgs
+            Actor.log.info(f"  - Images found: {len(v['Image URLs'])}")
             # Deduplicate product variants by Name, Brand, Weight, and images
             key = (v['Brand'], v['Name'], v['Weight'], tuple(sorted(v['Image URLs'])))
             if key in seen:
@@ -373,9 +387,11 @@ def scrape_single_product(SKU, driver):
             seen.add(key)
             product_dicts.append(v)
         if product_dicts:
+            Actor.log.info(f"✅ Successfully extracted {len(product_dicts)} variants from JSON.")
             return product_dicts
 
     # Fallback to previous logic for single product
+    Actor.log.warning("Could not use embedded JSON, falling back to HTML parsing.")
     product_info = {
         'SKU': SKU,
         'Name': 'N/A',
@@ -389,15 +405,16 @@ def scrape_single_product(SKU, driver):
         try:
             brand_element = soup.find("a", class_=re.compile("product-brand"))
             product_info['Brand'] = clean_string(brand_element.text) if brand_element and brand_element.text.strip() else "N/A"
+            Actor.log.info(f"✅ Brand extracted (fallback): {product_info['Brand']}")
         except Exception as e:
-            Actor.log.error(f"[{SKU}] Error extracting Brand: {e}")
+            Actor.log.error(f"[{SKU}] Error extracting Brand (fallback): {e}")
             product_info['Brand'] = "N/A"
         # Extract Name (append weight with 'lb.' if available)
         try:
             name_element = soup.find("h1")
             base_name = clean_string(name_element.text) if name_element and name_element.text.strip() else "N/A"
         except Exception as e:
-            Actor.log.error(f"[{SKU}] Error extracting Name: {e}")
+            Actor.log.error(f"[{SKU}] Error extracting Name (fallback): {e}")
             base_name = "N/A"
         weight_str = product_info.get('Weight', None)
         if weight_str and weight_str != "N/A":
@@ -407,6 +424,7 @@ def scrape_single_product(SKU, driver):
                 product_info['Name'] = base_name
         else:
             product_info['Name'] = base_name
+        Actor.log.info(f"✅ Name extracted (fallback): {product_info['Name']}")
         # Extract Weight
         weight = None
         size_labels = soup.find_all('label')
@@ -450,6 +468,7 @@ def scrape_single_product(SKU, driver):
                 Actor.log.error(f"[{SKU}] Error extracting Weight (fallback): {e}")
                 weight = "N/A"
         product_info['Weight'] = weight if weight else "N/A"
+        Actor.log.info(f"⚖️ Weight extracted (fallback): {product_info['Weight']}")
         # Extract Images (carousel images in order, fallback if <7)
         product_info['Image URLs'] = []
         try:
@@ -490,8 +509,9 @@ def scrape_single_product(SKU, driver):
                 if len(deduped_imgs) == 7:
                     break
             product_info['Image URLs'] = deduped_imgs
+            Actor.log.info(f"🖼️ Extracted {len(product_info['Image URLs'])} images (fallback).")
         except Exception as e:
-            Actor.log.error(f"[{SKU}] Error extracting Image URLs: {e}")
+            Actor.log.error(f"[{SKU}] Error extracting Image URLs (fallback): {e}")
         # Always return the required fields, even if some are missing
         # Print missing fields for debugging
         missing = []
@@ -499,7 +519,7 @@ def scrape_single_product(SKU, driver):
             if not product_info.get(key):
                 missing.append(key)
         if missing:
-            Actor.log.warning(f"[{SKU}] Missing fields in extracted product_info: {', '.join(missing)}")
+            Actor.log.warning(f"[{SKU}] Missing fields in extracted product_info (fallback): {', '.join(missing)}")
 
         # Check for critical missing data - return None if essential fields are missing
         critical_fields_missing = (
@@ -508,12 +528,14 @@ def scrape_single_product(SKU, driver):
         )
 
         if critical_fields_missing:
+            Actor.log.warning(f"SKU {SKU} is missing critical data (fallback). Discarding.")
             return None
 
+        Actor.log.info(f"📊 Extracted data summary (fallback): Name={product_info.get('Name', 'N/A')[:30]}..., Brand={product_info.get('Brand', 'N/A')}, Images={len(product_info.get('Image URLs', []))}, Weight={product_info.get('Weight', 'N/A')}")
         return [product_info]
 
     except Exception as e:
-        Actor.log.error(f'[{SKU}] Error extracting product info: {e}')
+        Actor.log.error(f'[{SKU}] Error extracting product info (fallback): {e}')
         return None
 
 

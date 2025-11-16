@@ -185,6 +185,7 @@ def scrape_single_product(SKU, driver):
         return None
 
     url = f'https://coastalpet.com/products/search/?q={SKU}&currentPage=1'
+    Actor.log.info(f"Navigating to search URL: {url}")
 
     try:
         driver.get(url)
@@ -208,6 +209,7 @@ def scrape_single_product(SKU, driver):
     try:
         no_results = driver.find_elements(By.CSS_SELECTOR, ".no-results")
         if no_results:
+            Actor.log.info(f"No results found for SKU: {SKU}")
             return None
     except:
         pass
@@ -215,11 +217,13 @@ def scrape_single_product(SKU, driver):
     # Find product items
     try:
         product_items = driver.find_elements(By.CSS_SELECTOR, ".product-item")
+        Actor.log.info(f"Found {len(product_items)} product items on search results page.")
     except Exception as e:
         Actor.log.error(f'[{SKU}] Error finding product items: {e}')
         return None
 
     if not product_items:
+        Actor.log.warning(f"No product items found for SKU: {SKU}")
         return None
 
     # Process first product (assuming exact match or best match)
@@ -229,6 +233,7 @@ def scrape_single_product(SKU, driver):
         # Click on the product to go to detail page
         link_element = product_item.find_element(By.CSS_SELECTOR, "a.product-item-link")
         product_url = link_element.get_attribute('href')
+        Actor.log.info(f"Navigating to product page: {product_url}")
 
         if product_url:
             driver.get(product_url)
@@ -240,7 +245,7 @@ def scrape_single_product(SKU, driver):
 
         # DEBUG MODE: Pause for manual inspection
         if DEBUG_MODE:
-            Actor.log.info(f"🐛 DEBUG MODE: Product page loaded for SKU {SKU}")
+            Actor.log.debug(f"🐛 DEBUG MODE: Product page loaded for SKU {SKU}")
             Actor.log.info("Press Enter in the terminal to continue with data extraction...")
             input("🐛 DEBUG MODE: Inspect the product page, then press Enter to continue...")
 
@@ -256,20 +261,25 @@ def scrape_single_product(SKU, driver):
         'Weight': 'N/A',
         'Image URLs': []
     }
+    Actor.log.info(f"🔍 Starting data extraction for SKU: {SKU}")
 
     try:
         # Extract name
         try:
             name_element = driver.find_element(By.CSS_SELECTOR, ".product-title h1")
             product_info['Name'] = clean_string(name_element.text)
+            Actor.log.info(f"✅ Name extracted: {product_info['Name']}")
         except:
+            Actor.log.warning("⚠️ Name not found.")
             pass
 
         # Extract brand
         try:
             brand_element = driver.find_element(By.CSS_SELECTOR, ".product-brand")
             product_info['Brand'] = clean_string(brand_element.text)
+            Actor.log.info(f"✅ Brand extracted: {product_info['Brand']}")
         except:
+            Actor.log.warning("⚠️ Brand not found.")
             pass
 
         # Extract weight from name or description
@@ -291,10 +301,14 @@ def scrape_single_product(SKU, driver):
                     product_info['Weight'] = str(float(weight_value) * 2.20462)
                 elif weight_unit == 'g':
                     product_info['Weight'] = str(float(weight_value) * 0.00220462)
+                Actor.log.info(f"⚖️ Weight extracted and converted to lbs: {product_info['Weight']}")
+            else:
+                Actor.log.info("⚖️ Weight not found in product name.")
 
         # Extract images
         try:
             image_elements = driver.find_elements(By.CSS_SELECTOR, ".product-gallery img")
+            Actor.log.info(f"🖼️ Found {len(image_elements)} image elements.")
             for img in image_elements:
                 img_url = img.get_attribute('src')
                 if img_url:
@@ -305,6 +319,7 @@ def scrape_single_product(SKU, driver):
 
             # Limit to 7 images
             product_info['Image URLs'] = product_info['Image URLs'][:7]
+            Actor.log.info(f"🖼️ Extracted {len(product_info['Image URLs'])} images.")
 
         except Exception as e:
             Actor.log.error(f'[{SKU}] Error extracting images: {e}')
@@ -319,6 +334,7 @@ def scrape_single_product(SKU, driver):
             Actor.log.warning(f'[{SKU}] Critical fields missing, skipping product')
             return None
 
+        Actor.log.info(f"📊 Extracted data summary: Name={product_info.get('Name', 'N/A')[:30]}..., Brand={product_info.get('Brand', 'N/A')}, Images={len(product_info.get('Image URLs', []))}, Weight={product_info.get('Weight', 'N/A')}")
         return product_info
 
     except Exception as e:

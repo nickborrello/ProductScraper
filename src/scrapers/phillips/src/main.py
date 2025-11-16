@@ -303,12 +303,15 @@ def scrape_single_product(SKU, driver):
         'Weight': 'N/A',
         'Image URLs': []
     }
+    Actor.log.info(f"🔍 Starting data extraction for SKU: {SKU}")
 
     try:
         search_url = SEARCH_URL_TEMPLATE.format(SKU)
         driver.get(search_url)
+        Actor.log.info(f"Navigated to search URL: {search_url}")
 
         if SEARCH_URL_TEMPLATE.split("?")[0] not in driver.current_url:
+            Actor.log.error("Navigation to search URL failed. Aborting.")
             return None
 
         # Wait for either product results or empty state message
@@ -329,22 +332,29 @@ def scrape_single_product(SKU, driver):
         if empty_msg_elements:
             empty_text = empty_msg_elements[0].text.strip().lower()
             if "no results were found" in empty_text:
+                Actor.log.info(f"No results found for SKU: {SKU}")
                 return None
 
         product_elements = driver.find_elements(By.CSS_SELECTOR, "div.cc_product_item.cc_row_item")
+        Actor.log.info(f"Found {len(product_elements)} product elements on the page.")
 
         for product in product_elements:
             try:
                 upc_elem = product.find_element(By.XPATH, ".//div[contains(@class,'product-upc')]//span[contains(@class,'cc_value')]")
                 current_upc = upc_elem.text.strip()
                 if current_upc == SKU:
+                    Actor.log.info(f"Found matching product for SKU: {SKU}")
                     name = product.find_element(By.CSS_SELECTOR, "a.cc_product_name").text.strip()
-                    brand = product.find_element(By.CSS_SELECTOR, "div.product-brand span").text.strip()
-                    image = product.find_element(By.CSS_SELECTOR, "div.cc_product_image img").get_attribute("src")
-
                     product_info['Name'] = name if name else 'N/A'
+                    Actor.log.info(f"✅ Name extracted: {product_info['Name']}")
+
+                    brand = product.find_element(By.CSS_SELECTOR, "div.product-brand span").text.strip()
                     product_info['Brand'] = brand if brand else 'N/A'
+                    Actor.log.info(f"✅ Brand extracted: {product_info['Brand']}")
+
+                    image = product.find_element(By.CSS_SELECTOR, "div.cc_product_image img").get_attribute("src")
                     product_info['Image URLs'] = [image] if image else []
+                    Actor.log.info(f"🖼️ Image extracted: {image}")
 
                     # Check for critical missing data - return None if essential fields are missing
                     critical_fields_missing = (
@@ -353,15 +363,19 @@ def scrape_single_product(SKU, driver):
                     )
 
                     if critical_fields_missing:
+                        Actor.log.warning(f"SKU {SKU} is missing critical data. Discarding.")
                         return None
-
+                    
+                    Actor.log.info(f"📊 Extracted data summary: Name={product_info.get('Name', 'N/A')[:30]}..., Brand={product_info.get('Brand', 'N/A')}, Images={len(product_info.get('Image URLs', []))}")
                     return product_info
             except Exception as e:
                 continue
-
+        
+        Actor.log.warning(f"No exact UPC match for SKU {SKU}, products loaded but skipped.")
         return None
 
     except Exception as e:
+        Actor.log.error(f"An exception occurred while scraping SKU {SKU}: {e}")
         return None
 
 

@@ -405,6 +405,7 @@ class OrgillScraper:
             'Weight': 'N/A',
             'Image URLs': []
         }
+        Actor.log.info(f"🔍 Starting data extraction for SKU: {sku}")
 
         # Extract name
         try:
@@ -420,6 +421,7 @@ class OrgillScraper:
                 name_text = self.driver.execute_script("return arguments[0].innerHTML;", name_element).strip()
                 if name_text:
                     product_info['Name'] = self._clean_string(name_text)
+            Actor.log.info(f"✅ Name extracted: {product_info['Name']}")
         except Exception as e:
             logger.warning(f"Error extracting name: {e}")
 
@@ -427,6 +429,7 @@ class OrgillScraper:
         try:
             vendor_element = self.driver.find_element(By.ID, "cphMainContent_ctl00_lblVendorName")
             product_info['Brand'] = self._clean_string(vendor_element.text)
+            Actor.log.info(f"✅ Brand extracted: {product_info['Brand']}")
         except Exception as e:
             logger.warning(f"Error extracting brand: {e}")
 
@@ -437,6 +440,7 @@ class OrgillScraper:
             brand_lower = brand_name.lower()
             if name_lower.startswith(brand_lower + ' ') or name_lower.startswith(brand_lower + '-'):
                 product_info['Name'] = self._clean_string(product_info['Name'][len(brand_name):].lstrip(' -'))
+                Actor.log.info(f"✨ Cleaned name: {product_info['Name']}")
 
         # Remove model number from name
         try:
@@ -445,6 +449,7 @@ class OrgillScraper:
             if model_number:
                 product_info['Name'] = re.sub(rf'\b{re.escape(model_number)}\b', '', product_info['Name'])
                 product_info['Name'] = re.sub(r'\s{2,}', ' ', product_info['Name']).strip()
+                Actor.log.info(f"✨ Cleaned name (removed model number): {product_info['Name']}")
         except:
             pass  # Model number is optional
 
@@ -475,6 +480,7 @@ class OrgillScraper:
                 if weight_text:
                     product_info['Weight'] = weight_text
                     weight_found = True
+                    Actor.log.info(f"⚖️ Weight extracted: {product_info['Weight']}")
             except:
                 pass
 
@@ -486,8 +492,12 @@ class OrgillScraper:
                     if weight_text:
                         product_info['Weight'] = weight_text
                         weight_found = True
+                        Actor.log.info(f"⚖️ Weight extracted: {product_info['Weight']}")
                 except:
                     pass
+            
+            if not weight_found:
+                Actor.log.warning("⚠️ Weight not found.")
 
         except Exception as e:
             logger.warning(f"Error extracting weight: {e}")
@@ -495,13 +505,16 @@ class OrgillScraper:
         # Extract images
         try:
             img_elements = self.driver.find_elements(By.XPATH, "//img[contains(@src, 'images1.orgill.com/websmall/')]")
+            Actor.log.info(f"🖼️ Found {len(img_elements)} image elements.")
             for img_element in img_elements:
                 img_url = img_element.get_attribute('src')
                 if img_url and img_url not in product_info['Image URLs']:
                     product_info['Image URLs'].append(img_url)
+            Actor.log.info(f"🖼️ Extracted {len(product_info['Image URLs'])} images.")
         except Exception as e:
             logger.warning(f"Error extracting images: {e}")
 
+        Actor.log.info(f"📊 Extracted data summary: Name={product_info.get('Name', 'N/A')[:30]}..., Brand={product_info.get('Brand', 'N/A')}, Images={len(product_info.get('Image URLs', []))}, Weight={product_info.get('Weight', 'N/A')}")
         return product_info
 
     def _validate_product_data(self, product_data: Dict[str, Any]) -> bool:

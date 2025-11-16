@@ -410,11 +410,151 @@ def scrape_single_product(sku, driver):
         # Give page a moment to fully load
         time.sleep(2)
 
+def scrape_single_product(sku, driver):
+    """
+    Scrape a single product from Pet Food Experts website.
+    """
+    if driver is None:
+        return None
+
+    try:
+        search_url = f"https://orders.petfoodexperts.com/Search?query={sku}"
+        Actor.log.info(f"Navigating to search URL: {search_url}")
+        driver.get(search_url)
+
+        # Wait for page to load - either search results or product detail
+        WebDriverWait(driver, 15).until(
+            EC.any_of(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "label[data-test-selector='productListSortSelect-label']")),
+                EC.presence_of_element_located((By.CSS_SELECTOR, "div.pf-detail-wrap")),
+                # Also wait for "no results" message
+                EC.presence_of_element_located((By.CSS_SELECTOR, ".pf-no-results")),
+            )
+        )
+
+        # Give page a moment to fully load
+        time.sleep(2)
+
         # DEBUG MODE: Pause for manual inspection
         if DEBUG_MODE:
-            Actor.log.info(f"🐛 DEBUG MODE: Product page loaded for SKU {sku}")
+            Actor.log.debug(f"🐛 DEBUG MODE: Product page loaded for SKU {sku}")
             Actor.log.info("Press Enter in the terminal to continue with data extraction...")
             input("🐛 DEBUG MODE: Inspect the product page, then press Enter to continue...")
+
+        # Check if we're on a product detail page (has highest priority)
+        if driver.find_elements(By.CSS_SELECTOR, "div.pf-detail-wrap"):
+            Actor.log.info("Product detail page found. Starting extraction...")
+            time.sleep(1)
+            try:
+                brand_elem = driver.find_element(By.CSS_SELECTOR, "a.pf-detail-title span")
+            except:
+                brand_elem = None
+            try:
+                name_elem = driver.find_element(By.CSS_SELECTOR, "div.pf-detail-heading h1")
+            except:
+                name_elem = None
+
+            # Extract all images - main image and slider thumbnails
+            image_urls = []
+            try:
+                # Get main image
+                main_image = driver.find_element(By.CSS_SELECTOR, "img[data-test-selector='productDetails_mainImage']")
+                main_image_src = main_image.get_attribute("src")
+                if main_image_src:
+                    image_urls.append(main_image_src)
+                Actor.log.info(f"🖼️ Found main image: {main_image_src}")
+            except:
+                Actor.log.warning("⚠️ Main image not found.")
+                pass
+
+            try:
+                # Get all slider thumbnail images
+                slider_images = driver.find_elements(By.CSS_SELECTOR, ".pf-detail-nav .pf-slide img")
+                Actor.log.info(f"🖼️ Found {len(slider_images)} thumbnail images.")
+                for img in slider_images:
+                    img_src = img.get_attribute("src")
+                    if img_src and img_src not in image_urls:
+                        # Convert small (_sm) images to medium (_md) for better quality
+                        if "_sm.png" in img_src:
+                            img_src = img_src.replace("_sm.png", "_md.png")
+                        elif "_sm.jpg" in img_src:
+                            img_src = img_src.replace("_sm.jpg", "_md.jpg")
+                        image_urls.append(img_src)
+            except Exception as e:
+                pass
+
+            brand = brand_elem.text.strip() if brand_elem else ""
+            Actor.log.info(f"✅ Brand extracted: {brand}")
+            name = name_elem.text.strip() if name_elem else ""
+            Actor.log.info(f"✅ Name extracted: {name}")
+            # Normalize to title case if all caps
+            if brand.isupper():
+                brand = brand.title()
+            if name.isupper():
+                name = name.title()
+
+            # Remove brand from beginning of name if present (case-insensitive)
+            if brand and brand.strip() and name.startswith(brand + " "):
+                name = name[len(brand) + 1:].strip()
+            elif brand and brand.strip() and name.startswith(brand + "-"):
+                name = name[len(brand) + 1:].strip()
+
+            # Normalize weights like '12Oz' to '12 oz.' in name
+            import re
+            name = re.sub(r'(\d+)\s*[Oo][Zz]\b', r'\1 oz.', name)
+            Actor.log.info(f"✨ Cleaned name: {name}")
+
+            # Parse weight from name and convert to LB
+            weight_lb = parse_weight_from_name(name)
+            Actor.log.info(f"⚖️ Weight extracted: {weight_lb} lbs")
+
+            product_info = {
+                "SKU": sku,
+                "Name": name,
+                "Brand": brand,
+                "Image URLs": image_urls,
+                "Weight": weight_lb,
+            }
+
+            # Check for critical missing data - return None if essential fields are missing
+            critical_fields_missing = (
+                not product_info.get('Name', '').strip() or
+                not product_info.get('Brand', '').strip() or
+                not product_info.get('Image URLs')
+            )
+
+            if critical_fields_missing:
+                Actor.log.warning(f"SKU {sku} is missing critical data. Discarding.")
+                return None
+
+            Actor.log.info(f"📊 Extracted data summary: Name={product_info.get('Name', 'N/A')[:30]}..., Brand={product_info.get('Brand', 'N/A')}, Images={len(product_info.get('Image URLs', []))}, Weight={product_info.get('Weight', 'N/A')}")
+            return product_info
+
+        # Check for no results message
+        elif driver.find_elements(By.CSS_SELECTOR, ".pf-no-results"):
+            Actor.log.info(f"No results found for SKU: {sku}")
+            return None
+
+        # Check if we're on search results page with actual results
+        elif driver.find_elements(By.CSS_SELECTOR, "label[data-test-selector='productListSortSelect-label']"):
+            # Look for product cards in search results - be more specific to avoid false positives
+            product_cards = driver.find_elements(By.CSS_SELECTOR, ".pf-product-card, .product-card")
+            if product_cards:
+                Actor.log.warning(f"Multiple products found for SKU {sku}, which is not expected. Skipping.")
+                # This might indicate the SKU matches multiple products - we could potentially scrape the first one
+                # For now, return None since we expect direct navigation for exact SKU matches
+                return None
+            else:
+                Actor.log.warning(f"On search results page but no product cards found for SKU {sku}")
+                return None
+
+        else:
+            Actor.log.warning(f"Unexpected page state for SKU {sku}. No recognized elements found.")
+            return None
+
+    except Exception as e:
+        Actor.log.error(f"PetFoodExperts scrape error for SKU {sku}: {e}")
+        return None
 
         # Check if we're on a product detail page (has highest priority)
         if driver.find_elements(By.CSS_SELECTOR, "div.pf-detail-wrap"):
