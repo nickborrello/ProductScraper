@@ -98,9 +98,15 @@ jobs:
     steps:
     - name: Notify deployment status
       run: |
-        if [ "${{ needs.deploy.result }}" = "success" ]; then
-          echo "🎉 Deployment successful!"
-        else
-          echo "❌ Deployment failed!"
-          exit 1
-        fi
+        case "${{ needs.deploy.result }}" in
+          success)
+            echo "🎉 Deployment successful!"
+            ;;
+          skipped)
+            echo "⚠️ Deployment skipped - check validation job or environment configuration"
+            ;;
+          *)
+            echo "❌ Deployment failed or cancelled!"
+            exit 1
+            ;;
+        esac
