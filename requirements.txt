@@ -16,5 +16,6 @@ undetected-chromedriver>=3.5.5
 apify-client>=1.8.0
 apify>=1.2.0
 fake-useragent>=1.4.0
+httpx>=0.24.0
 
 ollama
