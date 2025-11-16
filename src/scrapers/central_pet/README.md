@@ -190,12 +190,14 @@ docker run central-pet-scraper
 
 ### Debug Mode
 
-Enable detailed logging for troubleshooting:
+To run the scraper in debug mode, you can use the `HEADLESS` and `DEBUG_MODE` environment variables. This will run the browser in a visible window and pause the script at certain points for manual inspection.
 
-```python
-import logging
-logging.basicConfig(level=logging.DEBUG)
+```bash
+# Run the Central Pet scraper in debug mode
+HEADLESS=False DEBUG_MODE=True python src/scrapers/central_pet/src/main.py
 ```
+
+This is useful for observing the scraper's behavior and debugging issues with selectors or site changes.
 
 ## 🧪 Testing
 

@@ -1,51 +1,31 @@
-# Pet Food Experts Scraper Apify Actor
+# Pet Food Experts Product Scraper
 
-This Apify actor scrapes product information from the Pet Food Experts website.
-
-## Input
-
-The actor accepts the following input:
-
-```json
-{
-  "skus": ["string"]
-}
-```
-
-- `skus`: Array of SKU strings to search for on Pet Food Experts website
-
-## Output
-
-The actor outputs product data in the following format:
-
-```json
-{
-  "SKU": "string",
-  "Name": "string",
-  "Brand": "string",
-  "Weight": "string",
-  "Image URLs": ["string"]
-}
-```
+This Apify actor scrapes product information from the Pet Food Experts website for a given list of SKUs.
 
 ## Features
 
-- Searches Pet Food Experts website for products by SKU
-- Handles login authentication using stored credentials
-- Extracts product name, brand, weight, and image URLs
-- Parses weight from product names and converts to pounds
-- Handles main product images and slider thumbnails
-- Runs in headless mode for production deployment
+- Scrapes product Name, Brand, Image URLs, and Weight.
+- Handles login authentication.
+- Navigates search results to find the correct product page.
+- Detailed logging for debugging.
 
-## Environment Variables
+## Input
 
-Requires Pet Food Experts login credentials configured in settings.
+The actor accepts a JSON object with a list of SKUs:
 
-## Dependencies
+```json
+{
+  "skus": ["SKU1", "SKU2", ...]
+}
+```
 
-- apify
-- selenium
-- webdriver-manager
-- beautifulsoup4
-- lxml
-- python-dotenv
+## Debugging
+
+To run the scraper in debug mode, you can use the `HEADLESS` and `DEBUG_MODE` environment variables. This will run the browser in a visible window and pause the script at certain points for manual inspection.
+
+```bash
+# Run the PetFoodEx scraper in debug mode
+HEADLESS=False DEBUG_MODE=True python src/scrapers/petfoodex/src/main.py
+```
+
+This is useful for observing the scraper's behavior and debugging issues with selectors or site changes.

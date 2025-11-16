@@ -98,6 +98,17 @@ python test_scrapers.py --all
 python platform_test_scrapers.py --platform --scraper amazon
 ```
 
+### Debugging
+
+To run a scraper in debug mode, you can use the `HEADLESS` and `DEBUG_MODE` environment variables. This will run the browser in a visible window and pause the script at certain points for manual inspection.
+
+```bash
+# Run a scraper in debug mode
+HEADLESS=False DEBUG_MODE=True python src/scrapers/amazon/src/main.py
+```
+
+This is useful for observing the scraper's behavior and debugging issues with selectors or site changes.
+
 ### Testing Framework
 
 The enhanced testing framework provides multiple testing modes:

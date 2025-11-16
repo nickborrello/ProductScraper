@@ -1,50 +1,31 @@
-# Phillips Scraper Apify Actor
+# Phillips Product Scraper
 
-This Apify actor scrapes product information from the Phillips Pet website.
-
-## Input
-
-The actor accepts the following input:
-
-```json
-{
-  "skus": ["string"]
-}
-```
-
-- `skus`: Array of SKU strings to search for on Phillips Pet website
-
-## Output
-
-The actor outputs product data in the following format:
-
-```json
-{
-  "SKU": "string",
-  "Name": "string",
-  "Brand": "string",
-  "Weight": "string",
-  "Image URLs": ["string"]
-}
-```
+This Apify actor scrapes product information from the Phillips Pet Food & Supplies website for a given list of SKUs.
 
 ## Features
 
-- Searches Phillips Pet website for products by SKU
-- Handles login authentication using stored credentials
-- Extracts product name, brand, and image URLs
-- Matches exact UPC codes for accurate results
-- Runs in headless mode for production deployment
+- Scrapes product Name, Brand, and Image URLs.
+- Handles login authentication.
+- Navigates search results to find the correct product page by matching the UPC.
+- Detailed logging for debugging.
 
-## Environment Variables
+## Input
 
-Requires Phillips login credentials configured in settings.
+The actor accepts a JSON object with a list of SKUs:
 
-## Dependencies
+```json
+{
+  "skus": ["SKU1", "SKU2", ...]
+}
+```
 
-- apify
-- selenium
-- webdriver-manager
-- beautifulsoup4
-- lxml
-- pandas
+## Debugging
+
+To run the scraper in debug mode, you can use the `HEADLESS` and `DEBUG_MODE` environment variables. This will run the browser in a visible window and pause the script at certain points for manual inspection.
+
+```bash
+# Run the Phillips scraper in debug mode
+HEADLESS=False DEBUG_MODE=True python src/scrapers/phillips/src/main.py
+```
+
+This is useful for observing the scraper's behavior and debugging issues with selectors or site changes.
