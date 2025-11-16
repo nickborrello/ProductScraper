@@ -34,7 +34,7 @@ try:
     FLASK_AVAILABLE = True
 except ImportError:
     FLASK_AVAILABLE = False
-    print("⚠️ Flask not available. Install with: pip install flask requests beautifulsoup4")
+    print("WARNING: Flask not available. Install with: pip install flask requests beautifulsoup4")
 
 
 @dataclass
@@ -89,7 +89,7 @@ class SelectorDebugger:
             self.current_url = url
             return True
         except Exception as e:
-            print(f"❌ Failed to load page {url}: {e}")
+            print(f"ERROR: Failed to load page {url}: {e}")
             return False
 
     def test_selector(self, selector: str, selector_type: str = 'css') -> ScraperTestResult:
@@ -184,10 +184,10 @@ class SelectorDebugger:
             else:
                 count = self.driver.execute_script(script.replace('{selector}', selector))
 
-            print(f"✅ Highlighted {count} elements with selector: {selector}")
+            print(f"SUCCESS: Highlighted {count} elements with selector: {selector}")
 
         except Exception as e:
-            print(f"❌ Failed to highlight elements: {e}")
+            print(f"ERROR: Failed to highlight elements: {e}")
 
     def close(self):
         """Close the browser."""
@@ -264,12 +264,12 @@ class MockServer:
 
         # Wait for server to start
         time.sleep(1)
-        print(f"🌐 Mock server started on http://127.0.0.1:{self.port}")
+        print(f"Mock server started on http://127.0.0.1:{self.port}")
 
     def stop(self):
         """Stop the mock server."""
         self.running = False
-        print("🛑 Mock server stopped")
+        print("Mock server stopped")
 
     def get_url(self, path: str = "") -> str:
         """Get the full URL for a mock page."""
@@ -311,7 +311,7 @@ class ScraperDevGUI:
                 </style>
             </head>
             <body>
-                <h1>🕷️ Scraper Development GUI</h1>
+                <h1>Scraper Development GUI</h1>
 
                 <div class="section">
                     <h2>Load Page</h2>
@@ -357,8 +357,8 @@ class ScraperDevGUI:
                     .then(r => r.json())
                     .then(data => {
                         document.getElementById('pageStatus').innerHTML =
-                            data.success ? '<span class="success">✅ Page loaded</span>' :
-                                         '<span class="error">❌ Failed to load page</span>';
+                            data.success ? '<span class="success">SUCCESS: Page loaded</span>' :
+                                          '<span class="error">ERROR: Failed to load page</span>';
                     });
                 }
 
@@ -376,9 +376,9 @@ class ScraperDevGUI:
                         document.getElementById('selectorResult').innerHTML = `
                             <div class="result">
                                 <strong>${result.selector_name}</strong><br>
-                                Found: ${result.found ? '✅' : '❌'} (${result.count} elements)<br>
+                                Found: ${result.found ? 'YES' : 'NO'} (${result.count} elements)<br>
                                 Text: ${result.text.substring(0, 100)}${result.text.length > 100 ? '...' : ''}<br>
-                                Success: ${result.success ? '<span class="success">✅</span>' : '<span class="error">❌</span>'}
+                                Success: ${result.success ? '<span class="success">SUCCESS</span>' : '<span class="error">FAILED</span>'}
                             </div>
                         `;
                     });
@@ -420,7 +420,7 @@ class ScraperDevGUI:
                     .then(data => {
                         let html = '<div class="result">';
                         data.results.forEach(result => {
-                            html += `<strong>${result.name}:</strong> ${result.found ? '✅' : '❌'} (${result.count})<br>`;
+                            html += `<strong>${result.name}:</strong> ${result.found ? 'YES' : 'NO'} (${result.count})<br>`;
                         });
                         html += '</div>';
                         document.getElementById('quickTestsResult').innerHTML = html;
@@ -500,7 +500,7 @@ class ScraperDevGUI:
         gui_thread = threading.Thread(target=run_gui, daemon=True)
         gui_thread.start()
 
-        print(f"🎛️ Scraper Development GUI started on http://127.0.0.1:{self.port}")
+        print(f"Scraper Development GUI started on http://127.0.0.1:{self.port}")
         webbrowser.open(f"http://127.0.0.1:{self.port}")
 
     def stop(self):
@@ -536,7 +536,7 @@ class ScraperTestSuite:
                     )
                     self.test_cases.append(test)
         except Exception as e:
-            print(f"❌ Failed to load test cases: {e}")
+            print(f"ERROR: Failed to load test cases: {e}")
 
     def run_tests(self, url: str) -> Dict[str, Any]:
         """Run all test cases against a URL."""

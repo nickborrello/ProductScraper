@@ -55,27 +55,27 @@ class ScraperDevCLI:
 
     def debug_selector(self, url: str, selector: str, selector_type: str = 'css', highlight: bool = False):
         """Debug a selector against a live page."""
-        print(f"🔍 Testing selector: {selector} ({selector_type})")
-        print(f"📄 URL: {url}")
+        print(f"Testing selector: {selector} ({selector_type})")
+        print(f"URL: {url}")
 
         if highlight:
             self.debugger.headless = False  # Need visible browser for highlighting
 
         if not self.debugger.load_page(url):
-            print("❌ Failed to load page")
+            print("ERROR: Failed to load page")
             return False
 
         result = self.debugger.test_selector(selector, selector_type)
 
-        print(f"\n📊 Results:")
-        print(f"  Found: {'✅' if result.found else '❌'} ({result.count} elements)")
+        print(f"\nResults:")
+        print(f"  Found: {'YES' if result.found else 'NO'} ({result.count} elements)")
         print(f"  Text: {result.text[:200]}{'...' if len(result.text) > 200 else ''}")
 
         if result.html:
             print(f"  HTML: {result.html[:200]}{'...' if len(result.html) > 200 else ''}")
 
         if highlight and result.found:
-            print("🎨 Highlighting elements in browser...")
+            print("Highlighting elements in browser...")
             self.debugger.highlight_element(selector, selector_type)
             input("Press Enter to continue...")
 
@@ -85,8 +85,8 @@ class ScraperDevCLI:
         """Create a test suite for a scraper."""
         test_file = PROJECT_ROOT / "tests" / "fixtures" / f"{scraper_name}_selectors.json"
 
-        print(f"🧪 Creating test suite for {scraper_name}")
-        print(f"📄 Test file: {test_file}")
+        print(f"Creating test suite for {scraper_name}")
+        print(f"Test file: {test_file}")
 
         # Common selectors to test
         common_tests = [
@@ -135,16 +135,16 @@ class ScraperDevCLI:
         with open(test_file, 'w') as f:
             json.dump(data, f, indent=2)
 
-        print(f"✅ Test suite created with {len(common_tests)} tests")
+        print(f"SUCCESS: Test suite created with {len(common_tests)} tests")
         return str(test_file)
 
     def run_test_suite(self, test_file: str):
         """Run a test suite."""
         if not os.path.exists(test_file):
-            print(f"❌ Test file not found: {test_file}")
+            print(f"ERROR: Test file not found: {test_file}")
             return False
 
-        print(f"🧪 Running test suite: {test_file}")
+        print(f"Running test suite: {test_file}")
 
         self.test_suite.load_test_cases_from_file(test_file)
 
@@ -154,19 +154,19 @@ class ScraperDevCLI:
             test_url = data.get("test_url")
 
         if not test_url:
-            print("❌ No test URL found in test file")
+            print("ERROR: No test URL found in test file")
             return False
 
         results = self.test_suite.run_tests(test_url)
 
-        print(f"\n📊 Test Results:")
+        print(f"\nTest Results:")
         print(f"  Total: {results['total_tests']}")
         print(f"  Passed: {results['passed']}")
         print(f"  Failed: {results['failed']}")
         print(f"  Success Rate: {results['success_rate']:.1f}%")
 
         if results['failed'] > 0:
-            print(f"\n❌ Failed Tests:")
+            print(f"\nFailed Tests:")
             for result in results['results']:
                 if not result['success']:
                     print(f"  • {result['test_name']}: expected {result['expected_count']} elements, got {result['actual_count']}")
@@ -186,7 +186,7 @@ class ScraperDevCLI:
         ))
 
         self.mock_server.start()
-        print(f"🌐 Mock server running on http://127.0.0.1:{port}")
+        print(f"Mock server running on http://127.0.0.1:{port}")
         print("Available pages:")
         for path in self.mock_server.mock_pages.keys():
             print(f"  • http://127.0.0.1:{port}/mock/{path}")
@@ -201,7 +201,7 @@ class ScraperDevCLI:
 
     def compare_scrapers(self, scraper1: str, scraper2: str, url: str):
         """Compare two scrapers against the same URL."""
-        print(f"🔄 Comparing {scraper1} vs {scraper2} on {url}")
+        print(f"Comparing {scraper1} vs {scraper2} on {url}")
 
         # This would integrate with their existing scraper testing
         # For now, just run both tests
@@ -211,9 +211,9 @@ class ScraperDevCLI:
         print(f"\nTesting {scraper2}...")
         success2 = self.run_existing_tests(scraper2, verbose=True)
 
-        print(f"\n📊 Comparison Results:")
-        print(f"  {scraper1}: {'✅' if success1 else '❌'}")
-        print(f"  {scraper2}: {'✅' if success2 else '❌'}")
+        print(f"\nComparison Results:")
+        print(f"  {scraper1}: {'PASS' if success1 else 'FAIL'}")
+        print(f"  {scraper2}: {'PASS' if success2 else 'FAIL'}")
 
         return success1 and success2
 
@@ -222,7 +222,7 @@ class ScraperDevCLI:
         scraper_dir = PROJECT_ROOT / "src" / "scrapers" / scraper_name
         src_dir = scraper_dir / "src"
 
-        print(f"🛠️ Generating scraper template: {scraper_name}")
+        print(f"Generating scraper template: {scraper_name}")
 
         # Create directory structure
         src_dir.mkdir(parents=True, exist_ok=True)
@@ -304,9 +304,9 @@ async def main() -> None:
             product = scrape_product(url)
             if product:
                 products.append(product)
-                Actor.log.info(f"✅ Scraped: {{product.get('Name', 'Unknown')}}")
+                Actor.log.info(f"SUCCESS: Scraped: {{product.get('Name', 'Unknown')}}")
             else:
-                Actor.log.warning(f"❌ Failed to scrape SKU: {{sku}}")
+                Actor.log.warning(f"ERROR: Failed to scrape SKU: {{sku}}")
 
         await Actor.push_data(products)
         Actor.log.info(f"Successfully scraped {{len(products)}} products")
@@ -369,9 +369,9 @@ lxml==4.9.3
         with open(scraper_dir / ".actor" / "actor.json", 'w') as f:
             json.dump(actor_json, f, indent=2)
 
-        print("✅ Scraper template generated!")
-        print(f"📁 Location: {scraper_dir}")
-        print("📝 Next steps:")
+        print("SUCCESS: Scraper template generated!")
+        print(f"Location: {scraper_dir}")
+        print("Next steps:")
         print("  1. Customize the scraping logic in src/main.py")
         print("  2. Test with: python src/utils/scraping/dev_cli.py debug-selector <url> <selector>")
         print("  3. Run tests: python tests/unit/test_scrapers.py --scraper {scraper_name}")
@@ -477,7 +477,7 @@ Examples:
 
         elif args.command == 'create-suite':
             test_file = cli.create_test_suite(args.scraper_name, args.url)
-            print(f"✅ Test suite created: {test_file}")
+            print(f"SUCCESS: Test suite created: {test_file}")
             return 0
 
         elif args.command == 'run-suite':
@@ -498,7 +498,7 @@ Examples:
 
         elif args.command == 'generate-scraper':
             path = cli.generate_scraper_template(args.scraper_name, args.base_url)
-            print(f"✅ Scraper template generated at: {path}")
+            print(f"SUCCESS: Scraper template generated at: {path}")
             return 0
 
         elif args.command == 'compare':
@@ -506,10 +506,10 @@ Examples:
             return 0 if success else 1
 
     except KeyboardInterrupt:
-        print("\n🛑 Interrupted by user")
+        print("\nINTERRUPTED: Stopped by user")
         return 1
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"ERROR: {e}")
         return 1
     finally:
         cli.debugger.close()
