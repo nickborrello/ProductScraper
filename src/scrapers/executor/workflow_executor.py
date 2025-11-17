@@ -5,6 +5,7 @@ Workflow executor for scraper automation using Selenium WebDriver.
 import time
 import random
 import logging
+import re
 from typing import Dict, List, Any, Optional, Union, cast
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -254,6 +255,10 @@ class WorkflowExecutor:
         try:
             element = self.browser.driver.find_element(By.CSS_SELECTOR, selector_config.selector)
             value = self._extract_value_from_element(element, selector_config.attribute)
+            if field_name == 'brand' and value:
+                match = re.match(r"Visit (?:the )?(.+?) Store", value)
+                if match:
+                    value = match.group(1)
             self.results[field_name] = value
             logger.debug(f"Extracted {field_name}: {value}")
         except NoSuchElementException:
@@ -280,6 +285,16 @@ class WorkflowExecutor:
                 if value:
                     values.append(value)
 
+            if field_name == 'brand':
+                cleaned_values = []
+                for v in values:
+                    if v:
+                        match = re.match(r"Visit (?:the )?(.+?) Store", v)
+                        if match:
+                            cleaned_values.append(match.group(1))
+                        else:
+                            cleaned_values.append(v)
+                values = cleaned_values
             self.results[field_name] = values
             logger.debug(f"Extracted {len(values)} items for {field_name}")
         except Exception as e:
@@ -303,10 +318,24 @@ class WorkflowExecutor:
                         value = self._extract_value_from_element(element, selector_config.attribute)
                         if value:
                             values.append(value)
+                    if field_name == 'brand':
+                        cleaned_values = []
+                        for v in values:
+                            if v:
+                                match = re.match(r"Visit (?:the )?(.+?) Store", v)
+                                if match:
+                                    cleaned_values.append(match.group(1))
+                                else:
+                                    cleaned_values.append(v)
+                        values = cleaned_values
                     self.results[field_name] = values
                 else:
                     element = self.browser.driver.find_element(By.CSS_SELECTOR, selector_config.selector)
                     value = self._extract_value_from_element(element, selector_config.attribute)
+                    if field_name == 'brand' and value:
+                        match = re.match(r"Visit (?:the )?(.+?) Store", value)
+                        if match:
+                            value = match.group(1)
                     self.results[field_name] = value
                 logger.debug(f"Extracted {field_name}: {self.results[field_name]}")
             except NoSuchElementException:

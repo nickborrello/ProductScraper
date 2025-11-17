@@ -54,7 +54,7 @@ class ScraperBrowser:
 
         # Initialize browser
         self.driver = webdriver.Chrome(service=service, options=options)
-        print(f"🌐 [{site_name}] Browser initialized (headless={headless}, devtools={enable_devtools})")
+        print(f"[WEB] [{site_name}] Browser initialized (headless={headless}, devtools={enable_devtools})")
 
     def __getattr__(self, name):
         """Delegate WebDriver methods to the underlying driver."""
@@ -69,9 +69,9 @@ class ScraperBrowser:
         if self.driver:
             try:
                 self.driver.quit()
-                print(f"🔒 [{self.site_name}] Browser closed")
+                print(f"[LOCK] [{self.site_name}] Browser closed")
             except Exception as e:
-                print(f"⚠️ [{self.site_name}] Error closing browser: {e}")
+                print(f"[WARN] [{self.site_name}] Error closing browser: {e}")
 
     def __enter__(self):
         """Context manager entry."""
