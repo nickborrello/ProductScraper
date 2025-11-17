@@ -5,6 +5,11 @@ on:
     branches: [ main ]
     paths:
       - 'src/scrapers/**'
+      - 'src/scrapers/config/**'
+      - 'src/scrapers/executor/**'
+      - 'src/scrapers/models/**'
+      - 'src/scrapers/parser/**'
+      - 'src/scrapers/schemas/**'
       - '.github/workflows/cd-deployment.yml'
   workflow_dispatch:
     inputs:

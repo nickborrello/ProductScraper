@@ -1,0 +1,35 @@
+name: "Example Scraper"
+base_url: "https://example.com"
+timeout: 30
+retries: 3
+
+selectors:
+  - name: "product_name"
+    selector: ".product-title"
+    attribute: "text"
+  - name: "price"
+    selector: ".price"
+    attribute: "text"
+  - name: "image_urls"
+    selector: ".product-image img"
+    attribute: "src"
+    multiple: true
+
+workflows:
+  - action: "navigate"
+    params:
+      url: "https://example.com/products"
+  - action: "wait"
+    params:
+      selector: ".product-list"
+      timeout: 10
+  - action: "extract"
+    params:
+      fields: ["product_name", "price", "image_urls"]
+
+login:
+  url: "https://example.com/login"
+  username_field: "#username"
+  password_field: "#password"
+  submit_button: "#login-btn"
+  success_indicator: ".dashboard"
