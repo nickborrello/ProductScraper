@@ -951,6 +951,7 @@ IMPORTANT:
 - Ensure all selector and attribute values are non-null and valid
 - For weight, if found in ounces, convert to pounds (1 oz = 0.0625 lbs) and format as 'X.XX lbs'
 - Return only valid JSON with no null values
+- When using contains selectors, use the proper CSS pseudo-class ':-soup-contains' instead of the deprecated ':contains' (e.g., 'div:-soup-contains("text")' instead of 'div:contains("text")')
 
 HTML Content:
 {self.page_content[:4000]}  # Limit content length
