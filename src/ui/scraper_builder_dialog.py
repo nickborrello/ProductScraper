@@ -307,7 +307,10 @@ class SelectorGenerationPage(QWizardPage):
         self.progress_bar.setVisible(False)
 
         # Store selectors with source information
-        for field_name, selector_info in selectors.items():
+        for field_name, selector_info in list(selectors.items()):
+            if not isinstance(selector_info, dict):
+                selectors[field_name] = {}
+                selector_info = selectors[field_name]
             selector_info['source'] = 'ai'
         self.typed_wizard.set_wizard_data('suggested_selectors', selectors)
 
