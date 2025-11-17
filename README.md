@@ -2,6 +2,8 @@
 
 A comprehensive product data management and scraping platform built with Python. This application scrapes product information from multiple e-commerce sites, manages product databases, and provides both CLI and GUI interfaces with advanced testing capabilities.
 
+<!-- Trigger CI -->
+
 ## Features
 
 ### 🔍 Multi-Site Scraping
