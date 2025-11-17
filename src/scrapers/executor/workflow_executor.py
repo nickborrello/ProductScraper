@@ -3,6 +3,7 @@ Workflow executor for scraper automation using Selenium WebDriver.
 """
 
 import time
+import random
 import logging
 from typing import Dict, List, Any, Optional, Union, cast
 from selenium.webdriver.common.by import By
@@ -12,6 +13,7 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException,
 
 from src.scrapers.models.config import ScraperConfig, WorkflowStep, SelectorConfig
 from src.utils.scraping.browser import create_browser, ScraperBrowser
+from src.core.anti_detection_manager import AntiDetectionManager, AntiDetectionConfig
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +45,7 @@ class WorkflowExecutor:
         self.browser: ScraperBrowser
         self.results = {}
         self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: Optional[AntiDetectionManager] = None
 
         # Initialize browser
         try:
@@ -54,6 +57,15 @@ class WorkflowExecutor:
             logger.info(f"Browser initialized for scraper: {self.config.name}")
         except Exception as e:
             raise WorkflowExecutionError(f"Failed to initialize browser: {e}")
+
+        # Initialize anti-detection manager if configured
+        if config.anti_detection:
+            try:
+                self.anti_detection_manager = AntiDetectionManager(self.browser, config.anti_detection)
+                logger.info(f"Anti-detection manager initialized for scraper: {self.config.name}")
+            except Exception as e:
+                logger.warning(f"Failed to initialize anti-detection manager: {e}")
+                self.anti_detection_manager = None
 
     def execute_workflow(self, quit_browser: bool = True) -> Dict[str, Any]:
         """
@@ -135,6 +147,12 @@ class WorkflowExecutor:
 
         logger.debug(f"Executing step: {action} with params: {params}")
 
+        # Pre-action anti-detection hook
+        if self.anti_detection_manager:
+            if not self.anti_detection_manager.pre_action_hook(action, params):
+                raise WorkflowExecutionError(f"Pre-action anti-detection check failed for '{action}'")
+
+        success = False
         try:
             if action == "navigate":
                 self._action_navigate(params)
@@ -154,11 +172,36 @@ class WorkflowExecutor:
                 self._action_extract(params)
             elif action == "login":
                 self._action_login(params)
+            elif action == "detect_captcha":
+                self._action_detect_captcha(params)
+            elif action == "handle_blocking":
+                self._action_handle_blocking(params)
+            elif action == "rate_limit":
+                self._action_rate_limit(params)
+            elif action == "simulate_human":
+                self._action_simulate_human(params)
+            elif action == "rotate_session":
+                self._action_rotate_session(params)
             else:
                 raise WorkflowExecutionError(f"Unknown action: {action}")
 
+            success = True
+
         except Exception as e:
+            # Try anti-detection error handling
+            if self.anti_detection_manager:
+                retry_count = params.get('retry_count', 0)
+                if self.anti_detection_manager.handle_error(e, action, retry_count):
+                    logger.info(f"Anti-detection error handling succeeded for '{action}', retrying...")
+                    # Increment retry count and retry
+                    params['retry_count'] = retry_count + 1
+                    return self._execute_step(step)
+
             raise WorkflowExecutionError(f"Failed to execute step '{action}': {e}")
+        finally:
+            # Post-action anti-detection hook
+            if self.anti_detection_manager:
+                self.anti_detection_manager.post_action_hook(action, params, success)
 
     def _action_navigate(self, params: Dict[str, Any]):
         """Navigate to a URL."""
@@ -365,6 +408,93 @@ class WorkflowExecutor:
             # If no success indicator, wait a bit for login to process
             time.sleep(3)
             logger.info("Login submitted (no success indicator configured)")
+
+    def _action_detect_captcha(self, params: Dict[str, Any]):
+        """Detect CAPTCHA presence on current page."""
+        if not self.anti_detection_manager or not self.anti_detection_manager.captcha_detector:
+            logger.warning("CAPTCHA detection not enabled")
+            return
+
+        detected = self.anti_detection_manager.captcha_detector.detect_captcha(self.browser.driver)
+        self.results['captcha_detected'] = detected
+
+        if detected:
+            logger.info("CAPTCHA detected on current page")
+            # Store detection result
+            self.results['captcha_details'] = {
+                "detected": True,
+                "timestamp": time.time()
+            }
+        else:
+            logger.debug("No CAPTCHA detected on current page")
+
+    def _action_handle_blocking(self, params: Dict[str, Any]):
+        """Handle blocking pages."""
+        if not self.anti_detection_manager or not self.anti_detection_manager.blocking_handler:
+            logger.warning("Blocking handling not enabled")
+            return
+
+        handled = self.anti_detection_manager.blocking_handler.handle_blocking(self.browser.driver)
+        self.results['blocking_handled'] = handled
+
+        if handled:
+            logger.info("Blocking page handled successfully")
+        else:
+            logger.warning("Failed to handle blocking page")
+
+    def _action_rate_limit(self, params: Dict[str, Any]):
+        """Apply rate limiting delay."""
+        if not self.anti_detection_manager or not self.anti_detection_manager.rate_limiter:
+            logger.warning("Rate limiting not enabled")
+            return
+
+        delay = params.get("delay", None)
+        if delay:
+            # Custom delay
+            time.sleep(delay)
+            logger.debug(f"Applied custom rate limit delay: {delay}s")
+        else:
+            # Use rate limiter's intelligent delay
+            self.anti_detection_manager.rate_limiter.apply_delay()
+            logger.debug("Applied intelligent rate limiting")
+
+    def _action_simulate_human(self, params: Dict[str, Any]):
+        """Simulate human-like behavior."""
+        if not self.anti_detection_manager or not self.anti_detection_manager.human_simulator:
+            logger.warning("Human behavior simulation not enabled")
+            return
+
+        behavior_type = params.get("behavior", "random")
+        duration = params.get("duration", 2.0)
+
+        if behavior_type == "reading":
+            time.sleep(duration)
+            logger.debug(f"Simulated reading behavior for {duration}s")
+        elif behavior_type == "typing":
+            # Simulate typing delay
+            time.sleep(duration * 0.1)  # Shorter for typing
+            logger.debug(f"Simulated typing behavior for {duration * 0.1}s")
+        elif behavior_type == "navigation":
+            time.sleep(duration)
+            logger.debug(f"Simulated navigation pause for {duration}s")
+        else:
+            # Random human-like pause
+            time.sleep(random.uniform(1, duration))
+            logger.debug(f"Simulated random human behavior for {random.uniform(1, duration):.2f}s")
+
+    def _action_rotate_session(self, params: Dict[str, Any]):
+        """Force session rotation."""
+        if not self.anti_detection_manager or not self.anti_detection_manager.session_manager:
+            logger.warning("Session rotation not enabled")
+            return
+
+        rotated = self.anti_detection_manager.session_manager.rotate_session(self.anti_detection_manager)
+        self.results['session_rotated'] = rotated
+
+        if rotated:
+            logger.info("Session rotated successfully")
+        else:
+            logger.warning("Failed to rotate session")
 
     def _extract_value_from_element(self, element, attribute: Optional[str]) -> Optional[str]:
         """

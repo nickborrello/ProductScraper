@@ -42,6 +42,7 @@ class SettingsManager:
         "database_path": "data/databases/products.db",
         "selenium_headless": True,
         "selenium_timeout": 30,
+        "scraper_system": "new",  # 'new' (modular YAML), 'legacy' (archived)
         # UI Settings
         "auto_scroll_logs": True,
         "theme": "dark",  # 'dark' or 'light'

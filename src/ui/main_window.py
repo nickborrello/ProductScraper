@@ -33,19 +33,44 @@ import os
 from pathlib import Path
 
 # Conditional import for core logic to ensure GUI is runnable even if main fails.
+# Check scraper system preference
+from src.core.settings_manager import settings
+scraper_system = settings.get("scraper_system", "new")
+
 try:
-    from src.scrapers_archive.main import (
-        run_scraping,
-        run_db_refresh,
-        run_shopsite_xml_download,
-        run_shopsite_publish
-    )
+    if scraper_system == "legacy":
+        print("🔄 GUI using legacy archived scraper system...")
+        from src.scrapers_archive.main import (
+            run_scraping,
+            run_db_refresh,
+            run_shopsite_xml_download,
+            run_shopsite_publish
+        )
+        # DEPRECATION WARNING: Using legacy system
+        import warnings
+        warnings.warn(
+            "GUI is configured to use the deprecated archived scraper system. "
+            "Consider switching to the new modular scraper system in settings. "
+            "See docs/SCRAPER_MIGRATION_GUIDE.md for migration instructions.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+    else:
+        print("🚀 GUI using new modular scraper system...")
+        from src.scrapers.main import run_scraping
+        # Import legacy functions for backward compatibility
+        from src.scrapers_archive.main import (
+            run_db_refresh,
+            run_shopsite_xml_download,
+            run_shopsite_publish
+        )
+
     from src.utils.run_scraper import (
         run_scraper_tests,
         run_scraper_integration_tests,
     )
 except ImportError as e:
-    print(f"Error importing from main: {e}")
+    print(f"Error importing scraper functions: {e}")
 
     # Provide dummy functions if the import fails, so the GUI can still load.
     def run_scraping(*args, **kwargs):
@@ -1147,11 +1172,26 @@ class MainWindow(QMainWindow):
 
     def get_available_sites(self):
         """Get list of available scraping sites"""
-        try:
-            from src.scrapers_archive.master import discover_scrapers
+        from src.core.settings_manager import settings
+        scraper_system = settings.get("scraper_system", "new")
 
-            scraping_options, _ = discover_scrapers()
-            return list(scraping_options.keys())
+        try:
+            if scraper_system == "legacy":
+                from src.scrapers_archive.master import discover_scrapers
+                # DEPRECATION WARNING: Using legacy system
+                import warnings
+                warnings.warn(
+                    "Using discover_scrapers from src.scrapers_archive.master which is deprecated. "
+                    "Please migrate to the new modular scraper system. "
+                    "See docs/SCRAPER_MIGRATION_GUIDE.md for migration instructions.",
+                    DeprecationWarning,
+                    stacklevel=2
+                )
+                scraping_options, _ = discover_scrapers()
+                return list(scraping_options.keys())
+            else:
+                from src.scrapers.main import get_available_scrapers
+                return get_available_scrapers()
         except Exception as e:
             self.log_message(f"Error getting available sites: {e}", "ERROR")
             return []

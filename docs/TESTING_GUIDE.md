@@ -1,16 +1,107 @@
 # Testing Guide
 
-This guide provides detailed procedures for testing ProductScraper scrapers in both local and platform modes.
+This guide provides detailed procedures for testing ProductScraper scrapers in both the new modular system and legacy platform modes.
 
 ## Table of Contents
 
-- [Local Testing](#local-testing)
-- [Platform Testing](#platform-testing)
+- [Modular System Testing (Recommended)](#modular-system-testing-recommended)
+- [Legacy Platform Testing (Deprecated)](#legacy-platform-testing-deprecated)
 - [Validation and Quality Assurance](#validation-and-quality-assurance)
 - [Debugging and Troubleshooting](#debugging-and-troubleshooting)
 - [Test Data Management](#test-data-management)
+- [Migration Testing](#migration-testing)
 
-## Local Testing
+## Modular System Testing (Recommended)
+
+The new modular system provides comprehensive testing capabilities with built-in validation and anti-detection testing.
+
+### Prerequisites
+
+1. **Python Environment**: Python 3.11 with required dependencies
+2. **YAML Configurations**: Valid scraper configurations in `src/scrapers/configs/`
+3. **Test Data**: Test SKUs for validation
+
+### Basic Testing Commands
+
+```bash
+# Test migrated scrapers
+python test_migrated_scrapers.py --all
+
+# Test specific scraper
+python test_migrated_scrapers.py --scraper amazon
+
+# Test with custom SKUs
+python test_migrated_scrapers.py --scraper amazon --skus B07G5J5FYP B08N5WRWNW
+
+# Verbose output
+python test_migrated_scrapers.py --scraper amazon --verbose
+```
+
+### Unit Testing
+
+```bash
+# Run all unit tests
+python -m pytest tests/unit/ -v
+
+# Test specific components
+python -m pytest tests/unit/test_workflow_executor.py -v
+python -m pytest tests/unit/test_anti_detection.py -v
+python -m pytest tests/unit/test_yaml_parser.py -v
+```
+
+### Integration Testing
+
+```bash
+# Run integration tests
+python -m pytest tests/integration/ -v
+
+# Test scraper integration
+python -m pytest tests/integration/test_scraper_integration.py -v
+```
+
+### Modular System Test Output
+
+```
+============================================================
+TESTING MODULAR SCRAPER: amazon
+SKUs: ['B07G5J5FYP']
+============================================================
+
+📊 TEST SUMMARY: amazon (modular)
+✅ Execution: SUCCESS
+   Products found: 1
+🔍 Validation: 1/1 products valid
+   Data Quality Score: 95.0
+   Anti-Detection Status: All modules functional
+   Field Coverage:
+     ✅ Name: 100.0%
+     ✅ Price: 100.0%
+     ✅ Images: 100.0%
+     ✅ Weight: 100.0%
+     ✅ Brand: 100.0%
+✅ OVERALL: PASSED
+```
+
+### Anti-Detection Testing
+
+Test anti-detection module effectiveness:
+
+```python
+from src.scrapers.executor.workflow_executor import WorkflowExecutor
+from src.core.anti_detection_manager import AntiDetectionConfig
+
+# Test with anti-detection enabled
+config = parser.parse("src/scrapers/configs/amazon.yaml")
+executor = WorkflowExecutor(config, headless=True)
+
+# Monitor anti-detection events
+results = executor.execute_workflow()
+print(f"CAPTCHA detections: {results.get('captcha_detected', 0)}")
+print(f"Rate limit delays: {results.get('rate_limit_delays', 0)}")
+print(f"Session rotations: {results.get('session_rotations', 0)}")
+```
+
+## Legacy Platform Testing (Deprecated)
 
 Local testing runs scrapers using simulated Apify environment without platform costs or rate limits.
 
@@ -367,6 +458,62 @@ Test data is stored in `tests/fixtures/scraper_test_data.json`:
 - **Edge Cases**: Test with missing data, special characters, long descriptions
 - **Consistency**: Maintain same test SKUs across environments
 - **Updates**: Regularly update test data as products change
+
+## Migration Testing
+
+### Comparing Legacy vs Modular Systems
+
+Test both systems to ensure migration accuracy:
+
+```bash
+# Test legacy scraper
+python platform_test_scrapers.py --scraper amazon --platform
+
+# Test modular scraper
+python test_migrated_scrapers.py --scraper amazon
+
+# Compare results manually or with custom script
+```
+
+### Migration Validation Checklist
+
+- [ ] Same SKUs return identical data
+- [ ] Field coverage matches or improves
+- [ ] Execution time is comparable or better
+- [ ] Anti-detection features work correctly
+- [ ] Error handling is robust
+- [ ] Configuration is maintainable
+
+### Regression Testing
+
+After migration, ensure no functionality is lost:
+
+```python
+# Test data consistency
+def test_data_consistency(legacy_results, modular_results):
+    """Compare data quality between systems."""
+    for sku in legacy_results:
+        legacy_product = legacy_results[sku]
+        modular_product = modular_results.get(sku)
+
+        assert modular_product is not None, f"SKU {sku} missing in modular results"
+
+        # Compare key fields
+        for field in ['Name', 'Price', 'Brand']:
+            legacy_value = legacy_product.get(field)
+            modular_value = modular_product.get(field)
+            assert legacy_value == modular_value, f"Field {field} mismatch for SKU {sku}"
+
+# Performance comparison
+def test_performance_improvement():
+    """Ensure modular system performs adequately."""
+    # Test execution times
+    legacy_time = measure_execution_time(legacy_scraper)
+    modular_time = measure_execution_time(modular_scraper)
+
+    # Allow some variance but ensure reasonable performance
+    assert modular_time <= legacy_time * 1.5, "Modular system too slow"
+```
 
 ## Performance Optimization
 

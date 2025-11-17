@@ -1,0 +1,60 @@
+name: "orgill"
+base_url: "https://www.orgill.com"
+timeout: 30
+retries: 3
+
+selectors:
+  - name: "product_name"
+    selector: "#cphMainContent_ctl00_lblDescription"
+    attribute: "text"
+  - name: "brand"
+    selector: "#cphMainContent_ctl00_lblVendorName"
+    attribute: "text"
+  - name: "model_number"
+    selector: "#cphMainContent_ctl00_lblModelNumber"
+    attribute: "text"
+  - name: "weight"
+    selector: "//strong[contains(text(),'Weight(lb):')]/following-sibling::*[1]"
+    attribute: "text"
+  - name: "images"
+    selector: "img[contains(@src, 'images.orgill.com/websmall/')]"
+    attribute: "src"
+    multiple: true
+
+workflows:
+  - action: "login"
+  - action: "navigate"
+    params:
+      url: "https://www.orgill.com/SearchResultN.aspx?ddlhQ={sku}"
+  - action: "wait"
+    params:
+      selector: "#cphMainContent_ctl00_lblDescription, #cphMainContent_ctl00_lblErrorMessage"
+      timeout: 10
+  - action: "click"
+    params:
+      selector: "//a[div[contains(text(), 'Ordering Specifications')]]"
+  - action: "wait"
+    params:
+      selector: "#orderSpecificationDiv"
+      timeout: 5
+  - action: "extract"
+    params:
+      fields: ["product_name", "brand", "model_number", "weight", "images"]
+
+login:
+  url: "https://www.orgill.com/index.aspx?tab=8"
+  username_field: "#cphMainContent_ctl00_loginOrgillxs_UserName"
+  password_field: "#cphMainContent_ctl00_loginOrgillxs_Password"
+  submit_button: "#cphMainContent_ctl00_loginOrgillxs_LoginButton"
+  success_indicator: "a[href='/signOut.aspx']"
+
+anti_detection:
+  enable_captcha_detection: false
+  enable_rate_limiting: true
+  enable_human_simulation: true
+  enable_session_rotation: false
+  enable_blocking_handling: false
+  rate_limit_min_delay: 1.0
+  rate_limit_max_delay: 3.0
+  session_rotation_interval: 100
+  max_retries_on_detection: 3

@@ -1,5 +1,7 @@
 from typing import Any, Dict, List, Optional, Union
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
+
+from src.core.anti_detection_manager import AntiDetectionConfig
 
 
 class SelectorConfig(BaseModel):
@@ -27,6 +29,8 @@ class LoginConfig(BaseModel):
 
 class ScraperConfig(BaseModel):
     """Main configuration for a scraper."""
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     name: str = Field(..., description="Name of the scraper")
     base_url: str = Field(..., description="Base URL for the scraper")
     selectors: List[SelectorConfig] = Field(default_factory=list, description="List of selectors for data extraction")
@@ -34,3 +38,4 @@ class ScraperConfig(BaseModel):
     login: Optional[LoginConfig] = Field(None, description="Login configuration if required")
     timeout: int = Field(30, description="Default timeout in seconds")
     retries: int = Field(3, description="Number of retries on failure")
+    anti_detection: Optional[AntiDetectionConfig] = Field(None, description="Anti-detection configuration")

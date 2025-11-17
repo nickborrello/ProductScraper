@@ -2,6 +2,16 @@ import os
 import sys
 import subprocess
 import pandas as pd
+import warnings
+
+# DEPRECATION WARNING: This archived scraper system is deprecated
+warnings.warn(
+    "The archived scraper system (src/scrapers_archive/) is deprecated and will be removed in a future version. "
+    "Please migrate to the new modular scraper system using YAML configurations. "
+    "See docs/SCRAPER_MIGRATION_GUIDE.md for migration instructions.",
+    DeprecationWarning,
+    stacklevel=2
+)
 
 # Try to import PyQt6 for GUI file dialogs, fall back to text-based if not available
 try:

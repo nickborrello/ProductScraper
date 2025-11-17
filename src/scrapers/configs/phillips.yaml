@@ -1,0 +1,49 @@
+name: "phillips"
+base_url: "https://shop.phillipspet.com"
+timeout: 30
+retries: 3
+
+selectors:
+  - name: "product_name"
+    selector: "a.cc_product_name"
+    attribute: "text"
+  - name: "brand"
+    selector: "div.product-brand span"
+    attribute: "text"
+  - name: "upc"
+    selector: ".//div[contains(@class,'product-upc')]//span[contains(@class,'cc_value')]"
+    attribute: "text"
+  - name: "images"
+    selector: "div.cc_product_image img"
+    attribute: "src"
+
+workflows:
+  - action: "login"
+  - action: "navigate"
+    params:
+      url: "https://shop.phillipspet.com/ccrz__ProductList?cartID=&operation=quickSearch&searchText={sku}&portalUser=&store=DefaultStore&cclcl=en_US"
+  - action: "wait"
+    params:
+      selector: "div.cc_product_item, div.plp-empty-state-message-container"
+      timeout: 10
+  - action: "extract"
+    params:
+      fields: ["product_name", "brand", "upc", "images"]
+
+login:
+  url: "https://shop.phillipspet.com/ccrz__CCSiteLogin"
+  username_field: "#emailField"
+  password_field: "#passwordField"
+  submit_button: "#send2Dsk"
+  success_indicator: "a.doLogout.cc_do_logout"
+
+anti_detection:
+  enable_captcha_detection: false
+  enable_rate_limiting: true
+  enable_human_simulation: true
+  enable_session_rotation: false
+  enable_blocking_handling: false
+  rate_limit_min_delay: 1.0
+  rate_limit_max_delay: 3.0
+  session_rotation_interval: 100
+  max_retries_on_detection: 3

@@ -1,0 +1,63 @@
+name: "amazon"
+base_url: "https://www.amazon.com"
+timeout: 30
+retries: 3
+
+selectors:
+  - name: "product_name"
+    selector: "#productTitle"
+    attribute: "text"
+  - name: "brand"
+    selector: "#bylineInfo, #brand, .a-brand, [data-cy='brand-name'], .brand-link"
+    attribute: "text"
+  - name: "images"
+    selector: "#altImages li.imageThumbnail img"
+    attribute: "src"
+    multiple: true
+  - name: "weight"
+    selector: "#productDetails_detailBullets_sections1 tr, #productDetails_techSpec_section_1 tr, #detailBullets_feature_div li, #feature-bullets li, .a-expander-content, [data-feature-name='Bullet Points'] li"
+    attribute: "text"
+
+workflows:
+  - action: "navigate"
+    params:
+      url: "https://www.amazon.com/s?k={sku}"
+  - action: "wait"
+    params:
+      selector: ".s-result-item"
+      timeout: 10
+  - action: "click"
+    params:
+      selector: ".s-result-item a.a-link-normal[href*='/dp/']"
+  - action: "wait"
+    params:
+      selector: "#productTitle"
+      timeout: 10
+  - action: "extract"
+    params:
+      fields: ["product_name", "brand", "images", "weight"]
+
+anti_detection:
+  enable_captcha_detection: true
+  enable_rate_limiting: true
+  enable_human_simulation: true
+  enable_session_rotation: false
+  enable_blocking_handling: true
+  captcha_selectors:
+    - "[class*='captcha']"
+    - "[id*='captcha']"
+    - "[class*='recaptcha']"
+    - "[id*='recaptcha']"
+    - ".g-recaptcha"
+    - "#captcha-container"
+  blocking_selectors:
+    - "[class*='blocked']"
+    - "[id*='blocked']"
+    - "[class*='banned']"
+    - "[id*='banned']"
+    - "[class*='access-denied']"
+    - "[id*='access-denied']"
+  rate_limit_min_delay: 1.0
+  rate_limit_max_delay: 5.0
+  session_rotation_interval: 100
+  max_retries_on_detection: 3

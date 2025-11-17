@@ -9,8 +9,18 @@ from tkinter import filedialog
 import importlib.util
 import glob
 import subprocess
+import warnings
 from typing import Optional, Dict, Any
 from src.scrapers.models.config import ScraperConfig
+
+# DEPRECATION WARNING: This archived scraper system is deprecated
+warnings.warn(
+    "The archived scraper system (src/scrapers_archive/) is deprecated and will be removed in a future version. "
+    "Please migrate to the new modular scraper system using YAML configurations. "
+    "See docs/SCRAPER_MIGRATION_GUIDE.md for migration instructions.",
+    DeprecationWarning,
+    stacklevel=2
+)
 
 # Ensure project root is on sys.path before importing local packages to avoid shadowing
 import os

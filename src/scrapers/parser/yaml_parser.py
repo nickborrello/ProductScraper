@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Union
 from src.scrapers.models import ScraperConfig
 from src.scrapers.schemas import validate_config_dict
+from src.core.anti_detection_manager import AntiDetectionConfig
 
 
 class ScraperConfigParser:
@@ -10,6 +11,14 @@ class ScraperConfigParser:
 
     def __init__(self):
         pass
+
+    def _preprocess_config_dict(self, config_dict: dict) -> dict:
+        """Preprocess configuration dictionary to handle complex types."""
+        # Convert anti_detection dict to AntiDetectionConfig if present
+        if 'anti_detection' in config_dict and isinstance(config_dict['anti_detection'], dict):
+            config_dict['anti_detection'] = AntiDetectionConfig(**config_dict['anti_detection'])
+
+        return config_dict
 
     def load_from_file(self, file_path: Union[str, Path]) -> ScraperConfig:
         """Load and parse a scraper configuration from a YAML file.
@@ -33,6 +42,9 @@ class ScraperConfigParser:
         with open(file_path, 'r', encoding='utf-8') as f:
             config_dict = yaml.safe_load(f)
 
+        # Preprocess anti_detection field if present
+        config_dict = self._preprocess_config_dict(config_dict)
+
         return validate_config_dict(config_dict)
 
     def load_from_string(self, yaml_string: str) -> ScraperConfig:
@@ -49,6 +61,8 @@ class ScraperConfigParser:
             ValidationError: If the configuration doesn't match the schema
         """
         config_dict = yaml.safe_load(yaml_string)
+        # Preprocess anti_detection field if present
+        config_dict = self._preprocess_config_dict(config_dict)
         return validate_config_dict(config_dict)
 
     def save_to_file(self, config: ScraperConfig, file_path: Union[str, Path]) -> None:

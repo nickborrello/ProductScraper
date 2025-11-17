@@ -26,7 +26,18 @@ def main():
         window.show()
         sys.exit(app.exec())
     elif args.run == "scraper":
-        from src.scrapers.main import run_scraping
+        from src.core.settings_manager import settings
+
+        # Check which scraper system to use
+        scraper_system = settings.get("scraper_system", "new")
+
+        if scraper_system == "legacy":
+            print("🔄 Using legacy archived scraper system...")
+            from src.scrapers_archive.main import run_scraping
+        else:
+            print("🚀 Using new modular scraper system...")
+            from src.scrapers.main import run_scraping
+
         if args.file:
             run_scraping(args.file)
         else:

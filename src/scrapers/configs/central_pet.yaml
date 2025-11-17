@@ -1,0 +1,45 @@
+name: "central_pet"
+base_url: "https://www.centralpet.com"
+timeout: 30
+retries: 3
+
+selectors:
+  - name: "product_name"
+    selector: "#tst_productDetail_erpDescription"
+    attribute: "text"
+  - name: "brand"
+    selector: "a[ng-if='vm.product.brand.detailPagePath']"
+    attribute: "title"
+  - name: "short_description"
+    selector: "#tst_productDetail_shortDescription"
+    attribute: "text"
+  - name: "weight"
+    selector: "//div[@class='specification-container']//li[strong[contains(text(), 'Product Gross Weight')]]/span"
+    attribute: "innerHTML"
+  - name: "images"
+    selector: "li[id^='tst_productDetailPage_mainThumbnail']"
+    attribute: "ng-src"
+    multiple: true
+
+workflows:
+  - action: "navigate"
+    params:
+      url: "https://www.centralpet.com/Search?criteria={sku}"
+  - action: "wait"
+    params:
+      selector: "#tst_productDetail_erpDescription, span.no-results-found"
+      timeout: 10
+  - action: "extract"
+    params:
+      fields: ["product_name", "brand", "short_description", "weight", "images"]
+
+anti_detection:
+  enable_captcha_detection: false
+  enable_rate_limiting: true
+  enable_human_simulation: true
+  enable_session_rotation: false
+  enable_blocking_handling: false
+  rate_limit_min_delay: 1.0
+  rate_limit_max_delay: 3.0
+  session_rotation_interval: 100
+  max_retries_on_detection: 3

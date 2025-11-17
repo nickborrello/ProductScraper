@@ -1,0 +1,38 @@
+name: "coastal"
+base_url: "https://www.coastalpet.com"
+timeout: 30
+retries: 3
+
+selectors:
+  - name: "product_name"
+    selector: "p.product-listing__title--text a"
+    attribute: "text"
+  - name: "brand"
+    selector: "body"
+    attribute: "text"
+  - name: "images"
+    selector: "img.product-listing__product-image--image"
+    attribute: "src"
+
+workflows:
+  - action: "navigate"
+    params:
+      url: "https://www.coastalpet.com/products/search/?q={sku}"
+  - action: "wait"
+    params:
+      selector: "div.product-listing"
+      timeout: 10
+  - action: "extract"
+    params:
+      fields: ["product_name", "brand", "images"]
+
+anti_detection:
+  enable_captcha_detection: false
+  enable_rate_limiting: true
+  enable_human_simulation: true
+  enable_session_rotation: false
+  enable_blocking_handling: false
+  rate_limit_min_delay: 1.0
+  rate_limit_max_delay: 3.0
+  session_rotation_interval: 100
+  max_retries_on_detection: 3

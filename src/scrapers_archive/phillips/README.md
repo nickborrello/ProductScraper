@@ -1,6 +1,21 @@
-# Phillips Scraper Apify Actor
+# ⚠️ DEPRECATED: Phillips Scraper Apify Actor
+
+> **This scraper has been migrated to the new modular system.** Please use the YAML configuration at `src/scrapers/configs/phillips.yaml` instead.
 
 This Apify actor scrapes product information from the Phillips Pet website.
+
+## Migration Status
+
+- ✅ **Migration Complete**: This scraper has been successfully migrated to the new modular scraper system
+- 📅 **Deprecation Timeline**: This legacy scraper will be removed in a future version
+- 📖 **Migration Guide**: See `docs/SCRAPER_MIGRATION_GUIDE.md` for detailed migration instructions
+
+## New Location
+
+The new Phillips scraper configuration is located at:
+```
+src/scrapers/configs/phillips.yaml
+```
 
 ## Input
 

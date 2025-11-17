@@ -1,0 +1,47 @@
+name: "petfoodex"
+base_url: "https://orders.petfoodexperts.com"
+timeout: 30
+retries: 3
+
+selectors:
+  - name: "product_name"
+    selector: "div.pf-detail-heading h1"
+    attribute: "text"
+  - name: "brand"
+    selector: "a.pf-detail-title span"
+    attribute: "text"
+  - name: "images"
+    selector: "img[data-test-selector='productDetails_mainImage'], .pf-detail-nav .pf-slide img"
+    attribute: "src"
+    multiple: true
+
+workflows:
+  - action: "login"
+  - action: "navigate"
+    params:
+      url: "https://orders.petfoodexperts.com/Search?query={sku}"
+  - action: "wait"
+    params:
+      selector: "div.pf-detail-wrap, .pf-no-results"
+      timeout: 15
+  - action: "extract"
+    params:
+      fields: ["product_name", "brand", "images"]
+
+login:
+  url: "https://orders.petfoodexperts.com/SignIn"
+  username_field: "#userName"
+  password_field: "#password"
+  submit_button: "button[data-test-selector='signIn_submit']"
+  success_indicator: "a[href*='logout']"
+
+anti_detection:
+  enable_captcha_detection: false
+  enable_rate_limiting: true
+  enable_human_simulation: true
+  enable_session_rotation: false
+  enable_blocking_handling: false
+  rate_limit_min_delay: 1.0
+  rate_limit_max_delay: 3.0
+  session_rotation_interval: 100
+  max_retries_on_detection: 3

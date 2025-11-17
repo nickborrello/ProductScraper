@@ -1,0 +1,49 @@
+name: "mazuri"
+base_url: "https://mazuri.com"
+timeout: 30
+retries: 3
+
+selectors:
+  - name: "product_name"
+    selector: "h1"
+    attribute: "text"
+  - name: "brand"
+    selector: "a[class*='product-brand']"
+    attribute: "text"
+  - name: "weight"
+    selector: "label"
+    attribute: "text"
+  - name: "images"
+    selector: ".carousel-item img, img[id*='product-featured-image'], img[id*='main-product-image'], img[id*='product-image']"
+    attribute: "src"
+    multiple: true
+
+workflows:
+  - action: "navigate"
+    params:
+      url: "https://mazuri.com/pages/search-results-page?q={sku}"
+  - action: "wait"
+    params:
+      selector: "li.snize-product, li.snize-no-products-found"
+      timeout: 15
+  - action: "click"
+    params:
+      selector: ".snize-view-link"
+  - action: "wait"
+    params:
+      selector: "img"
+      timeout: 10
+  - action: "extract"
+    params:
+      fields: ["product_name", "brand", "weight", "images"]
+
+anti_detection:
+  enable_captcha_detection: false
+  enable_rate_limiting: true
+  enable_human_simulation: true
+  enable_session_rotation: false
+  enable_blocking_handling: false
+  rate_limit_min_delay: 1.0
+  rate_limit_max_delay: 3.0
+  session_rotation_interval: 100
+  max_retries_on_detection: 3
