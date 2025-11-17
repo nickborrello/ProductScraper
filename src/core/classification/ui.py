@@ -8,13 +8,14 @@ import os
 import re
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 # Check if GUI is available (for headless CI environments)
 GUI_AVAILABLE = True
 # Check for CI/test environments
 is_ci = (os.environ.get('CI') == 'true' or
-         os.environ.get('GITHUB_ACTIONS') == 'true' or
-         'pytest' in os.environ.get('_', ''))
+          os.environ.get('GITHUB_ACTIONS') == 'true' or
+          'pytest' in os.environ.get('_', ''))
 
 # Check if we're running under pytest by inspecting the call stack
 import inspect
@@ -25,6 +26,27 @@ if is_pytest:
 # On Unix-like systems, also check for missing DISPLAY
 if os.name != 'nt':  # Not Windows
     is_ci = is_ci or os.environ.get('DISPLAY', '') == ''
+
+if TYPE_CHECKING:
+    # Type checking imports for PyQt6
+    from PyQt6.QtCore import Qt, pyqtSignal
+    from PyQt6.QtGui import QFont
+    from PyQt6.QtWidgets import (
+        QApplication,
+        QCheckBox,
+        QFrame,
+        QGridLayout,
+        QHBoxLayout,
+        QLabel,
+        QLineEdit,
+        QMainWindow,
+        QMessageBox,
+        QPushButton,
+        QScrollArea,
+        QSplitter,
+        QVBoxLayout,
+        QWidget,
+    )
 
 if is_ci:
     GUI_AVAILABLE = False
@@ -54,24 +76,6 @@ else:
         # GUI not available (headless environment)
         GUI_AVAILABLE = False
         print(f"⚠️ PyQt6 GUI not available (headless environment): {e}")
-        # Set all imports to None to avoid NameError
-        Qt = None
-        pyqtSignal = None
-        QFont = None
-        QApplication = None
-        QCheckBox = None
-        QFrame = None
-        QGridLayout = None
-        QHBoxLayout = None
-        QLabel = None
-        QLineEdit = None
-        QMainWindow = None
-        QMessageBox = None
-        QPushButton = None
-        QScrollArea = None
-        QSplitter = None
-        QVBoxLayout = None
-        QWidget = None
 
 # Import product pages from manager (which loads from JSON) - moved inside function to avoid relative import issues when run directly
 # from .manager import PRODUCT_PAGES
@@ -270,7 +274,7 @@ def assign_classification_single(product_info):
 
 
 if GUI_AVAILABLE:
-    class MultiSelectWidget(QWidget):
+    class MultiSelectWidget(QWidget):  # type: ignore
         """PyQt6 widget for multi-select functionality with search and checkboxes."""
 
         selection_changed = pyqtSignal()
@@ -400,7 +404,7 @@ if GUI_AVAILABLE:
 
     from src.ui.styling import STYLESHEET
 
-    class ClassificationEditorWindow(QMainWindow):
+    class ClassificationEditorWindow(QMainWindow):  # type: ignore
         """PyQt6 main window for batch classification editing."""
 
         def __init__(
@@ -423,8 +427,8 @@ if GUI_AVAILABLE:
             # Apply global dark theme
             self.setStyleSheet(STYLESHEET)
 
-            self.setup_ui()
-            self.load_product_into_ui(0)
+            self.setup_ui()  # type: ignore
+            self.load_product_into_ui(0)  # type: ignore
 
     def setup_ui(self):
         self.setWindowTitle(
@@ -440,7 +444,7 @@ if GUI_AVAILABLE:
         # Main horizontal splitter - product info on left, classification on right
         main_splitter = QSplitter(Qt.Orientation.Horizontal)
         central_widget.setLayout(QVBoxLayout())
-        central_widget.layout().addWidget(main_splitter)
+        central_widget.layout().addWidget(main_splitter)  # type: ignore
 
         # Left side - Product Information Panel
         self.setup_product_info_panel(main_splitter)
@@ -1033,7 +1037,7 @@ def edit_classification_in_batch(products_list):
     app.exec()
 
     # Return the updated products list
-    return window.get_products_list()
+    return window.get_products_list()  # type: ignore
 
 
 if __name__ == "__main__":
@@ -1094,7 +1098,7 @@ if __name__ == "__main__":
 
     # Create and show the demo window
     app = QApplication(sys.argv)
-    window = ClassificationEditorWindow(
+    window = ClassificationEditorWindow(  # type: ignore
         demo_products,
         CATEGORY_OPTIONS,
         ALL_PRODUCT_TYPES,
@@ -1106,7 +1110,7 @@ if __name__ == "__main__":
     # Start the event loop
     app.exec()
 
-    results = window.get_products_list()
+    results = window.get_products_list()  # type: ignore
 
     print("\nDemo complete. Results:")
     for prod in results:
