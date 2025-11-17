@@ -9,7 +9,8 @@ PROJECT_ROOT = os.path.dirname(
 )
 sys.path.insert(0, PROJECT_ROOT)
 
-from src.scrapers.main import run_scraping, run_db_refresh
+from src.scrapers.main import run_scraping
+from src.core.database.refresh import refresh_database_from_xml as run_db_refresh
 
 # --- Test Fixtures ---
 
@@ -33,7 +34,7 @@ def mock_scraper():
 @pytest.fixture
 def mock_db_refresh_func():
     """Fixture to mock the refresh_database_from_xml function."""
-    with patch("src.scrapers.main.refresh_database_from_xml", autospec=True) as mock:
+    with patch("src.core.database.refresh.refresh_database_from_xml", autospec=True) as mock:
         yield mock
 
 
@@ -74,7 +75,7 @@ def test_run_scraping_success(
         
         mock_read.return_value.empty = False
         
-        run_scraping(file_path, progress_callback, log_callback)
+        run_scraping(file_path, progress_callback=progress_callback, log_callback=log_callback)
 
     # Assertions
     log_callback.assert_any_call(f"🚀 run_scraping called with file: {file_path}")
@@ -98,7 +99,7 @@ def test_run_scraping_scraper_not_available(mock_callbacks):
     """Test run_scraping when the scraper module is not available."""
     progress_callback, log_callback = mock_callbacks
     with patch("src.scrapers.main.PRODUCT_SCRAPER_AVAILABLE", False):
-        run_scraping("any/path", progress_callback, log_callback)
+        run_scraping("any/path", progress_callback=progress_callback, log_callback=log_callback)
 
     log_callback.assert_called_with(
         "❌ ProductScraper module not available. Please check your installation."
@@ -114,7 +115,7 @@ def test_run_scraping_invalid_excel(mock_callbacks):
     with patch("src.scrapers.main.PRODUCT_SCRAPER_AVAILABLE", True), \
          patch("src.scrapers.main.validate_excel_columns", return_value=(False, "Missing columns")):
         
-        run_scraping(file_path, None, log_callback)
+        run_scraping(file_path, log_callback=log_callback)
 
     log_callback.assert_any_call("Missing columns")
     log_callback.assert_any_call("⚠️ Please update the Excel file with required data.")
@@ -133,7 +134,7 @@ def test_run_scraping_empty_excel(
         
         mock_read.return_value.empty = True
         
-        run_scraping(file_path, None, log_callback)
+        run_scraping(file_path, log_callback=log_callback)
 
     log_callback.assert_any_call(f"⚠️ Input file '{file_path}' is empty. Deleting file.")
     mock_os_remove.assert_called_once_with(file_path)

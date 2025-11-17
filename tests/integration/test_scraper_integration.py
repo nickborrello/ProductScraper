@@ -79,7 +79,7 @@ class ScraperIntegrationTester:
             return results
 
         # Clean up any existing dataset from previous runs
-        dataset_dir = scraper_dir / "storage" / "datasets" / "default"
+        dataset_dir = scraper_dir / "data" / "datasets" / "default"
         if dataset_dir.exists():
             import shutil
             try:
@@ -113,11 +113,11 @@ class ScraperIntegrationTester:
 
             # Import local apify implementation for testing
             import sys
-            sys.path.insert(0, str(self.project_root / "src" / "core"))
-            import local_apify
+            sys.path.insert(0, str(self.project_root / "src"))
+            from src.core.local_apify import Actor
 
             # Replace apify module with local implementation
-            sys.modules['apify'] = local_apify
+            sys.modules['apify'] = sys.modules['src.core.local_apify']
 
             # Import and run the scraper directly using local storage patterns
             import importlib.util
@@ -166,8 +166,8 @@ class ScraperIntegrationTester:
 
             # Read results from local storage dataset
             try:
-                # Local storage stores data in storage/datasets/default/
-                dataset_dir = scraper_dir / "storage" / "datasets" / "default"
+                # Local storage stores data in data/datasets/default/
+                dataset_dir = scraper_dir / "data" / "datasets" / "default"
                 
                 if dataset_dir.exists():
                     products = []
@@ -223,6 +223,10 @@ class ScraperIntegrationTester:
         if skus is None:
             scraper_config = self.test_config.get(scraper_name, {})
             skus = scraper_config.get("test_skus", ["035585499741"])
+
+        # Ensure skus is a list
+        if not isinstance(skus, list):
+            skus = [str(skus)]
 
         print(f"\n{'='*60}")
         print(f"TESTING SCRAPER: {scraper_name.upper()}")

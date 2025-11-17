@@ -45,55 +45,68 @@ except:
 
 # Conditional import for core logic to ensure GUI is runnable even if main fails.
 try:
-    from src.scrapers.main import run_scraping
-    from src.core.database.refresh import refresh_database_from_xml as run_db_refresh
-    from src.utils.run_scraper import run_scraper_tests, run_scraper_integration_tests
-    from src.core.database.xml_import import import_from_shopsite_xml as run_shopsite_xml_download, publish_shopsite_changes as run_shopsite_publish
+    from src.scrapers.main import run_scraping  # type: ignore
+    from src.core.database.refresh import refresh_database_from_xml as run_db_refresh  # type: ignore
+    from src.utils.run_scraper import run_scraper_tests, run_scraper_integration_tests  # type: ignore
+    from src.core.database.xml_import import import_from_shopsite_xml as run_shopsite_xml_download, publish_shopsite_changes as run_shopsite_publish  # type: ignore
 except ImportError as e:
     if not is_gui_mode:
         print(f"Error importing from main: {e}")
 
     # Provide dummy functions if the import fails, so the GUI can still load.
-    def run_scraping(*args, **kwargs):
+    def run_scraping(*args, **kwargs) -> tuple[bool, str]:
         """Dummy function for scraping if import fails."""
         log_callback = kwargs.get("log_callback")
         if log_callback:
             log_callback("Error: Scraping logic not found.")
         if not is_gui_mode:
             print("Error: Scraping logic not found.")
+        return False, "Error: Scraping logic not found."
 
-    def run_db_refresh(*args, **kwargs):
+    def run_db_refresh(*args, **kwargs) -> tuple[bool, str]:
         """Dummy function for DB refresh if import fails."""
         log_callback = kwargs.get("log_callback")
         if log_callback:
             log_callback("Error: DB refresh logic not found.")
         if not is_gui_mode:
             print("Error: DB refresh logic not found.")
+        return False, "Error: DB refresh logic not found."
 
-    def run_scraper_tests(*args, **kwargs) -> bool:
+    def run_scraper_tests(*args, **kwargs) -> tuple[bool, str]:
         """Dummy function for scraper tests if import fails."""
         log_callback = kwargs.get("log_callback")
         if log_callback:
             log_callback("Error: Scraper test logic not found.")
         if not is_gui_mode:
             print("Error: Scraper test logic not found.")
-        return False
+        return False, "Error: Scraper test logic not found."
 
-    def run_scraper_integration_tests(*args, **kwargs):
+    def run_scraper_integration_tests(*args, **kwargs) -> tuple[bool, str]:
         """Dummy function for scraper integration tests if import fails."""
         log_callback = kwargs.get("log_callback")
         if log_callback:
             log_callback("Error: Scraper integration test logic not found.")
         if not is_gui_mode:
             print("Error: Scraper integration test logic not found.")
-        return False
-    def run_shopsite_publish(*args, **kwargs):
+        return False, "Error: Scraper integration test logic not found."
+
+    def run_shopsite_xml_download(*args, **kwargs) -> tuple[bool, str]:
+        """Dummy function for ShopSite XML download if import fails."""
+        log_callback = kwargs.get("log_callback")
+        if log_callback:
+            log_callback("Error: ShopSite XML download logic not found.")
+        if not is_gui_mode:
+            print("Error: ShopSite XML download logic not found.")
+        return False, "Error: ShopSite XML download logic not found."
+
+    def run_shopsite_publish(*args, **kwargs) -> tuple[bool, str]:
         """Dummy function for ShopSite publish if import fails."""
         log_callback = kwargs.get("log_callback")
         if log_callback:
             log_callback("Error: ShopSite publish logic not found.")
         if not is_gui_mode:
             print("Error: ShopSite publish logic not found.")
+        return False, "Error: ShopSite publish logic not found."
 
 
 class WorkerSignals(QObject):
@@ -1100,10 +1113,9 @@ class MainWindow(QMainWindow):
     def get_available_sites(self):
         """Get list of available scraping sites"""
         try:
-            from src.scrapers.master import discover_scrapers
+            from src.scrapers.main import get_available_scrapers
 
-            scraping_options, _ = discover_scrapers()
-            return list(scraping_options.keys())
+            return get_available_scrapers()
         except Exception as e:
             self.log_message(f"Error getting available sites: {e}", "ERROR")
             return []

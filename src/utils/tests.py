@@ -18,29 +18,12 @@ def run_scraper_tests_from_main():
     print("✅ Scraper tests completed!")
 
 
-def run_granular_field_tests_from_main():
-    """Runs granular field tests for the scraper."""
-    from src.scrapers.master import ProductScraper
-    
-    PRODUCT_SCRAPER_AVAILABLE = True
-    try:
-        from src.scrapers.master import ProductScraper
-    except ImportError:
-        PRODUCT_SCRAPER_AVAILABLE = False
-
-    if not PRODUCT_SCRAPER_AVAILABLE:
-        print("❌ ProductScraper module not available.")
-        return
-
-    print("🔬 Running granular field tests...")
-    try:
-        scraper = ProductScraper("")  # Path not needed for these tests
-        if scraper.run_granular_field_tests():
-            print("✅ Granular field tests completed!")
-        else:
-            print("❌ Granular tests failed or were cancelled.")
-    except Exception as e:
-        print(f"❌ Error during granular tests: {e}")
+# def run_granular_field_tests_from_main():
+#     """Runs granular field tests for the scraper."""
+#     # NOTE: This function is obsolete after reorganization.
+#     # ProductScraper from src.scrapers.master no longer exists.
+#     # The new modular scraper system doesn't have this functionality.
+#     pass
 
 def run_scraper_integration_tests(log_callback=None, progress_callback=None, editor_callback=None, status_callback=None):
     """Run integration tests for all scrapers with known working products.
@@ -81,6 +64,12 @@ def run_scraper_integration_tests(log_callback=None, progress_callback=None, edi
             try:
                 # Import the actor's main module
                 spec = importlib.util.spec_from_file_location(f"{actor_folder}_main", main_py_path)
+                if spec is None:
+                    log(f"❌ Failed to create spec for actor {actor_folder}: spec is None")
+                    continue
+                if spec.loader is None:
+                    log(f"❌ Failed to load actor {actor_folder}: spec.loader is None")
+                    continue
                 module = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(module)
                 modules[actor_folder] = module
@@ -331,8 +320,9 @@ def run_scraper_tests(run_integration=False, log_callback=None, progress_callbac
             universal_newlines=True,
         )
 
-        for line in process.stdout:
-            log(line.strip())
+        if process.stdout:
+            for line in process.stdout:
+                log(line.strip())
 
         process.wait()
 

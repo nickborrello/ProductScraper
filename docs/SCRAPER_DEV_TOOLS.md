@@ -71,10 +71,10 @@ Run existing scraper tests (integrates with your current testing framework).
 
 ```bash
 # Test all scrapers
-python dev_cli.py test --all
+python src/utils/scraping/dev_cli.py test --all
 
 # Test specific scraper
-python dev_cli.py test --scraper amazon --verbose
+python src/utils/scraping/dev_cli.py test --scraper amazon --verbose
 ```
 
 #### `debug-selector`
@@ -82,52 +82,52 @@ Test individual selectors against live pages.
 
 ```bash
 # Basic CSS selector test
-python dev_cli.py debug-selector <url> <selector>
+python src/utils/scraping/dev_cli.py debug-selector <url> <selector>
 
 # XPath with highlighting
-python dev_cli.py debug-selector <url> <xpath> --type xpath --highlight
+python src/utils/scraping/dev_cli.py debug-selector <url> <xpath> --type xpath --highlight
 ```
 
 #### `create-suite`
 Create a test suite for a scraper with common selectors.
 
 ```bash
-python dev_cli.py create-suite amazon "https://amazon.com/dp/B07G5J5FYP"
+python src/utils/scraping/dev_cli.py create-suite amazon "https://amazon.com/dp/B07G5J5FYP"
 ```
 
 #### `run-suite`
 Run a saved test suite.
 
 ```bash
-python dev_cli.py run-suite tests/fixtures/amazon_selectors.json
+python src/utils/scraping/dev_cli.py run-suite tests/fixtures/amazon_selectors.json
 ```
 
 #### `gui`
 Start the web-based development GUI.
 
 ```bash
-python dev_cli.py gui --port 8080
+python src/utils/scraping/dev_cli.py gui --port 8080
 ```
 
 #### `mock-server`
 Start the mock server for testing.
 
 ```bash
-python dev_cli.py mock-server --port 5000
+python src/utils/scraping/dev_cli.py mock-server --port 5000
 ```
 
 #### `generate-scraper`
 Generate a basic scraper template.
 
 ```bash
-python dev_cli.py generate-scraper newstore "https://newstore.com"
+python src/utils/scraping/dev_cli.py generate-scraper newstore "https://newstore.com"
 ```
 
 #### `compare`
 Compare two scrapers against the same URL.
 
 ```bash
-python dev_cli.py compare amazon bradley "https://example.com/product/123"
+python src/utils/scraping/dev_cli.py compare amazon bradley "https://example.com/product/123"
 ```
 
 ### Development GUI Features
@@ -188,16 +188,16 @@ Create comprehensive test suites for your scrapers:
 
 ### During Development
 
-1. **Start GUI**: `python dev_cli.py gui`
+1. **Start GUI**: `python src/utils/scraping/dev_cli.py gui`
 2. **Load Target Page**: Use the GUI to load a product page
 3. **Test Selectors**: Try different selectors until you find the right ones
-4. **Create Test Suite**: `python dev_cli.py create-suite <scraper> <url>`
+4. **Create Test Suite**: `python src/utils/scraping/dev_cli.py create-suite <scraper> <url>`
 5. **Implement Scraper**: Use the tested selectors in your scraper code
-6. **Run Tests**: `python dev_cli.py test --scraper <scraper>`
+6. **Run Tests**: `python src/utils/scraping/dev_cli.py test --scraper <scraper>`
 
 ### Before Deployment
 
-1. **Run Test Suite**: `python dev_cli.py run-suite <test_file>`
+1. **Run Test Suite**: `python src/utils/scraping/dev_cli.py run-suite <test_file>`
 2. **Mock Testing**: Test against mock server for edge cases
 3. **Integration Tests**: Run full scraper tests with existing framework
 

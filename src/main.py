@@ -33,7 +33,7 @@ def main():
 
         if scraper_system == "legacy":
             print("🔄 Using legacy archived scraper system...")
-            from src.scrapers_archive.main import run_scraping
+            from src.scrapers.main import run_scraping
         else:
             print("🚀 Using new modular scraper system...")
             from src.scrapers.main import run_scraping

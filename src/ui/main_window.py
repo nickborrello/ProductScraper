@@ -40,12 +40,10 @@ scraper_system = settings.get("scraper_system", "new")
 try:
     if scraper_system == "legacy":
         print("🔄 GUI using legacy archived scraper system...")
-        from src.scrapers_archive.main import (
-            run_scraping,
-            run_db_refresh,
-            run_shopsite_xml_download,
-            run_shopsite_publish
-        )
+        from src.scrapers.main import run_scraping
+        from src.core.database.refresh import refresh_database_from_xml as run_db_refresh  # type: ignore[assignment]
+        from src.core.database.xml_import import import_from_shopsite_xml as run_shopsite_xml_download  # type: ignore[assignment]
+        from src.core.database.xml_import import publish_shopsite_changes as run_shopsite_publish  # type: ignore[assignment]
         # DEPRECATION WARNING: Using legacy system
         import warnings
         warnings.warn(
@@ -59,11 +57,9 @@ try:
         print("🚀 GUI using new modular scraper system...")
         from src.scrapers.main import run_scraping
         # Import legacy functions for backward compatibility
-        from src.scrapers_archive.main import (
-            run_db_refresh,
-            run_shopsite_xml_download,
-            run_shopsite_publish
-        )
+        from src.core.database.refresh import refresh_database_from_xml as run_db_refresh
+        from src.core.database.xml_import import import_from_shopsite_xml as run_shopsite_xml_download
+        from src.core.database.xml_import import publish_shopsite_changes as run_shopsite_publish
 
     from src.utils.run_scraper import (
         run_scraper_tests,
@@ -82,7 +78,7 @@ except ImportError as e:
             else:
                 log_callback("Error: Scraping logic not found.")
 
-    def run_db_refresh(*args, **kwargs):
+    def run_db_refresh(*args, **kwargs) -> tuple[bool, str]:
         """Dummy function for DB refresh if import fails."""
         log_callback = kwargs.get("log_callback")
         if log_callback:
@@ -90,6 +86,7 @@ except ImportError as e:
                 log_callback.emit("Error: DB refresh logic not found.")
             else:
                 log_callback("Error: DB refresh logic not found.")
+        return False, "Error: DB refresh logic not found."
 
     def run_scraper_tests(*args, **kwargs) -> bool:
         """Dummy function for scraper tests if import fails."""
@@ -110,7 +107,7 @@ except ImportError as e:
             else:
                 log_callback("Error: Scraper integration test logic not found.")
         return False
-    def run_shopsite_xml_download(*args, **kwargs):
+    def run_shopsite_xml_download(*args, **kwargs) -> tuple[bool, str]:
         """Dummy function for ShopSite XML download if import fails."""
         log_callback = kwargs.get("log_callback")
         if log_callback:
@@ -118,7 +115,8 @@ except ImportError as e:
                 log_callback.emit("Error: ShopSite XML download logic not found.")
             else:
                 log_callback("Error: ShopSite XML download logic not found.")
-    def run_shopsite_publish(*args, **kwargs):
+        return False, "Error: ShopSite XML download logic not found."
+    def run_shopsite_publish(*args, **kwargs) -> tuple[bool, str]:
         """Dummy function for ShopSite publish if import fails."""
         log_callback = kwargs.get("log_callback")
         if log_callback:
@@ -126,6 +124,7 @@ except ImportError as e:
                 log_callback.emit("Error: ShopSite publish logic not found.")
             else:
                 log_callback("Error: ShopSite publish logic not found.")
+        return False, "Error: ShopSite publish logic not found."
 
 
 class WorkerSignals(QObject):
@@ -1177,18 +1176,17 @@ class MainWindow(QMainWindow):
 
         try:
             if scraper_system == "legacy":
-                from src.scrapers_archive.master import discover_scrapers
+                from src.scrapers.main import get_available_scrapers
                 # DEPRECATION WARNING: Using legacy system
                 import warnings
                 warnings.warn(
-                    "Using discover_scrapers from src.scrapers_archive.master which is deprecated. "
-                    "Please migrate to the new modular scraper system. "
+                    "Using get_available_scrapers from src.scrapers.main which is the new system. "
+                    "The legacy system is deprecated. "
                     "See docs/SCRAPER_MIGRATION_GUIDE.md for migration instructions.",
                     DeprecationWarning,
                     stacklevel=2
                 )
-                scraping_options, _ = discover_scrapers()
-                return list(scraping_options.keys())
+                return get_available_scrapers()
             else:
                 from src.scrapers.main import get_available_scrapers
                 return get_available_scrapers()

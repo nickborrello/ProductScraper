@@ -18,6 +18,8 @@ if project_root not in sys.path:
 from src.scrapers.executor.workflow_executor import WorkflowExecutor
 from src.scrapers.parser.yaml_parser import ScraperConfigParser
 from src.scrapers.models.config import ScraperConfig
+from src.core.database.refresh import refresh_database_from_xml
+import os
 
 
 def run_scraping(file_path: str, selected_sites: Optional[List[str]] = None, **kwargs) -> None:
@@ -92,3 +94,60 @@ def run_scraping_legacy(*args, **kwargs):
         stacklevel=2
     )
     return run_scraping(*args, **kwargs)
+
+
+def run_db_refresh(progress_callback=None, log_callback=None) -> tuple[bool, str]:
+    """
+    Refresh the database from XML file.
+
+    Args:
+        progress_callback: Optional callback for progress updates
+        log_callback: Optional callback for logging
+
+    Returns:
+        Tuple of (success, message)
+    """
+    # Find the XML file path
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    xml_path = os.path.join(project_root, "data", "databases", "shopsite_products_cleaned.xml")
+
+    if progress_callback:
+        try:
+            progress_callback.emit(10)
+        except AttributeError:
+            progress_callback(10)
+
+    if log_callback:
+        try:
+            log_callback.emit("💾 Refreshing database from XML file...")
+        except AttributeError:
+            log_callback("💾 Refreshing database from XML file...")
+
+    if progress_callback:
+        try:
+            progress_callback.emit(30)
+        except AttributeError:
+            progress_callback(30)
+
+    if log_callback:
+        try:
+            log_callback.emit("🔄 Processing XML and updating database...")
+        except AttributeError:
+            log_callback("🔄 Processing XML and updating database...")
+
+    # Call the actual refresh function
+    success, message = refresh_database_from_xml(xml_path)
+
+    if progress_callback:
+        try:
+            progress_callback.emit(90)
+        except AttributeError:
+            progress_callback(90)
+
+    if success and log_callback:
+        try:
+            log_callback.emit("💡 Database updated successfully.")
+        except AttributeError:
+            log_callback("💡 Database updated successfully.")
+
+    return success, message

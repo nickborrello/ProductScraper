@@ -94,10 +94,10 @@ For automation and advanced usage:
 python src/main.py --run scraper --file path/to/your/excel_file.xlsx
 
 # Run comprehensive tests
-python test_scrapers.py --all
+python tests/test_scrapers.py --all
 
 # Run comprehensive testing
-python platform_test_scrapers.py --all
+python tests/platform_test_scrapers.py --all
 ```
 
 ### Testing Framework
@@ -106,10 +106,10 @@ The enhanced testing framework provides multiple testing modes:
 
 ```bash
 # Local testing (default, no API required)
-python test_scrapers.py --scraper amazon
+python tests/test_scrapers.py --scraper amazon
 
 # Run comprehensive testing
-python platform_test_scrapers.py --all
+python tests/platform_test_scrapers.py --all
 
 # Quality validation
 python -m pytest tests/unit/test_data_quality_scorer.py
