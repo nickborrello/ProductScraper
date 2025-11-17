@@ -121,7 +121,7 @@ class ScraperDevCLI:
         if self.debugger.load_page(url):
             for test in common_tests:
                 result = self.debugger.test_selector(test["selector"], test["selector_type"])
-                test["expected_count"] = result.count if result.found else 0
+                test["expected_count"] = str(result.count if result.found else 0)
                 test["expected_text"] = result.text[:50] if result.found else ""
 
         # Save test suite

@@ -32,21 +32,20 @@ except:
     is_gui_mode = False
 
 if not is_gui_mode:
-    print("🔧 Checking module availability...")
+    print("[INFO] Checking module availability...")
 
 try:
-    from src.scrapers.master import ProductScraper
-
-    PRODUCT_SCRAPER_AVAILABLE = True
+    # Import removed - master module no longer exists after migration
+    PRODUCT_SCRAPER_AVAILABLE = False
     if not is_gui_mode:
-        print("✅ ProductScraper module loaded")
+        print("[INFO] ProductScraper module removed (migrated to YAML configs)")
 except ImportError as e:
     PRODUCT_SCRAPER_AVAILABLE = False
     if not is_gui_mode:
-        print(f"❌ ProductScraper module not available: {e}")
+        print(f"[INFO] ProductScraper module not available: {e}")
 
 if not is_gui_mode:
-    print("🔧 Module check complete")
+    print("[INFO] Module check complete")
 
 # --- Core Logic Functions ---
 
@@ -68,7 +67,7 @@ def run_scraper_integration_tests(log_callback=None, progress_callback=None, edi
 
     try:
         log("\n" + "="*60)
-        log("🧪 SCRAPER INTEGRATION TESTS")
+        log("[TEST] SCRAPER INTEGRATION TESTS")
         log("Testing all scrapers with known working products...")
         log("="*60)
 
@@ -97,11 +96,14 @@ def run_scraper_integration_tests(log_callback=None, progress_callback=None, edi
                 try:
                     # Import the module
                     spec = importlib.util.spec_from_file_location(f"{scraper_dir}_scraper", main_py_path)
+                    if spec is None or spec.loader is None:
+                        log(f"[ERROR] Failed to create module spec for {scraper_dir}")
+                        continue
                     module = importlib.util.module_from_spec(spec)
                     spec.loader.exec_module(module)
                     modules[scraper_dir] = module
                 except Exception as e:
-                    log(f"❌ Failed to import scraper module {scraper_dir}: {e}")
+                    log(f"[ERROR] Failed to import scraper module {scraper_dir}: {e}")
                     continue
 
         # Filter to only include modules that have scrape_products function
@@ -142,9 +144,11 @@ def run_scraper_integration_tests(log_callback=None, progress_callback=None, edi
 
             # Get test SKU for this site (already extracted from module)
 
+            # Initialize original_headless before try block
+            original_headless = getattr(module, 'HEADLESS', True)
+
             try:
                 # Temporarily override HEADLESS setting for testing (set to False so we can see browser)
-                original_headless = getattr(module, 'HEADLESS', True)
                 module.HEADLESS = False
                 log(f"   🌐 Running with HEADLESS=False (original: {original_headless})")
 
@@ -154,8 +158,11 @@ def run_scraper_integration_tests(log_callback=None, progress_callback=None, edi
                 def run_scraper():
                     try:
                         # Test with module-specific test SKU
-                        result = scrape_func([test_sku])
-                        result_container['result'] = result
+                        if scrape_func is not None:
+                            result = scrape_func([test_sku])
+                            result_container['result'] = result
+                        else:
+                            result_container['exception'] = Exception("scrape_func is None")
                         result_container['completed'] = True
                     except Exception as e:
                         result_container['exception'] = e
@@ -357,8 +364,9 @@ def run_scraper_tests(run_integration=False, log_callback=None, progress_callbac
             universal_newlines=True,
         )
 
-        for line in process.stdout:
-            log(line.strip())
+        if process.stdout is not None:
+            for line in process.stdout:
+                log(line.strip())
 
         process.wait()
 
