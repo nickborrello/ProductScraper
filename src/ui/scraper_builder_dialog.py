@@ -933,22 +933,24 @@ class SelectorGenerationThread(QThread):
 
             # Create prompt for selector generation
             prompt = f"""
-Analyze this HTML content from a product page and suggest CSS selectors for common product fields.
+Analyze this HTML content from a product page and suggest CSS selectors for the following specific product fields only.
 Return a JSON object with field names as keys and selector objects as values.
 
-Common product fields to look for:
+Required fields to look for:
 - product_name: Main product title/name
-- price: Product price
-- description: Product description
-- image_urls: Product images
-- sku: Product SKU/code
 - brand: Product brand
-- availability: Stock status
-- rating: Product rating
+- image_urls: Product images (array of image URLs)
+- weight: Product weight (look for weight information, convert any ounces to pounds, format as 'X.XX lbs')
 
 For each field, provide:
 - selector: CSS selector
 - attribute: HTML attribute to extract (text, src, href, etc.)
+
+IMPORTANT:
+- Only include the 4 specified fields: product_name, brand, image_urls, weight
+- Ensure all selector and attribute values are non-null and valid
+- For weight, if found in ounces, convert to pounds (1 oz = 0.0625 lbs) and format as 'X.XX lbs'
+- Return only valid JSON with no null values
 
 HTML Content:
 {self.page_content[:4000]}  # Limit content length
