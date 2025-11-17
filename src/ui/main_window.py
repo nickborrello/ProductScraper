@@ -61,10 +61,80 @@ try:
         from src.core.database.xml_import import import_from_shopsite_xml as run_shopsite_xml_download
         from src.core.database.xml_import import publish_shopsite_changes as run_shopsite_publish
 
-    from src.utils.run_scraper import (
-        run_scraper_tests,
-        run_scraper_integration_tests,
-    )
+    def run_scraper_tests(run_integration=False, log_callback=None, progress_callback=None, status_callback=None, editor_callback=None, confirmation_callback=None, metrics_callback=None):
+        """Run pytest on scraper tests and stream results."""
+        # Determine log function
+        if log_callback is None:
+            log = print
+        elif hasattr(log_callback, 'emit'):
+            # If it's a Qt signal object, use emit method
+            log = log_callback.emit
+        else:
+            # If it's already a callable (like emit method or function), use it directly
+            log = log_callback
+
+        # Correctly find project root from the current file's location
+        try:
+            from src.utils.run_scraper import find_project_root
+            PROJECT_ROOT = find_project_root()
+        except (ImportError, FileNotFoundError):
+            # Fallback if run_scraper is removed
+            PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+        test_file = os.path.join(PROJECT_ROOT, "tests", "platform_test_scrapers.py")
+
+        if not os.path.exists(test_file):
+            log("❌ Test file not found")
+            return False, "Test file not found"
+
+        try:
+            log("\n" + "=" * 60)
+            log("🧪 RUNNING SCRAPER TESTS")
+            if run_integration:
+                log("   📡 Including integration tests (real network calls)")
+            else:
+                log("   🔧 Running basic validation only")
+            log("=" * 60)
+
+            command = [
+                sys.executable, test_file, "--all"
+            ]
+            if run_integration:
+                command.append("--verbose")
+
+            # Use Popen to stream output
+            import subprocess
+            process = subprocess.Popen(
+                command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                cwd=PROJECT_ROOT,
+                bufsize=1,
+                universal_newlines=True,
+            )
+
+            if process.stdout is not None:
+                for line in process.stdout:
+                    log(line.strip())
+
+            process.wait()
+
+            if process.returncode == 0:
+                log("✅ All tests passed!")
+                return True, "All tests passed"
+            else:
+                log("❌ Some tests failed")
+                return False, "Some tests failed"
+
+        except Exception as e:
+            log(f"❌ Error running tests: {e}")
+            return False, str(e)
+
+    def run_scraper_integration_tests(*args, **kwargs):
+        """Run integration tests for all scrapers."""
+        return run_scraper_tests(run_integration=True, **kwargs)
+
 except ImportError as e:
     print(f"Error importing scraper functions: {e}")
 

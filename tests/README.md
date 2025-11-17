@@ -6,16 +6,16 @@ This directory contains a comprehensive testing system for the ProductScraper pr
 
 ```bash
 # Test all scrapers
-python test_scrapers.py --all
+python platform_test_scrapers.py --all
 
 # Test a specific scraper
-python test_scrapers.py --scraper amazon
+python platform_test_scrapers.py --scraper amazon
 
 # List available scrapers
-python test_scrapers.py --list
+python platform_test_scrapers.py --list
 
 # Validate scraper structure
-python test_scrapers.py --validate amazon
+python platform_test_scrapers.py --validate amazon
 ```
 
 ## Directory Structure
@@ -51,13 +51,13 @@ This checks for:
 Test a single scraper with its predefined test SKUs:
 
 ```bash
-python test_scrapers.py --scraper <scraper_name>
+python platform_test_scrapers.py --scraper <scraper_name>
 ```
 
 Or test with custom SKUs:
 
 ```bash
-python test_scrapers.py --scraper amazon --skus B07G5J5FYP B08N5WRWNW
+python platform_test_scrapers.py --scraper amazon --skus B07G5J5FYP B08N5WRWNW
 ```
 
 ### 3. Full Test Suite
@@ -65,7 +65,7 @@ python test_scrapers.py --scraper amazon --skus B07G5J5FYP B08N5WRWNW
 Run comprehensive tests on all scrapers:
 
 ```bash
-python test_scrapers.py --all
+python platform_test_scrapers.py --all
 ```
 
 This will:
@@ -121,7 +121,7 @@ Each scraper has predefined test SKUs that are known to work:
 Get detailed output for debugging:
 
 ```bash
-python test_scrapers.py --scraper amazon --verbose
+python platform_test_scrapers.py --scraper amazon --verbose
 ```
 
 ### Common Issues
@@ -129,7 +129,7 @@ python test_scrapers.py --scraper amazon --verbose
 1. **Structure Issues**: Run validation first
 
    ```bash
-   python test_scrapers.py --validate <scraper_name>
+   python platform_test_scrapers.py --validate <scraper_name>
    ```
 
 2. **Import Errors**: Check dependencies in `requirements.txt`
@@ -152,7 +152,7 @@ HEADLESS = False  # Set to True for production
 
 ## Pre-Deployment Checklist
 
-- [ ] All scrapers pass `python test_scrapers.py --all`
+- [ ] All scrapers pass `python platform_test_scrapers.py --all`
 - [ ] No validation errors in output data
 - [ ] Data quality score > 80% for all scrapers
 - [ ] All required fields populated for test SKUs
@@ -168,7 +168,7 @@ The testing system can be integrated into CI/CD pipelines:
 # Example GitHub Actions step
 - name: Test Scrapers
   run: |
-    python test_scrapers.py --all
+    python platform_test_scrapers.py --all
 ```
 
 ## Contributing
@@ -188,7 +188,7 @@ Make sure you're running from the project root:
 
 ```bash
 cd /path/to/ProductScraper
-python test_scrapers.py --list
+python platform_test_scrapers.py --list
 ```
 
 ### Import Errors

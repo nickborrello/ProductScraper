@@ -39,7 +39,7 @@ class ScraperDevCLI:
 
     def run_existing_tests(self, scraper_name: Optional[str] = None, verbose: bool = False):
         """Run existing scraper tests."""
-        cmd = [sys.executable, "tests/unit/test_scrapers.py"]
+        cmd = [sys.executable, "tests/platform_test_scrapers.py"]
 
         if scraper_name:
             cmd.extend(["--scraper", scraper_name])
@@ -326,28 +326,28 @@ def main():
         epilog="""
 Examples:
   # Test existing scrapers
-  python dev_cli.py test --scraper amazon
-  python dev_cli.py test --all
+  python tests/platform_test_scrapers.py --scraper amazon
+  python tests/platform_test_scrapers.py --all
 
   # Debug selectors
-  python dev_cli.py debug-selector "https://amazon.com/dp/B07G5J5FYP" "h1#productTitle"
-  python dev_cli.py debug-selector "https://amazon.com/dp/B07G5J5FYP" "//h1[@id='productTitle']" --type xpath --highlight
+  python src/utils/scraping/dev_cli.py debug-selector "https://amazon.com/dp/B07G5J5FYP" "h1#productTitle"
+  python src/utils/scraping/dev_cli.py debug-selector "https://amazon.com/dp/B07G5J5FYP" "//h1[@id='productTitle']" --type xpath --highlight
 
   # Create test suite
-  python dev_cli.py create-suite amazon "https://amazon.com/dp/B07G5J5FYP"
+  python src/utils/scraping/dev_cli.py create-suite amazon "https://amazon.com/dp/B07G5J5FYP"
 
   # Run test suite
-  python dev_cli.py run-suite tests/fixtures/amazon_selectors.json
+  python src/utils/scraping/dev_cli.py run-suite tests/fixtures/amazon_selectors.json
 
   # Start development tools
-  python dev_cli.py gui          # Start web GUI
-  python dev_cli.py mock-server  # Start mock server
+  python src/utils/scraping/dev_cli.py gui          # Start web GUI
+  python src/utils/scraping/dev_cli.py mock-server  # Start mock server
 
   # Generate scraper template
-  python dev_cli.py generate-scraper newstore "https://newstore.com"
+  python src/utils/scraping/dev_cli.py generate-scraper newstore "https://newstore.com"
 
   # Compare scrapers
-  python dev_cli.py compare amazon bradley "https://example.com/product/123"
+  python src/utils/scraping/dev_cli.py compare amazon bradley "https://example.com/product/123"
         """
     )
 
