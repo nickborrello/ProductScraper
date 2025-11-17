@@ -316,7 +316,7 @@ def run_scraper_integration_tests(log_callback=None, progress_callback=None, edi
         log(f"Traceback: {traceback.format_exc()}")
         return False
 
-def run_scraper_tests(run_integration=False, log_callback=None, progress_callback=None):
+def run_scraper_tests(run_integration=False, log_callback=None, progress_callback=None, status_callback=None, editor_callback=None, confirmation_callback=None, metrics_callback=None):
     """Run pytest on scraper tests and stream results."""
     # Determine log function
     if log_callback is None:
