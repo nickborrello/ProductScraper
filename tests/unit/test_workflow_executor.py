@@ -54,6 +54,7 @@ def sample_config():
             ),
         ],
         login=None,
+        anti_detection=None,
     )
 
 
@@ -82,7 +83,9 @@ class TestWorkflowExecutor:
         executor = WorkflowExecutor(sample_config, headless=True)
 
         assert executor.config == sample_config
-        assert executor.timeout == 30
+        # Timeout should be 60s in CI, 30s locally
+        expected_timeout = 60 if executor.is_ci else 30
+        assert executor.timeout == expected_timeout
         assert executor.results == {}
         assert len(executor.selectors) == 3
         mock_create_browser.assert_called_once()
@@ -197,8 +200,10 @@ class TestWorkflowExecutor:
         ) as mock_wait:
             mock_wait.return_value.until.side_effect = TimeoutException()
 
+            # Error message should reflect actual timeout (60s in CI, 30s locally)
+            expected_timeout = 60 if executor.is_ci else 30
             with pytest.raises(
-                WorkflowExecutionError, match="Element not found within 30s"
+                WorkflowExecutionError, match=f"Element not found within {expected_timeout}s"
             ):
                 executor._action_wait_for({"selector": ".missing"})
 
