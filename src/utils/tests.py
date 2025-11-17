@@ -47,41 +47,41 @@ def run_scraper_integration_tests(log_callback=None, progress_callback=None, edi
         log("Testing all scrapers with known working products...")
         log("="*60)
 
-        # Discover all Apify actor modules
-        apify_actors_dir = os.path.join(PROJECT_ROOT, "src", "scrapers")
-        actor_folders = [f for f in os.listdir(apify_actors_dir) 
-                        if os.path.isdir(os.path.join(apify_actors_dir, f)) and not f.startswith('.')]
+        # Discover all scraper modules
+        scrapers_dir = os.path.join(PROJECT_ROOT, "src", "scrapers")
+        scraper_folders = [f for f in os.listdir(scrapers_dir)
+                        if os.path.isdir(os.path.join(scrapers_dir, f)) and not f.startswith('.')]
 
         modules = {}
-        for actor_folder in actor_folders:
-            actor_src_dir = os.path.join(apify_actors_dir, actor_folder)
-            main_py_path = os.path.join(actor_src_dir, "main.py")
+        for scraper_folder in scraper_folders:
+            scraper_src_dir = os.path.join(scrapers_dir, scraper_folder)
+            main_py_path = os.path.join(scraper_src_dir, "main.py")
             
             if not os.path.exists(main_py_path):
-                log(f"⚠️  Skipping {actor_folder}: main.py not found in src/")
+                log(f"⚠️  Skipping {scraper_folder}: main.py not found in src/")
                 continue
 
             try:
-                # Import the actor's main module
-                spec = importlib.util.spec_from_file_location(f"{actor_folder}_main", main_py_path)
+                # Import the scraper's main module
+                spec = importlib.util.spec_from_file_location(f"{scraper_folder}_main", main_py_path)
                 if spec is None:
-                    log(f"❌ Failed to create spec for actor {actor_folder}: spec is None")
+                    log(f"❌ Failed to create spec for scraper {scraper_folder}: spec is None")
                     continue
                 if spec.loader is None:
-                    log(f"❌ Failed to load actor {actor_folder}: spec.loader is None")
+                    log(f"❌ Failed to load scraper {scraper_folder}: spec.loader is None")
                     continue
                 module = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(module)
-                modules[actor_folder] = module
+                modules[scraper_folder] = module
             except Exception as e:
-                log(f"❌ Failed to import actor {actor_folder}: {e}")
+                log(f"❌ Failed to import scraper {scraper_folder}: {e}")
                 continue
 
         if not modules:
-            log("❌ No Apify actor modules found!")
+            log("❌ No scraper modules found!")
             return False
 
-        log(f"📦 Found {len(modules)} Apify actors: {', '.join(modules.keys())}")
+        log(f"📦 Found {len(modules)} scrapers: {', '.join(modules.keys())}")
 
         # Track results for all scrapers
         results = {}

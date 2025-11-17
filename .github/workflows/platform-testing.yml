@@ -1,4 +1,4 @@
-name: Platform Testing
+name: Local Testing
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
       - 'src/scrapers/models/**'
       - 'src/scrapers/parser/**'
       - 'src/scrapers/schemas/**'
-      - '.github/workflows/platform-testing.yml'
+      - '.github/workflows/local-testing.yml'
   schedule:
     # Run daily at 2 AM UTC
     - cron: '0 2 * * *'
@@ -20,19 +20,10 @@ on:
         description: 'Comma-separated list of scrapers to test (empty for all)'
         required: false
         default: ''
-      mode:
-        description: 'Testing mode'
-        required: true
-        default: 'platform'
-        type: choice
-        options:
-        - platform
-        - local
 
 jobs:
-  platform-test:
+  local-test:
     runs-on: ubuntu-latest
-    environment: testing
 
     steps:
     - uses: actions/checkout@v4
@@ -55,12 +46,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: Configure Apify (Platform mode)
-      if: github.event.inputs.mode == 'platform' || github.event.schedule == '0 2 * * *'
-      run: |
-        echo "APIFY_API_TOKEN=${{ secrets.APIFY_API_TOKEN }}" >> $GITHUB_ENV
-        echo "APIFY_BASE_URL=https://api.apify.com/v2" >> $GITHUB_ENV
-
     - name: Determine scrapers to test
       id: scrapers
       run: |
@@ -70,10 +55,10 @@ jobs:
           echo "scrapers=all" >> $GITHUB_OUTPUT
         fi
 
-    - name: Run platform tests
+    - name: Run local tests
       if: steps.scrapers.outputs.scrapers == 'all'
       run: |
-        python platform_test_scrapers.py --all --${{ github.event.inputs.mode || 'platform' }} --verbose
+        python platform_test_scrapers.py --all --local --verbose
       env:
         PYTHONPATH: ${{ github.workspace }}
 
@@ -82,7 +67,7 @@ jobs:
       run: |
         for scraper in $(echo "${{ github.event.inputs.scrapers }}" | tr ',' '\n'); do
           echo "Testing scraper: $scraper"
-          python platform_test_scrapers.py --scraper "$scraper" --${{ github.event.inputs.mode || 'platform' }} --verbose
+          python platform_test_scrapers.py --scraper "$scraper" --local --verbose
         done
       env:
         PYTHONPATH: ${{ github.workspace }}
@@ -90,9 +75,9 @@ jobs:
     - name: Generate test report
       if: always()
       run: |
-        echo "## Platform Testing Report" > test_report.md
+        echo "## Local Testing Report" > test_report.md
         echo "- **Date:** $(date)" >> test_report.md
-        echo "- **Mode:** ${{ github.event.inputs.mode || 'platform' }}" >> test_report.md
+        echo "- **Mode:** local" >> test_report.md
         echo "- **Scrapers:** ${{ steps.scrapers.outputs.scrapers }}" >> test_report.md
         echo "- **Status:** ${{ job.status }}" >> test_report.md
         echo "" >> test_report.md
@@ -105,17 +90,17 @@ jobs:
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: platform-test-report
+        name: local-test-report
         path: test_report.md
 
     - name: Notify on failure
       if: failure()
       run: |
-        echo "❌ Platform testing failed!"
+        echo "❌ Local testing failed!"
         # Add notification logic here (Slack, email, etc.)
 
   data-quality-check:
-    needs: platform-test
+    needs: local-test
     runs-on: ubuntu-latest
 
     steps:

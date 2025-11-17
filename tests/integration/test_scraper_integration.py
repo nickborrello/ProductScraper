@@ -42,18 +42,17 @@ class ScraperIntegrationTester:
 
         for item in scrapers_dir.iterdir():
             if item.is_dir() and not item.name.startswith('.') and item.name != 'archive':
-                # Check if it has the required Apify structure
-                main_py = item / "src" / "__main__.py"
-                actor_dir = item / ".actor"
+                # Check if it has main.py
+                main_py = item / "main.py"
 
-                if main_py.exists() and actor_dir.exists():
+                if main_py.exists():
                     scrapers.append(item.name)
 
         return sorted(scrapers)
 
     def run_scraper_locally(self, scraper_name: str, skus: List[str], headless: bool = True) -> Dict[str, Any]:
         """
-        Run a scraper locally with given SKUs using Apify SDK patterns.
+        Run a scraper locally with given SKUs.
 
         Args:
             scraper_name: Name of the scraper to run
@@ -95,10 +94,9 @@ class ScraperIntegrationTester:
             input_file = f.name
 
         try:
-            # Set environment variables for Apify SDK
+            # Set environment variables
             env = os.environ.copy()
             env["PYTHONPATH"] = str(self.project_root) + os.pathsep + str(scraper_dir)
-            env["APIFY_INPUT"] = json.dumps(input_data)
             # Set HEADLESS environment variable to control browser mode
             env["HEADLESS"] = "False" if not headless else "True"
             # Disable cookie loading for testing to ensure fresh sessions
@@ -107,23 +105,15 @@ class ScraperIntegrationTester:
             # Update current environment with these vars
             os.environ.update(env)
 
-            # Change to scraper directory for local storage
+            # Change to scraper directory
             original_cwd = os.getcwd()
             os.chdir(str(scraper_dir))
 
-            # Import local apify implementation for testing
-            import sys
-            sys.path.insert(0, str(self.project_root / "src"))
-            from src.core.local_apify import Actor
-
-            # Replace apify module with local implementation
-            sys.modules['apify'] = sys.modules['src.core.local_apify']
-
-            # Import and run the scraper directly using local storage patterns
+            # Import and run the scraper directly
             import importlib.util
             import asyncio
 
-            main_py_path = scraper_dir / "src" / "main.py"
+            main_py_path = scraper_dir / "main.py"
             if not main_py_path.exists():
                 results["errors"].append(f"main.py not found: {main_py_path}")
                 return results
@@ -137,7 +127,7 @@ class ScraperIntegrationTester:
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
 
-            # Run the async main() function using local storage patterns
+            # Run the async main() function
             start_time = time.time()
             try:
                 # Handle asyncio event loop conflicts with pytest
@@ -155,7 +145,7 @@ class ScraperIntegrationTester:
                 
                 results["execution_time"] = time.time() - start_time
                 results["success"] = True
-                results["output"] = "Scraper executed successfully using local storage simulation"
+                results["output"] = "Scraper executed successfully"
             except Exception as e:
                 results["errors"].append(f"Scraper execution failed: {e}")
                 results["output"] = f"Error: {e}"

@@ -21,97 +21,9 @@ These instructions guide GitHub Copilot's behavior when working in this reposito
 - Save cookies and profiles to maintain session state
 - Parse weights from product names and normalize to consistent units (LB)
 - Ensure cross-sell relationships are properly saved to Excel output
-- **Apify SDK Integration**: All scrapers use Apify SDK patterns with async main() functions, actor context management, and data pushing via await actor.push_data()
-- **Local Storage Simulation**: Use local storage APIs that mimic Apify platform storage for development and testing
-- **Testing Protocol**: Always test scraping functionality locally first using the enhanced testing framework. Use local storage simulation for development, platform testing only when necessary with proper API authentication.
+- **Standalone Scrapers**: All scrapers are standalone Python modules with async main() functions
+- **Testing Protocol**: Always test scraping functionality locally first using the enhanced testing framework
 
-## Scraper Structure Requirements
-
-**CRITICAL**: All scrapers must follow the Apify actor format structure. Never modify or break this structure, as it is required for deployment on the Apify platform.
-
-### Required Directory Structure for Each Scraper:
-
-```
-src/scrapers/{scraper_name}/
-├── src/
-│   ├── __main__.py          # Entry point: asyncio.run(main())
-│   └── main.py              # Main actor logic with async main()
-├── .actor/
-│   ├── actor.json           # Actor configuration
-│   ├── input_schema.json    # Input validation schema
-│   ├── output_schema.json   # Output schema
-│   └── dataset_schema.json  # Dataset schema
-├── Dockerfile               # Containerization
-├── requirements.txt         # Python dependencies
-└── README.md                # Documentation
-```
-
-### Required Files and Formats:
-
-#### `src/__main__.py` (Entry Point)
-
-```python
-import asyncio
-
-from .main import main
-
-# Execute the Actor entry point.
-asyncio.run(main())
-```
-
-#### `src/main.py` (Main Actor Logic)
-
-- Must contain `async def main() -> None:` function
-- Must use `async with apify.Actor:` context manager
-- Must call `await apify.get_input()` for input
-- Must call `await actor.push_data()` to output results
-- Must handle SKUs from input: `skus = actor_input.get('skus', [])`
-
-#### `.actor/actor.json` (Actor Configuration)
-
-```json
-{
-  "actorSpecification": 1,
-  "name": "{scraper_name}-scraper",
-  "title": "{Scraper Title} Product Scraper",
-  "description": "Scrape product data from {Site Name} for given SKUs.",
-  "version": "0.0",
-  "buildTag": "latest",
-  "meta": {
-    "templateId": "python-start",
-    "model": "<FILL-IN-MODEL>"
-  },
-  "input": "./input_schema.json",
-  "output": "./output_schema.json",
-  "storages": {
-    "dataset": "./dataset_schema.json"
-  },
-  "dockerfile": "../Dockerfile"
-}
-```
-
-#### Schema Files
-
-- `input_schema.json`: Must include "skus" array field for SKU input
-- `output_schema.json`: Standard output schema format
-- `dataset_schema.json`: Standard dataset schema format
-
-### Critical Rules:
-
-- **NEVER** modify the `__main__.py` format - it must always be `asyncio.run(main())`
-- **NEVER** change the `main()` function signature - it must be `async def main() -> None:`
-- **NEVER** remove the `async with apify.Actor:` context manager
-- **NEVER** modify the input/output handling without updating schemas
-- **ALWAYS** maintain the exact directory structure for Apify compatibility
-- **ALWAYS** test locally before any changes to ensure Apify deployment works
-
-### When Adding New Scrapers:
-
-1. Copy the structure from an existing scraper (amazon, bradley, etc.)
-2. Update all `{scraper_name}` placeholders in files
-3. Update titles and descriptions in actor.json and schemas
-4. Ensure main.py follows the exact async pattern
-5. Test locally before committing
 
 ## Building and Testing Scrapers Locally
 
@@ -156,7 +68,7 @@ asyncio.run(main())
 
 ### Testing Protocol
 
-**CRITICAL**: Always test scraping functionality locally before pushing to Apify hosting. Never run scrapes with Apify hosting during testing phases - use local execution only for development and validation.
+**CRITICAL**: Always test scraping functionality locally first. Use the enhanced testing framework for validation.
 
 1. **Use Test SKUs**: Test with products that have all needed fields filled in (e.g., SKU: 035585499741)
 2. **Verify Output**: Check that scraped data includes:
@@ -177,16 +89,10 @@ asyncio.run(main())
 The project includes a comprehensive testing system with multiple modes:
 
 #### Local Testing Mode (Default)
-- Uses Apify SDK patterns with local storage simulation
+- Runs scrapers directly with local storage
 - No API keys required
-- File-based storage for datasets, key-value stores, request queues
+- File-based storage for datasets
 - Full quality scoring and validation
-
-#### Platform Testing Mode (Optional)
-- Integrates with Apify platform APIs
-- Requires `APIFY_API_TOKEN` environment variable
-- Cloud validation and deployment testing
-- Cost monitoring and usage tracking
 
 #### Testing Commands
 ```bash
@@ -195,9 +101,6 @@ python test_scrapers.py --all
 
 # Test specific scraper
 python test_scrapers.py --scraper amazon
-
-# Platform testing
-python platform_test_scrapers.py --platform --scraper amazon
 
 # Quality validation
 python -m pytest tests/unit/test_data_quality_scorer.py
@@ -219,15 +122,13 @@ The testing system validates:
 - **Cross-sell Data**: Pipe-separated format
 - **Quality Score**: >85% threshold met
 
-### Pre-Apify Deployment Checklist
+### Pre-Deployment Checklist
 
 - [ ] All scrapers pass `python test_scrapers.py --all`
 - [ ] No validation errors in output data
 - [ ] Data quality score > 85% for all scrapers
 - [ ] All required fields populated for test SKUs
-- [ ] Local storage simulation works correctly
-- [ ] Platform testing optional and properly authenticated
-- [ ] Ready for Apify hosting deployment
+- [ ] Ready for deployment
 
 ## GUI Development Guidelines
 
@@ -312,93 +213,6 @@ The testing system validates:
 - **Upload**: ❌ Not implemented (could be useful for bulk product updates)
 - **Publish**: ✅ Implemented and working (`publish_shopsite_changes()`)
 
-## Scraper Structure Requirements
-
-**CRITICAL**: All scrapers must follow the Apify actor format structure. Never modify or break this structure, as it is required for deployment on the Apify platform.
-
-### Required Directory Structure for Each Scraper:
-
-```
-src/scrapers/{scraper_name}/
-├── src/
-│   ├── __main__.py          # Entry point: asyncio.run(main())
-│   └── main.py              # Main actor logic with async main()
-├── .actor/
-│   ├── actor.json           # Actor configuration
-│   ├── input_schema.json    # Input validation schema
-│   ├── output_schema.json   # Output schema
-│   └── dataset_schema.json  # Dataset schema
-├── Dockerfile               # Containerization
-├── requirements.txt         # Python dependencies
-└── README.md                # Documentation
-```
-
-### Required Files and Formats:
-
-#### `src/__main__.py` (Entry Point)
-
-```python
-import asyncio
-
-from .main import main
-
-# Execute the Actor entry point.
-asyncio.run(main())
-```
-
-#### `src/main.py` (Main Actor Logic)
-
-- Must contain `async def main() -> None:` function
-- Must use `async with apify.Actor:` context manager
-- Must call `await apify.get_input()` for input
-- Must call `await actor.push_data()` to output results
-- Must handle SKUs from input: `skus = actor_input.get('skus', [])`
-
-#### `.actor/actor.json` (Actor Configuration)
-
-```json
-{
-  "actorSpecification": 1,
-  "name": "{scraper_name}-scraper",
-  "title": "{Scraper Title} Product Scraper",
-  "description": "Scrape product data from {Site Name} for given SKUs.",
-  "version": "0.0",
-  "buildTag": "latest",
-  "meta": {
-    "templateId": "python-start",
-    "model": "<FILL-IN-MODEL>"
-  },
-  "input": "./input_schema.json",
-  "output": "./output_schema.json",
-  "storages": {
-    "dataset": "./dataset_schema.json"
-  },
-  "dockerfile": "../Dockerfile"
-}
-```
-
-#### Schema Files
-
-- `input_schema.json`: Must include "skus" array field for SKU input
-- `output_schema.json`: Standard output schema format
-- `dataset_schema.json`: Standard dataset schema format
-
-### Critical Rules:
-
-- **NEVER** modify the `__main__.py` format - it must always be `asyncio.run(main())`
-- **NEVER** change the `main()` function signature - it must be `async def main() -> None:`
-- **NEVER** remove the `async with apify.Actor:` context manager
-- **NEVER** modify the input/output handling without updating schemas
-- **ALWAYS** maintain the exact directory structure for Apify compatibility
-- **ALWAYS** test locally before any changes to ensure Apify deployment works
-
-### When Adding New Scrapers:
-
-1. Copy the structure from an existing scraper (amazon, bradley, etc.)
-2. Update all `{scraper_name}` placeholders in files
-3. Update titles and descriptions in actor.json and schemas
-4. Ensure main.py follows the exact async pattern
-5. Test locally before committing
 
 ## Building and Testing Scrapers Locally
 
@@ -426,15 +240,11 @@ asyncio.run(main())
    cd src/scrapers/{scraper_name}
    ```
 
-2. **Run with Test SKUs**: Use the Apify CLI or run directly with Python:
+2. **Run with Test SKUs**: Run directly with Python:
 
-   ```bash
-   # Option 1: Using Apify CLI (recommended for full actor testing)
-   apify run --input='{"skus": ["TEST-SKU-1", "TEST-SKU-2"]}'
-
-   # Option 2: Direct Python execution
-   python -m src --input='{"skus": ["TEST-SKU-1", "TEST-SKU-2"]}'
-   ```
+    ```bash
+    python main.py
+    ```
 
 3. **Run Specific Scraper**: From the scraper directory:
    ```bash
@@ -443,7 +253,7 @@ asyncio.run(main())
 
 ### Testing Protocol
 
-**CRITICAL**: Always test scraping functionality locally before pushing to Apify hosting. Never run scrapes with Apify hosting during testing phases - use local execution only for development and validation.
+**CRITICAL**: Always test scraping functionality locally first. Use the enhanced testing framework for validation.
 
 1. **Use Test SKUs**: Test with products that have all needed fields filled in (e.g., SKU: 035585499741)
 2. **Verify Output**: Check that scraped data includes:
@@ -494,7 +304,7 @@ asyncio.run(main())
 
 ## Scraper Testing and Debugging System
 
-The project includes a comprehensive testing system to ensure scrapers work properly before deployment to Apify. All testing must be done locally before pushing to Apify hosting.
+The project includes a comprehensive testing system to ensure scrapers work properly. All testing must be done locally.
 
 ### Testing Tools
 
@@ -533,7 +343,7 @@ python test_scrapers.py --scraper amazon --verbose
 
 ### Testing Workflow
 
-**CRITICAL**: Never deploy to Apify without running local tests first.
+**CRITICAL**: Always run local tests before deployment.
 
 1. **Structure Validation**:
 
@@ -591,7 +401,7 @@ Each scraper has predefined test SKUs that are known to work:
 - **Data Issues**: Review validation errors for specific field problems
 - **Timeout Issues**: Increase timeout values for slow-loading sites
 
-### Pre-Apify Deployment Checklist
+### Pre-Deployment Checklist
 
 - [ ] All scrapers pass `python test_scrapers.py --all`
 - [ ] No validation errors in output data

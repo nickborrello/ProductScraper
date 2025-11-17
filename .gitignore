@@ -63,13 +63,8 @@ config/credentials.json
 # Browser profiles (Selenium automation)
 data/selenium_profiles/
 
-# Apify storage directories in scrapers
-src/scrapers/**/storage/
-
 # Generated test result files
 src/scrapers/**/large_scale_test_results_*.json
-
-.apm/
 
 # AI assistant prompt files
 .github/prompts/
