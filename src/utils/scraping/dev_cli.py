@@ -218,163 +218,102 @@ class ScraperDevCLI:
         return success1 and success2
 
     def generate_scraper_template(self, scraper_name: str, base_url: str):
-        """Generate a basic scraper template."""
+        """Generate a basic YAML-based scraper template."""
         scraper_dir = PROJECT_ROOT / "src" / "scrapers" / scraper_name
-        src_dir = scraper_dir / "src"
 
-        print(f"Generating scraper template: {scraper_name}")
+        print(f"Generating YAML scraper template: {scraper_name}")
 
         # Create directory structure
-        src_dir.mkdir(parents=True, exist_ok=True)
-        (scraper_dir / ".actor").mkdir(exist_ok=True)
+        scraper_dir.mkdir(parents=True, exist_ok=True)
 
-        # Generate main.py
-        main_py_content = f'''"""{{scraper_name}} Product Scraper Actor"""
+        # Generate YAML config
+        yaml_content = f'''# {scraper_name} Scraper Configuration
+name: "{scraper_name}"
+description: "Product scraper for {scraper_name}"
+base_url: "{base_url}"
 
-from __future__ import annotations
+# Browser settings
+browser:
+  headless: true
+  timeout: 30
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
 
-import asyncio
-import os
-import sys
-from typing import Any
+# Product page detection
+product_page_patterns:
+  - "{base_url}/product/*"
+  - "{base_url}/item/*"
+  - "{base_url}/p/*"
 
-# Add project root to path
-project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-sys.path.insert(0, project_root)
+# Selectors for product data extraction
+selectors:
+  name:
+    css: "h1.product-title, .product-name, #productTitle"
+    xpath: "//h1[@class='product-title'] | //div[@class='product-name'] | //span[@id='productTitle']"
+    required: true
 
-# Import Actor
-try:
-    if os.getenv('APIFY_ACTOR_ID') or os.getenv('APIFY_TOKEN'):
-        from apify import Actor
-    else:
-        from src.core.local_apify import Actor
-except ImportError:
-    from apify import Actor
+  price:
+    css: ".price, .product-price, [data-price]"
+    xpath: "//span[@class='price'] | //div[@class='product-price'] | //meta[@property='product:price:amount']/@content"
+    required: false
 
-from src.utils.scraping.dev_tools import SelectorDebugger
+  brand:
+    css: ".brand, .manufacturer, [data-brand]"
+    xpath: "//span[@class='brand'] | //div[@class='manufacturer']"
+    required: false
 
-# {scraper_name} scraper configuration
-HEADLESS = os.getenv('HEADLESS', 'True').lower() == 'true'
-DEBUG_MODE = os.getenv('DEBUG_MODE', 'False').lower() == 'true'
+  sku:
+    css: "[data-sku], .sku, .product-id"
+    xpath: "//span[@class='sku'] | //div[@class='product-id']"
+    required: false
 
+  weight:
+    css: ".weight, .product-weight, [data-weight]"
+    xpath: "//span[@class='weight'] | //div[@class='product-weight']"
+    required: false
 
-def scrape_product(url: str) -> dict[str, Any] | None:
-    """Scrape a single product from {scraper_name}."""
-    debugger = SelectorDebugger(headless=HEADLESS)
+  images:
+    css: ".product-image img, .gallery img, #product-images img"
+    xpath: "//div[@class='product-image']//img | //div[@class='gallery']//img"
+    attribute: "src"
+    multiple: true
+    required: false
 
-    try:
-        if not debugger.load_page(url):
-            return None
+# Workflow steps for scraping
+workflow:
+  - name: "load_page"
+    type: "navigation"
+    description: "Load the product page"
 
-        # TODO: Implement scraping logic
-        # Use debugger.test_selector() to test selectors during development
+  - name: "extract_data"
+    type: "extraction"
+    description: "Extract product data using selectors"
 
-        product_data = {{
-            "SKU": "",  # Extract from URL or page
-            "Name": "",  # Extract product name
-            "Price": "",  # Extract price
-            "Brand": "",  # Extract brand
-            "Image URLs": [],  # Extract image URLs
-            "Weight": "",  # Extract weight
-        }}
+  - name: "validate_data"
+    type: "validation"
+    description: "Validate extracted data"
 
-        return product_data
-
-    finally:
-        debugger.close()
-
-
-async def main() -> None:
-    """Main actor function."""
-    async with Actor:
-        actor_input = await Actor.get_input() or {{}}
-        skus = actor_input.get('skus', [])
-
-        if not skus:
-            Actor.log.error("No SKUs provided")
-            return
-
-        Actor.log.info(f"Starting {{scraper_name}} scraping for {{len(skus)}} SKUs")
-
-        products = []
-        for sku in skus:
-            # Convert SKU to URL - customize this logic
-            url = f"{base_url}/product/{{sku}}"
-
-            product = scrape_product(url)
-            if product:
-                products.append(product)
-                Actor.log.info(f"SUCCESS: Scraped: {{product.get('Name', 'Unknown')}}")
-            else:
-                Actor.log.warning(f"ERROR: Failed to scrape SKU: {{sku}}")
-
-        await Actor.push_data(products)
-        Actor.log.info(f"Successfully scraped {{len(products)}} products")
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
+# Test configuration
+test:
+  enabled: true
+  sample_urls:
+    - "{base_url}/product/sample123"
+  expected_fields:
+    - name
+    - sku
 '''
 
-        # Generate Dockerfile
-        dockerfile_content = f'''FROM apify/actor-python:3.11
+        # Write YAML config
+        config_file = scraper_dir / f"{scraper_name}.yaml"
+        with open(config_file, 'w') as f:
+            f.write(yaml_content)
 
-# Copy source code
-COPY src/ ./src/
-
-# Install dependencies
-COPY requirements.txt ./
-RUN pip install -r requirements.txt
-
-# Set environment
-ENV PYTHONPATH=/home/myuser/src:$PYTHONPATH
-
-# Run the scraper
-CMD ["python", "src/main.py"]
-'''
-
-        # Generate requirements.txt
-        requirements_content = '''apify==1.8.1
-selenium==4.15.2
-webdriver-manager==4.0.1
-fake-useragent==1.4.0
-beautifulsoup4==4.12.2
-lxml==4.9.3
-'''
-
-        # Generate actor.json
-        actor_json = {
-            "name": f"{scraper_name}-scraper",
-            "version": "0.1.0",
-            "description": f"Product scraper for {scraper_name}",
-            "dockerfile": "./Dockerfile",
-            "input": {
-                "type": "object",
-                "properties": {
-                    "skus": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": "List of SKUs to scrape"
-                    }
-                },
-                "required": ["skus"]
-            }
-        }
-
-        # Write files
-        (src_dir / "main.py").write_text(main_py_content)
-        (scraper_dir / "Dockerfile").write_text(dockerfile_content)
-        (scraper_dir / "requirements.txt").write_text(requirements_content)
-
-        with open(scraper_dir / ".actor" / "actor.json", 'w') as f:
-            json.dump(actor_json, f, indent=2)
-
-        print("SUCCESS: Scraper template generated!")
+        print("SUCCESS: YAML scraper template generated!")
         print(f"Location: {scraper_dir}")
+        print(f"Config file: {config_file}")
         print("Next steps:")
-        print("  1. Customize the scraping logic in src/main.py")
+        print("  1. Customize the selectors in the YAML config")
         print("  2. Test with: python src/utils/scraping/dev_cli.py debug-selector <url> <selector>")
-        print("  3. Run tests: python tests/unit/test_scrapers.py --scraper {scraper_name}")
+        print("  3. Run tests: python platform_test_scrapers.py --scraper {scraper_name}")
 
         return str(scraper_dir)
 

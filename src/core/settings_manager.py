@@ -31,8 +31,6 @@ class SettingsManager:
         "shopsite_store_id": "",
         # Cloud Settings
         "google_cloud_project_id": "",
-        "apify_api_token": "",
-        "apify_base_url": "https://api.apify.com/v2",
         # AI/ML Settings
         "openrouter_api_key": "",
         "ollama_model": "llama3.2",

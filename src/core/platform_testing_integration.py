@@ -53,16 +53,14 @@ class PlatformScraperIntegrationTester:
 
     def get_available_scrapers(self) -> List[str]:
         """Get list of available scraper names."""
-        scrapers_dir = self.project_root / "src" / "scrapers"
+        configs_dir = self.project_root / "src" / "scrapers" / "configs"
         scrapers = []
 
-        for item in scrapers_dir.iterdir():
-            if item.is_dir() and not item.name.startswith('.') and item.name != 'archive':
-                # Check if it has the required Apify structure
-                main_py = item / "src" / "__main__.py"
-                actor_dir = item / ".actor"
-                if main_py.exists() and actor_dir.exists():
-                    scrapers.append(item.name)
+        if configs_dir.exists():
+            for config_file in configs_dir.glob("*.yaml"):
+                if config_file.is_file():
+                    scraper_name = config_file.stem
+                    scrapers.append(scraper_name)
 
         return sorted(scrapers)
 

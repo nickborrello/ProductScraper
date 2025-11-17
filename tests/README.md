@@ -1,6 +1,6 @@
 # Scraper Testing and Debugging System
 
-This directory contains a comprehensive testing system for the ProductScraper project. The system ensures all scrapers work properly and output the correct data before deployment to Apify.
+This directory contains a comprehensive testing system for the ProductScraper project. The system ensures all scrapers work properly and output the correct data.
 
 ## Quick Start
 
@@ -35,17 +35,16 @@ tests/
 
 ### 1. Structure Validation
 
-Before running scrapers, validate that each scraper has the correct Apify actor structure:
+Before running scrapers, validate that each scraper has the correct YAML configuration:
 
 ```bash
-python test_scrapers.py --validate <scraper_name>
+python platform_test_scrapers.py --validate <scraper_name>
 ```
 
 This checks for:
 
-- Required directories (`src/`, `.actor/`)
-- Required files (`__main__.py`, `main.py`, `actor.json`, etc.)
-- Proper Apify actor configuration
+- Required YAML configuration file (`<scraper_name>.yaml`)
+- Proper scraper configuration structure
 
 ### 2. Individual Scraper Testing
 
@@ -97,7 +96,7 @@ The testing system validates:
 ### Execution
 
 - Scrapers run without errors
-- Proper Apify actor lifecycle
+- Workflow execution completes successfully
 - Timeout handling
 - Browser compatibility
 
@@ -178,7 +177,7 @@ The testing system can be integrated into CI/CD pipelines:
 When adding new scrapers:
 
 1. Add test data to `fixtures/scraper_test_data.json`
-2. Ensure scraper follows Apify actor structure
+2. Create YAML configuration file in `src/scrapers/configs/`
 3. Test locally before committing
 4. Update this README if needed
 

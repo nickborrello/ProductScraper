@@ -39,7 +39,6 @@ from PyQt6.QtWidgets import (
 from src.scrapers.selector_storage import SelectorManager
 from src.scrapers.parser.yaml_parser import ScraperConfigParser
 from src.scrapers.models.config import ScraperConfig, SelectorConfig, WorkflowStep
-from src.core.apify_platform_client import ApifyPlatformClient
 from src.ui.visual_selector_picker import VisualSelectorPicker
 from src.ui.styling import STYLESHEET
 
@@ -117,7 +116,7 @@ class UrlInputPage(QWizardPage):
         self.registerField("url*", self.url_input)
 
     def load_page(self):
-        """Load the page content using Apify."""
+        """Load the page content using HTTP request."""
         url = self.url_input.text().strip()
         if not url:
             QMessageBox.warning(self, "Error", "Please enter a URL first.")
@@ -132,11 +131,8 @@ class UrlInputPage(QWizardPage):
         self.progress_bar.setVisible(True)
         self.progress_bar.setRange(0, 0)  # Indeterminate progress
 
-        # Use Apify to fetch page content
-        self.apify_client = ApifyPlatformClient()
-
         # Start loading in background
-        self.load_thread = PageLoadThread(url, self.apify_client)
+        self.load_thread = PageLoadThread(url)
         self.load_thread.finished.connect(self.on_page_loaded)
         self.load_thread.error.connect(self.on_load_error)
         self.load_thread.start()
@@ -737,7 +733,8 @@ class ConfigurationSavingPage(QWizardPage):
                 workflows=workflows,
                 login=None,
                 timeout=30,
-                retries=3
+                retries=3,
+                anti_detection=None
             )
 
             # Convert to YAML
@@ -870,15 +867,14 @@ class ScraperBuilderDialog(QWizard):
 # Background worker threads
 
 class PageLoadThread(QThread):
-    """Thread for loading page content using Apify."""
+    """Thread for loading page content using HTTP request."""
 
     finished = pyqtSignal(str)
     error = pyqtSignal(str)
 
-    def __init__(self, url: str, apify_client):
+    def __init__(self, url: str):
         super().__init__()
         self.url = url
-        self.apify_client = apify_client
 
     def run(self):
         """Load page content."""

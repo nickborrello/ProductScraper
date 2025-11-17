@@ -160,9 +160,9 @@ def test_all_scrapers(verbose: bool = False):
 
     success = results["failed_scrapers"] == 0
     if success:
-        print(f"\n🎉 ALL SCRAPERS PASSED! Ready for deployment to Apify.")
+        print(f"\n🎉 ALL SCRAPERS PASSED!")
     else:
-        print(f"\n⚠️  SOME SCRAPERS FAILED. Fix issues before deploying to Apify.")
+        print(f"\n⚠️  SOME SCRAPERS FAILED. Fix issues before production use.")
 
     return success
 

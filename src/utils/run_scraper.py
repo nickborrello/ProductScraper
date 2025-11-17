@@ -380,32 +380,7 @@ def run_scraper_tests(run_integration=False, log_callback=None, progress_callbac
 # ===================================
 
 
-async def main():
-    parser = argparse.ArgumentParser(description="Run scraper for specific site and SKUs using ApifyScraperClient")
-    parser.add_argument("--site", required=True, help="The site to scrape (e.g., amazon, bradley)")
-    parser.add_argument("--skus", nargs='+', required=True, help="List of SKUs to scrape")
-    
-    args = parser.parse_args()
-    
-    client = ApifyScraperClient()
-    
-    try:
-        results = await client.scrape_skus(site=args.site, skus=args.skus)
-        print("Scraping completed successfully!")
-        for result in results:
-            print(result)
-    except ApifyAuthError as e:
-        print(f"Authentication error: {e}")
-    except ApifyTimeoutError as e:
-        print(f"Timeout error: {e}")
-    except ApifyJobError as e:
-        print(f"Job error: {e}")
-    except Exception as e:
-        print(f"Unexpected error: {e}")
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
+# CLI functionality removed - use platform_test_scrapers.py for testing
 
 
 # ===================================

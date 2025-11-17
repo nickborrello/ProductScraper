@@ -4,18 +4,13 @@ This documentation covers the ProductScraper project, which provides a modular, 
 
 ## Overview
 
-The ProductScraper framework supports multiple scraping architectures:
+The ProductScraper framework provides a modular, YAML-based web scraping system with comprehensive anti-detection capabilities.
 
-### 🆕 **Modular YAML-Based System (Recommended)**
+### 🆕 **Modular YAML-Based System**
 - **Declarative Configuration**: YAML-based scraper definitions
 - **WorkflowExecutor**: Unified execution engine with anti-detection
 - **Built-in Anti-Detection**: CAPTCHA handling, rate limiting, human simulation
 - **Extensible Architecture**: Easy to add new scrapers and features
-
-### ⚠️ **Legacy Apify Actor System (Deprecated)**
-- **Monolithic Python Files**: Traditional scraper implementations
-- **Apify Platform Integration**: Cloud-based execution
-- **Limited Anti-Detection**: Basic rate limiting only
 
 ## Quick Start
 
@@ -35,14 +30,6 @@ results = executor.execute_workflow()
 print(results)
 ```
 
-### Legacy System (Deprecated)
-```bash
-# Test all scrapers locally (deprecated)
-python platform_test_scrapers.py --all
-
-# Test specific scraper (deprecated)
-python platform_test_scrapers.py --scraper amazon
-```
 
 ## Documentation Sections
 
@@ -52,11 +39,6 @@ python platform_test_scrapers.py --scraper amazon
 - **[Anti-Detection Guide](ANTI_DETECTION_GUIDE.md)** - Anti-detection modules and best practices
 - **[Developer Guide](SCRAPER_DEVELOPER_GUIDE.md)** - Creating new scrapers and extending functionality
 
-### Legacy System (Deprecated)
-- [Testing Guide](TESTING_GUIDE.md) - Legacy testing procedures
-- [Deployment Guide](DEPLOYMENT_GUIDE.md) - Legacy deployment procedures
-- [Maintenance Guide](MAINTENANCE_GUIDE.md) - Legacy maintenance
-- [API Integration](API_INTEGRATION.md) - Legacy platform API integration
 
 ## Architecture
 
@@ -76,11 +58,6 @@ python platform_test_scrapers.py --scraper amazon
 - **Session Rotation**: Automatic browser session management
 - **Blocking Detection**: Access denied page handling
 
-### Legacy System Components (Deprecated)
-
-- **ApifyPlatformClient**: Platform API interactions
-- **PlatformTestingClient**: Legacy testing interface
-- **ScraperValidator**: Data quality validation
 
 ## Configuration
 
@@ -107,16 +84,6 @@ anti_detection:
   enable_rate_limiting: true
 ```
 
-### Legacy System Configuration (Deprecated)
-
-Settings in `settings.json`:
-```json
-{
-  "apify_api_token": "your-apify-api-token",
-  "apify_base_url": "https://api.apify.com/v2",
-  "testing_mode": "local"
-}
-```
 
 ## Available Scrapers
 
@@ -129,27 +96,18 @@ Settings in `settings.json`:
 - ✅ petfoodex - Pet food exhibition scraper
 - ✅ phillips - Agricultural products scraper
 
-### Legacy System Scrapers (Deprecated)
-- ⚠️ amazon (legacy)
-- ⚠️ bradley (legacy)
-- ⚠️ central_pet (legacy)
-- ⚠️ coastal (legacy)
-- ⚠️ mazuri (legacy)
-- ⚠️ orgill (legacy)
-- ⚠️ petfoodex (legacy)
-- ⚠️ phillips (legacy)
 
-## Migration Status
+## Available Scrapers
 
-| Scraper | Modular System | Legacy System | Migration Status |
-|---------|----------------|---------------|------------------|
-| amazon | ✅ Available | ⚠️ Deprecated | Complete |
-| central_pet | ✅ Available | ⚠️ Deprecated | Complete |
-| coastal | ✅ Available | ⚠️ Deprecated | Complete |
-| mazuri | ✅ Available | ⚠️ Deprecated | Complete |
-| orgill | ✅ Available | ⚠️ Deprecated | Complete |
-| petfoodex | ✅ Available | ⚠️ Deprecated | Complete |
-| phillips | ✅ Available | ⚠️ Deprecated | Complete |
+| Scraper | Status | Description |
+|---------|--------|-------------|
+| amazon | ✅ Available | E-commerce product scraper |
+| central_pet | ✅ Available | Pet supplies scraper |
+| coastal | ✅ Available | Wholesale product scraper |
+| mazuri | ✅ Available | Animal nutrition scraper |
+| orgill | ✅ Available | Hardware wholesaler scraper |
+| petfoodex | ✅ Available | Pet food exhibition scraper |
+| phillips | ✅ Available | Agricultural products scraper |
 
 ## Development Workflow
 
@@ -166,11 +124,6 @@ Settings in `settings.json`:
 - Extend selector resolution
 - Implement custom validation
 
-### Legacy Development (Deprecated)
-1. Follow Apify actor structure
-2. Add test data to fixtures
-3. Test local and platform modes
-4. Validate data quality
 
 ## Testing and Validation
 
@@ -184,12 +137,6 @@ python -m pytest tests/integration/test_scraper_integration.py
 python test_migrated_scrapers.py --scraper amazon
 ```
 
-### Legacy System Testing (Deprecated)
-```bash
-# Test legacy scrapers
-python platform_test_scrapers.py --all
-python platform_test_scrapers.py --scraper amazon --platform
-```
 
 ### Data Quality Validation
 - Field coverage analysis
@@ -206,10 +153,8 @@ GitHub Actions workflows provide:
 - Performance monitoring
 - Automated deployment
 
-### Deployment Scripts
-- `scripts/deploy_scrapers.py`: Deploy legacy scrapers (deprecated)
-- `scripts/validate_deployment.py`: Post-deployment validation
-- `scripts/rollback.py`: Rollback procedures
+### Utility Scripts
+- Various utility scripts in `scripts/` directory
 
 ## Support and Migration
 
@@ -234,14 +179,6 @@ GitHub Actions workflows provide:
 4. Test anti-detection integration
 5. Validate data quality and performance
 
-### For Legacy System (Deprecated)
-⚠️ **New development should use the modular system**
-
-When maintaining legacy scrapers:
-1. Follow existing Apify actor structure
-2. Add test data to `scraper_test_data.json`
-3. Test both local and platform modes
-4. Plan migration to modular system
 
 ## Roadmap
 
@@ -257,7 +194,3 @@ When maintaining legacy scrapers:
 - Multi-threaded execution support
 - Cloud-native deployment options
 - API-based scraper management
-
----
-
-**📋 Note**: The legacy Apify actor system is deprecated. All new development should use the modular YAML-based system. Existing legacy scrapers will continue to work but will not receive new features or security updates.

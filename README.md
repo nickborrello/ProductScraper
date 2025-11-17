@@ -1,14 +1,14 @@
 # ProductScraper
 
-A comprehensive product data management and scraping platform built with Python and Apify SDK. This application scrapes product information from multiple e-commerce sites, manages product databases, and provides both CLI and GUI interfaces with advanced testing and deployment capabilities.
+A comprehensive product data management and scraping platform built with Python. This application scrapes product information from multiple e-commerce sites, manages product databases, and provides both CLI and GUI interfaces with advanced testing capabilities.
 
 ## Features
 
-### 🔍 Multi-Site Scraping with Apify SDK
+### 🔍 Multi-Site Scraping
 
 - **8 Active Scrapers**: Amazon, Bradley Caldwell, Central Pet, Coastal, Orgill, PetFoodEx, Phillips, and more
-- **Apify SDK Integration**: Industry-standard actor lifecycle management with async operations
-- **Local Storage Simulation**: Platform-independent testing with file-based dataset, key-value store, and request queue APIs
+- **YAML Configuration**: Flexible scraper configuration with CSS selectors and workflows
+- **Local Testing**: Comprehensive testing framework with quality validation
 - **Automated Data Extraction**: Intelligent parsing of product information with quality scoring
 - **Data Normalization**: Consistent formatting across different sources with >85% quality threshold
 
@@ -21,11 +21,10 @@ A comprehensive product data management and scraping platform built with Python 
 
 ### 🧪 Advanced Testing Framework
 
-- **Apify SDK Testing**: Local execution with platform API simulation
+- **Local Testing**: Comprehensive scraper validation with quality scoring
 - **Data Quality Scoring**: Comprehensive validation with completeness, accuracy, and consistency metrics
 - **Performance Monitoring**: <5 min execution time with <500MB memory usage
-- **Platform Testing**: Optional Apify platform integration for cloud validation
-- **CI/CD Integration**: Automated testing and deployment pipelines
+- **CI/CD Integration**: Automated testing pipelines
 
 ### 🖥️ Enhanced User Interfaces
 
@@ -40,7 +39,6 @@ A comprehensive product data management and scraping platform built with Python 
 
 - Python 3.11
 - PyQt6 (for GUI components)
-- Apify account (optional, for platform testing)
 
 ### Setup
 
@@ -85,7 +83,7 @@ python src/main.py --run gui
 - **Scraping Operations**: Start scraping with progress monitoring
 - **Database Management**: Refresh from XML, download XML, view/edit products
 - **Testing Framework**: Run comprehensive tests with quality validation
-- **Platform Integration**: Optional Apify platform testing and deployment
+- **Testing Framework**: Comprehensive local testing with quality validation
 
 ### Command-Line Interface
 
@@ -98,8 +96,8 @@ python src/main.py --run scraper --file path/to/your/excel_file.xlsx
 # Run comprehensive tests
 python test_scrapers.py --all
 
-# Run platform testing (requires Apify API token)
-python platform_test_scrapers.py --platform --scraper amazon
+# Run comprehensive testing
+python platform_test_scrapers.py --all
 ```
 
 ### Testing Framework
@@ -110,8 +108,8 @@ The enhanced testing framework provides multiple testing modes:
 # Local testing (default, no API required)
 python test_scrapers.py --scraper amazon
 
-# Platform testing (requires Apify API token)
-python platform_test_scrapers.py --platform --scraper amazon
+# Run comprehensive testing
+python platform_test_scrapers.py --all
 
 # Quality validation
 python -m pytest tests/unit/test_data_quality_scorer.py
@@ -122,8 +120,7 @@ python -m pytest tests/unit/test_performance.py
 
 **Testing Features:**
 
-- **Local Mode**: Uses Apify SDK patterns with local storage simulation
-- **Platform Mode**: Integrates with Apify platform for cloud validation
+- **Local Testing**: Comprehensive scraper validation with quality scoring
 - **Quality Scoring**: >85% threshold validation for data completeness and accuracy
 - **Performance Monitoring**: Ensures <5 min execution with <500MB memory usage
 - **CI/CD Integration**: Automated testing in GitHub Actions workflows
@@ -135,14 +132,11 @@ ProductScraper/
 ├── src/                    # Main source code
 │   ├── main.py            # Main entry point
 │   ├── core/              # Business logic and APIs
-│   │   ├── apify_platform_client.py    # Platform API integration
 │   │   ├── data_quality_scorer.py      # Quality scoring algorithms
-│   │   ├── local_storage/              # Local storage simulation
-│   │   ├── platform_testing_client.py  # Unified testing interface
+│   │   ├── platform_testing_client.py  # Local testing interface
 │   │   └── classification/             # Product classification
-│   ├── scrapers/          # Apify SDK scrapers
-│   │   ├── amazon/        # Apify actor structure
-│   │   ├── bradley/       # Async main() with SDK patterns
+│   ├── scrapers/          # YAML-based scrapers
+│   │   ├── configs/       # Scraper configurations
 │   │   └── main.py        # Scraping orchestrator
 │   ├── ui/                # Enhanced GUI components
 │   │   ├── main_window.py # Async threading and progress updates
@@ -157,10 +151,7 @@ ProductScraper/
 │   ├── DEPLOYMENT_GUIDE.md # Production deployment
 │   ├── MAINTENANCE_GUIDE.md # Ongoing maintenance
 │   └── API_INTEGRATION.md # Platform API details
-├── scripts/               # Deployment and maintenance
-│   ├── deploy_scrapers.py # Automated deployment
-│   ├── validate_deployment.py # Post-deployment validation
-│   └── rollback.py       # Rollback procedures
+├── scripts/               # Utility scripts
 ├── .github/workflows/    # CI/CD pipelines
 │   ├── ci-testing.yml    # Automated testing
 │   ├── cd-deployment.yml # Deployment pipeline
@@ -190,10 +181,6 @@ SHOPSITE_AUTHORIZATION_CODE=your_auth_code
 SHOPSITE_AUTH_URL=https://yourstore.shopsite.com/xml/
 ```
 
-**Optional for Platform Testing:**
-```env
-APIFY_API_TOKEN=your_apify_token  # For platform testing and deployment
-```
 
 **Optional for LLM Classification:**
 ```env
@@ -201,34 +188,25 @@ OPENROUTER_API_KEY=your_openrouter_api_key
 OLLAMA_MODEL=llama3
 ```
 
-### Apify Platform Setup (Optional)
-
-For platform testing and deployment capabilities:
-
-1. Create an Apify account at [apify.com](https://apify.com)
-2. Get your API token from the dashboard
-3. Set `APIFY_API_TOKEN` in your environment
-4. Use platform testing: `python platform_test_scrapers.py --platform`
 
 ## Safety & Best Practices
 
 ⚠️ **Important**: This tool accesses live e-commerce data
 
-- **Test Locally First**: Always use local testing mode before platform deployment
+- **Test Locally First**: Always use local testing before production use
 - **Quality Thresholds**: Ensure >85% data quality scores before production use
 - **Rate Limiting**: Respect website terms and robots.txt files
 - **Environment Variables**: Never commit credentials to version control
-- **Platform Costs**: Monitor Apify platform usage for cloud testing
 
 ## Development
 
 ### Adding New Scrapers
 
-1. Create new scraper following Apify actor structure in `src/scrapers/`
-2. Implement async main() with Apify SDK patterns
+1. Create new YAML configuration in `src/scrapers/configs/`
+2. Define selectors and workflows for data extraction
 3. Add comprehensive unit tests with quality validation
 4. Update testing framework integration
-5. Test locally before platform deployment
+5. Test locally before production use
 
 ### Code Quality
 
@@ -236,11 +214,11 @@ For platform testing and deployment capabilities:
 - Follow PEP 8 with modern Python patterns
 - Implement proper async/await error handling
 - Write tests with >85% quality validation
-- Use Apify SDK patterns for all scraping operations
+- Use YAML configuration for scraper definitions
 
 ## Contributing
 
-1. Follow the established Apify SDK patterns
+1. Follow the established YAML configuration patterns
 2. Test locally with quality validation
 3. Update documentation for new features
 4. Ensure CI/CD pipelines pass

@@ -295,6 +295,4 @@ When adding new scrapers:
 
 ## Related Documentation
 
-- [Testing Guide](TESTING_GUIDE.md)
 - [Scraper Architecture](SCRAPER_ARCHITECTURE.md)
-- [Apify Integration](APIFY_INTEGRATION.md)
