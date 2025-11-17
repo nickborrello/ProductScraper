@@ -182,23 +182,36 @@ class ScraperIntegrationTester:
 
         return test_results
 
-    def test_all_scrapers(self, skip_failing: bool = True) -> Dict[str, Any]:
+    def test_all_scrapers(self, skip_failing: bool = True, skip_login_required: bool = False) -> Dict[str, Any]:
         """
         Test all available scrapers.
 
         Args:
             skip_failing: Whether to continue testing other scrapers if one fails
+            skip_login_required: Whether to skip scrapers that require login credentials
 
         Returns:
             Dict with results for all scrapers
         """
         scrapers = self.get_available_scrapers()
+        skipped_count = 0
+
+        # Filter out login-requiring scrapers if skip_login_required is True
+        if skip_login_required:
+            login_required_scrapers = {"orgill", "petfoodex", "phillips"}
+            original_count = len(scrapers)
+            scrapers = [s for s in scrapers if s not in login_required_scrapers]
+            skipped_count = original_count - len(scrapers)
+            if skipped_count > 0:
+                print(f"SKIP: Skipping {skipped_count} login-requiring scrapers: {', '.join(login_required_scrapers)}")
+
         results = {
             "total_scrapers": len(scrapers),
             "successful_scrapers": 0,
             "failed_scrapers": 0,
             "scraper_results": {},
             "summary": {},
+            "skipped_login_scrapers": skipped_count,
         }
 
         print(f"\n{'='*80}")
@@ -216,11 +229,11 @@ class ScraperIntegrationTester:
                     results["failed_scrapers"] += 1
 
                 if not skip_failing and not test_result["overall_success"]:
-                    print(f"❌ Stopping tests due to failure in {scraper_name}")
+                    print(f"STOP: Stopping tests due to failure in {scraper_name}")
                     break
 
             except Exception as e:
-                print(f"❌ Unexpected error testing {scraper_name}: {e}")
+                print(f"ERROR: Unexpected error testing {scraper_name}: {e}")
                 results["scraper_results"][scraper_name] = {
                     "scraper": scraper_name,
                     "overall_success": False,
@@ -243,12 +256,12 @@ class ScraperIntegrationTester:
         print(f"Success Rate: {results['summary']['success_rate']:.1f}%")
 
         if results["failed_scrapers"] > 0:
-            print(f"\n❌ FAILED SCRAPERS:")
+            print(f"\nFAILED SCRAPERS:")
             for name, result in results["scraper_results"].items():
                 if not result.get("overall_success", False):
                     print(f"  • {name}")
         else:
-            print(f"\n✅ ALL SCRAPERS PASSED INTEGRATION TESTS")
+            print(f"\nALL SCRAPERS PASSED INTEGRATION TESTS")
 
         return results
 
@@ -258,14 +271,14 @@ class ScraperIntegrationTester:
         run_results = test_results["run_results"]
         validation_results = test_results["validation_results"]
 
-        print(f"\n📊 TEST SUMMARY: {scraper}")
+        print(f"\nTEST SUMMARY: {scraper}")
 
         # Run results
         if run_results["success"]:
-            print(f"✅ Execution: SUCCESS")
+            print(f"SUCCESS: Execution")
             print(f"   Products found: {len(run_results['products'])}")
         else:
-            print(f"❌ Execution: FAILED")
+            print(f"FAILED: Execution")
             for error in run_results["errors"][:3]:
                 print(f"   • {error}")
 
@@ -275,7 +288,7 @@ class ScraperIntegrationTester:
             total = validation_results.get("total_products", 0)
             score = validation_results.get("data_quality_score", 0)
 
-            print(f"🔍 Validation: {valid}/{total} products valid")
+            print(f"VALIDATION: {valid}/{total} products valid")
             print(f"   Data Quality Score: {score:.1f}")
 
             # Print field coverage
@@ -284,7 +297,7 @@ class ScraperIntegrationTester:
                 print(f"   Field Coverage:")
                 for field, coverage in field_coverage.items():
                     status = (
-                        "✅" if coverage == 100.0 else "⚠️" if coverage > 0 else "❌"
+                        "PASS" if coverage == 100.0 else "WARN" if coverage > 0 else "FAIL"
                     )
                     print(f"     {status} {field}: {coverage:.1f}%")
 
@@ -301,9 +314,9 @@ class ScraperIntegrationTester:
 
         # Overall result
         if test_results["overall_success"]:
-            print(f"✅ OVERALL: PASSED")
+            print(f"OVERALL: PASSED")
         else:
-            print(f"❌ OVERALL: FAILED")
+            print(f"OVERALL: FAILED")
 
     def _generate_summary(self, results: Dict[str, Any]) -> Dict[str, Any]:
         """Generate a summary of all test results."""
@@ -385,7 +398,7 @@ class TestScraperIntegration:
     @pytest.mark.integration
     def test_all_scrapers_integration(self, tester):
         """Test all scrapers (full integration test)."""
-        results = tester.test_all_scrapers(skip_failing=True)
+        results = tester.test_all_scrapers(skip_failing=True, skip_login_required=True)
 
         # Should have results for all scrapers
         assert len(results["scraper_results"]) > 0

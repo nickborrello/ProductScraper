@@ -24,19 +24,22 @@ workflows:
       url: "https://mazuri.com/pages/search-results-page?q={sku}"
   - action: "wait"
     params:
-      selector: "li.snize-product, li.snize-no-products-found"
+      selector: "li.snize-product, li.snize-no-products-found, body"
       timeout: 15
+  - action: "wait"
+    params:
+      seconds: 2
   - action: "click"
     params:
-      selector: "//button[contains(text(),'Accept')]"
+      selector: "//button[contains(text(),'Accept') or contains(text(),'accept') or contains(text(),'Agree') or contains(text(),'agree')]"
       wait_after: 2
   - action: "click"
     params:
-      selector: ".snize-view-link"
+      selector: ".snize-view-link, a[href*='/products/']"
   - action: "wait"
     params:
-      selector: "img"
-      timeout: 10
+      selector: "img, h1"
+      timeout: 15
   - action: "extract"
     params:
       fields: ["product_name", "brand", "weight", "images"]

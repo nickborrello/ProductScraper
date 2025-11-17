@@ -24,15 +24,18 @@ workflows:
       url: "https://www.amazon.com/s?k={sku}"
   - action: "wait"
     params:
-      selector: ".s-result-item"
-      timeout: 10
-  - action: "click"
-    params:
-      selector: ".s-result-item a[href*='/dp/']"
+      selector: ".s-result-item, .s-search-results"
+      timeout: 15
   - action: "wait"
     params:
-      selector: "#productTitle"
-      timeout: 10
+      seconds: 2
+  - action: "click"
+    params:
+      selector: ".s-result-item a[href*='/dp/'], .s-search-result a[href*='/dp/']"
+  - action: "wait"
+    params:
+      selector: "#productTitle, #title"
+      timeout: 15
   - action: "extract"
     params:
       fields: ["Name", "Brand", "Image URLs", "Weight"]

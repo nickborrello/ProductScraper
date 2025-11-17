@@ -254,6 +254,15 @@ class WorkflowExecutor:
                 EC.presence_of_element_located((By.CSS_SELECTOR, selector))
             )
         except TimeoutException:
+            logger.error(f"Wait_for element not found within {timeout}s: {selector}")
+            logger.debug(f"Current page URL: {self.browser.driver.current_url}")
+            logger.debug(f"Page title: {self.browser.driver.title}")
+            # Try to log some page content for debugging
+            try:
+                body_text = self.browser.driver.find_element(By.TAG_NAME, "body").text[:500]
+                logger.debug(f"Page body preview: {body_text}...")
+            except Exception as e:
+                logger.debug(f"Could not get page body: {e}")
             raise WorkflowExecutionError(
                 f"Element not found within {timeout}s: {selector}"
             )
@@ -460,6 +469,16 @@ class WorkflowExecutor:
             if wait_time > 0:
                 time.sleep(wait_time)
         except NoSuchElementException:
+            # Debug logging for failed clicks
+            logger.error(f"Click element not found: {selector}")
+            logger.debug(f"Current page URL: {self.browser.driver.current_url}")
+            logger.debug(f"Page title: {self.browser.driver.title}")
+            # Try to log some page content for debugging
+            try:
+                body_text = self.browser.driver.find_element(By.TAG_NAME, "body").text[:500]
+                logger.debug(f"Page body preview: {body_text}...")
+            except Exception as e:
+                logger.debug(f"Could not get page body: {e}")
             raise WorkflowExecutionError(f"Click element not found: {selector}")
 
     def _action_login(self, params: Dict[str, Any]):
@@ -491,6 +510,10 @@ class WorkflowExecutor:
         submit_button = params.get("submit_button")
         success_indicator = params.get("success_indicator")
 
+        # Debug logging for credentials
+        logger.debug(f"Login params for {scraper_name}: username={'***' if username else 'None'}, password={'***' if password else 'None'}, url={login_url}")
+        logger.debug(f"Login fields: username_field={username_field}, password_field={password_field}, submit_button={submit_button}")
+
         if not all(
             [
                 username,
@@ -501,6 +524,7 @@ class WorkflowExecutor:
                 submit_button,
             ]
         ):
+            logger.error(f"Missing login parameters for {scraper_name}: username={bool(username)}, password={bool(password)}, url={bool(login_url)}, username_field={bool(username_field)}, password_field={bool(password_field)}, submit_button={bool(submit_button)}")
             raise WorkflowExecutionError(
                 "Login action requires username, password, url, username_field, password_field, and submit_button parameters"
             )
