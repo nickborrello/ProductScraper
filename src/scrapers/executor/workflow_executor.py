@@ -301,6 +301,13 @@ class WorkflowExecutor:
             logger.warning(f"Failed to extract multiple values for {field_name}: {e}")
             self.results[field_name] = []
 
+    def _get_locator_type(self, selector: str):
+        """Determine locator type based on selector format."""
+        if selector.startswith('//') or selector.startswith('.//'):
+            return By.XPATH
+        else:
+            return By.CSS_SELECTOR
+
     def _action_extract(self, params: Dict[str, Any]):
         """Extract multiple fields at once (legacy compatibility)."""
         fields = params.get("fields", [])
@@ -311,8 +318,9 @@ class WorkflowExecutor:
                 continue
 
             try:
+                locator_type = self._get_locator_type(selector_config.selector)
                 if selector_config.multiple:
-                    elements = self.browser.driver.find_elements(By.CSS_SELECTOR, selector_config.selector)
+                    elements = self.browser.driver.find_elements(locator_type, selector_config.selector)
                     values = []
                     for element in elements:
                         value = self._extract_value_from_element(element, selector_config.attribute)
@@ -330,7 +338,7 @@ class WorkflowExecutor:
                         values = cleaned_values
                     self.results[field_name] = values
                 else:
-                    element = self.browser.driver.find_element(By.CSS_SELECTOR, selector_config.selector)
+                    element = self.browser.driver.find_element(locator_type, selector_config.selector)
                     value = self._extract_value_from_element(element, selector_config.attribute)
                     if field_name == 'brand' and value:
                         match = re.match(r"Visit (?:the )?(.+?) Store", value)
