@@ -15,7 +15,7 @@ selectors:
     attribute: "src"
     multiple: true
   - name: "weight"
-    selector: "#productDetails_detailBullets_sections1 tr, #productDetails_techSpec_section_1 tr, #detailBullets_feature_div li, #feature-bullets li, .a-expander-content, [data-feature-name='Bullet Points'] li"
+    selector: "//tr[.//th[contains(., 'Weight')]] | //li[contains(., 'ounces')] | //li[contains(., 'pounds')]"
     attribute: "text"
 
 workflows:
