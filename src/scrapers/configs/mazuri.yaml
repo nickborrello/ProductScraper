@@ -31,7 +31,7 @@ workflows:
       seconds: 2
   - action: "click"
     params:
-      selector: "//button[contains(text(),'Accept') or contains(text(),'accept') or contains(text(),'Agree') or contains(text(),'agree')]"
+      selector: "//button[contains(text(),'Close') or contains(text(),'Accept') or contains(text(),'Agree') or contains(text(),'OK')]"
       wait_after: 2
   - action: "click"
     params:

@@ -127,17 +127,19 @@ class PlatformScraperIntegrationTester:
 
         return test_results
 
-    async def run_all_scrapers_test(self, skip_failing: bool = True) -> Dict[str, Any]:
+    async def run_all_scrapers_test(self, skip_failing: bool = True, scrapers: Optional[List[str]] = None) -> Dict[str, Any]:
         """
         Test all available scrapers in the configured mode.
 
         Args:
             skip_failing: Whether to continue testing other scrapers if one fails
+            scrapers: Optional list of scraper names to test. If None, tests all available.
 
         Returns:
             Dict with results for all scrapers
         """
-        scrapers = self.get_available_scrapers()
+        if scrapers is None:
+            scrapers = self.get_available_scrapers()
         results = {
             "total_scrapers": len(scrapers),
             "successful_scrapers": 0,
@@ -164,11 +166,11 @@ class PlatformScraperIntegrationTester:
                     results["failed_scrapers"] += 1
 
                 if not skip_failing and not test_result["overall_success"]:
-                    print(f"❌ Stopping tests due to failure in {scraper_name}")
+                    print(f"STOP: Stopping tests due to failure in {scraper_name}")
                     break
 
             except Exception as e:
-                print(f"❌ Unexpected error testing {scraper_name}: {e}")
+                print(f"ERROR: Unexpected error testing {scraper_name}: {e}")
                 results["scraper_results"][scraper_name] = {
                     "scraper": scraper_name,
                     "mode": self.mode.value,
@@ -193,12 +195,12 @@ class PlatformScraperIntegrationTester:
         print(f"Testing Mode: {self.mode.value.upper()}")
 
         if results["failed_scrapers"] > 0:
-            print(f"\n❌ FAILED SCRAPERS:")
+            print(f"\nFAILED SCRAPERS:")
             for name, result in results["scraper_results"].items():
                 if not result.get("overall_success", False):
                     print(f"  • {name}")
         else:
-            print(f"\n✅ ALL SCRAPERS PASSED {self.mode.value.upper()} TESTS")
+            print(f"\nALL SCRAPERS PASSED {self.mode.value.upper()} TESTS")
 
         return results
 
@@ -209,18 +211,18 @@ class PlatformScraperIntegrationTester:
         run_results = test_results["run_results"]
         validation_results = test_results["validation_results"]
 
-        print(f"\n📊 TEST SUMMARY: {scraper} ({mode.upper()})")
+        print(f"\nTEST SUMMARY: {scraper} ({mode.upper()})")
 
         # Run results
         if run_results["success"]:
-            print(f"✅ Execution: SUCCESS")
+            print(f"SUCCESS: Execution")
             print(f"   Products found: {len(run_results['products'])}")
             if run_results.get("run_id"):
                 print(f"   Run ID: {run_results['run_id']}")
             if run_results.get("dataset_id"):
                 print(f"   Dataset ID: {run_results['dataset_id']}")
         else:
-            print(f"❌ Execution: FAILED")
+            print(f"FAILED: Execution")
             for error in run_results["errors"][:3]:
                 print(f"   • {error}")
 
@@ -230,7 +232,7 @@ class PlatformScraperIntegrationTester:
             total = validation_results.get("total_products", 0)
             score = validation_results.get("data_quality_score", 0)
 
-            print(f"🔍 Validation: {valid}/{total} products valid")
+            print(f"VALIDATION: {valid}/{total} products valid")
             print(f"   Data Quality Score: {score:.1f}")
 
             # Print field coverage
@@ -239,7 +241,7 @@ class PlatformScraperIntegrationTester:
                 print(f"   Field Coverage:")
                 for field, coverage in field_coverage.items():
                     status = (
-                        "✅" if coverage == 100.0 else "⚠️" if coverage > 0 else "❌"
+                        "PASS" if coverage == 100.0 else "WARN" if coverage > 0 else "FAIL"
                     )
                     print(f"     {status} {field}: {coverage:.1f}%")
 
@@ -256,9 +258,9 @@ class PlatformScraperIntegrationTester:
 
         # Overall result
         if test_results["overall_success"]:
-            print(f"✅ OVERALL: PASSED")
+            print(f"OVERALL: PASSED")
         else:
-            print(f"❌ OVERALL: FAILED")
+            print(f"OVERALL: FAILED")
 
     def _generate_summary(self, results: Dict[str, Any]) -> Dict[str, Any]:
         """Generate a summary of all test results."""

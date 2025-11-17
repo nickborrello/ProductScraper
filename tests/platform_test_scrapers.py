@@ -49,7 +49,9 @@ def list_available_scrapers():
 
 def validate_scraper_structure(scraper_name: str):
     """Validate that a scraper has the correct structure."""
-    config_path = PROJECT_ROOT / "src" / "scrapers" / "configs" / f"{scraper_name}.yaml"
+    # PROJECT_ROOT is tests/, so go up one level to get to project root
+    project_root = PROJECT_ROOT.parent
+    config_path = project_root / "src" / "scrapers" / "configs" / f"{scraper_name}.yaml"
 
     print(f"Validating config for: {scraper_name}")
     print("=" * 50)
@@ -118,11 +120,20 @@ async def test_all_scrapers(verbose: bool = False):
     tester = PlatformScraperIntegrationTester()
     scrapers = tester.get_available_scrapers()
 
+    # Filter out login-requiring scrapers if in CI environment
+    if os.getenv('CI') == 'true':
+        login_required_scrapers = {"orgill", "petfoodex", "phillips"}
+        original_count = len(scrapers)
+        scrapers = [s for s in scrapers if s not in login_required_scrapers]
+        skipped_count = original_count - len(scrapers)
+        if skipped_count > 0:
+            print(f"SKIP: Skipping {skipped_count} login-requiring scrapers in CI environment: {', '.join(login_required_scrapers)}")
+
     print(f"[TEST] RUNNING LOCAL COMPREHENSIVE SCRAPER TESTS")
     print(f"Testing {len(scrapers)} scrapers: {', '.join(scrapers)}")
     print(f"{'='*80}")
 
-    results = await tester.run_all_scrapers_test(skip_failing=True)
+    results = await tester.run_all_scrapers_test(skip_failing=True, scrapers=scrapers)
 
     if verbose:
         print(f"\n[RESULTS] DETAILED RESULTS:")
