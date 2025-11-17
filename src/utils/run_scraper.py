@@ -12,8 +12,21 @@ try:
 except ImportError:
     QT_AVAILABLE = False
 
+def find_project_root(start_path=None):
+    """Find the project root by searching for requirements.txt upwards from start_path."""
+    if start_path is None:
+        start_path = os.path.dirname(os.path.abspath(__file__))
+    current_path = start_path
+    while True:
+        if os.path.exists(os.path.join(current_path, 'requirements.txt')):
+            return current_path
+        parent = os.path.dirname(current_path)
+        if parent == current_path:  # reached filesystem root
+            raise FileNotFoundError("Could not find requirements.txt in any parent directory")
+        current_path = parent
+
 # Ensure project root is on sys.path
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECT_ROOT = find_project_root()
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
@@ -79,7 +92,7 @@ def run_scraper_integration_tests(log_callback=None, progress_callback=None, edi
         import time
 
         # Add project root to path
-        PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        PROJECT_ROOT = find_project_root()
         if PROJECT_ROOT not in sys.path:
             sys.path.insert(0, PROJECT_ROOT)
 
