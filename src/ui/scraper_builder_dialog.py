@@ -43,12 +43,12 @@ from src.ui.visual_selector_picker import VisualSelectorPicker
 from src.ui.styling import STYLESHEET
 
 if TYPE_CHECKING:
-    from src.core.classification.local_llm_classifier import LocalLLMProductClassifier
+    from src.core.classification.llm_classifier import LLMProductClassifier
 
 try:
-    from src.core.classification.local_llm_classifier import get_local_llm_classifier  # type: ignore
+    from src.core.classification.llm_classifier import get_llm_classifier  # type: ignore
 except ImportError:
-    def get_local_llm_classifier(model_name=None, product_taxonomy=None, product_pages=None) -> Optional['LocalLLMProductClassifier']:  # type: ignore
+    def get_llm_classifier(model_name=None, product_taxonomy=None, product_pages=None) -> Optional['LLMProductClassifier']:  # type: ignore
         return None
 
 
@@ -919,10 +919,10 @@ class SelectorGenerationThread(QThread):
     def run(self):
         """Generate selectors using AI."""
         try:
-            # Use local LLM to analyze HTML and suggest selectors
-            classifier = get_local_llm_classifier()
+            # Use OpenRouter LLM to analyze HTML and suggest selectors
+            classifier = get_llm_classifier()
             if not classifier:
-                self.error.emit("LLM classifier not available")
+                self.error.emit("OpenRouter LLM classifier not available")
                 return
 
             # Type assertion for mypy
@@ -955,7 +955,7 @@ Return only valid JSON.
 
             # Call LLM
             messages = [{"role": "user", "content": prompt}]
-            response = classifier._call_ollama(messages)
+            response = classifier._call_openrouter(messages)
 
             if not response:
                 self.error.emit("No response from LLM")
