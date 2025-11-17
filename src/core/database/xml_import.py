@@ -898,6 +898,7 @@ def publish_shopsite_changes(
         error_msg = f"❌ Unexpected error during publish: {e}"
         log(error_msg)
         return False, error_msg
+def import_from_saved_xml(xml_file_path: Optional[str] = None, save_to_db: bool = False) -> Tuple[bool, str]:
     """
     Import products from a saved ShopSite XML file (for testing/debugging).
 
