@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import List, Optional
 
 # Add project root to path
-PROJECT_ROOT = Path(__file__).parent
+PROJECT_ROOT = Path(__file__).parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -49,8 +49,8 @@ def list_available_scrapers():
 
 def validate_scraper_structure(scraper_name: str):
     """Validate that a scraper has the correct structure."""
-    # PROJECT_ROOT is tests/, so go up one level to get to project root
-    project_root = PROJECT_ROOT.parent
+    # PROJECT_ROOT is the project root (contains src/, tests/, etc.)
+    project_root = PROJECT_ROOT
     config_path = project_root / "src" / "scrapers" / "configs" / f"{scraper_name}.yaml"
 
     print(f"Validating config for: {scraper_name}")
@@ -59,6 +59,21 @@ def validate_scraper_structure(scraper_name: str):
     checks = {
         "Scraper YAML config exists": config_path.exists(),
     }
+
+    # Try to load and validate the config
+    config_valid = False
+    if config_path.exists():
+        try:
+            from src.scrapers.parser.yaml_parser import ScraperConfigParser
+            parser = ScraperConfigParser()
+            config = parser.load_from_file(config_path)
+            config_valid = True
+            checks["Scraper config loads successfully"] = True
+        except Exception as e:
+            checks["Scraper config loads successfully"] = False
+            print(f"[FAIL] Scraper config has validation errors: {e}")
+    else:
+        checks["Scraper config loads successfully"] = False
 
     all_passed = True
     for check_name, passed in checks.items():
