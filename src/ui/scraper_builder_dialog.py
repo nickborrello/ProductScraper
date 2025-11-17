@@ -891,7 +891,7 @@ class PageLoadThread(QThread):
             response.raise_for_status()
 
             # Parse HTML and extract text content
-            soup = BeautifulSoup(response.content, 'html.parser')
+            soup = BeautifulSoup(response.text, 'html.parser')
 
             # Remove script and style elements
             for script in soup(["script", "style"]):
