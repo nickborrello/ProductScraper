@@ -4,28 +4,74 @@ Handles product classification (Category, Product Type, Product On Pages) using 
 Separates business logic from basic product editing (product_editor.py).
 """
 
+import os
 import re
+import sys
 from pathlib import Path
 
-# PyQt6 imports
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QFont
-from PyQt6.QtWidgets import (
-    QApplication,
-    QCheckBox,
-    QFrame,
-    QGridLayout,
-    QHBoxLayout,
-    QLabel,
-    QLineEdit,
-    QMainWindow,
-    QMessageBox,
-    QPushButton,
-    QScrollArea,
-    QSplitter,
-    QVBoxLayout,
-    QWidget,
-)
+# Check if GUI is available (for headless CI environments)
+GUI_AVAILABLE = True
+# Check for CI/test environments
+is_ci = (os.environ.get('CI') == 'true' or
+         os.environ.get('GITHUB_ACTIONS') == 'true' or
+         'pytest' in os.environ.get('_', ''))
+
+# Check if we're running under pytest by inspecting the call stack
+import inspect
+is_pytest = any('pytest' in str(frame) for frame in inspect.stack())
+if is_pytest:
+    is_ci = True
+
+# On Unix-like systems, also check for missing DISPLAY
+if os.name != 'nt':  # Not Windows
+    is_ci = is_ci or os.environ.get('DISPLAY', '') == ''
+
+if is_ci:
+    GUI_AVAILABLE = False
+    print("Warning: Running in CI/test environment, disabling GUI")
+else:
+    try:
+        # PyQt6 imports
+        from PyQt6.QtCore import Qt, pyqtSignal
+        from PyQt6.QtGui import QFont
+        from PyQt6.QtWidgets import (
+            QApplication,
+            QCheckBox,
+            QFrame,
+            QGridLayout,
+            QHBoxLayout,
+            QLabel,
+            QLineEdit,
+            QMainWindow,
+            QMessageBox,
+            QPushButton,
+            QScrollArea,
+            QSplitter,
+            QVBoxLayout,
+            QWidget,
+        )
+    except ImportError as e:
+        # GUI not available (headless environment)
+        GUI_AVAILABLE = False
+        print(f"⚠️ PyQt6 GUI not available (headless environment): {e}")
+        # Set all imports to None to avoid NameError
+        Qt = None
+        pyqtSignal = None
+        QFont = None
+        QApplication = None
+        QCheckBox = None
+        QFrame = None
+        QGridLayout = None
+        QHBoxLayout = None
+        QLabel = None
+        QLineEdit = None
+        QMainWindow = None
+        QMessageBox = None
+        QPushButton = None
+        QScrollArea = None
+        QSplitter = None
+        QVBoxLayout = None
+        QWidget = None
 
 # Import product pages from manager (which loads from JSON) - moved inside function to avoid relative import issues when run directly
 # from .manager import PRODUCT_PAGES
@@ -223,162 +269,162 @@ def assign_classification_single(product_info):
     return results[0]
 
 
-class MultiSelectWidget(QWidget):
-    """PyQt6 widget for multi-select functionality with search and checkboxes."""
+if GUI_AVAILABLE:
+    class MultiSelectWidget(QWidget):
+        """PyQt6 widget for multi-select functionality with search and checkboxes."""
 
-    selection_changed = pyqtSignal()
+        selection_changed = pyqtSignal()
 
-    def __init__(self, label, all_options, current_selections=None, parent=None):
-        super().__init__(parent)
-        self.label = label
-        self.all_options = list(all_options)
-        self.current_options = list(all_options)
-        self.selected_items = set(current_selections or [])
-        self.checkboxes = {}
-        self.setup_ui()
+        def __init__(self, label, all_options, current_selections=None, parent=None):
+            super().__init__(parent)
+            self.label = label
+            self.all_options = list(all_options)
+            self.current_options = list(all_options)
+            self.selected_items = set(current_selections or [])
+            self.checkboxes = {}
+            self.setup_ui()
 
-    def setup_ui(self):
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
+        def setup_ui(self):
+            layout = QVBoxLayout(self)
+            layout.setContentsMargins(0, 0, 0, 0)
 
-        # Search section
-        search_layout = QHBoxLayout()
-        search_label = QLabel(f"Search {self.label}:")
-        search_label.setFont(QFont("Arial", 12, QFont.Weight.Bold))
-        search_layout.addWidget(search_label)
+            # Search section
+            search_layout = QHBoxLayout()
+            search_label = QLabel(f"Search {self.label}:")
+            search_label.setFont(QFont("Arial", 12, QFont.Weight.Bold))
+            search_layout.addWidget(search_label)
 
-        self.search_edit = QLineEdit()
-        self.search_edit.setFont(QFont("Arial", 12))
-        self.search_edit.textChanged.connect(self.filter_options)
-        search_layout.addWidget(self.search_edit)
+            self.search_edit = QLineEdit()
+            self.search_edit.setFont(QFont("Arial", 12))
+            self.search_edit.textChanged.connect(self.filter_options)
+            search_layout.addWidget(self.search_edit)
 
-        search_layout.addStretch()
-        layout.addLayout(search_layout)
+            search_layout.addStretch()
+            layout.addLayout(search_layout)
 
-        # Available options section
-        available_label = QLabel(f"Available {self.label}:")
-        available_label.setFont(QFont("Arial", 12, QFont.Weight.Bold))
-        layout.addWidget(available_label)
+            # Available options section
+            available_label = QLabel(f"Available {self.label}:")
+            available_label.setFont(QFont("Arial", 12, QFont.Weight.Bold))
+            layout.addWidget(available_label)
 
-        self.available_scroll = QScrollArea()
-        self.available_scroll.setWidgetResizable(True)
-        self.available_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.available_scroll.setMinimumHeight(200)
-        self.available_scroll.setMaximumHeight(300)
+            self.available_scroll = QScrollArea()
+            self.available_scroll.setWidgetResizable(True)
+            self.available_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+            self.available_scroll.setMinimumHeight(200)
+            self.available_scroll.setMaximumHeight(300)
 
-        available_widget = QWidget()
-        self.available_layout = QVBoxLayout(available_widget)
-        self.available_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        self.available_scroll.setWidget(available_widget)
-        layout.addWidget(self.available_scroll)
+            available_widget = QWidget()
+            self.available_layout = QVBoxLayout(available_widget)
+            self.available_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+            self.available_scroll.setWidget(available_widget)
+            layout.addWidget(self.available_scroll)
 
-        # Selected options section
-        selected_label = QLabel(f"Selected {self.label}:")
-        selected_label.setFont(QFont("Arial", 12, QFont.Weight.Bold))
-        layout.addWidget(selected_label)
+            # Selected options section
+            selected_label = QLabel(f"Selected {self.label}:")
+            selected_label.setFont(QFont("Arial", 12, QFont.Weight.Bold))
+            layout.addWidget(selected_label)
 
-        self.selected_scroll = QScrollArea()
-        self.selected_scroll.setWidgetResizable(True)
-        self.selected_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.selected_scroll.setMinimumHeight(200)
-        self.selected_scroll.setMaximumHeight(300)
+            self.selected_scroll = QScrollArea()
+            self.selected_scroll.setWidgetResizable(True)
+            self.selected_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+            self.selected_scroll.setMinimumHeight(200)
+            self.selected_scroll.setMaximumHeight(300)
 
-        selected_widget = QWidget()
-        self.selected_layout = QVBoxLayout(selected_widget)
-        self.selected_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        self.selected_scroll.setWidget(selected_widget)
-        layout.addWidget(self.selected_scroll)
+            selected_widget = QWidget()
+            self.selected_layout = QVBoxLayout(selected_widget)
+            self.selected_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+            self.selected_scroll.setWidget(selected_widget)
+            layout.addWidget(self.selected_scroll)
 
-        self.update_display()
+            self.update_display()
 
-    def filter_options(self):
-        query = self.search_edit.text().lower().strip()
-        if not query:
-            self.current_options = self.all_options[:]
-        else:
-            self.current_options = [
-                opt for opt in self.all_options if query in opt.lower()
-            ]
-        self.update_display()
+        def filter_options(self):
+            query = self.search_edit.text().lower().strip()
+            if not query:
+                self.current_options = self.all_options[:]
+            else:
+                self.current_options = [
+                    opt for opt in self.all_options if query in opt.lower()
+                ]
+            self.update_display()
 
-    def update_display(self):
-        # Clear existing checkboxes
-        for checkbox in self.checkboxes.values():
-            checkbox.setParent(None)
-        self.checkboxes.clear()
+        def update_display(self):
+            # Clear existing checkboxes
+            for checkbox in self.checkboxes.values():
+                checkbox.setParent(None)
+            self.checkboxes.clear()
 
-        # Available options
-        for option in self.current_options:
-            if option not in self.selected_items:
+            # Available options
+            for option in self.current_options:
+                if option not in self.selected_items:
+                    checkbox = QCheckBox(option)
+                    checkbox.setChecked(False)
+                    checkbox.stateChanged.connect(
+                        lambda state, opt=option: self.on_available_changed(opt, state)
+                    )
+                    self.available_layout.addWidget(checkbox)
+                    self.checkboxes[option] = checkbox
+
+            # Selected options
+            for option in sorted(self.selected_items, key=str.lower):
                 checkbox = QCheckBox(option)
-                checkbox.setChecked(False)
+                checkbox.setChecked(True)
                 checkbox.stateChanged.connect(
-                    lambda state, opt=option: self.on_available_changed(opt, state)
+                    lambda state, opt=option: self.on_selected_changed(opt, state)
                 )
-                self.available_layout.addWidget(checkbox)
+                self.selected_layout.addWidget(checkbox)
                 self.checkboxes[option] = checkbox
 
-        # Selected options
-        for option in sorted(self.selected_items, key=str.lower):
-            checkbox = QCheckBox(option)
-            checkbox.setChecked(True)
-            checkbox.stateChanged.connect(
-                lambda state, opt=option: self.on_selected_changed(opt, state)
-            )
-            self.selected_layout.addWidget(checkbox)
-            self.checkboxes[option] = checkbox
+        def on_available_changed(self, option, state):
+            if state == 2:  # Checked
+                self.selected_items.add(option)
+                self.selection_changed.emit()
+            self.update_display()
 
-    def on_available_changed(self, option, state):
-        if state == 2:  # Checked
-            self.selected_items.add(option)
-            self.selection_changed.emit()
-        self.update_display()
+        def on_selected_changed(self, option, state):
+            if state == 0:  # Unchecked
+                self.selected_items.discard(option)
+                self.selection_changed.emit()
+            self.update_display()
 
-    def on_selected_changed(self, option, state):
-        if state == 0:  # Unchecked
-            self.selected_items.discard(option)
-            self.selection_changed.emit()
-        self.update_display()
+        def get_selected(self):
+            return list(self.selected_items)
 
-    def get_selected(self):
-        return list(self.selected_items)
-
-    def refresh_options(self, new_options):
-        self.all_options = list(new_options)
-        self.current_options = list(new_options)
-        # Keep only selected items that are still in the new options
-        self.selected_items = self.selected_items.intersection(set(new_options))
-        self.update_display()
+        def refresh_options(self, new_options):
+            self.all_options = list(new_options)
+            self.current_options = list(new_options)
+            # Keep only selected items that are still in the new options
+            self.selected_items = self.selected_items.intersection(set(new_options))
+            self.update_display()
 
 
-from src.ui.styling import STYLESHEET
+    from src.ui.styling import STYLESHEET
 
+    class ClassificationEditorWindow(QMainWindow):
+        """PyQt6 main window for batch classification editing."""
 
-class ClassificationEditorWindow(QMainWindow):
-    """PyQt6 main window for batch classification editing."""
+        def __init__(
+            self,
+            products_list,
+            category_options,
+            all_product_types,
+            product_on_pages_options,
+            category_product_types,
+        ):
+            super().__init__()
+            self.products_list = products_list
+            self.category_options = category_options
+            self.all_product_types = all_product_types
+            self.product_on_pages_options = product_on_pages_options
+            self.category_product_types = category_product_types
+            self.current_index = 0
+            self.multi_select_widgets = {}
 
-    def __init__(
-        self,
-        products_list,
-        category_options,
-        all_product_types,
-        product_on_pages_options,
-        category_product_types,
-    ):
-        super().__init__()
-        self.products_list = products_list
-        self.category_options = category_options
-        self.all_product_types = all_product_types
-        self.product_on_pages_options = product_on_pages_options
-        self.category_product_types = category_product_types
-        self.current_index = 0
-        self.multi_select_widgets = {}
+            # Apply global dark theme
+            self.setStyleSheet(STYLESHEET)
 
-        # Apply global dark theme
-        self.setStyleSheet(STYLESHEET)
-
-        self.setup_ui()
-        self.load_product_into_ui(0)
+            self.setup_ui()
+            self.load_product_into_ui(0)
 
     def setup_ui(self):
         self.setWindowTitle(
@@ -891,7 +937,12 @@ def edit_classification_in_batch(products_list):
     Interactive batch editor for product classification fields (Category, Product Type, Product On Pages).
     Focused on classification selection.
     Returns updated products_list with selected classifications.
+    In headless environments, returns products unchanged.
     """
+    if not GUI_AVAILABLE:
+        print("⚠️ GUI not available (headless environment), returning products unchanged")
+        return products_list
+
     # Import facet options only
     CATEGORY_PRODUCT_TYPES, PRODUCT_ON_PAGES_OPTIONS = get_facet_options_from_db()
 
