@@ -259,6 +259,17 @@ class WorkflowExecutor:
                 match = re.match(r"Visit (?:the )?(.+?) Store", value)
                 if match:
                     value = match.group(1)
+            elif field_name == 'weight' and value:
+                # Process weight: extract number and convert ounces to pounds
+                weight_match = re.search(r'(\d+(?:\.\d+)?)', value)
+                if weight_match:
+                    weight_num = float(weight_match.group(1))
+                    if 'ounce' in value.lower():
+                        # Convert ounces to pounds (1 oz = 0.0625 lbs)
+                        weight_num = weight_num / 16
+                    value = f"{weight_num:.2f} lbs"
+                else:
+                    value = None
             self.results[field_name] = value
             logger.debug(f"Extracted {field_name}: {value}")
         except NoSuchElementException:
@@ -295,6 +306,19 @@ class WorkflowExecutor:
                         else:
                             cleaned_values.append(v)
                 values = cleaned_values
+            elif field_name == 'weight':
+                # Process weight values: extract number and convert ounces to pounds
+                processed_values = []
+                for v in values:
+                    if v:
+                        weight_match = re.search(r'(\d+(?:\.\d+)?)', v)
+                        if weight_match:
+                            weight_num = float(weight_match.group(1))
+                            if 'ounce' in v.lower():
+                                # Convert ounces to pounds (1 oz = 0.0625 lbs)
+                                weight_num = weight_num / 16
+                            processed_values.append(f"{weight_num:.2f} lbs")
+                values = processed_values
             self.results[field_name] = values
             logger.debug(f"Extracted {len(values)} items for {field_name}")
         except Exception as e:
