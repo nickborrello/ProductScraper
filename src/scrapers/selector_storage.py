@@ -9,8 +9,8 @@ automatic learning capabilities.
 import json
 import os
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Any, Tuple
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
 
 class SelectorData:

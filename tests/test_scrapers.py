@@ -15,10 +15,10 @@ Usage:
     python test_scrapers.py --list                   # List available scrapers
     python test_scrapers.py --validate amazon        # Validate scraper structure only
 """
+import argparse
+import json
 import os
 import sys
-import json
-import argparse
 from pathlib import Path
 from typing import List, Optional
 
@@ -27,8 +27,8 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from tests.integration.test_scraper_integration import ScraperIntegrationTester
 from tests.fixtures.scraper_validator import ScraperValidator
+from tests.integration.test_scraper_integration import ScraperIntegrationTester
 
 
 def list_available_scrapers():

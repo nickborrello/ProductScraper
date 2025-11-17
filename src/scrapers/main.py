@@ -17,11 +17,12 @@ project_root = os.path.dirname(
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from src.scrapers.executor.workflow_executor import WorkflowExecutor
-from src.scrapers.parser.yaml_parser import ScraperConfigParser
-from src.scrapers.models.config import ScraperConfig
-from src.core.database.refresh import refresh_database_from_xml
 import os
+
+from src.core.database.refresh import refresh_database_from_xml
+from src.scrapers.executor.workflow_executor import WorkflowExecutor
+from src.scrapers.models.config import ScraperConfig
+from src.scrapers.parser.yaml_parser import ScraperConfigParser
 
 
 def run_scraping(

@@ -3,11 +3,10 @@ Unit tests for DataQualityScorer
 """
 
 import pytest
-from src.core.data_quality_scorer import (
-    DataQualityScorer,
-    score_product_data,
-    is_product_high_quality,
-)
+
+from src.core.data_quality_scorer import (DataQualityScorer,
+                                          is_product_high_quality,
+                                          score_product_data)
 
 
 class TestDataQualityScorer:

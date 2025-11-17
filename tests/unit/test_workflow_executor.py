@@ -1,7 +1,8 @@
-import pytest
-from unittest.mock import MagicMock, patch, Mock
 import os
 import sys
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
 
 # Add project root to sys.path
 PROJECT_ROOT = os.path.dirname(
@@ -9,11 +10,10 @@ PROJECT_ROOT = os.path.dirname(
 )
 sys.path.insert(0, PROJECT_ROOT)
 
-from src.scrapers.executor.workflow_executor import (
-    WorkflowExecutor,
-    WorkflowExecutionError,
-)
-from src.scrapers.models.config import ScraperConfig, WorkflowStep, SelectorConfig
+from src.scrapers.executor.workflow_executor import (WorkflowExecutionError,
+                                                     WorkflowExecutor)
+from src.scrapers.models.config import (ScraperConfig, SelectorConfig,
+                                        WorkflowStep)
 
 
 @pytest.fixture

@@ -1,13 +1,14 @@
-import os
-import requests
-import pandas as pd
-import xml.etree.ElementTree as ET
-import logging
-import sqlite3
 import json
-from typing import Tuple, Optional, Dict
-from dotenv import load_dotenv
+import logging
+import os
+import sqlite3
+import xml.etree.ElementTree as ET
 from datetime import datetime
+from typing import Dict, Optional, Tuple
+
+import pandas as pd
+import requests
+from dotenv import load_dotenv
 
 # Define project root
 PROJECT_ROOT = os.path.dirname(
@@ -16,10 +17,10 @@ PROJECT_ROOT = os.path.dirname(
 
 # Import field mapping configuration
 try:
-    from ..field_mapping import map_shopsite_fields, REQUIRED_FIELDS
+    from ..field_mapping import REQUIRED_FIELDS, map_shopsite_fields
 except ImportError:
     # Fallback for standalone execution
-    from field_mapping import map_shopsite_fields, REQUIRED_FIELDS
+    from field_mapping import REQUIRED_FIELDS, map_shopsite_fields
 
 # Import settings manager
 try:

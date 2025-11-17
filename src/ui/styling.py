@@ -1,16 +1,12 @@
 # src/ui/styling.py
 
-from datetime import datetime
 import traceback
+from datetime import datetime
+
+from PyQt6.QtCore import QEventLoop, QObject, Qt, QThread, QTimer, pyqtSignal
 from PyQt6.QtGui import QFont, QTextCursor
-from PyQt6.QtWidgets import (
-    QApplication,
-    QGroupBox,
-    QPushButton,
-    QTextEdit,
-    QVBoxLayout,
-)
-from PyQt6.QtCore import QEventLoop, QTimer, Qt, pyqtSignal, QObject, QThread
+from PyQt6.QtWidgets import (QApplication, QGroupBox, QPushButton, QTextEdit,
+                             QVBoxLayout)
 
 # Professional color palette
 DARK_BACKGROUND = "#1e1e1e"

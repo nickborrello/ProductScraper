@@ -7,7 +7,7 @@ This utility helps with debugging, progress tracking, and consistent output form
 
 import time
 from datetime import datetime
-from typing import List, Dict, Any, Optional, Callable
+from typing import Any, Callable, Dict, List, Optional
 
 
 def display_product_result(

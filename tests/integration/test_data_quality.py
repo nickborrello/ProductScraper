@@ -1,5 +1,7 @@
 import json
-from src.core.data_quality_scorer import DataQualityScorer, is_product_high_quality
+
+from src.core.data_quality_scorer import (DataQualityScorer,
+                                          is_product_high_quality)
 
 
 def test_data_quality_gate():

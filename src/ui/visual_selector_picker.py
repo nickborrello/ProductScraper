@@ -6,27 +6,17 @@ on web pages to automatically generate CSS selectors.
 """
 
 import json
-from typing import Optional, Dict, Any, Callable
+from typing import Any, Callable, Dict, Optional
 
-from PyQt6.QtCore import Qt, QUrl, pyqtSignal, QTimer
+from PyQt6.QtCore import Qt, QTimer, QUrl, pyqtSignal
 from PyQt6.QtGui import QFont
-from PyQt6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QLabel,
-    QPushButton,
-    QLineEdit,
-    QTextEdit,
-    QGroupBox,
-    QComboBox,
-    QMessageBox,
-    QProgressBar,
-    QSplitter,
-)
+from PyQt6.QtWidgets import (QComboBox, QGroupBox, QHBoxLayout, QLabel,
+                             QLineEdit, QMessageBox, QProgressBar, QPushButton,
+                             QSplitter, QTextEdit, QVBoxLayout, QWidget)
 
 try:
-    from PyQt6.QtWebEngineWidgets import QWebEngineView, QWebEnginePage  # type: ignore
+    from PyQt6.QtWebEngineWidgets import (QWebEnginePage,  # type: ignore
+                                          QWebEngineView)
 except ImportError:
     # PyQt6-WebEngine not available
     QWebEngineView = None

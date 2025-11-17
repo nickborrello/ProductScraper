@@ -2,10 +2,12 @@
 Performance tests for validation framework
 """
 
-import pytest
-import time
-import psutil
 import os
+import time
+
+import psutil
+import pytest
+
 from src.core.data_quality_scorer import DataQualityScorer
 
 

@@ -3,11 +3,12 @@ LLM-Based Product Classification Module
 Uses OpenRouter API for accurate product classification with persistent context.
 """
 
-import os
 import json
+import os
 import time
-from typing import List, Dict, Any, Optional
 from pathlib import Path
+from typing import Any, Dict, List, Optional
+
 import requests
 
 # Import settings manager
@@ -60,7 +61,8 @@ class LLMProductClassifier:
                 self.product_taxonomy = GENERAL_PRODUCT_TAXONOMY
             except ImportError:
                 try:
-                    from src.core.classification.manager import GENERAL_PRODUCT_TAXONOMY
+                    from src.core.classification.manager import \
+                        GENERAL_PRODUCT_TAXONOMY
 
                     self.product_taxonomy = GENERAL_PRODUCT_TAXONOMY
                 except ImportError:
@@ -115,14 +117,10 @@ class LLMProductClassifier:
         """Initialize conversation with taxonomy and instructions."""
         try:
             from src.core.classification.manager import (
-                UNIFIED_SYSTEM_PROMPT,
-                UNIFIED_SINGLE_PRODUCT_JSON_FORMAT,
-            )
+                UNIFIED_SINGLE_PRODUCT_JSON_FORMAT, UNIFIED_SYSTEM_PROMPT)
         except ImportError:
-            from .manager import (
-                UNIFIED_SYSTEM_PROMPT,
-                UNIFIED_SINGLE_PRODUCT_JSON_FORMAT,
-            )
+            from .manager import (UNIFIED_SINGLE_PRODUCT_JSON_FORMAT,
+                                  UNIFIED_SYSTEM_PROMPT)
 
         # Create comprehensive system prompt
         taxonomy_text = "PRODUCT TAXONOMY:\n"
@@ -308,7 +306,8 @@ class LLMProductClassifier:
             return []
 
         try:
-            from src.core.classification.manager import UNIFIED_BATCH_JSON_FORMAT
+            from src.core.classification.manager import \
+                UNIFIED_BATCH_JSON_FORMAT
         except ImportError:
             from .manager import UNIFIED_BATCH_JSON_FORMAT
 
@@ -542,8 +541,8 @@ def classify_product_llm(product_info: Dict[str, Any]) -> Dict[str, str]:
 
 # Test the LLM classifier
 if __name__ == "__main__":
-    import sys
     import os
+    import sys
 
     # Add project root to path to allow direct script execution
     sys.path.insert(

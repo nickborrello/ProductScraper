@@ -1,9 +1,10 @@
-import pytest
 import json
 import os
 import tempfile
-from unittest.mock import patch, mock_open
 from datetime import datetime, timezone
+from unittest.mock import mock_open, patch
+
+import pytest
 
 # Add project root to sys.path
 PROJECT_ROOT = os.path.dirname(
@@ -13,7 +14,8 @@ import sys
 
 sys.path.insert(0, PROJECT_ROOT)
 
-from src.scrapers.selector_storage import SelectorStorage, SelectorManager, SelectorData
+from src.scrapers.selector_storage import (SelectorData, SelectorManager,
+                                           SelectorStorage)
 
 
 @pytest.fixture

@@ -1,11 +1,12 @@
 import os
 import re
+import time
+from io import BytesIO
+
 import requests
 from PIL import Image
-from io import BytesIO
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-import time
 
 PROJECT_ROOT = os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

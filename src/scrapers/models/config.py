@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Optional, Union
-from pydantic import BaseModel, Field, ConfigDict
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from src.core.anti_detection_manager import AntiDetectionConfig
 

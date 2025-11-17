@@ -5,48 +5,35 @@ This dialog provides a simple interface for building scrapers with AI assistance
 for CSS selector generation, testing, and YAML configuration creation.
 """
 
-import os
 import json
+import os
 from pathlib import Path
-from typing import Dict, List, Optional, Any, cast, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 from urllib.parse import urlparse
-import yaml
 
+import yaml
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QFont
-from PyQt6.QtWidgets import (
-    QDialog,
-    QVBoxLayout,
-    QHBoxLayout,
-    QLabel,
-    QLineEdit,
-    QPushButton,
-    QTextEdit,
-    QProgressBar,
-    QGroupBox,
-    QTableWidget,
-    QTableWidgetItem,
-    QMessageBox,
-    QCheckBox,
-    QComboBox,
-    QTabWidget,
-    QDialogButtonBox,
-    QWidget,
-    QWizard,
-    QWizardPage,
-)
+from PyQt6.QtWidgets import (QCheckBox, QComboBox, QDialog, QDialogButtonBox,
+                             QGroupBox, QHBoxLayout, QLabel, QLineEdit,
+                             QMessageBox, QProgressBar, QPushButton,
+                             QTableWidget, QTableWidgetItem, QTabWidget,
+                             QTextEdit, QVBoxLayout, QWidget, QWizard,
+                             QWizardPage)
 
-from src.scrapers.selector_storage import SelectorManager
+from src.scrapers.models.config import (ScraperConfig, SelectorConfig,
+                                        WorkflowStep)
 from src.scrapers.parser.yaml_parser import ScraperConfigParser
-from src.scrapers.models.config import ScraperConfig, SelectorConfig, WorkflowStep
-from src.ui.visual_selector_picker import VisualSelectorPicker
+from src.scrapers.selector_storage import SelectorManager
 from src.ui.styling import STYLESHEET
+from src.ui.visual_selector_picker import VisualSelectorPicker
 
 if TYPE_CHECKING:
     from src.core.classification.llm_classifier import LLMProductClassifier
 
 try:
-    from src.core.classification.llm_classifier import get_llm_classifier  # type: ignore
+    from src.core.classification.llm_classifier import \
+        get_llm_classifier  # type: ignore
 except ImportError:
 
     def get_llm_classifier(model_name=None, product_taxonomy=None, product_pages=None) -> Optional["LLMProductClassifier"]:  # type: ignore

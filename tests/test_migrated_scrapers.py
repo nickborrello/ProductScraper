@@ -13,13 +13,13 @@ This script validates:
 Usage: python test_migrated_scrapers.py
 """
 
-import time
 import logging
+import time
 import traceback
-from pathlib import Path
-from typing import Dict, List, Any, Optional, Tuple
-from dataclasses import dataclass
 from contextlib import contextmanager
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
 # Configure logging
 logging.basicConfig(
@@ -29,16 +29,12 @@ logger = logging.getLogger(__name__)
 
 # Import scraper components
 try:
-    from src.scrapers.parser.yaml_parser import ScraperConfigParser
-    from src.scrapers.models.config import ScraperConfig
+    from src.core.anti_detection_manager import (AntiDetectionConfig,
+                                                 AntiDetectionManager)
     from src.scrapers.executor.workflow_executor import (
-        WorkflowExecutor,
-        WorkflowExecutionError,
-    )
-    from src.core.anti_detection_manager import (
-        AntiDetectionManager,
-        AntiDetectionConfig,
-    )
+        WorkflowExecutionError, WorkflowExecutor)
+    from src.scrapers.models.config import ScraperConfig
+    from src.scrapers.parser.yaml_parser import ScraperConfigParser
     from src.utils.scraping.browser import ScraperBrowser
 except ImportError as e:
     logger.error(f"Failed to import required modules: {e}")

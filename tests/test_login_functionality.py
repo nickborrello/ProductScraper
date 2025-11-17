@@ -2,13 +2,13 @@
 Test login functionality for workflow executor.
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
-from src.scrapers.executor.workflow_executor import (
-    WorkflowExecutor,
-    WorkflowExecutionError,
-)
-from src.scrapers.models.config import ScraperConfig, LoginConfig
+
+import pytest
+
+from src.scrapers.executor.workflow_executor import (WorkflowExecutionError,
+                                                     WorkflowExecutor)
+from src.scrapers.models.config import LoginConfig, ScraperConfig
 
 
 @pytest.fixture

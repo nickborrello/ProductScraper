@@ -5,9 +5,8 @@ Provides interface for local testing only.
 
 import asyncio
 import logging
-from typing import Dict, List, Any, Optional
 from enum import Enum
-
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +99,8 @@ class PlatformTestingClient:
             Dict with run results
         """
         # Import the integration tester for local runs
-        from tests.integration.test_scraper_integration import ScraperIntegrationTester
+        from tests.integration.test_scraper_integration import \
+            ScraperIntegrationTester
 
         tester = ScraperIntegrationTester()
         local_results = tester.run_scraper_locally(scraper_name, skus)

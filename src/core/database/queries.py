@@ -2,10 +2,10 @@
 """
 SQLite Query Interface for ShopSite Products Database
 """
-import sqlite3
 import json
 import os
-from typing import List, Dict, Any
+import sqlite3
+from typing import Any, Dict, List
 
 
 class ProductDatabase:

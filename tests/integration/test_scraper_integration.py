@@ -2,14 +2,15 @@
 Integration tests for running scrapers locally and validating output.
 """
 
-import os
-import sys
 import json
-import tempfile
+import os
 import shutil
+import sys
+import tempfile
 import time
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List, Optional
+
 import pytest
 
 # Add project root to path
@@ -17,9 +18,9 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from tests.fixtures.scraper_validator import ScraperValidator
-from src.scrapers.parser.yaml_parser import ScraperConfigParser
 from src.scrapers.executor.workflow_executor import WorkflowExecutor
+from src.scrapers.parser.yaml_parser import ScraperConfigParser
+from tests.fixtures.scraper_validator import ScraperValidator
 
 
 class ScraperIntegrationTester:

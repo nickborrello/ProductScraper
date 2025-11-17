@@ -1,9 +1,8 @@
-import win32com.client
 import os
-
 import shutil
-import os
 import sys
+
+import win32com.client
 
 PROJECT_ROOT = os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

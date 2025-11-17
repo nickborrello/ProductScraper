@@ -1,29 +1,17 @@
 import os
 import sys
 from pathlib import Path
+
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QFont, QIcon
-from PyQt6.QtWidgets import (
-    QDialog,
-    QVBoxLayout,
-    QHBoxLayout,
-    QPushButton,
-    QLabel,
-    QListWidget,
-    QListWidgetItem,
-    QMessageBox,
-    QTextEdit,
-    QGroupBox,
-    QScrollArea,
-    QWidget,
-    QSplitter,
-    QFrame,
-    QInputDialog,
-    QProgressBar,
-)
+from PyQt6.QtWidgets import (QDialog, QFrame, QGroupBox, QHBoxLayout,
+                             QInputDialog, QLabel, QListWidget,
+                             QListWidgetItem, QMessageBox, QProgressBar,
+                             QPushButton, QScrollArea, QSplitter, QTextEdit,
+                             QVBoxLayout, QWidget)
 
-from src.scrapers.parser.yaml_parser import ScraperConfigParser
 from src.scrapers.models.config import ScraperConfig
+from src.scrapers.parser.yaml_parser import ScraperConfigParser
 from src.ui.styling import STYLESHEET
 
 

@@ -5,7 +5,7 @@ Local dataset implementation for storing data items as JSON files.
 import json
 import os
 from pathlib import Path
-from typing import List, Dict, Any, Union, Optional
+from typing import Any, Dict, List, Optional, Union
 
 
 class LocalDataset:

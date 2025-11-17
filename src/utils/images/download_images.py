@@ -1,9 +1,10 @@
 import os
-import pandas as pd
 from urllib.parse import urlparse
-from src.utils.images.processing import (
-    download_image,
-)  # Make sure this function is implemented correctly
+
+import pandas as pd
+
+from src.utils.images.processing import \
+    download_image  # Make sure this function is implemented correctly
 
 # Define the directory and filename of the Excel file
 EXCEL_FILE = "./util/image_urls.xlsx"

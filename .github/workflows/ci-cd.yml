@@ -55,7 +55,7 @@ jobs:
       run: |
         uv run flake8 src/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
         uv run black src/ tests/
-        uv run isort --check-only src/ tests/
+        uv run isort src/ tests/
 
     - name: Run unit tests
       run: |

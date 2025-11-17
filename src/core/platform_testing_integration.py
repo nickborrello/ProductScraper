@@ -5,19 +5,16 @@ Extends local testing with platform testing capabilities.
 
 import asyncio
 import logging
-from typing import Dict, List, Any, Optional
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
-from .platform_testing_client import (
-    PlatformTestingClient,
-    TestingMode,
-    PlatformTestingError,
-    PlatformTestingAuthError,
-    PlatformTestingTimeoutError,
-    PlatformTestingJobError,
-)
 from tests.fixtures.scraper_validator import ScraperValidator
 
+from .platform_testing_client import (PlatformTestingAuthError,
+                                      PlatformTestingClient,
+                                      PlatformTestingError,
+                                      PlatformTestingJobError,
+                                      PlatformTestingTimeoutError, TestingMode)
 
 logger = logging.getLogger(__name__)
 

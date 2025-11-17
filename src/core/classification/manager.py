@@ -6,11 +6,12 @@ Separates business logic from UI (product_editor.py).
 
 import json
 import os
-import pandas as pd
 import re
 import sqlite3
 from pathlib import Path
 from typing import List
+
+import pandas as pd
 
 # Import taxonomy manager
 try:
@@ -19,11 +20,12 @@ try:
 except ImportError:
     try:
         # Try absolute import (when run as standalone script)
-        from src.core.classification.taxonomy_manager import get_product_taxonomy
+        from src.core.classification.taxonomy_manager import \
+            get_product_taxonomy
     except ImportError:
         # Last resort - try direct import from current directory
-        import sys
         import os
+        import sys
 
         current_dir = os.path.dirname(os.path.abspath(__file__))
         if current_dir not in sys.path:
@@ -31,8 +33,8 @@ except ImportError:
         from taxonomy_manager import get_product_taxonomy
 
 # Ensure src directory is in path for standalone execution
-import sys
 import os
+import sys
 
 src_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if src_dir not in sys.path:
@@ -176,7 +178,8 @@ def classify_products_batch(products_list, method=None):
     # Special handling for llm method - use batch processing
     if method == "llm":
         try:
-            from src.core.classification.llm_classifier import get_llm_classifier
+            from src.core.classification.llm_classifier import \
+                get_llm_classifier
         except ImportError:
             try:
                 from llm_classifier import get_llm_classifier
@@ -222,9 +225,8 @@ def classify_products_batch(products_list, method=None):
     # Special handling for local_llm method - use batch processing
     if method == "local_llm":
         try:
-            from src.core.classification.local_llm_classifier import (
-                get_local_llm_classifier,
-            )
+            from src.core.classification.local_llm_classifier import \
+                get_local_llm_classifier
         except ImportError:
             try:
                 from local_llm_classifier import get_local_llm_classifier
@@ -327,7 +329,8 @@ def classify_single_product(product_info, method=None):
     # LLM-based classification (most accurate)
     if method == "llm":
         try:
-            from src.core.classification.llm_classifier import classify_product_llm
+            from src.core.classification.llm_classifier import \
+                classify_product_llm
         except ImportError:
             try:
                 from llm_classifier import classify_product_llm
@@ -356,9 +359,8 @@ def classify_single_product(product_info, method=None):
     # Local LLM-based classification (Ollama - no API key required)
     elif method == "local_llm":
         try:
-            from src.core.classification.local_llm_classifier import (
-                classify_product_local_llm,
-            )
+            from src.core.classification.local_llm_classifier import \
+                classify_product_local_llm
         except ImportError:
             try:
                 from local_llm_classifier import classify_product_local_llm

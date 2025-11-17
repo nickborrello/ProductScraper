@@ -5,7 +5,7 @@ Local key-value store implementation using JSON file storage.
 import json
 import os
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 
 class LocalKeyValueStore:

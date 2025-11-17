@@ -6,8 +6,8 @@ It evaluates completeness, accuracy, and consistency against validation criteria
 """
 
 import re
+from typing import Any, Dict, Optional, Tuple
 from urllib.parse import urlparse
-from typing import Dict, Any, Tuple, Optional
 
 
 class DataQualityScorer:

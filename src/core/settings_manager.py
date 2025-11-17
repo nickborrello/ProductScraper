@@ -4,7 +4,8 @@ Handles application configuration using QSettings for cross-platform storage.
 """
 
 import os
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
+
 from PyQt6.QtCore import QSettings, QStandardPaths
 
 

@@ -34,22 +34,10 @@ if TYPE_CHECKING:
     # Type checking imports for PyQt6
     from PyQt6.QtCore import Qt, pyqtSignal
     from PyQt6.QtGui import QFont
-    from PyQt6.QtWidgets import (
-        QApplication,
-        QCheckBox,
-        QFrame,
-        QGridLayout,
-        QHBoxLayout,
-        QLabel,
-        QLineEdit,
-        QMainWindow,
-        QMessageBox,
-        QPushButton,
-        QScrollArea,
-        QSplitter,
-        QVBoxLayout,
-        QWidget,
-    )
+    from PyQt6.QtWidgets import (QApplication, QCheckBox, QFrame, QGridLayout,
+                                 QHBoxLayout, QLabel, QLineEdit, QMainWindow,
+                                 QMessageBox, QPushButton, QScrollArea,
+                                 QSplitter, QVBoxLayout, QWidget)
 
 if is_ci:
     GUI_AVAILABLE = False
@@ -59,22 +47,11 @@ else:
         # PyQt6 imports
         from PyQt6.QtCore import Qt, pyqtSignal
         from PyQt6.QtGui import QFont
-        from PyQt6.QtWidgets import (
-            QApplication,
-            QCheckBox,
-            QFrame,
-            QGridLayout,
-            QHBoxLayout,
-            QLabel,
-            QLineEdit,
-            QMainWindow,
-            QMessageBox,
-            QPushButton,
-            QScrollArea,
-            QSplitter,
-            QVBoxLayout,
-            QWidget,
-        )
+        from PyQt6.QtWidgets import (QApplication, QCheckBox, QFrame,
+                                     QGridLayout, QHBoxLayout, QLabel,
+                                     QLineEdit, QMainWindow, QMessageBox,
+                                     QPushButton, QScrollArea, QSplitter,
+                                     QVBoxLayout, QWidget)
     except ImportError as e:
         # GUI not available (headless environment)
         GUI_AVAILABLE = False

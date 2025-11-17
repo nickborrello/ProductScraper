@@ -2,23 +2,23 @@
 Workflow executor for scraper automation using Selenium WebDriver.
 """
 
-import time
-import random
 import logging
+import random
 import re
-from typing import Dict, List, Any, Optional, Union, cast
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import (
-    TimeoutException,
-    NoSuchElementException,
-    WebDriverException,
-)
+import time
+from typing import Any, Dict, List, Optional, Union, cast
 
-from src.scrapers.models.config import ScraperConfig, WorkflowStep, SelectorConfig
-from src.utils.scraping.browser import create_browser, ScraperBrowser
-from src.core.anti_detection_manager import AntiDetectionManager, AntiDetectionConfig
+from selenium.common.exceptions import (NoSuchElementException,
+                                        TimeoutException, WebDriverException)
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+
+from src.core.anti_detection_manager import (AntiDetectionConfig,
+                                             AntiDetectionManager)
+from src.scrapers.models.config import (ScraperConfig, SelectorConfig,
+                                        WorkflowStep)
+from src.utils.scraping.browser import ScraperBrowser, create_browser
 
 logger = logging.getLogger(__name__)
 

@@ -1,6 +1,6 @@
-import sqlite3
 import json
 import os
+import sqlite3
 
 PROJECT_ROOT = os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

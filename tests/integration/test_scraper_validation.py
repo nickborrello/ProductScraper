@@ -2,9 +2,12 @@
 Integration tests for scraper validation using data quality scoring
 """
 
-import pytest
 import time
-from src.core.data_quality_scorer import DataQualityScorer, is_product_high_quality
+
+import pytest
+
+from src.core.data_quality_scorer import (DataQualityScorer,
+                                          is_product_high_quality)
 
 
 @pytest.mark.integration

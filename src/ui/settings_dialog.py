@@ -3,25 +3,12 @@ Settings Dialog for ProductScraper
 Provides a GUI for configuring application settings.
 """
 
-from PyQt6.QtWidgets import (
-    QDialog,
-    QVBoxLayout,
-    QHBoxLayout,
-    QTabWidget,
-    QWidget,
-    QLabel,
-    QLineEdit,
-    QCheckBox,
-    QSpinBox,
-    QPushButton,
-    QGroupBox,
-    QFormLayout,
-    QMessageBox,
-    QTextEdit,
-    QFileDialog,
-)
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QIcon
+from PyQt6.QtWidgets import (QCheckBox, QDialog, QFileDialog, QFormLayout,
+                             QGroupBox, QHBoxLayout, QLabel, QLineEdit,
+                             QMessageBox, QPushButton, QSpinBox, QTabWidget,
+                             QTextEdit, QVBoxLayout, QWidget)
 
 from src.core.settings_manager import settings
 

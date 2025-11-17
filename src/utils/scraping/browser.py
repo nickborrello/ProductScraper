@@ -5,9 +5,11 @@ Scrapers can use this as a base and customize as needed.
 
 import os
 import time
+
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service as ChromeService
+
 from src.utils.scraping.scraping import get_standard_chrome_options
 
 

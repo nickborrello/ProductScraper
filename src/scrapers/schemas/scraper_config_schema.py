@@ -1,4 +1,5 @@
 import json
+
 from src.scrapers.models import ScraperConfig
 
 

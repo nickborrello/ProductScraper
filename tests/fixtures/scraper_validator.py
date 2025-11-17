@@ -4,7 +4,8 @@ Scraper output validation utilities for testing and debugging.
 
 import json
 import re
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List, Optional
+
 import pandas as pd
 
 

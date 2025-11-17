@@ -1,5 +1,5 @@
-import sys
 import os
+import sys
 
 # Add project root to the Python path to allow imports from src
 PROJECT_ROOT = os.path.dirname(

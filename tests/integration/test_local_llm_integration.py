@@ -1,14 +1,12 @@
-import pytest
 import json
-from unittest.mock import patch, MagicMock
-from src.core.classification.manager import (
-    classify_single_product,
-    classify_products_batch,
-)
+from unittest.mock import MagicMock, patch
+
+import pytest
+
 from src.core.classification.local_llm_classifier import (
-    LocalLLMProductClassifier,
-    reset_local_llm_classifier,
-)
+    LocalLLMProductClassifier, reset_local_llm_classifier)
+from src.core.classification.manager import (classify_products_batch,
+                                             classify_single_product)
 
 
 class TestLocalLLMIntegration:

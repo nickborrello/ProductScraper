@@ -1,36 +1,17 @@
+import os
 import sys
 import traceback
 from datetime import datetime
-from PyQt6.QtCore import QObject, QThread, pyqtSignal, Qt, QTimer, QSize
-from PyQt6.QtGui import QFont, QTextCursor, QIcon, QAction
-from PyQt6.QtWidgets import (
-    QApplication,
-    QFileDialog,
-    QMainWindow,
-    QPushButton,
-    QTextEdit,
-    QProgressBar,
-    QVBoxLayout,
-    QHBoxLayout,
-    QWidget,
-    QMessageBox,
-    QLabel,
-    QFrame,
-    QSplitter,
-    QGroupBox,
-    QScrollArea,
-    QMenuBar,
-    QMenu,
-    QStatusBar,
-    QDialog,
-    QDialogButtonBox,
-    QTextBrowser,
-    QCheckBox,
-    QComboBox,
-)
-
-import os
 from pathlib import Path
+
+from PyQt6.QtCore import QObject, QSize, Qt, QThread, QTimer, pyqtSignal
+from PyQt6.QtGui import QAction, QFont, QIcon, QTextCursor
+from PyQt6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
+                             QDialogButtonBox, QFileDialog, QFrame, QGroupBox,
+                             QHBoxLayout, QLabel, QMainWindow, QMenu, QMenuBar,
+                             QMessageBox, QProgressBar, QPushButton,
+                             QScrollArea, QSplitter, QStatusBar, QTextBrowser,
+                             QTextEdit, QVBoxLayout, QWidget)
 
 # Conditional import for core logic to ensure GUI is runnable even if main fails.
 # Check scraper system preference
@@ -41,13 +22,19 @@ scraper_system = settings.get("scraper_system", "new")
 try:
     if scraper_system == "legacy":
         print("🔄 GUI using legacy archived scraper system...")
-        from src.scrapers.main import run_scraping
-        from src.core.database.refresh import refresh_database_from_xml as run_db_refresh  # type: ignore[assignment]
-        from src.core.database.xml_import import import_from_shopsite_xml as run_shopsite_xml_download  # type: ignore[assignment]
-        from src.core.database.xml_import import publish_shopsite_changes as run_shopsite_publish  # type: ignore[assignment]
-
         # DEPRECATION WARNING: Using legacy system
         import warnings
+
+        from src.core.database.refresh import \
+            refresh_database_from_xml as \
+            run_db_refresh  # type: ignore[assignment]
+        from src.core.database.xml_import import \
+            import_from_shopsite_xml as \
+            run_shopsite_xml_download  # type: ignore[assignment]
+        from src.core.database.xml_import import \
+            publish_shopsite_changes as \
+            run_shopsite_publish  # type: ignore[assignment]
+        from src.scrapers.main import run_scraping
 
         warnings.warn(
             "GUI is configured to use the deprecated archived scraper system. "
@@ -58,18 +45,14 @@ try:
         )
     else:
         print("🚀 GUI using new modular scraper system...")
-        from src.scrapers.main import run_scraping
-
         # Import legacy functions for backward compatibility
-        from src.core.database.refresh import (
-            refresh_database_from_xml as run_db_refresh,
-        )
-        from src.core.database.xml_import import (
-            import_from_shopsite_xml as run_shopsite_xml_download,
-        )
-        from src.core.database.xml_import import (
-            publish_shopsite_changes as run_shopsite_publish,
-        )
+        from src.core.database.refresh import \
+            refresh_database_from_xml as run_db_refresh
+        from src.core.database.xml_import import \
+            import_from_shopsite_xml as run_shopsite_xml_download
+        from src.core.database.xml_import import \
+            publish_shopsite_changes as run_shopsite_publish
+        from src.scrapers.main import run_scraping
 
     def run_scraper_tests(
         run_integration=False,
@@ -1001,13 +984,13 @@ class MainWindow(QMainWindow):
     ):
         """Open a specified editor on the main GUI thread (synchronous)."""
         if editor_type == "product":
-            from src.ui.product_editor import edit_products_in_batch as editor_func
+            from src.ui.product_editor import \
+                edit_products_in_batch as editor_func
 
             log_msg = "product editor"
         elif editor_type == "classification":
-            from src.core.classification.ui import (
-                edit_classification_in_batch as editor_func,
-            )
+            from src.core.classification.ui import \
+                edit_classification_in_batch as editor_func
 
             log_msg = "classification editor"
         else:
@@ -1172,8 +1155,9 @@ class MainWindow(QMainWindow):
     ):
         """Worker function to run classification"""
         import pandas as pd
-        from src.core.classification.ui import edit_classification_in_batch
+
         from src.core.classification.manager import classify_products_batch
+        from src.core.classification.ui import edit_classification_in_batch
 
         # Determine log function
         if log_callback is None:
@@ -1313,10 +1297,10 @@ class MainWindow(QMainWindow):
 
         try:
             if scraper_system == "legacy":
-                from src.scrapers.main import get_available_scrapers
-
                 # DEPRECATION WARNING: Using legacy system
                 import warnings
+
+                from src.scrapers.main import get_available_scrapers
 
                 warnings.warn(
                     "Using get_available_scrapers from src.scrapers.main which is the new system. "
@@ -1336,16 +1320,9 @@ class MainWindow(QMainWindow):
 
     def select_sites_dialog(self, available_sites):
         """Show dialog to select which sites to scrape"""
-        from PyQt6.QtWidgets import (
-            QDialog,
-            QVBoxLayout,
-            QHBoxLayout,
-            QListWidget,
-            QListWidgetItem,
-            QPushButton,
-            QLabel,
-            QCheckBox,
-        )
+        from PyQt6.QtWidgets import (QCheckBox, QDialog, QHBoxLayout, QLabel,
+                                     QListWidget, QListWidgetItem, QPushButton,
+                                     QVBoxLayout)
 
         dialog = QDialog(self)
         dialog.setWindowTitle("Select Scraping Sites")
@@ -1483,7 +1460,8 @@ class MainWindow(QMainWindow):
     def manage_scrapers(self):
         """Open dialog to manage existing scraper configurations"""
         try:
-            from src.ui.scraper_management_dialog import ScraperManagementDialog
+            from src.ui.scraper_management_dialog import \
+                ScraperManagementDialog
 
             dialog = ScraperManagementDialog(self)
             dialog.exec()

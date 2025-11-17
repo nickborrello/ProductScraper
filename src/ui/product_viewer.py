@@ -1,8 +1,8 @@
-import sqlite3
 import json
-from pathlib import Path
-import sys
 import os
+import sqlite3
+import sys
+from pathlib import Path
 
 # Add project root to path for imports
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -10,25 +10,12 @@ project_root = os.path.dirname(os.path.dirname(current_dir))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from PyQt6.QtWidgets import (
-    QApplication,
-    QMainWindow,
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QLabel,
-    QLineEdit,
-    QPushButton,
-    QTableWidget,
-    QTableWidgetItem,
-    QHeaderView,
-    QMessageBox,
-    QAbstractItemView,
-    QComboBox,
-    QCheckBox,
-    QGroupBox,
-)
 from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox,
+                             QComboBox, QGroupBox, QHBoxLayout, QHeaderView,
+                             QLabel, QLineEdit, QMainWindow, QMessageBox,
+                             QPushButton, QTableWidget, QTableWidgetItem,
+                             QVBoxLayout, QWidget)
 
 try:
     # Try relative import first (when run as part of package)
@@ -42,8 +29,8 @@ except ImportError:
         from product_editor import edit_products_in_batch
 
 # Database path - find it relative to project root
-from pathlib import Path
 import os
+from pathlib import Path
 
 PROJECT_ROOT = os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

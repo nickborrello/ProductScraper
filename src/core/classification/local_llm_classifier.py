@@ -2,11 +2,12 @@
 Local LLM-based product classifier using Ollama for running models locally without API keys.
 """
 
-import os
 import json
+import os
 import time
-from typing import List, Dict, Any, Optional
 from pathlib import Path
+from typing import Any, Dict, List, Optional
+
 import ollama
 
 # Configuration
@@ -73,9 +74,8 @@ class LocalLLMProductClassifier:
                 self.product_taxonomy = get_product_taxonomy()
             except ImportError:
                 try:
-                    from src.core.classification.taxonomy_manager import (
-                        get_product_taxonomy,
-                    )
+                    from src.core.classification.taxonomy_manager import \
+                        get_product_taxonomy
 
                     self.product_taxonomy = get_product_taxonomy()
                 except ImportError:
@@ -133,14 +133,10 @@ class LocalLLMProductClassifier:
         """Initialize conversation with taxonomy and instructions."""
         try:
             from src.core.classification.manager import (
-                UNIFIED_SYSTEM_PROMPT,
-                UNIFIED_SINGLE_PRODUCT_JSON_FORMAT,
-            )
+                UNIFIED_SINGLE_PRODUCT_JSON_FORMAT, UNIFIED_SYSTEM_PROMPT)
         except ImportError:
-            from .manager import (
-                UNIFIED_SYSTEM_PROMPT,
-                UNIFIED_SINGLE_PRODUCT_JSON_FORMAT,
-            )
+            from .manager import (UNIFIED_SINGLE_PRODUCT_JSON_FORMAT,
+                                  UNIFIED_SYSTEM_PROMPT)
 
         # Create comprehensive system prompt
         taxonomy_text = "PRODUCT TAXONOMY:\n"
@@ -317,7 +313,8 @@ class LocalLLMProductClassifier:
             return []
 
         try:
-            from src.core.classification.manager import UNIFIED_BATCH_JSON_FORMAT
+            from src.core.classification.manager import \
+                UNIFIED_BATCH_JSON_FORMAT
         except ImportError:
             from .manager import UNIFIED_BATCH_JSON_FORMAT
 
@@ -578,14 +575,15 @@ def classify_product_local_llm(
 
 # Test the local LLM classifier
 if __name__ == "__main__":
-    import sys
     import os
+    import sys
 
     # Add project root to path to allow direct script execution
     sys.path.insert(
         0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
     )
-    from src.core.classification.local_llm_classifier import get_local_llm_classifier
+    from src.core.classification.local_llm_classifier import \
+        get_local_llm_classifier
 
     print("🧠 Testing Local LLM Product Classifier")
     print("=" * 50)

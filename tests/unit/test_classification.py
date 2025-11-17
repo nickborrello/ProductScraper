@@ -1,7 +1,8 @@
-import pytest
 import os
 import sys
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import MagicMock, call, patch
+
+import pytest
 
 # Add project root to path
 PROJECT_ROOT = os.path.dirname(
@@ -11,13 +12,11 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 # Import classification module
-from src.core.classification.ui import (
-    get_facet_options_from_db,
-    assign_classification_batch,
-    assign_classification_single,
-    edit_classification_in_batch,
-    clear_facet_cache,
-)
+from src.core.classification.ui import (assign_classification_batch,
+                                        assign_classification_single,
+                                        clear_facet_cache,
+                                        edit_classification_in_batch,
+                                        get_facet_options_from_db)
 
 
 class TestClassification:

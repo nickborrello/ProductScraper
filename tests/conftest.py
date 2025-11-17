@@ -3,6 +3,7 @@ Pytest configuration and fixtures for ProductScraper tests
 """
 
 import pytest
+
 from src.core.data_quality_scorer import DataQualityScorer
 
 
@@ -69,8 +70,9 @@ def performance_test_data(sample_high_quality_record):
 @pytest.fixture
 def memory_monitor():
     """Fixture to monitor memory usage during tests."""
-    import psutil
     import os
+
+    import psutil
 
     process = psutil.Process(os.getpid())
     initial_memory = process.memory_info().rss / 1024 / 1024  # MB

@@ -1,10 +1,11 @@
-import pytest
+import json
 import os
 import sys
-import json
 import tempfile
-from unittest.mock import patch, MagicMock, mock_open
 from pathlib import Path
+from unittest.mock import MagicMock, mock_open, patch
+
+import pytest
 
 # Add project root to path
 PROJECT_ROOT = os.path.dirname(
@@ -15,14 +16,10 @@ if PROJECT_ROOT not in sys.path:
 
 # Import the local LLM classifier
 from src.core.classification.local_llm_classifier import (
-    LocalLLMProductClassifier,
-    get_local_llm_classifier,
-    classify_product_local_llm,
-)
-from src.core.classification.manager import (
-    GENERAL_PRODUCT_TAXONOMY,
-    PRODUCT_PAGES,
-)
+    LocalLLMProductClassifier, classify_product_local_llm,
+    get_local_llm_classifier)
+from src.core.classification.manager import (GENERAL_PRODUCT_TAXONOMY,
+                                             PRODUCT_PAGES)
 
 
 class TestLocalLLMClassifier:

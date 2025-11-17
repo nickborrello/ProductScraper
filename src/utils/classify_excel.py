@@ -4,12 +4,13 @@ Standalone Excel Classification Tool Launcher
 Run this script to classify products in Excel files independently.
 """
 
-import sys
 import os
-import pandas as pd
+import sys
 import tkinter as tk
-from tkinter import filedialog
 from pathlib import Path
+from tkinter import filedialog
+
+import pandas as pd
 
 # Add project root to path
 PROJECT_ROOT = os.path.dirname(
@@ -18,9 +19,9 @@ PROJECT_ROOT = os.path.dirname(
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
+from src.core.classification.manager import classify_products_batch
 # Import classification functions
 from src.core.classification.ui import edit_classification_in_batch
-from src.core.classification.manager import classify_products_batch
 from src.core.settings_manager import SettingsManager
 
 

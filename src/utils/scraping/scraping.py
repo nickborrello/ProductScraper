@@ -1,5 +1,6 @@
-import re
 import os
+import re
+
 from selenium.webdriver.chrome.options import Options
 
 

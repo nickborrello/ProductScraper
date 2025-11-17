@@ -6,11 +6,12 @@ This script helps install and configure Ollama for local LLM classification.
 """
 
 import os
-import sys
 import platform
 import subprocess
-import requests
+import sys
 from pathlib import Path
+
+import requests
 
 
 def run_command(command, shell=False):

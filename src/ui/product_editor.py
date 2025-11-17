@@ -1,35 +1,18 @@
-from pathlib import Path
-from PyQt6.QtWidgets import (
-    QApplication,
-    QMainWindow,
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QFormLayout,
-    QLabel,
-    QLineEdit,
-    QComboBox,
-    QCheckBox,
-    QPushButton,
-    QScrollArea,
-    QFrame,
-    QMessageBox,
-    QGroupBox,
-    QDialog,
-    QDialogButtonBox,
-)
-from PyQt6.QtCore import Qt, QTimer, pyqtSignal
-from PyQt6.QtGui import QPixmap, QFont, QCloseEvent
-import sqlite3
-import pandas as pd
 import os
+import sqlite3
 import time
 import traceback
-
-
 # Database setup
 from pathlib import Path
-import os
+
+import pandas as pd
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal
+from PyQt6.QtGui import QCloseEvent, QFont, QPixmap
+from PyQt6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
+                             QDialogButtonBox, QFormLayout, QFrame, QGroupBox,
+                             QHBoxLayout, QLabel, QLineEdit, QMainWindow,
+                             QMessageBox, QPushButton, QScrollArea,
+                             QVBoxLayout, QWidget)
 
 PROJECT_ROOT = os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -486,12 +469,9 @@ class ProductEditor(QMainWindow):
     def _load_image(self, url):
         """Load image from URL."""
         try:
-            from PyQt6.QtNetwork import (
-                QNetworkAccessManager,
-                QNetworkRequest,
-                QNetworkReply,
-            )
             from PyQt6.QtCore import QEventLoop, QUrl
+            from PyQt6.QtNetwork import (QNetworkAccessManager, QNetworkReply,
+                                         QNetworkRequest)
 
             manager = QNetworkAccessManager()
             request = QNetworkRequest(QUrl(url))

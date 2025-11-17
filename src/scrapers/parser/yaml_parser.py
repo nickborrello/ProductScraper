@@ -1,9 +1,11 @@
-import yaml
 from pathlib import Path
 from typing import Union
+
+import yaml
+
+from src.core.anti_detection_manager import AntiDetectionConfig
 from src.scrapers.models import ScraperConfig
 from src.scrapers.schemas import validate_config_dict
-from src.core.anti_detection_manager import AntiDetectionConfig
 
 
 class ScraperConfigParser:

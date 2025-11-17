@@ -4,14 +4,15 @@ Provides comprehensive anti-detection capabilities including CAPTCHA detection,
 rate limiting, human behavior simulation, and session management.
 """
 
-import time
-import random
 import logging
-from typing import Dict, Any, Optional, List, Callable
+import random
+import time
+from typing import Any, Callable, Dict, List, Optional
+
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from selenium.webdriver.support.ui import WebDriverWait
 
 from src.utils.scraping.browser import ScraperBrowser
 
