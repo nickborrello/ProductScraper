@@ -17,6 +17,8 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from tests.fixtures.scraper_validator import ScraperValidator
+from src.scrapers.parser.yaml_parser import ScraperConfigParser
+from src.scrapers.executor.workflow_executor import WorkflowExecutor
 
 
 class ScraperIntegrationTester:
@@ -34,19 +36,15 @@ class ScraperIntegrationTester:
 
     def get_available_scrapers(self) -> List[str]:
         """Get list of available scraper names."""
-        scrapers_dir = self.project_root / "src" / "scrapers"
+        configs_dir = self.project_root / "src" / "scrapers" / "configs"
         scrapers = []
 
-        if not scrapers_dir.exists():
+        if not configs_dir.exists():
             return scrapers
 
-        for item in scrapers_dir.iterdir():
-            if item.is_dir() and not item.name.startswith('.') and item.name != 'archive':
-                # Check if it has main.py
-                main_py = item / "main.py"
-
-                if main_py.exists():
-                    scrapers.append(item.name)
+        for item in configs_dir.glob("*.yaml"):
+            scraper_name = item.stem  # Remove .yaml extension
+            scrapers.append(scraper_name)
 
         return sorted(scrapers)
 
@@ -72,130 +70,52 @@ class ScraperIntegrationTester:
             "output": ""
         }
 
-        scraper_dir = self.project_root / "src" / "scrapers" / scraper_name
-        if not scraper_dir.exists():
-            results["errors"].append(f"Scraper directory not found: {scraper_dir}")
-            return results
-
-        # Clean up any existing dataset from previous runs
-        dataset_dir = scraper_dir / "data" / "datasets" / "default"
-        if dataset_dir.exists():
-            import shutil
-            try:
-                shutil.rmtree(dataset_dir)
-            except Exception as e:
-                print(f"DEBUG: Failed to clean dataset directory: {e}")
-
-        # Create temporary input file (for compatibility, though not used in direct execution)
-        input_data = {"skus": skus}
-
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-            json.dump(input_data, f)
-            input_file = f.name
+        start_time = time.time()
 
         try:
-            # Set environment variables
-            env = os.environ.copy()
-            env["PYTHONPATH"] = str(self.project_root) + os.pathsep + str(scraper_dir)
-            # Set HEADLESS environment variable to control browser mode
-            env["HEADLESS"] = "False" if not headless else "True"
-            # Disable cookie loading for testing to ensure fresh sessions
-            env["DISABLE_COOKIE_LOADING"] = "true"
+            # Load YAML config
+            config_path = self.project_root / "src" / "scrapers" / "configs" / f"{scraper_name}.yaml"
+            parser = ScraperConfigParser()
+            config = parser.load_from_file(config_path)
 
-            # Update current environment with these vars
-            os.environ.update(env)
-
-            # Change to scraper directory
-            original_cwd = os.getcwd()
-            os.chdir(str(scraper_dir))
-
-            # Import and run the scraper directly
-            import importlib.util
-            import asyncio
-
-            main_py_path = scraper_dir / "main.py"
-            if not main_py_path.exists():
-                results["errors"].append(f"main.py not found: {main_py_path}")
-                return results
-
-            # Load the module dynamically
-            spec = importlib.util.spec_from_file_location("main", str(main_py_path))
-            if spec is None or spec.loader is None:
-                results["errors"].append(f"Failed to load module from {main_py_path}")
-                return results
-
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
-
-            # Run the async main() function
-            start_time = time.time()
-            try:
-                # Handle asyncio event loop conflicts with pytest
+            products = []
+            for sku in skus:
                 try:
-                    # Check if there's already a running event loop (e.g., from pytest)
-                    asyncio.get_running_loop()
-                    # If we get here, there's a running loop, so we need to run in a separate thread
-                    import concurrent.futures
-                    with concurrent.futures.ThreadPoolExecutor() as executor:
-                        future = executor.submit(asyncio.run, module.main())
-                        future.result()  # Wait for completion
-                except RuntimeError:
-                    # No running loop, safe to use asyncio.run()
-                    asyncio.run(module.main())
-                
-                results["execution_time"] = time.time() - start_time
-                results["success"] = True
-                results["output"] = "Scraper executed successfully"
-            except Exception as e:
-                results["errors"].append(f"Scraper execution failed: {e}")
-                results["output"] = f"Error: {e}"
-                return results
-            finally:
-                # Restore original working directory
-                os.chdir(original_cwd)
+                    # Clone config and replace {sku} placeholders
+                    import copy
+                    sku_config = copy.deepcopy(config)
+                    for step in sku_config.workflows:
+                        if step.action == "navigate" and "url" in step.params:
+                            step.params["url"] = step.params["url"].replace("{sku}", sku)
 
-            # Read results from local storage dataset
-            try:
-                # Local storage stores data in data/datasets/default/
-                dataset_dir = scraper_dir / "data" / "datasets" / "default"
-                
-                if dataset_dir.exists():
-                    products = []
-                    # Read all JSON files in the dataset directory, excluding metadata
-                    for json_file in dataset_dir.glob("*.json"):
-                        if json_file.name.startswith('__'):
-                            continue  # Skip metadata files
-                        with open(json_file, 'r', encoding='utf-8') as f:
-                            try:
-                                data = json.load(f)
-                                if isinstance(data, list):
-                                    products.extend(data)
-                                else:
-                                    products.append(data)
-                            except json.JSONDecodeError:
-                                continue
-                    
-                    if products:
-                        results["products"] = products
+                    # Run workflow
+                    executor = WorkflowExecutor(sku_config, headless=headless)
+                    workflow_result = executor.execute_workflow()
+
+                    if workflow_result["success"]:
+                        # Extract product data
+                        product_data = workflow_result["results"]
+                        product_data["sku"] = sku
+                        products.append(product_data)
                     else:
-                        results["errors"].append("No products found in dataset")
-                        results["success"] = False
-                else:
-                    results["errors"].append("Dataset directory not found")
-                    results["success"] = False
+                        results["errors"].append(f"Failed to scrape SKU {sku}")
 
-            except Exception as e:
-                results["errors"].append(f"Failed to read dataset: {e}")
+                except Exception as e:
+                    results["errors"].append(f"Error scraping SKU {sku}: {e}")
+
+            results["execution_time"] = time.time() - start_time
+
+            if products:
+                results["products"] = products
+                results["success"] = True
+                results["output"] = f"Successfully scraped {len(products)} products"
+            else:
                 results["success"] = False
+                results["output"] = "No products scraped"
 
         except Exception as e:
-            results["errors"].append(f"Execution setup failed: {e}")
-        finally:
-            # Clean up temp file
-            try:
-                os.unlink(input_file)
-            except:
-                pass
+            results["errors"].append(f"Setup failed: {e}")
+            results["execution_time"] = time.time() - start_time
 
         return results
 

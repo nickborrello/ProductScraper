@@ -48,14 +48,13 @@ def list_available_scrapers():
 
 def validate_scraper_structure(scraper_name: str):
     """Validate that a scraper has the correct structure."""
-    scraper_dir = PROJECT_ROOT / "src" / "scrapers" / scraper_name
+    config_path = PROJECT_ROOT / "src" / "scrapers" / "configs" / f"{scraper_name}.yaml"
 
-    print(f"Validating structure for: {scraper_name}")
+    print(f"Validating config for: {scraper_name}")
     print("=" * 50)
 
     checks = {
-        "Scraper directory exists": scraper_dir.exists(),
-        "YAML config exists": (scraper_dir / f"{scraper_name}.yaml").exists(),
+        "Scraper YAML config exists": config_path.exists(),
     }
 
     all_passed = True
@@ -67,9 +66,9 @@ def validate_scraper_structure(scraper_name: str):
 
     print()
     if all_passed:
-        print("[PASS] Scraper structure is valid!")
+        print("[PASS] Scraper config is valid!")
     else:
-        print("[FAIL] Scraper structure has issues. Check the failed items above.")
+        print("[FAIL] Scraper config has issues. Check the failed items above.")
 
     return all_passed
 
