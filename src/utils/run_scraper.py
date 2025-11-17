@@ -328,7 +328,7 @@ def run_scraper_tests(run_integration=False, log_callback=None, progress_callbac
         # If it's already a callable (like emit method or function), use it directly
         log = log_callback
 
-    test_file = os.path.join(PROJECT_ROOT, "tests", "unit", "test_scrapers.py")
+    test_file = os.path.join(PROJECT_ROOT, "tests", "integration", "test_scraper_integration.py")
 
     if not os.path.exists(test_file):
         log("❌ Test file not found")
