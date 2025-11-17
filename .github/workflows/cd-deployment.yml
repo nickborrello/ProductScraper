@@ -39,13 +39,17 @@ jobs:
         curl -LsSf https://astral.sh/uv/install.sh | sh
         echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
+    - name: Create virtual environment
+      run: |
+        uv venv
+
     - name: Install dependencies
       run: |
         uv pip install -e .
 
     - name: Run pre-deployment validation
       run: |
-        python platform_test_scrapers.py --all
+        uv run python tests/platform_test_scrapers.py --all
       env:
         PYTHONPATH: ${{ github.workspace }}
 
@@ -67,6 +71,10 @@ jobs:
         curl -LsSf https://astral.sh/uv/install.sh | sh
         echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
+    - name: Create virtual environment
+      run: |
+        uv venv
+
     - name: Install dependencies
       run: |
         uv pip install -e .
@@ -79,7 +87,7 @@ jobs:
 
     - name: Validate deployment
       run: |
-        python platform_test_scrapers.py --all --local
+        uv run python tests/platform_test_scrapers.py --all --local
       env:
         PYTHONPATH: ${{ github.workspace }}
 

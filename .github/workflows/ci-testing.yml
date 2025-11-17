@@ -59,17 +59,17 @@ jobs:
     - name: Run linting
       run: |
         uv pip install flake8 black isort
-        flake8 src/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
-        black --check src/ tests/
-        isort --check-only src/ tests/
+        uv run flake8 src/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        uv run black --check src/ tests/
+        uv run isort --check-only src/ tests/
 
     - name: Run unit tests
       run: |
-        python -m pytest tests/unit/ -v --cov=src --cov-report=xml
+        uv run python -m pytest tests/unit/ -v --cov=src --cov-report=xml
 
     - name: Run integration tests (local mode)
       run: |
-        python platform_test_scrapers.py --all --verbose
+        uv run python tests/platform_test_scrapers.py --all --verbose
       env:
         PYTHONPATH: ${{ github.workspace }}
 
@@ -106,14 +106,14 @@ jobs:
 
     - name: Validate scraper structure
       run: |
-        python platform_test_scrapers.py --validate amazon
-        python platform_test_scrapers.py --validate bradley
-        python platform_test_scrapers.py --validate central_pet
-        python platform_test_scrapers.py --validate coastal
-        python platform_test_scrapers.py --validate mazuri
-        python platform_test_scrapers.py --validate orgill
-        python platform_test_scrapers.py --validate petfoodex
-        python platform_test_scrapers.py --validate phillips
+        uv run python tests/platform_test_scrapers.py --validate amazon
+        uv run python tests/platform_test_scrapers.py --validate bradley
+        uv run python tests/platform_test_scrapers.py --validate central_pet
+        uv run python tests/platform_test_scrapers.py --validate coastal
+        uv run python tests/platform_test_scrapers.py --validate mazuri
+        uv run python tests/platform_test_scrapers.py --validate orgill
+        uv run python tests/platform_test_scrapers.py --validate petfoodex
+        uv run python tests/platform_test_scrapers.py --validate phillips
 
   security-scan:
     runs-on: ubuntu-latest
@@ -134,12 +134,12 @@ jobs:
     - name: Run safety check
       run: |
         uv pip install safety
-        safety check
+        uv run safety check
 
     - name: Run bandit security scan
       run: |
         uv pip install bandit
-        bandit -r src/ -f json -o bandit-report.json || true
+        uv run bandit -r src/ -f json -o bandit-report.json || true
 
     - name: Upload security scan results
       uses: actions/upload-artifact@v4

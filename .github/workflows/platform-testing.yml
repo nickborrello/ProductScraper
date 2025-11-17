@@ -66,7 +66,7 @@ jobs:
     - name: Run local tests
       if: steps.scrapers.outputs.scrapers == 'all'
       run: |
-        python platform_test_scrapers.py --all --local --verbose
+        uv run python tests/platform_test_scrapers.py --all --local --verbose
       env:
         PYTHONPATH: ${{ github.workspace }}
 
@@ -75,7 +75,7 @@ jobs:
       run: |
         for scraper in $(echo "${{ github.event.inputs.scrapers }}" | tr ',' '\n'); do
           echo "Testing scraper: $scraper"
-          python platform_test_scrapers.py --scraper "$scraper" --local --verbose
+          uv run python tests/platform_test_scrapers.py --scraper "$scraper" --local --verbose
         done
       env:
         PYTHONPATH: ${{ github.workspace }}
@@ -134,7 +134,7 @@ jobs:
 
     - name: Run data quality analysis
       run: |
-        python -c "
+        uv run python -c "
         from tests.fixtures.scraper_validator import ScraperValidator
         import json
 
