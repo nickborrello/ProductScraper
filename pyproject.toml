@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ProductScraper"
+version = "0.1.0"
+description = "A project to scrape product information."
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+    "beautifulsoup4>=4.10.0",
+    "httpx>=0.25.0",
+    "openpyxl>=3.1.0",
+    "pandas>=2.3.3",
+    "Pillow>=12.0.0",
+    "psutil>=5.9.0",
+    "PyQt6>=6.10.0",
+    "pyqt6-sip>=13.10.2",
+    "PyQt6-WebEngine>=6.10.0",
+    "pytest>=9.0.1",
+    "pytest-cov>=4.1.0",
+    "python-dotenv>=1.2.1",
+    "rapidfuzz>=3.14.3",
+    "requests>=2.32.5",
+    "selenium>=4.38.0",
+    "tenacity>=8.2.0",
+    "undetected-chromedriver>=3.5.5",
+    "fake-useragent>=1.4.0",
+    "pydantic>=2.0.0",
+    "pyyaml>=6.0.0",
+    "ollama"
+]
+
+[project.optional-dependencies]
+dev = [
+    "flask==3.1.2",
+    "pytest-asyncio"
+]
+
+[project.scripts]
+productscraper = "src.main:main"
+
+[tool.pytest.ini_options]
+norecursedirs = ["tests/unit/test_scrapers.py"]
