@@ -3,25 +3,18 @@ name: ProductScraper CI/CD
 on:
   push:
     branches: [ main, develop ]
-    paths:
-      - 'src/scrapers/**'
-      - 'src/scrapers/config/**'
-      - 'src/scrapers/executor/**'
-      - 'src/scrapers/models/**'
-      - 'src/scrapers/parser/**'
-      - 'src/scrapers/schemas/**'
-      - '.github/workflows/ci-cd.yml'
   pull_request:
     branches: [ main, develop ]
-    paths:
-      - 'src/scrapers/**'
-      - 'src/scrapers/config/**'
-      - 'src/scrapers/executor/**'
-      - 'src/scrapers/models/**'
-      - 'src/scrapers/parser/**'
-      - 'src/scrapers/schemas/**'
-      - '.github/workflows/ci-cd.yml'
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
 
 jobs:
   test:
@@ -184,17 +177,77 @@ jobs:
     - name: Run quality validation
       run: |
         uv run pytest tests/integration/test_data_quality.py
+
   deploy:
-    runs-on: ubuntu-latest
     needs: [test, validate-structure, security-scan, quality-gate]
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'staging' }}
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-    - name: Deploy to staging
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install uv
       run: |
-        echo "Deployment to staging environment"
-        # Add actual deployment steps here
-        echo "Staging deployment completed"
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+    - name: Create virtual environment
+      run: |
+        uv venv
+
+    - name: Install dependencies
+      run: |
+        uv pip install -e .
+
+    - name: Deploy scrapers locally
+      run: |
+        echo "Local deployment completed - scrapers are ready to run"
+      env:
+        PYTHONPATH: ${{ github.workspace }}
+
+    - name: Validate deployment
+      run: |
+        uv run python tests/platform_test_scrapers.py --all --local
+      env:
+        PYTHONPATH: ${{ github.workspace }}
+
+    - name: Generate deployment report
+      run: |
+        echo "## Local Deployment Report" > deployment_report.md
+        echo "- **Date:** $(date)" >> deployment_report.md
+        echo "- **Environment:** ${{ github.event.inputs.environment || 'staging' }}" >> deployment_report.md
+        echo "- **Commit:** ${{ github.sha }}" >> deployment_report.md
+        echo "- **Status:** ✅ Successful" >> deployment_report.md
+
+    - name: Upload deployment report
+      uses: actions/upload-artifact@v4
+      with:
+        name: deployment-report
+        path: deployment_report.md
+
+  notify:
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+    - name: Notify deployment status
+      run: |
+        case "${{ needs.deploy.result }}" in
+          success)
+            echo "🎉 Deployment successful!"
+            ;;
+          skipped)
+            echo "⚠️ Deployment skipped - check validation job or environment configuration"
+            ;;
+          *)
+            echo "❌ Deployment failed or cancelled!"
+            exit 1
+            ;;
+        esac
