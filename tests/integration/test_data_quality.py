@@ -19,7 +19,16 @@ def test_data_quality_gate():
         if "test_skus" in data:
             for sku in data["test_skus"][:5]:  # Test first 5 SKUs per scraper
                 # Mock record with SKU
-                record = {"SKU": sku, "Name": f"Test {scraper} product"}
+                record = {
+                    "SKU": sku,
+                    "Name": f"Test {scraper} product",
+                    "Price": "10.99",
+                    "Images": "http://example.com/image.jpg",
+                    "Weight": "1 lb",
+                    "Product_Field_16": "Test Brand",
+                    "Product_Field_24": "Test Category",
+                    "Product_Field_25": "Test Product Type",
+                }
                 score, _ = scorer.score_record(record)
                 total_records += 1
                 if is_product_high_quality(record):

@@ -54,8 +54,9 @@ def run_full_classification_test():
 
     # 2. Run automatic batch classification.
     # We'll use 'local_llm' which requires Ollama to be running.
-    # You can change this to 'llm' (requires OpenRouter API key) or 'mock'.
-    classification_method = "llm"
+    # Default to 'mock' to avoid using API credits during casual testing.
+    # You can change this to 'llm' (requires OpenRouter API key) or 'local_llm'.
+    classification_method = "mock"
     print(
         f"🤖 Step 2: Running automatic classification using the '{classification_method}' method..."
     )
