@@ -156,10 +156,19 @@ class AntiDetectionManager:
         Returns:
             True if action should proceed, False if blocked
         """
+        import os
+        is_ci = os.getenv('CI') == 'true'
+
         try:
+            logger.debug(f"Pre-action hook for '{action}' (CI: {is_ci})")
+
             # Apply rate limiting
             if self.rate_limiter:
+                start_time = time.time()
                 self.rate_limiter.apply_delay()
+                delay_duration = time.time() - start_time
+                if delay_duration > 0.1:  # Only log significant delays
+                    logger.debug(f"Rate limiter applied {delay_duration:.2f}s delay")
 
             # Simulate human behavior before action
             if self.human_simulator:
@@ -182,10 +191,11 @@ class AntiDetectionManager:
                 self.session_manager.check_session_rotation(self)
 
             self.request_count += 1
+            logger.debug(f"Pre-action hook completed for '{action}'")
             return True
 
         except Exception as e:
-            logger.error(f"Pre-action hook failed: {e}")
+            logger.error(f"Pre-action hook failed for '{action}': {e}")
             return False
 
     def post_action_hook(
@@ -314,11 +324,19 @@ class RateLimiter:
 
     def apply_delay(self) -> None:
         """Apply appropriate delay before next request."""
+        import os
+        is_ci = os.getenv('CI') == 'true'
+
         current_time = time.time()
         time_since_last = current_time - self.last_request_time
 
-        min_delay = self.config.rate_limit_min_delay
-        max_delay = self.config.rate_limit_max_delay
+        # Use reduced delays in CI environment to prevent timeouts
+        if is_ci:
+            min_delay = min(self.config.rate_limit_min_delay, 0.5)  # Cap at 0.5s
+            max_delay = min(self.config.rate_limit_max_delay, 2.0)  # Cap at 2.0s
+        else:
+            min_delay = self.config.rate_limit_min_delay
+            max_delay = self.config.rate_limit_max_delay
 
         # Increase delay based on consecutive failures
         if self.consecutive_failures > 0:
@@ -328,8 +346,10 @@ class RateLimiter:
 
         if time_since_last < required_delay:
             delay = required_delay - time_since_last
-            logger.debug(f"Applying rate limit delay: {delay:.2f}s")
+            logger.debug(f"Rate limiter - CI: {is_ci}, time_since_last: {time_since_last:.2f}s, required_delay: {required_delay:.2f}s, applying delay: {delay:.2f}s, failures: {self.consecutive_failures}")
             time.sleep(delay)
+        else:
+            logger.debug(f"Rate limiter - CI: {is_ci}, no delay needed (time_since_last: {time_since_last:.2f}s >= required_delay: {required_delay:.2f}s)")
 
         self.last_request_time = time.time()
 

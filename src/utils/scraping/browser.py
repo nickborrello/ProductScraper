@@ -64,14 +64,26 @@ class ScraperBrowser:
         os.environ["LIBGL_ALWAYS_SOFTWARE"] = "1"  # Force software rendering
 
         # Initialize browser
-        self.driver = webdriver.Chrome(service=service, options=options)
+        start_time = time.time()
+
+        try:
+            self.driver = webdriver.Chrome(service=service, options=options)
+            init_time = time.time() - start_time
+        except Exception as e:
+            init_time = time.time() - start_time
+            print(f"[WEB] [{site_name}] Browser initialization failed after {init_time:.2f}s: {e}")
+            raise
 
         # Ensure consistent window size for responsive design consistency
-        self.driver.set_window_size(1920, 1080)
-        self.driver.maximize_window()
+        try:
+            self.driver.set_window_size(1920, 1080)
+            self.driver.maximize_window()
+        except Exception as e:
+            print(f"[WEB] [{site_name}] Failed to set window size: {e}")
 
+        is_ci = os.getenv('CI') == 'true'
         print(
-            f"[WEB] [{site_name}] Browser initialized (headless={headless}, devtools={enable_devtools}, size=1920x1080)"
+            f"[WEB] [{site_name}] Browser initialized in {init_time:.2f}s (headless={headless}, devtools={enable_devtools}, CI={is_ci}, size=1920x1080)"
         )
 
     def __getattr__(self, name):
