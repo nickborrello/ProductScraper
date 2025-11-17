@@ -398,7 +398,10 @@ class TestScraperIntegration:
     @pytest.mark.integration
     def test_all_scrapers_integration(self, tester):
         """Test all scrapers (full integration test)."""
-        results = tester.test_all_scrapers(skip_failing=True, skip_login_required=True)
+        # For CI/CD, skip login-requiring scrapers; locally, test all
+        import os
+        skip_login = os.getenv('CI') == 'true'  # Skip in CI environment
+        results = tester.test_all_scrapers(skip_failing=True, skip_login_required=skip_login)
 
         # Should have results for all scrapers
         assert len(results["scraper_results"]) > 0
