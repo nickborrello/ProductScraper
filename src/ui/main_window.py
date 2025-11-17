@@ -30,10 +30,11 @@ from PyQt6.QtWidgets import (
 )
 
 import os
+from pathlib import Path
 
 # Conditional import for core logic to ensure GUI is runnable even if main fails.
 try:
-    from src.scrapers.main import (
+    from src.scrapers_archive.main import (
         run_scraping,
         run_db_refresh,
         run_shopsite_xml_download,
@@ -608,6 +609,24 @@ class MainWindow(QMainWindow):
         self.run_tests_btn = tools_card.add_button(
             "Run Tests", self.start_scraper_tests, "Run automated scraper tests", "🧪"
         )
+        self.add_scraper_btn = tools_card.add_button(
+            "Add New Scraper",
+            self.add_new_scraper,
+            "Create a new scraper configuration",
+            "➕",
+        )
+        self.manage_scrapers_btn = tools_card.add_button(
+            "Manage Scrapers",
+            self.manage_scrapers,
+            "View and edit existing scraper configurations",
+            "⚙️",
+        )
+        self.scraper_builder_btn = tools_card.add_button(
+            "Scraper Builder",
+            self.open_scraper_builder,
+            "Build new scrapers with AI-assisted selector generation",
+            "🤖",
+        )
         layout.addWidget(tools_card)
 
         # Store buttons for enabling/disabling
@@ -620,6 +639,9 @@ class MainWindow(QMainWindow):
             self.db_stats_btn,
             self.classify_btn,
             self.run_tests_btn,
+            self.add_scraper_btn,
+            self.manage_scrapers_btn,
+            self.scraper_builder_btn,
         ]
 
         # Cancel button is handled separately - enabled when worker is running
@@ -1126,7 +1148,7 @@ class MainWindow(QMainWindow):
     def get_available_sites(self):
         """Get list of available scraping sites"""
         try:
-            from src.scrapers.master import discover_scrapers
+            from src.scrapers_archive.master import discover_scrapers
 
             scraping_options, _ = discover_scrapers()
             return list(scraping_options.keys())
@@ -1261,6 +1283,36 @@ class MainWindow(QMainWindow):
         self.last_operation = "Scraper Tests"
         self.log_message("Starting scraper integration tests (testing all scrapers with known working products)...", "INFO")
         self._run_worker(run_scraper_integration_tests)
+
+    def add_new_scraper(self):
+        """Open dialog to add a new scraper configuration"""
+        try:
+            from src.ui.scraper_management_dialog import AddScraperDialog
+            dialog = AddScraperDialog(self)
+            dialog.exec()
+        except Exception as e:
+            self.log_message(f"Failed to open add scraper dialog: {e}", "ERROR")
+            QMessageBox.critical(self, "Error", f"Failed to open add scraper dialog:\n{e}")
+
+    def manage_scrapers(self):
+        """Open dialog to manage existing scraper configurations"""
+        try:
+            from src.ui.scraper_management_dialog import ScraperManagementDialog
+            dialog = ScraperManagementDialog(self)
+            dialog.exec()
+        except Exception as e:
+            self.log_message(f"Failed to open scraper management dialog: {e}", "ERROR")
+            QMessageBox.critical(self, "Error", f"Failed to open scraper management dialog:\n{e}")
+
+    def open_scraper_builder(self):
+        """Open the scraper builder dialog"""
+        try:
+            from src.ui.scraper_builder_dialog import ScraperBuilderDialog
+            dialog = ScraperBuilderDialog(self)
+            dialog.exec()
+        except Exception as e:
+            self.log_message(f"Failed to open scraper builder dialog: {e}", "ERROR")
+            QMessageBox.critical(self, "Error", f"Failed to open scraper builder dialog:\n{e}")
 
     def log_message(self, message, level="INFO"):
         """Add a message to the log viewer"""

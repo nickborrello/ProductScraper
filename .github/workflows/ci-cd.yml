@@ -3,8 +3,24 @@ name: ProductScraper CI/CD
 on:
   push:
     branches: [ main, develop ]
+    paths:
+      - 'src/scrapers/**'
+      - 'src/scrapers/config/**'
+      - 'src/scrapers/executor/**'
+      - 'src/scrapers/models/**'
+      - 'src/scrapers/parser/**'
+      - 'src/scrapers/schemas/**'
+      - '.github/workflows/ci-cd.yml'
   pull_request:
     branches: [ main, develop ]
+    paths:
+      - 'src/scrapers/**'
+      - 'src/scrapers/config/**'
+      - 'src/scrapers/executor/**'
+      - 'src/scrapers/models/**'
+      - 'src/scrapers/parser/**'
+      - 'src/scrapers/schemas/**'
+      - '.github/workflows/ci-cd.yml'
   workflow_dispatch:
 
 jobs:

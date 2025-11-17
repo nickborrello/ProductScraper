@@ -3,8 +3,24 @@ name: CI - Testing Pipeline
 on:
   push:
     branches: [ main, develop ]
+    paths:
+      - 'src/scrapers/**'
+      - 'src/scrapers/config/**'
+      - 'src/scrapers/executor/**'
+      - 'src/scrapers/models/**'
+      - 'src/scrapers/parser/**'
+      - 'src/scrapers/schemas/**'
+      - '.github/workflows/ci-testing.yml'
   pull_request:
     branches: [ main, develop ]
+    paths:
+      - 'src/scrapers/**'
+      - 'src/scrapers/config/**'
+      - 'src/scrapers/executor/**'
+      - 'src/scrapers/models/**'
+      - 'src/scrapers/parser/**'
+      - 'src/scrapers/schemas/**'
+      - '.github/workflows/ci-testing.yml'
   workflow_dispatch:
 
 jobs:

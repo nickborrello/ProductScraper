@@ -1,6 +1,16 @@
 name: Platform Testing
 
 on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'src/scrapers/**'
+      - 'src/scrapers/config/**'
+      - 'src/scrapers/executor/**'
+      - 'src/scrapers/models/**'
+      - 'src/scrapers/parser/**'
+      - 'src/scrapers/schemas/**'
+      - '.github/workflows/platform-testing.yml'
   schedule:
     # Run daily at 2 AM UTC
     - cron: '0 2 * * *'
