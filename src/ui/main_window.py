@@ -1319,7 +1319,7 @@ class MainWindow(QMainWindow):
         """Start scraper integration test process - tests all scrapers with known working products"""
         self.last_operation = "Scraper Tests"
         self.log_message("Starting scraper integration tests (testing all scrapers with known working products)...", "INFO")
-        self._run_worker(run_scraper_integration_tests)
+        self._run_worker(run_scraper_tests, run_integration=True)
 
     def add_new_scraper(self):
         """Open dialog to add a new scraper configuration"""
