@@ -11,7 +11,9 @@ import warnings
 from typing import List, Optional
 
 # Ensure project root is in path
-project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+project_root = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
@@ -22,7 +24,9 @@ from src.core.database.refresh import refresh_database_from_xml
 import os
 
 
-def run_scraping(file_path: str, selected_sites: Optional[List[str]] = None, **kwargs) -> None:
+def run_scraping(
+    file_path: str, selected_sites: Optional[List[str]] = None, **kwargs
+) -> None:
     """
     Run scraping using the new modular scraper system.
 
@@ -39,8 +43,16 @@ def run_scraping(file_path: str, selected_sites: Optional[List[str]] = None, **k
 
     if os.path.exists(config_dir):
         for filename in os.listdir(config_dir):
-            if filename.endswith(('.yaml', '.yml')) and filename != 'sample_config.yaml':
-                site_name = filename.replace('.yaml', '').replace('.yml', '').replace('_', ' ').title()
+            if (
+                filename.endswith((".yaml", ".yml"))
+                and filename != "sample_config.yaml"
+            ):
+                site_name = (
+                    filename.replace(".yaml", "")
+                    .replace(".yml", "")
+                    .replace("_", " ")
+                    .title()
+                )
                 available_sites.append(site_name)
 
     if not available_sites:
@@ -51,7 +63,12 @@ def run_scraping(file_path: str, selected_sites: Optional[List[str]] = None, **k
 
     # Filter to selected sites if specified
     if selected_sites:
-        available_sites = [site for site in available_sites if site.lower().replace(' ', '') in [s.lower().replace(' ', '') for s in selected_sites]]
+        available_sites = [
+            site
+            for site in available_sites
+            if site.lower().replace(" ", "")
+            in [s.lower().replace(" ", "") for s in selected_sites]
+        ]
         if not available_sites:
             print(f"❌ None of the selected sites are available: {selected_sites}")
             return
@@ -78,8 +95,16 @@ def get_available_scrapers() -> List[str]:
 
     if os.path.exists(config_dir):
         for filename in os.listdir(config_dir):
-            if filename.endswith(('.yaml', '.yml')) and filename != 'sample_config.yaml':
-                site_name = filename.replace('.yaml', '').replace('.yml', '').replace('_', ' ').title()
+            if (
+                filename.endswith((".yaml", ".yml"))
+                and filename != "sample_config.yaml"
+            ):
+                site_name = (
+                    filename.replace(".yaml", "")
+                    .replace(".yml", "")
+                    .replace("_", " ")
+                    .title()
+                )
                 scrapers.append(site_name)
 
     return scrapers
@@ -91,7 +116,7 @@ def run_scraping_legacy(*args, **kwargs):
     warnings.warn(
         "run_scraping_legacy is deprecated. Use run_scraping from the new modular system.",
         DeprecationWarning,
-        stacklevel=2
+        stacklevel=2,
     )
     return run_scraping(*args, **kwargs)
 
@@ -108,8 +133,12 @@ def run_db_refresh(progress_callback=None, log_callback=None) -> tuple[bool, str
         Tuple of (success, message)
     """
     # Find the XML file path
-    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    xml_path = os.path.join(project_root, "data", "databases", "shopsite_products_cleaned.xml")
+    project_root = os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    )
+    xml_path = os.path.join(
+        project_root, "data", "databases", "shopsite_products_cleaned.xml"
+    )
 
     if progress_callback:
         try:

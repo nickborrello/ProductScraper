@@ -56,6 +56,7 @@ def process_image(content, img_name):
     new_img.paste(img, (paste_x, paste_y))
     new_img.save(img_name, "JPEG", quality=95)
 
+
 def download_image(img_url, subdir, file_name, idx, results_folder=None):
     if results_folder:
         # Use session-specific results folder

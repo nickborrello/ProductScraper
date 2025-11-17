@@ -13,19 +13,22 @@ from typing import TYPE_CHECKING
 # Check if GUI is available (for headless CI environments)
 GUI_AVAILABLE = True
 # Check for CI/test environments
-is_ci = (os.environ.get('CI') == 'true' or
-          os.environ.get('GITHUB_ACTIONS') == 'true' or
-          'pytest' in os.environ.get('_', ''))
+is_ci = (
+    os.environ.get("CI") == "true"
+    or os.environ.get("GITHUB_ACTIONS") == "true"
+    or "pytest" in os.environ.get("_", "")
+)
 
 # Check if we're running under pytest by inspecting the call stack
 import inspect
-is_pytest = any('pytest' in str(frame) for frame in inspect.stack())
+
+is_pytest = any("pytest" in str(frame) for frame in inspect.stack())
 if is_pytest:
     is_ci = True
 
 # On Unix-like systems, also check for missing DISPLAY
-if os.name != 'nt':  # Not Windows
-    is_ci = is_ci or os.environ.get('DISPLAY', '') == ''
+if os.name != "nt":  # Not Windows
+    is_ci = is_ci or os.environ.get("DISPLAY", "") == ""
 
 if TYPE_CHECKING:
     # Type checking imports for PyQt6
@@ -94,17 +97,21 @@ def get_facet_options_from_db(force_refresh=False):
     try:
         # Load taxonomy from JSON via taxonomy manager
         from .taxonomy_manager import get_product_taxonomy
+
         category_product_types = get_product_taxonomy()
 
         # Load product pages from JSON via manager
         from .manager import get_product_pages
+
         product_on_pages_options = get_product_pages()
 
         return category_product_types, product_on_pages_options
 
     except (ImportError, ModuleNotFoundError) as e:
         # Handle relative import failures when run directly
-        print(f"⚠️ Relative import failed (running standalone), using fallback defaults: {e}")
+        print(
+            f"⚠️ Relative import failed (running standalone), using fallback defaults: {e}"
+        )
         # Fallback defaults if JSON files don't exist or are corrupted
         default_categories = {
             "Dog Food": ["Dry Dog Food", "Wet Dog Food", "Raw Dog Food", "Dog Treats"],
@@ -274,6 +281,7 @@ def assign_classification_single(product_info):
 
 
 if GUI_AVAILABLE:
+
     class MultiSelectWidget(QWidget):  # type: ignore
         """PyQt6 widget for multi-select functionality with search and checkboxes."""
 
@@ -313,7 +321,9 @@ if GUI_AVAILABLE:
 
             self.available_scroll = QScrollArea()
             self.available_scroll.setWidgetResizable(True)
-            self.available_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+            self.available_scroll.setHorizontalScrollBarPolicy(
+                Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+            )
             self.available_scroll.setMinimumHeight(200)
             self.available_scroll.setMaximumHeight(300)
 
@@ -330,7 +340,9 @@ if GUI_AVAILABLE:
 
             self.selected_scroll = QScrollArea()
             self.selected_scroll.setWidgetResizable(True)
-            self.selected_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+            self.selected_scroll.setHorizontalScrollBarPolicy(
+                Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+            )
             self.selected_scroll.setMinimumHeight(200)
             self.selected_scroll.setMaximumHeight(300)
 
@@ -400,7 +412,6 @@ if GUI_AVAILABLE:
             # Keep only selected items that are still in the new options
             self.selected_items = self.selected_items.intersection(set(new_options))
             self.update_display()
-
 
     from src.ui.styling import STYLESHEET
 
@@ -944,7 +955,9 @@ def edit_classification_in_batch(products_list):
     In headless environments, returns products unchanged.
     """
     if not GUI_AVAILABLE:
-        print("⚠️ GUI not available (headless environment), returning products unchanged")
+        print(
+            "⚠️ GUI not available (headless environment), returning products unchanged"
+        )
         return products_list
 
     # Import facet options only

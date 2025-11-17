@@ -19,21 +19,21 @@ class TestValidationPerformance:
         """Generate large dataset for performance testing."""
         records = []
         base_record = {
-            'SKU': 'PERF001',
-            'Name': 'Performance Test Product',
-            'Price': '29.99',
-            'Images': 'https://example.com/img1.jpg,https://example.com/img2.jpg',
-            'Weight': '5 lb',
-            'Product_Field_16': 'Test Brand',
-            'Product_Field_24': 'Test Category',
-            'Product_Field_25': 'Test Type',
-            'Product_Field_32': 'SKU1|SKU2'
+            "SKU": "PERF001",
+            "Name": "Performance Test Product",
+            "Price": "29.99",
+            "Images": "https://example.com/img1.jpg,https://example.com/img2.jpg",
+            "Weight": "5 lb",
+            "Product_Field_16": "Test Brand",
+            "Product_Field_24": "Test Category",
+            "Product_Field_25": "Test Type",
+            "Product_Field_32": "SKU1|SKU2",
         }
 
         for i in range(5000):  # Large dataset
             record = base_record.copy()
-            record['SKU'] = f'PERF{i:04d}'
-            record['Name'] = f'Performance Test Product {i}'
+            record["SKU"] = f"PERF{i:04d}"
+            record["Name"] = f"Performance Test Product {i}"
             records.append(record)
 
         return records
@@ -59,17 +59,25 @@ class TestValidationPerformance:
         memory_delta = final_memory - initial_memory
 
         # Performance assertions
-        assert elapsed_time < 300.0, f"Processing 5000 records took {elapsed_time:.2f}s (>5 min)"
-        assert memory_delta < 500.0, f"Memory usage increased by {memory_delta:.2f}MB (>500MB)"
+        assert (
+            elapsed_time < 300.0
+        ), f"Processing 5000 records took {elapsed_time:.2f}s (>5 min)"
+        assert (
+            memory_delta < 500.0
+        ), f"Memory usage increased by {memory_delta:.2f}MB (>500MB)"
 
         # Quality assertions
         avg_score = sum(results) / len(results)
         high_quality_count = sum(1 for score in results if score >= 85.0)
 
         assert avg_score >= 85.0, f"Average quality score too low: {avg_score:.2f}"
-        assert high_quality_count == len(results), f"Only {high_quality_count}/{len(results)} records are high quality"
+        assert high_quality_count == len(
+            results
+        ), f"Only {high_quality_count}/{len(results)} records are high quality"
 
-        print(f"Performance results: {elapsed_time:.2f}s, {memory_delta:.2f}MB memory, avg score: {avg_score:.2f}")
+        print(
+            f"Performance results: {elapsed_time:.2f}s, {memory_delta:.2f}MB memory, avg score: {avg_score:.2f}"
+        )
 
     def test_memory_efficiency_under_load(self):
         """Test memory efficiency during sustained load."""
@@ -83,14 +91,14 @@ class TestValidationPerformance:
             batch_records = []
             for i in range(500):  # 500 records per batch
                 record = {
-                    'SKU': f'BATCH{batch}REC{i:03d}',
-                    'Name': f'Batch {batch} Record {i}',
-                    'Price': '19.99',
-                    'Images': 'https://example.com/img.jpg',
-                    'Weight': '2 lb',
-                    'Product_Field_16': 'Brand',
-                    'Product_Field_24': 'Category',
-                    'Product_Field_25': 'Type'
+                    "SKU": f"BATCH{batch}REC{i:03d}",
+                    "Name": f"Batch {batch} Record {i}",
+                    "Price": "19.99",
+                    "Images": "https://example.com/img.jpg",
+                    "Weight": "2 lb",
+                    "Product_Field_16": "Brand",
+                    "Product_Field_24": "Category",
+                    "Product_Field_25": "Type",
                 }
                 batch_records.append(record)
 
@@ -113,10 +121,14 @@ class TestValidationPerformance:
         memory_growth = final_memory - initial_memory
         peak_growth = max_memory - initial_memory
 
-        assert memory_growth < 50.0, f"Memory grew by {memory_growth:.2f}MB during test (>50MB)"
+        assert (
+            memory_growth < 50.0
+        ), f"Memory grew by {memory_growth:.2f}MB during test (>50MB)"
         assert peak_growth < 100.0, f"Peak memory growth {peak_growth:.2f}MB (>100MB)"
 
-        print(f"Memory stability: growth {memory_growth:.2f}MB, peak {peak_growth:.2f}MB")
+        print(
+            f"Memory stability: growth {memory_growth:.2f}MB, peak {peak_growth:.2f}MB"
+        )
 
     def test_concurrent_performance_simulation(self):
         """Simulate concurrent validation scenarios."""
@@ -148,14 +160,14 @@ class TestValidationPerformance:
             records = []
             for i in range(records_per_worker):
                 record = {
-                    'SKU': f'CONC{worker_id}{i:03d}',
-                    'Name': f'Concurrent Test Product {worker_id}-{i}',
-                    'Price': '24.99',
-                    'Images': 'https://example.com/img.jpg',
-                    'Weight': '3 lb',
-                    'Product_Field_16': 'Brand',
-                    'Product_Field_24': 'Category',
-                    'Product_Field_25': 'Type'
+                    "SKU": f"CONC{worker_id}{i:03d}",
+                    "Name": f"Concurrent Test Product {worker_id}-{i}",
+                    "Price": "24.99",
+                    "Images": "https://example.com/img.jpg",
+                    "Weight": "3 lb",
+                    "Product_Field_16": "Brand",
+                    "Product_Field_24": "Category",
+                    "Product_Field_25": "Type",
                 }
                 records.append(record)
 
@@ -174,10 +186,14 @@ class TestValidationPerformance:
         assert len(results) == num_workers, "Not all workers completed"
 
         total_scores = sum(len(scores) for scores in results.values())
-        assert total_scores == num_workers * records_per_worker, "Not all records were scored"
+        assert (
+            total_scores == num_workers * records_per_worker
+        ), "Not all records were scored"
 
         # Performance check
-        assert elapsed_time < 60.0, f"Concurrent processing took {elapsed_time:.2f}s (>1 min)"
+        assert (
+            elapsed_time < 60.0
+        ), f"Concurrent processing took {elapsed_time:.2f}s (>1 min)"
 
         print(f"Concurrent performance: {elapsed_time:.2f}s for {total_scores} records")
 
@@ -187,15 +203,15 @@ def test_individual_scoring_speed():
     """Test that individual record scoring is fast."""
     scorer = DataQualityScorer()
     record = {
-        'SKU': 'SPEED001',
-        'Name': 'Speed Test Product',
-        'Price': '39.99',
-        'Images': 'https://example.com/img1.jpg,https://example.com/img2.jpg',
-        'Weight': '10 lb',
-        'Product_Field_16': 'Speed Brand',
-        'Product_Field_24': 'Speed Category',
-        'Product_Field_25': 'Speed Type',
-        'Product_Field_32': 'SPEED002|SPEED003'
+        "SKU": "SPEED001",
+        "Name": "Speed Test Product",
+        "Price": "39.99",
+        "Images": "https://example.com/img1.jpg,https://example.com/img2.jpg",
+        "Weight": "10 lb",
+        "Product_Field_16": "Speed Brand",
+        "Product_Field_24": "Speed Category",
+        "Product_Field_25": "Speed Type",
+        "Product_Field_32": "SPEED002|SPEED003",
     }
 
     # Warm up
@@ -219,4 +235,6 @@ def test_individual_scoring_speed():
     assert max_time < 20.0, f"Max scoring time {max_time:.2f}ms (>20ms)"
     assert p95_time < 10.0, f"95th percentile {p95_time:.2f}ms (>10ms)"
 
-    print(f"Speed test: avg {avg_time:.2f}ms, max {max_time:.2f}ms, p95 {p95_time:.2f}ms")
+    print(
+        f"Speed test: avg {avg_time:.2f}ms, max {max_time:.2f}ms, p95 {p95_time:.2f}ms"
+    )

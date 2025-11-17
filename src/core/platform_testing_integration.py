@@ -14,7 +14,7 @@ from .platform_testing_client import (
     PlatformTestingError,
     PlatformTestingAuthError,
     PlatformTestingTimeoutError,
-    PlatformTestingJobError
+    PlatformTestingJobError,
 )
 from tests.fixtures.scraper_validator import ScraperValidator
 
@@ -27,7 +27,11 @@ class PlatformScraperIntegrationTester:
     Extended integration tester that supports both local and platform testing modes.
     """
 
-    def __init__(self, test_data_path: Optional[str] = None, mode: TestingMode = TestingMode.LOCAL):
+    def __init__(
+        self,
+        test_data_path: Optional[str] = None,
+        mode: TestingMode = TestingMode.LOCAL,
+    ):
         """
         Initialize the platform integration tester.
 
@@ -39,12 +43,13 @@ class PlatformScraperIntegrationTester:
         self.test_data_path = test_data_path or "tests/fixtures/scraper_test_data.json"
         self.mode = mode
 
-        with open(self.test_data_path, 'r') as f:
+        with open(self.test_data_path, "r") as f:
             self.test_config = f.read()
 
         # Initialize validator
         import json
-        with open(self.test_data_path, 'r') as f:
+
+        with open(self.test_data_path, "r") as f:
             test_config_dict = json.load(f)
         self.validator = ScraperValidator(self.test_data_path)
 
@@ -64,7 +69,9 @@ class PlatformScraperIntegrationTester:
 
         return sorted(scrapers)
 
-    async def run_scraper_test(self, scraper_name: str, skus: Optional[List[str]] = None) -> Dict[str, Any]:
+    async def run_scraper_test(
+        self, scraper_name: str, skus: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
         """
         Run a scraper test in the configured mode.
 
@@ -76,6 +83,7 @@ class PlatformScraperIntegrationTester:
             Dict with test results
         """
         import json
+
         test_config_dict = json.loads(self.test_config)
 
         if skus is None:
@@ -90,7 +98,9 @@ class PlatformScraperIntegrationTester:
         assert isinstance(skus, list) and all(isinstance(s, str) for s in skus)
 
         print(f"\n{'='*60}")
-        print(f"TESTING SCRAPER: {scraper_name.upper()} ({self.mode.value.upper()} MODE)")
+        print(
+            f"TESTING SCRAPER: {scraper_name.upper()} ({self.mode.value.upper()} MODE)"
+        )
         print(f"SKUs: {skus}")
         print(f"{'='*60}")
 
@@ -111,7 +121,8 @@ class PlatformScraperIntegrationTester:
             "mode": self.mode.value,
             "run_results": run_results,
             "validation_results": validation_results,
-            "overall_success": run_results["success"] and not validation_results.get("errors", [])
+            "overall_success": run_results["success"]
+            and not validation_results.get("errors", []),
         }
 
         # Print summary
@@ -136,11 +147,13 @@ class PlatformScraperIntegrationTester:
             "failed_scrapers": 0,
             "scraper_results": {},
             "summary": {},
-            "mode": self.mode.value
+            "mode": self.mode.value,
         }
 
         print(f"\n{'='*80}")
-        print(f"RUNNING {self.mode.value.upper()} INTEGRATION TESTS FOR ALL {len(scrapers)} SCRAPERS")
+        print(
+            f"RUNNING {self.mode.value.upper()} INTEGRATION TESTS FOR ALL {len(scrapers)} SCRAPERS"
+        )
         print(f"{'='*80}")
 
         for scraper_name in scrapers:
@@ -163,7 +176,7 @@ class PlatformScraperIntegrationTester:
                     "scraper": scraper_name,
                     "mode": self.mode.value,
                     "overall_success": False,
-                    "error": str(e)
+                    "error": str(e),
                 }
                 results["failed_scrapers"] += 1
 
@@ -228,16 +241,20 @@ class PlatformScraperIntegrationTester:
             if field_coverage:
                 print(f"   Field Coverage:")
                 for field, coverage in field_coverage.items():
-                    status = "✅" if coverage == 100.0 else "⚠️" if coverage > 0 else "❌"
+                    status = (
+                        "✅" if coverage == 100.0 else "⚠️" if coverage > 0 else "❌"
+                    )
                     print(f"     {status} {field}: {coverage:.1f}%")
 
             if validation_results.get("errors"):
                 print(f"   Errors: {len(validation_results['errors'])}")
-                for error in validation_results['errors'][:3]:  # Show first 3 errors
+                for error in validation_results["errors"][:3]:  # Show first 3 errors
                     print(f"     - {error}")
             if validation_results.get("warnings"):
                 print(f"   Warnings: {len(validation_results['warnings'])}")
-                for warning in validation_results['warnings'][:3]:  # Show first 3 warnings
+                for warning in validation_results["warnings"][
+                    :3
+                ]:  # Show first 3 warnings
                     print(f"     - {warning}")
 
         # Overall result
@@ -255,11 +272,13 @@ class PlatformScraperIntegrationTester:
             "success_rate": 0.0,
             "failed_scrapers_list": [],
             "common_errors": {},
-            "average_quality_score": 0.0
+            "average_quality_score": 0.0,
         }
 
         if results["total_scrapers"] > 0:
-            summary["success_rate"] = (results["successful_scrapers"] / results["total_scrapers"]) * 100
+            summary["success_rate"] = (
+                results["successful_scrapers"] / results["total_scrapers"]
+            ) * 100
 
         quality_scores = []
         for scraper_name, test_result in results["scraper_results"].items():
@@ -268,7 +287,9 @@ class PlatformScraperIntegrationTester:
 
             # Collect common errors
             run_errors = test_result.get("run_results", {}).get("errors", [])
-            validation_errors = test_result.get("validation_results", {}).get("errors", [])
+            validation_errors = test_result.get("validation_results", {}).get(
+                "errors", []
+            )
 
             for error in run_errors + validation_errors:
                 if error in summary["common_errors"]:
@@ -277,7 +298,9 @@ class PlatformScraperIntegrationTester:
                     summary["common_errors"][error] = 1
 
             # Collect quality scores
-            score = test_result.get("validation_results", {}).get("data_quality_score", 0)
+            score = test_result.get("validation_results", {}).get(
+                "data_quality_score", 0
+            )
             if score > 0:
                 quality_scores.append(score)
 

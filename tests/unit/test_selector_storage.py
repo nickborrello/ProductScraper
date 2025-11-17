@@ -10,6 +10,7 @@ PROJECT_ROOT = os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
 import sys
+
 sys.path.insert(0, PROJECT_ROOT)
 
 from src.scrapers.selector_storage import SelectorStorage, SelectorManager, SelectorData
@@ -18,7 +19,7 @@ from src.scrapers.selector_storage import SelectorStorage, SelectorManager, Sele
 @pytest.fixture
 def temp_storage_path():
     """Create a temporary file path for testing."""
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         temp_path = f.name
     yield temp_path
     # Cleanup
@@ -33,7 +34,7 @@ def sample_selector_data():
         selector=".product-title",
         confidence=0.8,
         last_updated="2023-01-01T00:00:00Z",
-        fallbacks=[".title", ".name"]
+        fallbacks=[".title", ".name"],
     )
 
 
@@ -55,7 +56,7 @@ class TestSelectorData:
             selector=".custom",
             confidence=0.9,
             last_updated="2023-01-01T00:00:00Z",
-            fallbacks=[".alt1", ".alt2"]
+            fallbacks=[".alt1", ".alt2"],
         )
 
         assert data.selector == ".custom"
@@ -71,7 +72,7 @@ class TestSelectorData:
             "selector": ".product-title",
             "confidence": 0.8,
             "last_updated": "2023-01-01T00:00:00Z",
-            "fallbacks": [".title", ".name"]
+            "fallbacks": [".title", ".name"],
         }
         assert data_dict == expected
 
@@ -81,7 +82,7 @@ class TestSelectorData:
             "selector": ".product-title",
             "confidence": 0.8,
             "last_updated": "2023-01-01T00:00:00Z",
-            "fallbacks": [".title", ".name"]
+            "fallbacks": [".title", ".name"],
         }
 
         data = SelectorData.from_dict(data_dict)
@@ -150,6 +151,7 @@ class TestSelectorStorage:
         # Ensure the directory doesn't exist
         if test_dir.exists():
             import shutil
+
             shutil.rmtree(test_dir)
 
         storage = SelectorStorage(str(storage_file))
@@ -169,7 +171,7 @@ class TestSelectorStorage:
             "metadata": {
                 "version": "1.0",
                 "created_at": "2023-01-01T00:00:00Z",
-                "last_modified": "2023-01-01T00:00:00Z"
+                "last_modified": "2023-01-01T00:00:00Z",
             },
             "selectors": {
                 "example.com": {
@@ -177,13 +179,13 @@ class TestSelectorStorage:
                         "selector": ".product-title",
                         "confidence": 0.8,
                         "last_updated": "2023-01-01T00:00:00Z",
-                        "fallbacks": [".title"]
+                        "fallbacks": [".title"],
                     }
                 }
-            }
+            },
         }
 
-        with open(temp_storage_path, 'w') as f:
+        with open(temp_storage_path, "w") as f:
             json.dump(test_data, f)
 
         storage = SelectorStorage(temp_storage_path)
@@ -196,7 +198,7 @@ class TestSelectorStorage:
 
     def test_load_corrupted_file(self, temp_storage_path):
         """Test loading from a corrupted JSON file."""
-        with open(temp_storage_path, 'w') as f:
+        with open(temp_storage_path, "w") as f:
             f.write("invalid json")
 
         storage = SelectorStorage(temp_storage_path)
@@ -278,7 +280,9 @@ class TestSelectorStorage:
     def test_get_fallback_chain(self, temp_storage_path):
         """Test getting fallback chain."""
         storage = SelectorStorage(temp_storage_path)
-        storage.set_selector("example.com", "title", ".title", fallbacks=[".name", ".header"])
+        storage.set_selector(
+            "example.com", "title", ".title", fallbacks=[".name", ".header"]
+        )
 
         chain = storage.get_fallback_chain("example.com", "title")
 
@@ -424,7 +428,9 @@ class TestSelectorManager:
     def test_get_selector_with_fallbacks(self, temp_storage_path):
         """Test getting selector with fallbacks."""
         manager = SelectorManager(temp_storage_path)
-        manager.storage.set_selector("example.com", "title", ".title", fallbacks=[".alt"])
+        manager.storage.set_selector(
+            "example.com", "title", ".title", fallbacks=[".alt"]
+        )
 
         chain = manager.get_selector_with_fallbacks("example.com", "title")
 
@@ -441,7 +447,13 @@ class TestSelectorManager:
     def test_get_selector_stats(self, temp_storage_path):
         """Test getting selector statistics."""
         manager = SelectorManager(temp_storage_path)
-        manager.storage.set_selector("example.com", "title", ".title", confidence=0.8, fallbacks=[".alt1", ".alt2"])
+        manager.storage.set_selector(
+            "example.com",
+            "title",
+            ".title",
+            confidence=0.8,
+            fallbacks=[".alt1", ".alt2"],
+        )
 
         stats = manager.get_selector_stats("example.com", "title")
 
@@ -464,7 +476,9 @@ class TestSelectorManager:
         manager = SelectorManager(temp_storage_path)
         manager.storage.set_selector("example.com", "good", ".good", confidence=0.9)
         manager.storage.set_selector("example.com", "bad", ".bad", confidence=0.1)
-        manager.storage.set_selector("other.com", "also_bad", ".also-bad", confidence=0.2)
+        manager.storage.set_selector(
+            "other.com", "also_bad", ".also-bad", confidence=0.2
+        )
 
         manager.cleanup_low_confidence_selectors(threshold=0.3)
 

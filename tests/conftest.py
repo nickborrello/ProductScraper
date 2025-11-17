@@ -16,18 +16,18 @@ def data_quality_scorer():
 def sample_high_quality_record():
     """Sample high-quality product record for testing."""
     return {
-        'SKU': 'SAMPLE001',
-        'Name': 'Premium Dog Food - Chicken Flavor',
-        'Price': '49.99',
-        'Images': 'https://example.com/image1.jpg,https://example.com/image2.jpg,https://example.com/image3.jpg',
-        'Weight': '25 lb',
-        'Product_Field_16': 'Premium Pet Foods',
-        'Product_Field_24': 'Dog Food',
-        'Product_Field_25': 'Dry Dog Food',
-        'Product_Field_32': 'RELATED001|RELATED002',
-        'Product_On_Pages': 'page1|page2',
-        'last_updated': '2025-11-15 12:00:00',
-        'ProductDisabled': 'checked'
+        "SKU": "SAMPLE001",
+        "Name": "Premium Dog Food - Chicken Flavor",
+        "Price": "49.99",
+        "Images": "https://example.com/image1.jpg,https://example.com/image2.jpg,https://example.com/image3.jpg",
+        "Weight": "25 lb",
+        "Product_Field_16": "Premium Pet Foods",
+        "Product_Field_24": "Dog Food",
+        "Product_Field_25": "Dry Dog Food",
+        "Product_Field_32": "RELATED001|RELATED002",
+        "Product_On_Pages": "page1|page2",
+        "last_updated": "2025-11-15 12:00:00",
+        "ProductDisabled": "checked",
     }
 
 
@@ -35,15 +35,15 @@ def sample_high_quality_record():
 def sample_low_quality_record():
     """Sample low-quality product record for testing."""
     return {
-        'SKU': '',
-        'Name': 'N/A',
-        'Price': 'invalid',
-        'Images': 'not-a-url,another-invalid',
-        'Weight': '',
-        'Product_Field_16': None,
-        'Product_Field_24': '',
-        'Product_Field_25': 'N/A',
-        'Product_Field_32': 'invalid sku format!'
+        "SKU": "",
+        "Name": "N/A",
+        "Price": "invalid",
+        "Images": "not-a-url,another-invalid",
+        "Weight": "",
+        "Product_Field_16": None,
+        "Product_Field_24": "",
+        "Product_Field_25": "N/A",
+        "Product_Field_32": "invalid sku format!",
     }
 
 
@@ -59,8 +59,8 @@ def performance_test_data(sample_high_quality_record):
     records = []
     for i in range(1000):
         record = sample_high_quality_record.copy()
-        record['SKU'] = f'TEST{i:04d}'
-        record['Name'] = f'Test Product {i}'
+        record["SKU"] = f"TEST{i:04d}"
+        record["Name"] = f"Test Product {i}"
         records.append(record)
     return records
 

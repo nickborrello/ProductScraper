@@ -17,11 +17,13 @@ TEMPERATURE = 0.1  # Low temperature for consistent classifications
 # Import settings manager
 try:
     from src.core.settings_manager import settings
+
     _settings_available = True
 except ImportError:
     try:
         # Fallback for when run as standalone
         from ..settings_manager import settings
+
         _settings_available = True
     except ImportError:
         # Last resort - try to load from settings.json directly
@@ -38,7 +40,13 @@ except ImportError:
 class LocalLLMProductClassifier:
     """Local LLM-based product classifier using Ollama for running models locally without API keys."""
 
-    def __init__(self, model_name: str = None, cache_file: Path = None, product_taxonomy: Dict[str, List[str]] = None, product_pages: List[str] = None):
+    def __init__(
+        self,
+        model_name: str = None,
+        cache_file: Path = None,
+        product_taxonomy: Dict[str, List[str]] = None,
+        product_pages: List[str] = None,
+    ):
         # Try to get model name from settings first, then parameter, then environment, then default
         if model_name is None:
             if _settings_available:
@@ -51,7 +59,9 @@ class LocalLLMProductClassifier:
         self.model_name = model_name or OLLAMA_MODEL
         self.conversation_history = []
         self.classification_cache = {}  # Cache for classifications
-        self.cache_file = cache_file or Path.home() / ".cache" / "productscraper_ollama_cache.json"
+        self.cache_file = (
+            cache_file or Path.home() / ".cache" / "productscraper_ollama_cache.json"
+        )
         self.cache_file.parent.mkdir(parents=True, exist_ok=True)
         self._load_cache()
 
@@ -59,16 +69,30 @@ class LocalLLMProductClassifier:
         if product_taxonomy is None:
             try:
                 from .taxonomy_manager import get_product_taxonomy
+
                 self.product_taxonomy = get_product_taxonomy()
             except ImportError:
                 try:
-                    from src.core.classification.taxonomy_manager import get_product_taxonomy
+                    from src.core.classification.taxonomy_manager import (
+                        get_product_taxonomy,
+                    )
+
                     self.product_taxonomy = get_product_taxonomy()
                 except ImportError:
                     # Fallback - use a basic taxonomy
                     self.product_taxonomy = {
-                        "Dog Food": ["Dry Dog Food", "Wet Dog Food", "Adult Dog Food", "Puppy Food"],
-                        "Cat Food": ["Dry Cat Food", "Wet Cat Food", "Adult Cat Food", "Kitten Food"],
+                        "Dog Food": [
+                            "Dry Dog Food",
+                            "Wet Dog Food",
+                            "Adult Dog Food",
+                            "Puppy Food",
+                        ],
+                        "Cat Food": [
+                            "Dry Cat Food",
+                            "Wet Cat Food",
+                            "Adult Cat Food",
+                            "Kitten Food",
+                        ],
                     }
         else:
             self.product_taxonomy = product_taxonomy
@@ -76,14 +100,21 @@ class LocalLLMProductClassifier:
         if product_pages is None:
             try:
                 from .manager import PRODUCT_PAGES
+
                 self.product_pages = PRODUCT_PAGES
             except ImportError:
                 try:
                     from src.core.classification.manager import PRODUCT_PAGES
+
                     self.product_pages = PRODUCT_PAGES
                 except ImportError:
                     # Fallback - use basic pages
-                    self.product_pages = ["Dog Food", "Cat Food", "Bird Supplies", "All Pets"]
+                    self.product_pages = [
+                        "Dog Food",
+                        "Cat Food",
+                        "Bird Supplies",
+                        "All Pets",
+                    ]
         else:
             self.product_pages = product_pages
 
@@ -101,9 +132,15 @@ class LocalLLMProductClassifier:
     def _initialize_conversation(self):
         """Initialize conversation with taxonomy and instructions."""
         try:
-            from src.core.classification.manager import UNIFIED_SYSTEM_PROMPT, UNIFIED_SINGLE_PRODUCT_JSON_FORMAT
+            from src.core.classification.manager import (
+                UNIFIED_SYSTEM_PROMPT,
+                UNIFIED_SINGLE_PRODUCT_JSON_FORMAT,
+            )
         except ImportError:
-            from .manager import UNIFIED_SYSTEM_PROMPT, UNIFIED_SINGLE_PRODUCT_JSON_FORMAT
+            from .manager import (
+                UNIFIED_SYSTEM_PROMPT,
+                UNIFIED_SINGLE_PRODUCT_JSON_FORMAT,
+            )
 
         # Create comprehensive system prompt
         taxonomy_text = "PRODUCT TAXONOMY:\n"
@@ -116,10 +153,12 @@ class LocalLLMProductClassifier:
             f"  - {page}" for page in self.product_pages
         )
 
-        system_prompt = UNIFIED_SYSTEM_PROMPT.format(
-            taxonomy_text=taxonomy_text,
-            pages_text=pages_text
-        ) + UNIFIED_SINGLE_PRODUCT_JSON_FORMAT
+        system_prompt = (
+            UNIFIED_SYSTEM_PROMPT.format(
+                taxonomy_text=taxonomy_text, pages_text=pages_text
+            )
+            + UNIFIED_SINGLE_PRODUCT_JSON_FORMAT
+        )
 
         self.conversation_history = [{"role": "system", "content": system_prompt}]
 
@@ -133,9 +172,9 @@ class LocalLLMProductClassifier:
                     options={
                         "temperature": TEMPERATURE,
                         "num_predict": MAX_TOKENS,
-                    }
+                    },
                 )
-                return response['message']['content']
+                return response["message"]["content"]
             except Exception as e:
                 print(f"Ollama API call failed (attempt {attempt + 1}): {e}")
                 if attempt < max_retries - 1:
@@ -301,7 +340,9 @@ class LocalLLMProductClassifier:
         batch_prompt += UNIFIED_BATCH_JSON_FORMAT
 
         # Construct messages for this specific call to keep it stateless and manage token usage
-        messages_for_call = self.conversation_history[:1]  # Start with just the system prompt
+        messages_for_call = self.conversation_history[
+            :1
+        ]  # Start with just the system prompt
         messages_for_call.append({"role": "user", "content": batch_prompt})
 
         # Call Ollama
@@ -457,12 +498,20 @@ class LocalLLMProductClassifier:
 _local_llm_classifier = None
 
 
-def get_local_llm_classifier(model_name: str = None, product_taxonomy: Dict[str, List[str]] = None, product_pages: List[str] = None) -> LocalLLMProductClassifier:
+def get_local_llm_classifier(
+    model_name: str = None,
+    product_taxonomy: Dict[str, List[str]] = None,
+    product_pages: List[str] = None,
+) -> LocalLLMProductClassifier:
     """Get or create local LLM classifier instance."""
     global _local_llm_classifier
     if _local_llm_classifier is None:
         try:
-            _local_llm_classifier = LocalLLMProductClassifier(model_name, product_taxonomy=product_taxonomy, product_pages=product_pages)
+            _local_llm_classifier = LocalLLMProductClassifier(
+                model_name,
+                product_taxonomy=product_taxonomy,
+                product_pages=product_pages,
+            )
             print("✅ Local LLM classifier initialized")
         except ValueError as e:
             print(f"[ERROR] Local LLM classifier initialization failed: {e}")
@@ -483,7 +532,11 @@ def reset_local_llm_classifier():
     _local_llm_classifier = None
 
 
-def classify_product_local_llm(product_info: Dict[str, Any], product_taxonomy: Dict[str, List[str]] = None, product_pages: List[str] = None) -> Dict[str, str]:
+def classify_product_local_llm(
+    product_info: Dict[str, Any],
+    product_taxonomy: Dict[str, List[str]] = None,
+    product_pages: List[str] = None,
+) -> Dict[str, str]:
     """
     Classify a product using local LLM via Ollama (no API key required).
 
@@ -495,7 +548,9 @@ def classify_product_local_llm(product_info: Dict[str, Any], product_taxonomy: D
     Returns:
         Dict with category, product_type, product_on_pages
     """
-    classifier = get_local_llm_classifier(product_taxonomy=product_taxonomy, product_pages=product_pages)
+    classifier = get_local_llm_classifier(
+        product_taxonomy=product_taxonomy, product_pages=product_pages
+    )
     if not classifier:
         return {"Category": "", "Product Type": "", "Product On Pages": ""}
 
@@ -525,8 +580,11 @@ def classify_product_local_llm(product_info: Dict[str, Any], product_taxonomy: D
 if __name__ == "__main__":
     import sys
     import os
+
     # Add project root to path to allow direct script execution
-    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
+    sys.path.insert(
+        0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+    )
     from src.core.classification.local_llm_classifier import get_local_llm_classifier
 
     print("🧠 Testing Local LLM Product Classifier")
@@ -562,4 +620,6 @@ if __name__ == "__main__":
 
         print("\n✅ Local LLM classification test completed!")
     else:
-        print("[ERROR] Could not initialize local LLM classifier - check Ollama installation")
+        print(
+            "[ERROR] Could not initialize local LLM classifier - check Ollama installation"
+        )

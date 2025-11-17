@@ -15,7 +15,13 @@ class ScraperBrowser:
     """Base browser class for scrapers with common functionality."""
 
     def __init__(
-        self, site_name, headless=True, profile_suffix=None, custom_options=None, enable_devtools=False, devtools_port=9222
+        self,
+        site_name,
+        headless=True,
+        profile_suffix=None,
+        custom_options=None,
+        enable_devtools=False,
+        devtools_port=9222,
     ):
         """
         Initialize browser for scraping.
@@ -36,7 +42,10 @@ class ScraperBrowser:
 
         # Get standard options
         options = get_standard_chrome_options(
-            headless=headless, profile_suffix=self.profile_suffix, enable_devtools=enable_devtools, devtools_port=devtools_port
+            headless=headless,
+            profile_suffix=self.profile_suffix,
+            enable_devtools=enable_devtools,
+            devtools_port=devtools_port,
         )
 
         # Add custom options if provided
@@ -54,7 +63,9 @@ class ScraperBrowser:
 
         # Initialize browser
         self.driver = webdriver.Chrome(service=service, options=options)
-        print(f"[WEB] [{site_name}] Browser initialized (headless={headless}, devtools={enable_devtools})")
+        print(
+            f"[WEB] [{site_name}] Browser initialized (headless={headless}, devtools={enable_devtools})"
+        )
 
     def __getattr__(self, name):
         """Delegate WebDriver methods to the underlying driver."""
@@ -82,7 +93,14 @@ class ScraperBrowser:
         self.quit()
 
 
-def create_browser(site_name, headless=True, profile_suffix=None, custom_options=None, enable_devtools=False, devtools_port=9222):
+def create_browser(
+    site_name,
+    headless=True,
+    profile_suffix=None,
+    custom_options=None,
+    enable_devtools=False,
+    devtools_port=9222,
+):
     """
     Factory function to create a browser instance.
 
@@ -97,4 +115,11 @@ def create_browser(site_name, headless=True, profile_suffix=None, custom_options
     Returns:
         ScraperBrowser instance
     """
-    return ScraperBrowser(site_name, headless, profile_suffix, custom_options, enable_devtools, devtools_port)
+    return ScraperBrowser(
+        site_name,
+        headless,
+        profile_suffix,
+        custom_options,
+        enable_devtools,
+        devtools_port,
+    )

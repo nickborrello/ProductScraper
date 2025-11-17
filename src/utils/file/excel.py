@@ -16,6 +16,7 @@ if os.path.exists(gen_py_cache):
 
 import win32com.client  # now safe to import
 
+
 def convert_xlsx_to_xls_with_excel(results_folder=None):
     # Use session-specific results folder or default to global spreadsheets folder
     if results_folder:

@@ -1,6 +1,7 @@
 """
 Integration tests for running scrapers locally and validating output.
 """
+
 import os
 import sys
 import json
@@ -29,7 +30,7 @@ class ScraperIntegrationTester:
         self.project_root = PROJECT_ROOT
         self.test_data_path = test_data_path or "tests/fixtures/scraper_test_data.json"
 
-        with open(self.test_data_path, 'r') as f:
+        with open(self.test_data_path, "r") as f:
             self.test_config = json.load(f)
 
         self.validator = ScraperValidator(self.test_data_path)
@@ -48,7 +49,9 @@ class ScraperIntegrationTester:
 
         return sorted(scrapers)
 
-    def run_scraper_locally(self, scraper_name: str, skus: List[str], headless: bool = True) -> Dict[str, Any]:
+    def run_scraper_locally(
+        self, scraper_name: str, skus: List[str], headless: bool = True
+    ) -> Dict[str, Any]:
         """
         Run a scraper locally with given SKUs.
 
@@ -67,14 +70,20 @@ class ScraperIntegrationTester:
             "products": [],
             "errors": [],
             "execution_time": 0,
-            "output": ""
+            "output": "",
         }
 
         start_time = time.time()
 
         try:
             # Load YAML config
-            config_path = self.project_root / "src" / "scrapers" / "configs" / f"{scraper_name}.yaml"
+            config_path = (
+                self.project_root
+                / "src"
+                / "scrapers"
+                / "configs"
+                / f"{scraper_name}.yaml"
+            )
             parser = ScraperConfigParser()
             config = parser.load_from_file(config_path)
 
@@ -83,10 +92,13 @@ class ScraperIntegrationTester:
                 try:
                     # Clone config and replace {sku} placeholders
                     import copy
+
                     sku_config = copy.deepcopy(config)
                     for step in sku_config.workflows:
                         if step.action == "navigate" and "url" in step.params:
-                            step.params["url"] = step.params["url"].replace("{sku}", sku)
+                            step.params["url"] = step.params["url"].replace(
+                                "{sku}", sku
+                            )
 
                     # Run workflow
                     executor = WorkflowExecutor(sku_config, headless=headless)
@@ -119,7 +131,9 @@ class ScraperIntegrationTester:
 
         return results
 
-    def test_single_scraper(self, scraper_name: str, skus: Optional[List[str]] = None) -> Dict[str, Any]:
+    def test_single_scraper(
+        self, scraper_name: str, skus: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
         """
         Test a single scraper with validation.
 
@@ -158,7 +172,8 @@ class ScraperIntegrationTester:
             "scraper": scraper_name,
             "run_results": run_results,
             "validation_results": validation_results,
-            "overall_success": run_results["success"] and not validation_results.get("errors", [])
+            "overall_success": run_results["success"]
+            and not validation_results.get("errors", []),
         }
 
         # Print summary
@@ -182,7 +197,7 @@ class ScraperIntegrationTester:
             "successful_scrapers": 0,
             "failed_scrapers": 0,
             "scraper_results": {},
-            "summary": {}
+            "summary": {},
         }
 
         print(f"\n{'='*80}")
@@ -208,7 +223,7 @@ class ScraperIntegrationTester:
                 results["scraper_results"][scraper_name] = {
                     "scraper": scraper_name,
                     "overall_success": False,
-                    "error": str(e)
+                    "error": str(e),
                 }
                 results["failed_scrapers"] += 1
 
@@ -267,16 +282,20 @@ class ScraperIntegrationTester:
             if field_coverage:
                 print(f"   Field Coverage:")
                 for field, coverage in field_coverage.items():
-                    status = "✅" if coverage == 100.0 else "⚠️" if coverage > 0 else "❌"
+                    status = (
+                        "✅" if coverage == 100.0 else "⚠️" if coverage > 0 else "❌"
+                    )
                     print(f"     {status} {field}: {coverage:.1f}%")
 
             if validation_results.get("errors"):
                 print(f"   Errors: {len(validation_results['errors'])}")
-                for error in validation_results['errors'][:3]:  # Show first 3 errors
+                for error in validation_results["errors"][:3]:  # Show first 3 errors
                     print(f"     - {error}")
             if validation_results.get("warnings"):
                 print(f"   Warnings: {len(validation_results['warnings'])}")
-                for warning in validation_results['warnings'][:3]:  # Show first 3 warnings
+                for warning in validation_results["warnings"][
+                    :3
+                ]:  # Show first 3 warnings
                     print(f"     - {warning}")
 
         # Overall result
@@ -294,11 +313,13 @@ class ScraperIntegrationTester:
             "success_rate": 0.0,
             "failed_scrapers_list": [],
             "common_errors": {},
-            "average_quality_score": 0.0
+            "average_quality_score": 0.0,
         }
 
         if results["total_scrapers"] > 0:
-            summary["success_rate"] = (results["successful_scrapers"] / results["total_scrapers"]) * 100
+            summary["success_rate"] = (
+                results["successful_scrapers"] / results["total_scrapers"]
+            ) * 100
 
         quality_scores = []
         for scraper_name, test_result in results["scraper_results"].items():
@@ -307,7 +328,9 @@ class ScraperIntegrationTester:
 
             # Collect common errors
             run_errors = test_result.get("run_results", {}).get("errors", [])
-            validation_errors = test_result.get("validation_results", {}).get("errors", [])
+            validation_errors = test_result.get("validation_results", {}).get(
+                "errors", []
+            )
 
             for error in run_errors + validation_errors:
                 if error in summary["common_errors"]:
@@ -316,7 +339,9 @@ class ScraperIntegrationTester:
                     summary["common_errors"][error] = 1
 
             # Collect quality scores
-            score = test_result.get("validation_results", {}).get("data_quality_score", 0)
+            score = test_result.get("validation_results", {}).get(
+                "data_quality_score", 0
+            )
             if score > 0:
                 quality_scores.append(score)
 
@@ -365,7 +390,9 @@ class TestScraperIntegration:
         assert len(results["scraper_results"]) > 0
 
         # Print summary
-        print(f"Integration test results: {results['successful_scrapers']}/{results['total_scrapers']} passed")
+        print(
+            f"Integration test results: {results['successful_scrapers']}/{results['total_scrapers']} passed"
+        )
 
 
 if __name__ == "__main__":
@@ -391,6 +418,8 @@ if __name__ == "__main__":
         if results["failed_scrapers"] > 0:
             sys.exit(1)
     else:
-        print("Use --scraper <name> to test a specific scraper or --all to test all scrapers")
+        print(
+            "Use --scraper <name> to test a specific scraper or --all to test all scrapers"
+        )
         print(f"Available scrapers: {tester.get_available_scrapers()}")
         sys.exit(1)

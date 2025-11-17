@@ -10,7 +10,11 @@ from typing import Dict, List, Any, Optional, Union, cast
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, NoSuchElementException, WebDriverException
+from selenium.common.exceptions import (
+    TimeoutException,
+    NoSuchElementException,
+    WebDriverException,
+)
 
 from src.scrapers.models.config import ScraperConfig, WorkflowStep, SelectorConfig
 from src.utils.scraping.browser import create_browser, ScraperBrowser
@@ -21,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 class WorkflowExecutionError(Exception):
     """Exception raised when workflow execution fails."""
+
     pass
 
 
@@ -32,7 +37,12 @@ class WorkflowExecutor:
     Includes error handling, timeouts, and result collection.
     """
 
-    def __init__(self, config: ScraperConfig, headless: bool = True, timeout: Optional[int] = None):
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: Optional[int] = None,
+    ):
         """
         Initialize the workflow executor.
 
@@ -53,7 +63,7 @@ class WorkflowExecutor:
             self.browser = create_browser(
                 site_name=self.config.name,
                 headless=headless,
-                profile_suffix=f"workflow_{int(time.time())}"
+                profile_suffix=f"workflow_{int(time.time())}",
             )
             logger.info(f"Browser initialized for scraper: {self.config.name}")
         except Exception as e:
@@ -62,8 +72,12 @@ class WorkflowExecutor:
         # Initialize anti-detection manager if configured
         if config.anti_detection:
             try:
-                self.anti_detection_manager = AntiDetectionManager(self.browser, config.anti_detection)
-                logger.info(f"Anti-detection manager initialized for scraper: {self.config.name}")
+                self.anti_detection_manager = AntiDetectionManager(
+                    self.browser, config.anti_detection
+                )
+                logger.info(
+                    f"Anti-detection manager initialized for scraper: {self.config.name}"
+                )
             except Exception as e:
                 logger.warning(f"Failed to initialize anti-detection manager: {e}")
                 self.anti_detection_manager = None
@@ -92,7 +106,7 @@ class WorkflowExecutor:
                 "success": True,
                 "results": self.results,
                 "config_name": self.config.name,
-                "steps_executed": len(self.config.workflows)
+                "steps_executed": len(self.config.workflows),
             }
 
         except Exception as e:
@@ -126,7 +140,7 @@ class WorkflowExecutor:
                 "success": True,
                 "results": self.results,
                 "config_name": self.config.name,
-                "steps_executed": len(steps)
+                "steps_executed": len(steps),
             }
 
         except Exception as e:
@@ -151,7 +165,9 @@ class WorkflowExecutor:
         # Pre-action anti-detection hook
         if self.anti_detection_manager:
             if not self.anti_detection_manager.pre_action_hook(action, params):
-                raise WorkflowExecutionError(f"Pre-action anti-detection check failed for '{action}'")
+                raise WorkflowExecutionError(
+                    f"Pre-action anti-detection check failed for '{action}'"
+                )
 
         success = False
         try:
@@ -191,11 +207,13 @@ class WorkflowExecutor:
         except Exception as e:
             # Try anti-detection error handling
             if self.anti_detection_manager:
-                retry_count = params.get('retry_count', 0)
+                retry_count = params.get("retry_count", 0)
                 if self.anti_detection_manager.handle_error(e, action, retry_count):
-                    logger.info(f"Anti-detection error handling succeeded for '{action}', retrying...")
+                    logger.info(
+                        f"Anti-detection error handling succeeded for '{action}', retrying..."
+                    )
                     # Increment retry count and retry
-                    params['retry_count'] = retry_count + 1
+                    params["retry_count"] = retry_count + 1
                     return self._execute_step(step)
 
             raise WorkflowExecutionError(f"Failed to execute step '{action}': {e}")
@@ -224,7 +242,9 @@ class WorkflowExecutor:
         timeout = params.get("timeout", self.timeout)
 
         if not selector:
-            raise WorkflowExecutionError("Wait_for action requires 'selector' parameter")
+            raise WorkflowExecutionError(
+                "Wait_for action requires 'selector' parameter"
+            )
 
         logger.debug(f"Waiting for element: {selector}")
         try:
@@ -232,7 +252,9 @@ class WorkflowExecutor:
                 EC.presence_of_element_located((By.CSS_SELECTOR, selector))
             )
         except TimeoutException:
-            raise WorkflowExecutionError(f"Element not found within {timeout}s: {selector}")
+            raise WorkflowExecutionError(
+                f"Element not found within {timeout}s: {selector}"
+            )
 
     def _action_wait(self, params: Dict[str, Any]):
         """Simple wait/delay."""
@@ -246,25 +268,31 @@ class WorkflowExecutor:
         selector_name = params.get("selector")
 
         if not field_name or not selector_name:
-            raise WorkflowExecutionError("Extract_single requires 'field' and 'selector' parameters")
+            raise WorkflowExecutionError(
+                "Extract_single requires 'field' and 'selector' parameters"
+            )
 
         selector_config = self.selectors.get(selector_name)
         if not selector_config:
-            raise WorkflowExecutionError(f"Selector '{selector_name}' not found in config")
+            raise WorkflowExecutionError(
+                f"Selector '{selector_name}' not found in config"
+            )
 
         try:
-            element = self.browser.driver.find_element(By.CSS_SELECTOR, selector_config.selector)
+            element = self.browser.driver.find_element(
+                By.CSS_SELECTOR, selector_config.selector
+            )
             value = self._extract_value_from_element(element, selector_config.attribute)
-            if field_name == 'brand' and value:
+            if field_name == "brand" and value:
                 match = re.match(r"Visit (?:the )?(.+?) Store", value)
                 if match:
                     value = match.group(1)
-            elif field_name == 'weight' and value:
+            elif field_name == "weight" and value:
                 # Process weight: extract number and convert ounces to pounds
-                weight_match = re.search(r'(\d+(?:\.\d+)?)', value)
+                weight_match = re.search(r"(\d+(?:\.\d+)?)", value)
                 if weight_match:
                     weight_num = float(weight_match.group(1))
-                    if 'ounce' in value.lower():
+                    if "ounce" in value.lower():
                         # Convert ounces to pounds (1 oz = 0.0625 lbs)
                         weight_num = weight_num / 16
                     value = f"{weight_num:.2f} lbs"
@@ -282,21 +310,29 @@ class WorkflowExecutor:
         selector_name = params.get("selector")
 
         if not field_name or not selector_name:
-            raise WorkflowExecutionError("Extract_multiple requires 'field' and 'selector' parameters")
+            raise WorkflowExecutionError(
+                "Extract_multiple requires 'field' and 'selector' parameters"
+            )
 
         selector_config = self.selectors.get(selector_name)
         if not selector_config:
-            raise WorkflowExecutionError(f"Selector '{selector_name}' not found in config")
+            raise WorkflowExecutionError(
+                f"Selector '{selector_name}' not found in config"
+            )
 
         try:
-            elements = self.browser.driver.find_elements(By.CSS_SELECTOR, selector_config.selector)
+            elements = self.browser.driver.find_elements(
+                By.CSS_SELECTOR, selector_config.selector
+            )
             values = []
             for element in elements:
-                value = self._extract_value_from_element(element, selector_config.attribute)
+                value = self._extract_value_from_element(
+                    element, selector_config.attribute
+                )
                 if value:
                     values.append(value)
 
-            if field_name == 'brand':
+            if field_name == "brand":
                 cleaned_values = []
                 for v in values:
                     if v:
@@ -306,15 +342,15 @@ class WorkflowExecutor:
                         else:
                             cleaned_values.append(v)
                 values = cleaned_values
-            elif field_name == 'weight':
+            elif field_name == "weight":
                 # Process weight values: extract number and convert ounces to pounds
                 processed_values = []
                 for v in values:
                     if v:
-                        weight_match = re.search(r'(\d+(?:\.\d+)?)', v)
+                        weight_match = re.search(r"(\d+(?:\.\d+)?)", v)
                         if weight_match:
                             weight_num = float(weight_match.group(1))
-                            if 'ounce' in v.lower():
+                            if "ounce" in v.lower():
                                 # Convert ounces to pounds (1 oz = 0.0625 lbs)
                                 weight_num = weight_num / 16
                             processed_values.append(f"{weight_num:.2f} lbs")
@@ -327,7 +363,7 @@ class WorkflowExecutor:
 
     def _get_locator_type(self, selector: str):
         """Determine locator type based on selector format."""
-        if selector.startswith('//') or selector.startswith('.//'):
+        if selector.startswith("//") or selector.startswith(".//"):
             return By.XPATH
         else:
             return By.CSS_SELECTOR
@@ -344,13 +380,17 @@ class WorkflowExecutor:
             try:
                 locator_type = self._get_locator_type(selector_config.selector)
                 if selector_config.multiple:
-                    elements = self.browser.driver.find_elements(locator_type, selector_config.selector)
+                    elements = self.browser.driver.find_elements(
+                        locator_type, selector_config.selector
+                    )
                     values = []
                     for element in elements:
-                        value = self._extract_value_from_element(element, selector_config.attribute)
+                        value = self._extract_value_from_element(
+                            element, selector_config.attribute
+                        )
                         if value:
                             values.append(value)
-                    if field_name == 'brand':
+                    if field_name == "brand":
                         cleaned_values = []
                         for v in values:
                             if v:
@@ -362,9 +402,13 @@ class WorkflowExecutor:
                         values = cleaned_values
                     self.results[field_name] = values
                 else:
-                    element = self.browser.driver.find_element(locator_type, selector_config.selector)
-                    value = self._extract_value_from_element(element, selector_config.attribute)
-                    if field_name == 'brand' and value:
+                    element = self.browser.driver.find_element(
+                        locator_type, selector_config.selector
+                    )
+                    value = self._extract_value_from_element(
+                        element, selector_config.attribute
+                    )
+                    if field_name == "brand" and value:
                         match = re.match(r"Visit (?:the )?(.+?) Store", value)
                         if match:
                             value = match.group(1)
@@ -381,7 +425,9 @@ class WorkflowExecutor:
         clear_first = params.get("clear_first", True)
 
         if not selector or text is None:
-            raise WorkflowExecutionError("Input_text requires 'selector' and 'text' parameters")
+            raise WorkflowExecutionError(
+                "Input_text requires 'selector' and 'text' parameters"
+            )
 
         try:
             element = self.browser.driver.find_element(By.CSS_SELECTOR, selector)
@@ -421,8 +467,19 @@ class WorkflowExecutor:
         submit_button = params.get("submit_button")
         success_indicator = params.get("success_indicator")
 
-        if not all([username, password, login_url, username_field, password_field, submit_button]):
-            raise WorkflowExecutionError("Login action requires username, password, url, username_field, password_field, and submit_button parameters")
+        if not all(
+            [
+                username,
+                password,
+                login_url,
+                username_field,
+                password_field,
+                submit_button,
+            ]
+        ):
+            raise WorkflowExecutionError(
+                "Login action requires username, password, url, username_field, password_field, and submit_button parameters"
+            )
 
         logger.info("Executing login workflow")
 
@@ -432,7 +489,9 @@ class WorkflowExecutor:
 
         # Input username
         try:
-            username_element = self.browser.driver.find_element(By.CSS_SELECTOR, username_field)
+            username_element = self.browser.driver.find_element(
+                By.CSS_SELECTOR, username_field
+            )
             username_element.clear()
             username_element.send_keys(str(username))
             logger.debug("Entered username")
@@ -441,7 +500,9 @@ class WorkflowExecutor:
 
         # Input password
         try:
-            password_element = self.browser.driver.find_element(By.CSS_SELECTOR, password_field)
+            password_element = self.browser.driver.find_element(
+                By.CSS_SELECTOR, password_field
+            )
             password_element.clear()
             password_element.send_keys(str(password))
             logger.debug("Entered password")
@@ -450,7 +511,9 @@ class WorkflowExecutor:
 
         # Click submit button
         try:
-            submit_element = self.browser.driver.find_element(By.CSS_SELECTOR, submit_button)
+            submit_element = self.browser.driver.find_element(
+                By.CSS_SELECTOR, submit_button
+            )
             submit_element.click()
             logger.debug("Clicked submit button")
         except NoSuchElementException:
@@ -464,7 +527,9 @@ class WorkflowExecutor:
                 )
                 logger.info("Login successful - success indicator found")
             except TimeoutException:
-                raise WorkflowExecutionError(f"Login failed - success indicator not found within {self.timeout}s: {success_indicator}")
+                raise WorkflowExecutionError(
+                    f"Login failed - success indicator not found within {self.timeout}s: {success_indicator}"
+                )
         else:
             # If no success indicator, wait a bit for login to process
             time.sleep(3)
@@ -472,31 +537,41 @@ class WorkflowExecutor:
 
     def _action_detect_captcha(self, params: Dict[str, Any]):
         """Detect CAPTCHA presence on current page."""
-        if not self.anti_detection_manager or not self.anti_detection_manager.captcha_detector:
+        if (
+            not self.anti_detection_manager
+            or not self.anti_detection_manager.captcha_detector
+        ):
             logger.warning("CAPTCHA detection not enabled")
             return
 
-        detected = self.anti_detection_manager.captcha_detector.detect_captcha(self.browser.driver)
-        self.results['captcha_detected'] = detected
+        detected = self.anti_detection_manager.captcha_detector.detect_captcha(
+            self.browser.driver
+        )
+        self.results["captcha_detected"] = detected
 
         if detected:
             logger.info("CAPTCHA detected on current page")
             # Store detection result
-            self.results['captcha_details'] = {
+            self.results["captcha_details"] = {
                 "detected": True,
-                "timestamp": time.time()
+                "timestamp": time.time(),
             }
         else:
             logger.debug("No CAPTCHA detected on current page")
 
     def _action_handle_blocking(self, params: Dict[str, Any]):
         """Handle blocking pages."""
-        if not self.anti_detection_manager or not self.anti_detection_manager.blocking_handler:
+        if (
+            not self.anti_detection_manager
+            or not self.anti_detection_manager.blocking_handler
+        ):
             logger.warning("Blocking handling not enabled")
             return
 
-        handled = self.anti_detection_manager.blocking_handler.handle_blocking(self.browser.driver)
-        self.results['blocking_handled'] = handled
+        handled = self.anti_detection_manager.blocking_handler.handle_blocking(
+            self.browser.driver
+        )
+        self.results["blocking_handled"] = handled
 
         if handled:
             logger.info("Blocking page handled successfully")
@@ -505,7 +580,10 @@ class WorkflowExecutor:
 
     def _action_rate_limit(self, params: Dict[str, Any]):
         """Apply rate limiting delay."""
-        if not self.anti_detection_manager or not self.anti_detection_manager.rate_limiter:
+        if (
+            not self.anti_detection_manager
+            or not self.anti_detection_manager.rate_limiter
+        ):
             logger.warning("Rate limiting not enabled")
             return
 
@@ -521,7 +599,10 @@ class WorkflowExecutor:
 
     def _action_simulate_human(self, params: Dict[str, Any]):
         """Simulate human-like behavior."""
-        if not self.anti_detection_manager or not self.anti_detection_manager.human_simulator:
+        if (
+            not self.anti_detection_manager
+            or not self.anti_detection_manager.human_simulator
+        ):
             logger.warning("Human behavior simulation not enabled")
             return
 
@@ -541,23 +622,32 @@ class WorkflowExecutor:
         else:
             # Random human-like pause
             time.sleep(random.uniform(1, duration))
-            logger.debug(f"Simulated random human behavior for {random.uniform(1, duration):.2f}s")
+            logger.debug(
+                f"Simulated random human behavior for {random.uniform(1, duration):.2f}s"
+            )
 
     def _action_rotate_session(self, params: Dict[str, Any]):
         """Force session rotation."""
-        if not self.anti_detection_manager or not self.anti_detection_manager.session_manager:
+        if (
+            not self.anti_detection_manager
+            or not self.anti_detection_manager.session_manager
+        ):
             logger.warning("Session rotation not enabled")
             return
 
-        rotated = self.anti_detection_manager.session_manager.rotate_session(self.anti_detection_manager)
-        self.results['session_rotated'] = rotated
+        rotated = self.anti_detection_manager.session_manager.rotate_session(
+            self.anti_detection_manager
+        )
+        self.results["session_rotated"] = rotated
 
         if rotated:
             logger.info("Session rotated successfully")
         else:
             logger.warning("Failed to rotate session")
 
-    def _extract_value_from_element(self, element, attribute: Optional[str]) -> Optional[str]:
+    def _extract_value_from_element(
+        self, element, attribute: Optional[str]
+    ) -> Optional[str]:
         """
         Extract value from a web element based on attribute.
 

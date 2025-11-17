@@ -16,23 +16,27 @@ class DataQualityScorer:
     """
 
     REQUIRED_FIELDS = [
-        'SKU', 'Name', 'Price', 'Images', 'Weight',
-        'Product_Field_16',  # Brand
-        'Product_Field_24',  # Category
-        'Product_Field_25'   # Product Type
+        "SKU",
+        "Name",
+        "Price",
+        "Images",
+        "Weight",
+        "Product_Field_16",  # Brand
+        "Product_Field_24",  # Category
+        "Product_Field_25",  # Product Type
     ]
 
-    INVALID_VALUES = {'', 'N/A', 'null', 'NULL', None}
+    INVALID_VALUES = {"", "N/A", "null", "NULL", None}
 
     # Weight conversion factors to LB
     WEIGHT_UNITS = {
-        'lb': 1.0,
-        'lbs': 1.0,
-        'oz': 1/16.0,
-        'kg': 2.20462,
-        'g': 0.00220462,
-        'gram': 0.00220462,
-        'grams': 0.00220462
+        "lb": 1.0,
+        "lbs": 1.0,
+        "oz": 1 / 16.0,
+        "kg": 2.20462,
+        "g": 0.00220462,
+        "gram": 0.00220462,
+        "grams": 0.00220462,
     }
 
     def __init__(self):
@@ -53,13 +57,18 @@ class DataQualityScorer:
         consistency_score, consistency_details = self._score_consistency(record)
 
         # Weighted overall score: 40% completeness, 40% accuracy, 20% consistency
-        overall_score = (0.4 * completeness_score + 0.4 * accuracy_score + 0.2 * consistency_score)
+        overall_score = (
+            0.4 * completeness_score + 0.4 * accuracy_score + 0.2 * consistency_score
+        )
 
         details = {
-            'completeness': {'score': completeness_score, 'details': completeness_details},
-            'accuracy': {'score': accuracy_score, 'details': accuracy_details},
-            'consistency': {'score': consistency_score, 'details': consistency_details},
-            'overall': overall_score
+            "completeness": {
+                "score": completeness_score,
+                "details": completeness_details,
+            },
+            "accuracy": {"score": accuracy_score, "details": accuracy_details},
+            "consistency": {"score": consistency_score, "details": consistency_details},
+            "overall": overall_score,
         }
 
         return overall_score, details
@@ -91,7 +100,7 @@ class DataQualityScorer:
         for field in self.REQUIRED_FIELDS:
             value = record.get(field)
             is_valid = self._is_field_valid(value, field)
-            details[field] = {'present': value is not None, 'valid': is_valid}
+            details[field] = {"present": value is not None, "valid": is_valid}
             if is_valid:
                 valid_fields += 1
 
@@ -109,25 +118,27 @@ class DataQualityScorer:
         details = {}
 
         # Weight accuracy
-        weight_value = record.get('Weight', '')
+        weight_value = record.get("Weight", "")
         weight_score, weight_details = self._score_weight_accuracy(weight_value)
         score_components.append(weight_score)
-        details['weight'] = weight_details
+        details["weight"] = weight_details
 
         # Image URLs accuracy
-        images_value = record.get('Images', '')
+        images_value = record.get("Images", "")
         images_score, images_details = self._score_images_accuracy(images_value)
         score_components.append(images_score)
-        details['images'] = images_details
+        details["images"] = images_details
 
         # Price accuracy (basic numeric check)
-        price_value = record.get('Price', '')
+        price_value = record.get("Price", "")
         price_score, price_details = self._score_price_accuracy(price_value)
         score_components.append(price_score)
-        details['price'] = price_details
+        details["price"] = price_details
 
         # Average of components
-        overall_score = sum(score_components) / len(score_components) if score_components else 0
+        overall_score = (
+            sum(score_components) / len(score_components) if score_components else 0
+        )
         return overall_score, details
 
     def _score_consistency(self, record: Dict[str, Any]) -> Tuple[float, Any]:
@@ -141,39 +152,45 @@ class DataQualityScorer:
         details = {}
 
         # SKU format (alphanumeric, reasonable length)
-        sku_value = record.get('SKU', '')
+        sku_value = record.get("SKU", "")
         sku_consistent = self._is_sku_consistent(sku_value)
         score_components.append(100 if sku_consistent else 0)
-        details['sku_format'] = sku_consistent
+        details["sku_format"] = sku_consistent
 
         # Name format (not just numbers, reasonable length)
-        name_value = record.get('Name', '')
+        name_value = record.get("Name", "")
         name_consistent = self._is_name_consistent(name_value)
         score_components.append(100 if name_consistent else 0)
-        details['name_format'] = name_consistent
+        details["name_format"] = name_consistent
 
         # Brand/Category/Product Type consistency (not empty, reasonable)
-        brand_value = record.get('Product_Field_16', '')
-        category_value = record.get('Product_Field_24', '')
-        product_type_value = record.get('Product_Field_25', '')
+        brand_value = record.get("Product_Field_16", "")
+        category_value = record.get("Product_Field_24", "")
+        product_type_value = record.get("Product_Field_25", "")
 
         brand_consistent = self._is_text_field_consistent(brand_value)
         category_consistent = self._is_text_field_consistent(category_value)
         product_type_consistent = self._is_text_field_consistent(product_type_value)
 
-        score_components.extend([
-            100 if brand_consistent else 0,
-            100 if category_consistent else 0,
-            100 if product_type_consistent else 0
-        ])
+        score_components.extend(
+            [
+                100 if brand_consistent else 0,
+                100 if category_consistent else 0,
+                100 if product_type_consistent else 0,
+            ]
+        )
 
-        details.update({
-            'brand_format': brand_consistent,
-            'category_format': category_consistent,
-            'product_type_format': product_type_consistent
-        })
+        details.update(
+            {
+                "brand_format": brand_consistent,
+                "category_format": category_consistent,
+                "product_type_format": product_type_consistent,
+            }
+        )
 
-        overall_score = sum(score_components) / len(score_components) if score_components else 0
+        overall_score = (
+            sum(score_components) / len(score_components) if score_components else 0
+        )
         return overall_score, details
 
     def _is_field_valid(self, value: Any, field_name: str = "") -> bool:
@@ -185,41 +202,43 @@ class DataQualityScorer:
             if stripped in self.INVALID_VALUES:
                 return False
             # Additional checks for meaningless content
-            if stripped.lower() in {'invalid', 'not-a-url', 'n/a', 'none', 'null'}:
+            if stripped.lower() in {"invalid", "not-a-url", "n/a", "none", "null"}:
                 return False
             # For price, check if it contains digits
-            if field_name.lower() == 'price' and not any(c.isdigit() for c in stripped):
+            if field_name.lower() == "price" and not any(c.isdigit() for c in stripped):
                 return False
             # For images, check if it contains http
-            if field_name.lower() == 'images' and 'http' not in stripped.lower():
+            if field_name.lower() == "images" and "http" not in stripped.lower():
                 return False
         return True
 
     def _score_weight_accuracy(self, weight_str: str) -> Tuple[float, Dict[str, Any]]:
         """Score weight field accuracy and normalization."""
         if not weight_str or weight_str.strip() in self.INVALID_VALUES:
-            return 0, {'normalized': None, 'valid': False}
+            return 0, {"normalized": None, "valid": False}
 
         try:
             normalized_lb = self._normalize_weight_to_lb(weight_str)
             if normalized_lb is not None and normalized_lb > 0:
-                return 100, {'normalized': f"{normalized_lb:.2f} lb", 'valid': True}
+                return 100, {"normalized": f"{normalized_lb:.2f} lb", "valid": True}
             else:
-                return 0, {'normalized': None, 'valid': False}
+                return 0, {"normalized": None, "valid": False}
         except:
-            return 0, {'normalized': None, 'valid': False}
+            return 0, {"normalized": None, "valid": False}
 
     def _normalize_weight_to_lb(self, weight_str: str) -> Optional[float]:
         """Parse weight string and convert to LB."""
         weight_str = weight_str.strip().lower()
 
         # Match patterns like "5 lb", "10.5 oz", "2 kg"
-        match = re.match(r'^(\d+(?:\.\d+)?)\s*(lb|lbs|oz|kg|g|gram|grams)?$', weight_str)
+        match = re.match(
+            r"^(\d+(?:\.\d+)?)\s*(lb|lbs|oz|kg|g|gram|grams)?$", weight_str
+        )
         if not match:
             return None
 
         value = float(match.group(1))
-        unit = match.group(2) or 'lb'  # Default to lb if no unit
+        unit = match.group(2) or "lb"  # Default to lb if no unit
 
         if unit in self.WEIGHT_UNITS:
             return value * self.WEIGHT_UNITS[unit]
@@ -228,56 +247,58 @@ class DataQualityScorer:
     def _score_images_accuracy(self, images_str: str) -> Tuple[float, Any]:
         """Score images field accuracy (valid URLs)."""
         if not images_str or images_str.strip() in self.INVALID_VALUES:
-            return 0, {'valid_urls': 0, 'total_urls': 0, 'percentage': 0}
+            return 0, {"valid_urls": 0, "total_urls": 0, "percentage": 0}
 
-        urls = [url.strip() for url in images_str.split(',') if url.strip()]
+        urls = [url.strip() for url in images_str.split(",") if url.strip()]
         if not urls:
-            return 0, {'valid_urls': 0, 'total_urls': 0, 'percentage': 0}
+            return 0, {"valid_urls": 0, "total_urls": 0, "percentage": 0}
 
         valid_count = sum(1 for url in urls if self._is_valid_url(url))
         percentage = (valid_count / len(urls)) * 100
 
         return percentage, {
-            'valid_urls': valid_count,
-            'total_urls': len(urls),
-            'percentage': percentage
+            "valid_urls": valid_count,
+            "total_urls": len(urls),
+            "percentage": percentage,
         }
 
     def _is_valid_url(self, url: str) -> bool:
         """Check if URL is valid HTTP/HTTPS."""
         try:
             parsed = urlparse(url)
-            return parsed.scheme in ('http', 'https') and bool(parsed.netloc)
+            return parsed.scheme in ("http", "https") and bool(parsed.netloc)
         except:
             return False
-
 
     def _score_price_accuracy(self, price_str: str) -> Tuple[float, Any]:
         """Score price field accuracy (numeric format)."""
         if not price_str or price_str.strip() in self.INVALID_VALUES:
-            return 0, {'numeric': False, 'value': None}
+            return 0, {"numeric": False, "value": None}
 
         try:
             # Remove currency symbols and commas
-            clean_price = re.sub(r'[^\d.]', '', price_str)
+            clean_price = re.sub(r"[^\d.]", "", price_str)
             price_value = float(clean_price)
-            return 100 if price_value >= 0 else 0, {'numeric': True, 'value': price_value}
+            return 100 if price_value >= 0 else 0, {
+                "numeric": True,
+                "value": price_value,
+            }
         except:
-            return 0, {'numeric': False, 'value': None}
+            return 0, {"numeric": False, "value": None}
 
     def _is_sku_consistent(self, sku: str) -> bool:
         """Check SKU format consistency."""
         if not sku or sku in self.INVALID_VALUES:
             return False
         # Alphanumeric, dashes, underscores, reasonable length
-        return bool(re.match(r'^[A-Za-z0-9\-_]{1,50}$', sku))
+        return bool(re.match(r"^[A-Za-z0-9\-_]{1,50}$", sku))
 
     def _is_name_consistent(self, name: str) -> bool:
         """Check name format consistency."""
         if not name or name in self.INVALID_VALUES:
             return False
         # Not just numbers, reasonable length
-        if re.match(r'^\d+$', name):
+        if re.match(r"^\d+$", name):
             return False
         return 1 <= len(name) <= 200
 

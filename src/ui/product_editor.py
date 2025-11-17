@@ -27,7 +27,6 @@ import time
 import traceback
 
 
-
 # Database setup
 from pathlib import Path
 import os
@@ -94,11 +93,14 @@ class ProductEditor(QMainWindow):
         # Apply the global dark theme.
         try:
             from src.ui.styling import STYLESHEET
+
             self.setStyleSheet(STYLESHEET)
         except (ImportError, ModuleNotFoundError):
             print("CRITICAL: Could not import stylesheet. UI will be unstyled.")
             # Fallback to a very basic theme if the import fails
-            self.setStyleSheet("QMainWindow { background-color: #1e1e1e; color: #ffffff; }")
+            self.setStyleSheet(
+                "QMainWindow { background-color: #1e1e1e; color: #ffffff; }"
+            )
 
         # Build UI
         self._init_ui()
@@ -350,12 +352,12 @@ class ProductEditor(QMainWindow):
             if not current_weight and weight_options:
                 current_weight = weight_options[0]
             self.weight_combo.setCurrentText(current_weight)
-            
+
             # Load images - prioritize saved images over consolidated data
             saved_urls = product.get("Image URLs", [])
             if isinstance(saved_urls, str):
-                saved_urls = [u.strip() for u in saved_urls.split(',') if u.strip()]
-            
+                saved_urls = [u.strip() for u in saved_urls.split(",") if u.strip()]
+
             if saved_urls:
                 # Use saved images
                 self.current_images = saved_urls

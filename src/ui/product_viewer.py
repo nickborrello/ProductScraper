@@ -56,15 +56,18 @@ class ProductViewer(QMainWindow):
         super().__init__()
         self.setWindowTitle("Product Database Viewer - Professional Edition")
         self.setGeometry(100, 100, 1400, 900)
-        
+
         # Apply the global dark theme.
         try:
             from src.ui.styling import STYLESHEET
+
             self.setStyleSheet(STYLESHEET)
         except (ImportError, ModuleNotFoundError):
             print("CRITICAL: Could not import stylesheet. UI will be unstyled.")
             # Fallback to a very basic theme if the import fails
-            self.setStyleSheet("QMainWindow { background-color: #1e1e1e; color: #ffffff; }")
+            self.setStyleSheet(
+                "QMainWindow { background-color: #1e1e1e; color: #ffffff; }"
+            )
 
         # Database connection
         self.conn = None
@@ -174,26 +177,40 @@ class ProductViewer(QMainWindow):
         # Table
         self.table = QTableWidget()
         self.table.setColumnCount(12)
-        self.table.setHorizontalHeaderLabels([
-            "Select", "SKU", "Brand", "Product Name", "Price", "Weight", 
-            "Category", "Product Type", "Pages", "Special Order", "Disabled", "Last Updated"
-        ])
+        self.table.setHorizontalHeaderLabels(
+            [
+                "Select",
+                "SKU",
+                "Brand",
+                "Product Name",
+                "Price",
+                "Weight",
+                "Category",
+                "Product Type",
+                "Pages",
+                "Special Order",
+                "Disabled",
+                "Last Updated",
+            ]
+        )
         self.table.setAlternatingRowColors(True)
-        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)  # Make table read-only
+        self.table.setEditTriggers(
+            QAbstractItemView.EditTrigger.NoEditTriggers
+        )  # Make table read-only
         self.table.cellClicked.connect(self.on_table_click)
 
         # Set column widths and resize modes
-        self.table.setColumnWidth(0, 60)   # Select checkbox column - small
+        self.table.setColumnWidth(0, 60)  # Select checkbox column - small
         self.table.setColumnWidth(1, 120)  # SKU column
         self.table.setColumnWidth(2, 120)  # Brand column
-        self.table.setColumnWidth(4, 80)   # Price column
-        self.table.setColumnWidth(5, 80)   # Weight column
+        self.table.setColumnWidth(4, 80)  # Price column
+        self.table.setColumnWidth(5, 80)  # Weight column
         self.table.setColumnWidth(6, 120)  # Category column
         self.table.setColumnWidth(7, 120)  # Product Type column
         self.table.setColumnWidth(8, 100)  # Pages column
         self.table.setColumnWidth(9, 100)  # Special Order column
         self.table.setColumnWidth(10, 80)  # Disabled column
-        self.table.setColumnWidth(11, 140) # Last Updated column
+        self.table.setColumnWidth(11, 140)  # Last Updated column
         # Set Product Name column to stretch
         header = self.table.horizontalHeader()
         if header is not None:
@@ -433,24 +450,28 @@ class ProductViewer(QMainWindow):
                 query += " AND (Category LIKE ? OR Category LIKE ? OR Category LIKE ? OR Category = ?)"
                 # Match: "|Category|", "Category|", "|Category", "Category"
                 category_param = self.category_filter
-                params.extend([
-                    f"%|{category_param}|%",
-                    f"{category_param}|%",
-                    f"%|{category_param}",
-                    category_param
-                ])
+                params.extend(
+                    [
+                        f"%|{category_param}|%",
+                        f"{category_param}|%",
+                        f"%|{category_param}",
+                        category_param,
+                    ]
+                )
 
             # Add product type filter
             if self.product_type_filter:
                 query += " AND (Product_Type LIKE ? OR Product_Type LIKE ? OR Product_Type LIKE ? OR Product_Type = ?)"
                 # Match: "|Type|", "Type|", "|Type", "Type"
                 type_param = self.product_type_filter
-                params.extend([
-                    f"%|{type_param}|%",
-                    f"{type_param}|%",
-                    f"%|{type_param}",
-                    type_param
-                ])
+                params.extend(
+                    [
+                        f"%|{type_param}|%",
+                        f"{type_param}|%",
+                        f"%|{type_param}",
+                        type_param,
+                    ]
+                )
 
             # Add special order filter
             if self.special_order_filter:
@@ -484,20 +505,40 @@ class ProductViewer(QMainWindow):
             # Populate table
             self.table.setRowCount(len(rows))
             for row_idx, row in enumerate(rows):
-                (sku, brand, name, price, weight, category, product_type, 
-                 product_on_pages, special_order, product_disabled, last_updated) = row
-                
+                (
+                    sku,
+                    brand,
+                    name,
+                    price,
+                    weight,
+                    category,
+                    product_type,
+                    product_on_pages,
+                    special_order,
+                    product_disabled,
+                    last_updated,
+                ) = row
+
                 # Check if this product is selected
                 is_selected = "☑" if sku in self.selected_products else "☐"
-                
+
                 # Format data for display
                 price_display = price or ""
                 weight_display = weight or ""
                 category_display = category or ""
                 product_type_display = product_type or ""
                 pages_display = product_on_pages or ""
-                special_order_display = "Yes" if special_order and str(special_order).lower().strip() == "yes" else "No"
-                disabled_display = "Yes" if product_disabled and str(product_disabled).lower().strip() == "checked" else "No"
+                special_order_display = (
+                    "Yes"
+                    if special_order and str(special_order).lower().strip() == "yes"
+                    else "No"
+                )
+                disabled_display = (
+                    "Yes"
+                    if product_disabled
+                    and str(product_disabled).lower().strip() == "checked"
+                    else "No"
+                )
                 last_updated_display = last_updated or ""
 
                 # Set table items
@@ -534,24 +575,32 @@ class ProductViewer(QMainWindow):
             cursor = self.conn.cursor()
 
             # Get distinct categories - split by "|" and collect unique values
-            cursor.execute("SELECT DISTINCT Category FROM products WHERE Category IS NOT NULL AND Category != ''")
+            cursor.execute(
+                "SELECT DISTINCT Category FROM products WHERE Category IS NOT NULL AND Category != ''"
+            )
             categories = set()
             for row in cursor.fetchall():
                 category_str = row[0]
                 if category_str:
                     # Split by "|" and strip whitespace
-                    category_parts = [cat.strip() for cat in category_str.split('|') if cat.strip()]
+                    category_parts = [
+                        cat.strip() for cat in category_str.split("|") if cat.strip()
+                    ]
                     categories.update(category_parts)
             categories = sorted(list(categories))
 
             # Get distinct product types - split by "|" and collect unique values
-            cursor.execute("SELECT DISTINCT Product_Type FROM products WHERE Product_Type IS NOT NULL AND Product_Type != ''")
+            cursor.execute(
+                "SELECT DISTINCT Product_Type FROM products WHERE Product_Type IS NOT NULL AND Product_Type != ''"
+            )
             product_types = set()
             for row in cursor.fetchall():
                 product_type_str = row[0]
                 if product_type_str:
                     # Split by "|" and strip whitespace
-                    type_parts = [pt.strip() for pt in product_type_str.split('|') if pt.strip()]
+                    type_parts = [
+                        pt.strip() for pt in product_type_str.split("|") if pt.strip()
+                    ]
                     product_types.update(type_parts)
             product_types = sorted(list(product_types))
 
@@ -751,7 +800,8 @@ class ProductViewer(QMainWindow):
             self.conn.text_factory = str
             placeholders = ",".join("?" * len(skus))
             cursor = self.conn.cursor()
-            cursor.execute(f"""
+            cursor.execute(
+                f"""
                 SELECT SKU, Brand, Name, Price, Weight, Category, Product_Type, Product_On_Pages, Special_Order, Images, ProductDisabled
                 FROM products
                 WHERE SKU IN ({placeholders})
@@ -761,13 +811,26 @@ class ProductViewer(QMainWindow):
 
             products = []
             for row in cursor.fetchall():
-                (sku, brand, name, price, weight, category, product_type, 
-                 product_on_pages, special_order, images, product_disabled) = row
+                (
+                    sku,
+                    brand,
+                    name,
+                    price,
+                    weight,
+                    category,
+                    product_type,
+                    product_on_pages,
+                    special_order,
+                    images,
+                    product_disabled,
+                ) = row
                 # Parse images from comma-separated string
                 image_urls = []
                 if images:
                     # Split by comma and strip whitespace
-                    raw_images = [url.strip() for url in str(images).split(",") if url.strip()]
+                    raw_images = [
+                        url.strip() for url in str(images).split(",") if url.strip()
+                    ]
                     # Convert relative paths to full URLs
                     base_url = "https://www.baystatepet.com/media/"
                     for img in raw_images:
@@ -784,22 +847,30 @@ class ProductViewer(QMainWindow):
                     """Split by |, remove duplicates while preserving order, rejoin with |"""
                     if not value:
                         return ""
-                    parts = [part.strip() for part in str(value).split("|") if part.strip()]
-                    unique_parts = list(dict.fromkeys(parts))  # Preserve order while removing duplicates
+                    parts = [
+                        part.strip() for part in str(value).split("|") if part.strip()
+                    ]
+                    unique_parts = list(
+                        dict.fromkeys(parts)
+                    )  # Preserve order while removing duplicates
                     return "|".join(unique_parts)
 
                 mapped_product = {
-                    'SKU': sku,
-                    'Name': name or '',
-                    'Brand': brand or '',
-                    'Price': price or '',
-                    'Weight': weight or '',
-                    'Special Order': 'yes' if special_order and str(special_order).lower().strip() == 'yes' else '',
-                    'Category': deduplicate_pipe_separated(category),
-                    'Product Type': deduplicate_pipe_separated(product_type),
-                    'Product On Pages': deduplicate_pipe_separated(product_on_pages),
-                    'Image URLs': image_urls,
-                    'Product Disabled': product_disabled or ''
+                    "SKU": sku,
+                    "Name": name or "",
+                    "Brand": brand or "",
+                    "Price": price or "",
+                    "Weight": weight or "",
+                    "Special Order": (
+                        "yes"
+                        if special_order and str(special_order).lower().strip() == "yes"
+                        else ""
+                    ),
+                    "Category": deduplicate_pipe_separated(category),
+                    "Product Type": deduplicate_pipe_separated(product_type),
+                    "Product On Pages": deduplicate_pipe_separated(product_on_pages),
+                    "Image URLs": image_urls,
+                    "Product Disabled": product_disabled or "",
                 }
 
                 products.append(mapped_product)

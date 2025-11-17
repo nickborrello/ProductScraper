@@ -35,6 +35,7 @@ from pathlib import Path
 # Conditional import for core logic to ensure GUI is runnable even if main fails.
 # Check scraper system preference
 from src.core.settings_manager import settings
+
 scraper_system = settings.get("scraper_system", "new")
 
 try:
@@ -44,29 +45,46 @@ try:
         from src.core.database.refresh import refresh_database_from_xml as run_db_refresh  # type: ignore[assignment]
         from src.core.database.xml_import import import_from_shopsite_xml as run_shopsite_xml_download  # type: ignore[assignment]
         from src.core.database.xml_import import publish_shopsite_changes as run_shopsite_publish  # type: ignore[assignment]
+
         # DEPRECATION WARNING: Using legacy system
         import warnings
+
         warnings.warn(
             "GUI is configured to use the deprecated archived scraper system. "
             "Consider switching to the new modular scraper system in settings. "
             "See docs/SCRAPER_MIGRATION_GUIDE.md for migration instructions.",
             DeprecationWarning,
-            stacklevel=2
+            stacklevel=2,
         )
     else:
         print("🚀 GUI using new modular scraper system...")
         from src.scrapers.main import run_scraping
-        # Import legacy functions for backward compatibility
-        from src.core.database.refresh import refresh_database_from_xml as run_db_refresh
-        from src.core.database.xml_import import import_from_shopsite_xml as run_shopsite_xml_download
-        from src.core.database.xml_import import publish_shopsite_changes as run_shopsite_publish
 
-    def run_scraper_tests(run_integration=False, log_callback=None, progress_callback=None, status_callback=None, editor_callback=None, confirmation_callback=None, metrics_callback=None):
+        # Import legacy functions for backward compatibility
+        from src.core.database.refresh import (
+            refresh_database_from_xml as run_db_refresh,
+        )
+        from src.core.database.xml_import import (
+            import_from_shopsite_xml as run_shopsite_xml_download,
+        )
+        from src.core.database.xml_import import (
+            publish_shopsite_changes as run_shopsite_publish,
+        )
+
+    def run_scraper_tests(
+        run_integration=False,
+        log_callback=None,
+        progress_callback=None,
+        status_callback=None,
+        editor_callback=None,
+        confirmation_callback=None,
+        metrics_callback=None,
+    ):
         """Run pytest on scraper tests and stream results."""
         # Determine log function
         if log_callback is None:
             log = print
-        elif hasattr(log_callback, 'emit'):
+        elif hasattr(log_callback, "emit"):
             # If it's a Qt signal object, use emit method
             log = log_callback.emit
         else:
@@ -76,10 +94,13 @@ try:
         # Correctly find project root from the current file's location
         try:
             from src.utils.run_scraper import find_project_root
+
             PROJECT_ROOT = find_project_root()
         except (ImportError, FileNotFoundError):
             # Fallback if run_scraper is removed
-            PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            PROJECT_ROOT = os.path.dirname(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            )
 
         test_file = os.path.join(PROJECT_ROOT, "tests", "platform_test_scrapers.py")
 
@@ -96,14 +117,13 @@ try:
                 log("   🔧 Running basic validation only")
             log("=" * 60)
 
-            command = [
-                sys.executable, test_file, "--all"
-            ]
+            command = [sys.executable, test_file, "--all"]
             if run_integration:
                 command.append("--verbose")
 
             # Use Popen to stream output
             import subprocess
+
             process = subprocess.Popen(
                 command,
                 stdout=subprocess.PIPE,
@@ -143,7 +163,7 @@ except ImportError as e:
         """Dummy function for scraping if import fails."""
         log_callback = kwargs.get("log_callback")
         if log_callback:
-            if hasattr(log_callback, 'emit'):
+            if hasattr(log_callback, "emit"):
                 log_callback.emit("Error: Scraping logic not found.")
             else:
                 log_callback("Error: Scraping logic not found.")
@@ -152,7 +172,7 @@ except ImportError as e:
         """Dummy function for DB refresh if import fails."""
         log_callback = kwargs.get("log_callback")
         if log_callback:
-            if hasattr(log_callback, 'emit'):
+            if hasattr(log_callback, "emit"):
                 log_callback.emit("Error: DB refresh logic not found.")
             else:
                 log_callback("Error: DB refresh logic not found.")
@@ -162,7 +182,7 @@ except ImportError as e:
         """Dummy function for scraper tests if import fails."""
         log_callback = kwargs.get("log_callback")
         if log_callback:
-            if hasattr(log_callback, 'emit'):
+            if hasattr(log_callback, "emit"):
                 log_callback.emit("Error: Scraper test logic not found.")
             else:
                 log_callback("Error: Scraper test logic not found.")
@@ -172,25 +192,27 @@ except ImportError as e:
         """Dummy function for scraper integration tests if import fails."""
         log_callback = kwargs.get("log_callback")
         if log_callback:
-            if hasattr(log_callback, 'emit'):
+            if hasattr(log_callback, "emit"):
                 log_callback.emit("Error: Scraper integration test logic not found.")
             else:
                 log_callback("Error: Scraper integration test logic not found.")
         return False
+
     def run_shopsite_xml_download(*args, **kwargs) -> tuple[bool, str]:
         """Dummy function for ShopSite XML download if import fails."""
         log_callback = kwargs.get("log_callback")
         if log_callback:
-            if hasattr(log_callback, 'emit'):
+            if hasattr(log_callback, "emit"):
                 log_callback.emit("Error: ShopSite XML download logic not found.")
             else:
                 log_callback("Error: ShopSite XML download logic not found.")
         return False, "Error: ShopSite XML download logic not found."
+
     def run_shopsite_publish(*args, **kwargs) -> tuple[bool, str]:
         """Dummy function for ShopSite publish if import fails."""
         log_callback = kwargs.get("log_callback")
         if log_callback:
-            if hasattr(log_callback, 'emit'):
+            if hasattr(log_callback, "emit"):
                 log_callback.emit("Error: ShopSite publish logic not found.")
             else:
                 log_callback("Error: ShopSite publish logic not found.")
@@ -220,8 +242,12 @@ class WorkerSignals(QObject):
     log = pyqtSignal(str)
     status = pyqtSignal(str)
     metrics = pyqtSignal(dict)
-    request_editor_sync = pyqtSignal(list, object, str)  # products_list, result_container, editor_type
-    request_confirmation_sync = pyqtSignal(str, str, object) # title, text, result_container
+    request_editor_sync = pyqtSignal(
+        list, object, str
+    )  # products_list, result_container, editor_type
+    request_confirmation_sync = pyqtSignal(
+        str, str, object
+    )  # title, text, result_container
 
 
 class Worker(QThread):
@@ -263,19 +289,20 @@ class Worker(QThread):
     def _request_confirmation_sync(self, title, text):
         """Request a confirmation dialog on the main thread and wait for the result."""
         from PyQt6.QtCore import QEventLoop
+
         result_container = {"result": None, "done": False}
         self.signals.request_confirmation_sync.emit(title, text, result_container)
-        
+
         loop = QEventLoop()
         timer = QTimer()
         timer.timeout.connect(lambda: result_container["done"] and loop.quit())
         timer.start(100)
         loop.exec()
         timer.stop()
-        
+
         return result_container["result"]
 
-    def _request_editor_sync(self, products_list, editor_type='product'):
+    def _request_editor_sync(self, products_list, editor_type="product"):
         """Request editor on main thread and wait for result (synchronous from worker's perspective)"""
         from PyQt6.QtCore import QEventLoop
 
@@ -283,7 +310,9 @@ class Worker(QThread):
         result_container = {"result": None, "done": False}
 
         # Emit signal to main thread with products and result container
-        self.signals.request_editor_sync.emit(products_list, result_container, editor_type)
+        self.signals.request_editor_sync.emit(
+            products_list, result_container, editor_type
+        )
 
         # Wait for main thread to complete
         loop = QEventLoop()
@@ -488,15 +517,18 @@ class MainWindow(QMainWindow):
         self.create_menu_bar()
         self.create_central_widget()
         self.create_status_bar()
-        
+
         # Apply the global dark theme.
         try:
             from src.ui.styling import STYLESHEET
+
             self.setStyleSheet(STYLESHEET)
         except (ImportError, ModuleNotFoundError):
             print("CRITICAL: Could not import stylesheet. UI will be unstyled.")
             # Fallback to a very basic theme if the import fails
-            self.setStyleSheet("QMainWindow { background-color: #1e1e1e; color: #ffffff; }")
+            self.setStyleSheet(
+                "QMainWindow { background-color: #1e1e1e; color: #ffffff; }"
+            )
 
         # Initial status
         self.log_message("Application started successfully", "SUCCESS")
@@ -921,9 +953,11 @@ class MainWindow(QMainWindow):
         """Generic method to run a function in the worker thread"""
         self.progress_bar.setValue(0)
         self._set_buttons_enabled(False)
-        self.cancel_scraping_btn.setEnabled(True)  # Enable cancel button when worker starts
+        self.cancel_scraping_btn.setEnabled(
+            True
+        )  # Enable cancel button when worker starts
         self.update_status("Running...", "working")
-        
+
         # Reset metrics labels
         self.elapsed_label.setText("⏱️ Elapsed: 00:00:00")
         self.processed_label.setText("📦 Processed: 0/0")
@@ -959,24 +993,34 @@ class MainWindow(QMainWindow):
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No,
         )
-        result_container["result"] = (reply == QMessageBox.StandardButton.Yes)
+        result_container["result"] = reply == QMessageBox.StandardButton.Yes
         result_container["done"] = True
 
-    def open_editor_on_main_thread_sync(self, products_list, result_container, editor_type):
+    def open_editor_on_main_thread_sync(
+        self, products_list, result_container, editor_type
+    ):
         """Open a specified editor on the main GUI thread (synchronous)."""
-        if editor_type == 'product':
+        if editor_type == "product":
             from src.ui.product_editor import edit_products_in_batch as editor_func
+
             log_msg = "product editor"
-        elif editor_type == 'classification':
-            from src.core.classification.ui import edit_classification_in_batch as editor_func
+        elif editor_type == "classification":
+            from src.core.classification.ui import (
+                edit_classification_in_batch as editor_func,
+            )
+
             log_msg = "classification editor"
         else:
-            self.log_message(f"❌ Unknown editor type requested: {editor_type}", "ERROR")
+            self.log_message(
+                f"❌ Unknown editor type requested: {editor_type}", "ERROR"
+            )
             result_container["result"] = None
             result_container["done"] = True
             return
 
-        self.log_message(f"📝 Opening {log_msg} for {len(products_list)} products...", "INFO")
+        self.log_message(
+            f"📝 Opening {log_msg} for {len(products_list)} products...", "INFO"
+        )
 
         try:
             # Open editor - this runs on the main thread so it's safe
@@ -1052,9 +1096,11 @@ class MainWindow(QMainWindow):
         try:
             self.log_message("Opening product viewer...", "INFO")
             import subprocess
-            
+
             # Construct path relative to this file's location
-            project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            project_root = os.path.dirname(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            )
             viewer_path = os.path.join(project_root, "src", "ui", "product_viewer.py")
 
             subprocess.Popen([sys.executable, viewer_path])
@@ -1132,7 +1178,7 @@ class MainWindow(QMainWindow):
         # Determine log function
         if log_callback is None:
             log = print
-        elif hasattr(log_callback, 'emit'):
+        elif hasattr(log_callback, "emit"):
             # If it's a Qt signal object, use emit method
             log = log_callback.emit
         else:
@@ -1141,10 +1187,11 @@ class MainWindow(QMainWindow):
 
         try:
             log("Loading Excel file...")
-            if progress_callback: progress_callback.emit(10)
+            if progress_callback:
+                progress_callback.emit(10)
 
             # Load the original DataFrame, keeping all original data
-            df = pd.read_excel(file_path, dtype=str).fillna('')
+            df = pd.read_excel(file_path, dtype=str).fillna("")
             log(f"Loaded {len(df)} rows from Excel file")
 
             if df.empty:
@@ -1158,106 +1205,130 @@ class MainWindow(QMainWindow):
                 log(f"Missing required columns for classification: {missing_cols}")
                 return
 
-            if progress_callback: progress_callback.emit(20)
+            if progress_callback:
+                progress_callback.emit(20)
 
             # Create a temporary list of dicts for the classification functions
-            products_for_classification = df.rename(columns={
-                "Product Field 16": "Brand",
-                "Product Field 11": "Special Order",
-                "ProductDisabled": "Product Disabled"
-            }).to_dict('records')
-            log(f"Converted {len(products_for_classification)} products for classification")
+            products_for_classification = df.rename(
+                columns={
+                    "Product Field 16": "Brand",
+                    "Product Field 11": "Special Order",
+                    "ProductDisabled": "Product Disabled",
+                }
+            ).to_dict("records")
+            log(
+                f"Converted {len(products_for_classification)} products for classification"
+            )
 
-            if progress_callback: progress_callback.emit(40)
+            if progress_callback:
+                progress_callback.emit(40)
 
             # --- Classification Process ---
             from src.core.settings_manager import SettingsManager
+
             settings = SettingsManager()
             classification_method = settings.get("classification_method", "llm")
-            
-            log(f"Running automatic classification using {classification_method} method...")
+
+            log(
+                f"Running automatic classification using {classification_method} method..."
+            )
             classified_products = classify_products_batch(
                 products_for_classification, method=classification_method
             )
             log("Automatic classification complete")
 
-            if progress_callback: progress_callback.emit(60)
+            if progress_callback:
+                progress_callback.emit(60)
 
             log("Opening manual classification editor...")
             if editor_callback:
-                edited_products = editor_callback(classified_products, editor_type='classification')
+                edited_products = editor_callback(
+                    classified_products, editor_type="classification"
+                )
             else:
                 log("Editor callback not available, skipping manual edit.", "WARNING")
-                edited_products = classified_products # Proceed with auto-classified data
+                edited_products = (
+                    classified_products  # Proceed with auto-classified data
+                )
 
             if edited_products is None:
                 log("Classification cancelled by user. No file will be saved.")
                 return
 
             log("Manual classification complete")
-            if progress_callback: progress_callback.emit(80)
+            if progress_callback:
+                progress_callback.emit(80)
             # --- End of Classification Process ---
 
             # Create a DataFrame from the results
             results_df = pd.DataFrame(edited_products)
 
             # Set SKU as the index on both DataFrames to join the data
-            df = df.set_index('SKU')
-            results_df = results_df.set_index('SKU')
+            df = df.set_index("SKU")
+            results_df = results_df.set_index("SKU")
 
             # Define the mapping from classification results to final Excel columns
             column_mapping = {
                 "Category": "Product Field 24",
                 "Product Type": "Product Field 25",
-                "Product On Pages": "Product On Pages"
+                "Product On Pages": "Product On Pages",
             }
-            
+
             results_to_update = results_df.rename(columns=column_mapping)
             df.update(results_to_update)
-            
+
             from datetime import datetime
+
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            df['Last Edited'] = timestamp
+            df["Last Edited"] = timestamp
             df.reset_index(inplace=True)
 
             # --- Save back to Excel ---
             save_path = Path(file_path)
             if save_path.suffix.lower() == ".xls":
                 save_path = save_path.with_suffix(".xlsx")
-                log(f"Original was .xls, saving as .xlsx to preserve features: {save_path.name}")
+                log(
+                    f"Original was .xls, saving as .xlsx to preserve features: {save_path.name}"
+                )
 
             df.to_excel(save_path, index=False)
             log(f"Saved {len(df)} classified products back to: {save_path}")
             log("Classification complete!")
 
-            if progress_callback: progress_callback.emit(100)
+            if progress_callback:
+                progress_callback.emit(100)
 
         except Exception as e:
             log(f"Error during classification: {e}")
             import traceback
+
             log(traceback.format_exc())
             raise
 
     def get_available_sites(self):
         """Get list of available scraping sites"""
         from src.core.settings_manager import settings
+
         scraper_system = settings.get("scraper_system", "new")
 
         try:
             if scraper_system == "legacy":
                 from src.scrapers.main import get_available_scrapers
+
                 # DEPRECATION WARNING: Using legacy system
                 import warnings
+
                 warnings.warn(
                     "Using get_available_scrapers from src.scrapers.main which is the new system. "
                     "The legacy system is deprecated. "
                     "See docs/SCRAPER_MIGRATION_GUIDE.md for migration instructions.",
                     DeprecationWarning,
-                    stacklevel=2
+                    stacklevel=2,
                 )
                 return get_available_scrapers()
             else:
                 from src.scrapers.main import get_available_scrapers
+
                 return get_available_scrapers()
         except Exception as e:
             self.log_message(f"Error getting available sites: {e}", "ERROR")
@@ -1376,7 +1447,9 @@ class MainWindow(QMainWindow):
 
     def select_excel_file(self):
         """Open file dialog to select Excel file"""
-        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        project_root = os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        )
         file_path, _ = QFileDialog.getOpenFileName(
             self,
             "Select Excel File",
@@ -1388,38 +1461,50 @@ class MainWindow(QMainWindow):
     def start_scraper_tests(self):
         """Start scraper integration test process - tests all scrapers with known working products"""
         self.last_operation = "Scraper Tests"
-        self.log_message("Starting scraper integration tests (testing all scrapers with known working products)...", "INFO")
+        self.log_message(
+            "Starting scraper integration tests (testing all scrapers with known working products)...",
+            "INFO",
+        )
         self._run_worker(run_scraper_tests, run_integration=True)
 
     def add_new_scraper(self):
         """Open dialog to add a new scraper configuration"""
         try:
             from src.ui.scraper_management_dialog import AddScraperDialog
+
             dialog = AddScraperDialog(self)
             dialog.exec()
         except Exception as e:
             self.log_message(f"Failed to open add scraper dialog: {e}", "ERROR")
-            QMessageBox.critical(self, "Error", f"Failed to open add scraper dialog:\n{e}")
+            QMessageBox.critical(
+                self, "Error", f"Failed to open add scraper dialog:\n{e}"
+            )
 
     def manage_scrapers(self):
         """Open dialog to manage existing scraper configurations"""
         try:
             from src.ui.scraper_management_dialog import ScraperManagementDialog
+
             dialog = ScraperManagementDialog(self)
             dialog.exec()
         except Exception as e:
             self.log_message(f"Failed to open scraper management dialog: {e}", "ERROR")
-            QMessageBox.critical(self, "Error", f"Failed to open scraper management dialog:\n{e}")
+            QMessageBox.critical(
+                self, "Error", f"Failed to open scraper management dialog:\n{e}"
+            )
 
     def open_scraper_builder(self):
         """Open the scraper builder dialog"""
         try:
             from src.ui.scraper_builder_dialog import ScraperBuilderDialog
+
             dialog = ScraperBuilderDialog(self)
             dialog.exec()
         except Exception as e:
             self.log_message(f"Failed to open scraper builder dialog: {e}", "ERROR")
-            QMessageBox.critical(self, "Error", f"Failed to open scraper builder dialog:\n{e}")
+            QMessageBox.critical(
+                self, "Error", f"Failed to open scraper builder dialog:\n{e}"
+            )
 
     def log_message(self, message, level="INFO"):
         """Add a message to the log viewer"""
@@ -1452,18 +1537,19 @@ class MainWindow(QMainWindow):
     def update_progress(self, value):
         """Update the progress bar value"""
         self.progress_bar.setValue(value)
-        
+
     def update_metrics(self, metrics_dict):
         """Update execution metrics labels"""
-        elapsed = metrics_dict.get('elapsed', '00:00:00')
-        processed = metrics_dict.get('processed', '0/0')
-        current_op = metrics_dict.get('current_op', 'Idle')
-        eta = metrics_dict.get('eta', '--')
+        elapsed = metrics_dict.get("elapsed", "00:00:00")
+        processed = metrics_dict.get("processed", "0/0")
+        current_op = metrics_dict.get("current_op", "Idle")
+        eta = metrics_dict.get("eta", "--")
 
         self.elapsed_label.setText(f"⏱️ Elapsed: {elapsed}")
         self.processed_label.setText(f"📦 Processed: {processed}")
         self.current_op_label.setText(f"🔄 Current: {current_op}")
         self.eta_label.setText(f"⏳ ETA: {eta}")
+
     def update_status(self, message, status_type="ready"):
         """Update the status indicator"""
         colors = {"ready": "#4CAF50", "working": "#FF9800", "error": "#F44336"}
@@ -1581,5 +1667,7 @@ class MainWindow(QMainWindow):
             )
 
         self._set_buttons_enabled(True)
-        self.cancel_scraping_btn.setEnabled(False)  # Disable cancel button when worker finishes
+        self.cancel_scraping_btn.setEnabled(
+            False
+        )  # Disable cancel button when worker finishes
         self.worker = None

@@ -34,7 +34,7 @@ class AntiDetectionConfig:
         rate_limit_max_delay: float = 5.0,
         human_simulation_enabled: bool = True,
         session_rotation_interval: int = 100,
-        max_retries_on_detection: int = 3
+        max_retries_on_detection: int = 3,
     ):
         self.enable_captcha_detection = enable_captcha_detection
         self.enable_rate_limiting = enable_rate_limiting
@@ -42,14 +42,20 @@ class AntiDetectionConfig:
         self.enable_session_rotation = enable_session_rotation
         self.enable_blocking_handling = enable_blocking_handling
         self.captcha_selectors = captcha_selectors or [
-            "[class*='captcha']", "[id*='captcha']",
-            "[class*='recaptcha']", "[id*='recaptcha']",
-            ".g-recaptcha", "#captcha-container"
+            "[class*='captcha']",
+            "[id*='captcha']",
+            "[class*='recaptcha']",
+            "[id*='recaptcha']",
+            ".g-recaptcha",
+            "#captcha-container",
         ]
         self.blocking_selectors = blocking_selectors or [
-            "[class*='blocked']", "[id*='blocked']",
-            "[class*='banned']", "[id*='banned']",
-            "[class*='access-denied']", "[id*='access-denied']"
+            "[class*='blocked']",
+            "[id*='blocked']",
+            "[class*='banned']",
+            "[id*='banned']",
+            "[class*='access-denied']",
+            "[id*='access-denied']",
         ]
         self.rate_limit_min_delay = rate_limit_min_delay
         self.rate_limit_max_delay = rate_limit_max_delay
@@ -84,15 +90,59 @@ class AntiDetectionManager:
         self.session_start_time = time.time()
 
         # Initialize modules
-        self.captcha_detector = CaptchaDetector(self.config) if config.enable_captcha_detection else None
-        self.rate_limiter = RateLimiter(self.config) if config.enable_rate_limiting else None
-        self.human_simulator = HumanBehaviorSimulator(self.config) if config.enable_human_simulation else None
-        self.session_manager = SessionManager(self.config) if config.enable_session_rotation else None
-        self.blocking_handler = BlockingHandler(self.config) if config.enable_blocking_handling else None
+        self.captcha_detector = (
+            CaptchaDetector(self.config) if config.enable_captcha_detection else None
+        )
+        self.rate_limiter = (
+            RateLimiter(self.config) if config.enable_rate_limiting else None
+        )
+        self.human_simulator = (
+            HumanBehaviorSimulator(self.config)
+            if config.enable_human_simulation
+            else None
+        )
+        self.session_manager = (
+            SessionManager(self.config) if config.enable_session_rotation else None
+        )
+        self.blocking_handler = (
+            BlockingHandler(self.config) if config.enable_blocking_handling else None
+        )
 
-        logger.info("AntiDetectionManager initialized with enabled modules: %s",
-                   [module for module in ['captcha', 'rate_limit', 'human_sim', 'session', 'blocking']
-                    if getattr(self, f"{module}_detector" if module == 'captcha' else f"{module}_handler" if module == 'blocking' else f"{module}_manager" if module == 'session' else f"{module}_simulator" if module == 'human' else f"{module}_limiter", None) is not None])
+        logger.info(
+            "AntiDetectionManager initialized with enabled modules: %s",
+            [
+                module
+                for module in [
+                    "captcha",
+                    "rate_limit",
+                    "human_sim",
+                    "session",
+                    "blocking",
+                ]
+                if getattr(
+                    self,
+                    (
+                        f"{module}_detector"
+                        if module == "captcha"
+                        else (
+                            f"{module}_handler"
+                            if module == "blocking"
+                            else (
+                                f"{module}_manager"
+                                if module == "session"
+                                else (
+                                    f"{module}_simulator"
+                                    if module == "human"
+                                    else f"{module}_limiter"
+                                )
+                            )
+                        )
+                    ),
+                    None,
+                )
+                is not None
+            ],
+        )
 
     def pre_action_hook(self, action: str, params: Dict[str, Any]) -> bool:
         """
@@ -137,7 +187,9 @@ class AntiDetectionManager:
             logger.error(f"Pre-action hook failed: {e}")
             return False
 
-    def post_action_hook(self, action: str, params: Dict[str, Any], success: bool) -> None:
+    def post_action_hook(
+        self, action: str, params: Dict[str, Any], success: bool
+    ) -> None:
         """
         Execute post-action anti-detection measures.
 
@@ -171,22 +223,29 @@ class AntiDetectionManager:
             True if error was handled and can retry, False otherwise
         """
         if retry_count >= self.config.max_retries_on_detection:
-            logger.warning(f"Max retries ({self.config.max_retries_on_detection}) exceeded for action: {action}")
+            logger.warning(
+                f"Max retries ({self.config.max_retries_on_detection}) exceeded for action: {action}"
+            )
             return False
 
         try:
             # Check if it's a detection-related error
             error_str = str(error).lower()
 
-            if 'captcha' in error_str and self.captcha_detector:
+            if "captcha" in error_str and self.captcha_detector:
                 logger.info("CAPTCHA-related error detected, attempting recovery")
                 return self.captcha_detector.handle_captcha(self.browser.driver)
 
-            elif any(term in error_str for term in ['blocked', 'banned', 'access denied']) and self.blocking_handler:
+            elif (
+                any(
+                    term in error_str for term in ["blocked", "banned", "access denied"]
+                )
+                and self.blocking_handler
+            ):
                 logger.info("Blocking-related error detected, attempting recovery")
                 return self.blocking_handler.handle_blocking(self.browser.driver)
 
-            elif 'timeout' in error_str and self.rate_limiter:
+            elif "timeout" in error_str and self.rate_limiter:
                 logger.info("Timeout error detected, applying rate limiting")
                 self.rate_limiter.apply_backoff_delay()
                 return True
@@ -203,11 +262,11 @@ class AntiDetectionManager:
 
     def _should_check_captcha(self, action: str) -> bool:
         """Determine if CAPTCHA check should be performed for this action."""
-        return action in ['navigate', 'click', 'input_text', 'login']
+        return action in ["navigate", "click", "input_text", "login"]
 
     def _should_check_blocking(self, action: str) -> bool:
         """Determine if blocking check should be performed for this action."""
-        return action in ['navigate', 'click']
+        return action in ["navigate", "click"]
 
 
 class CaptchaDetector:
@@ -262,7 +321,7 @@ class RateLimiter:
 
         # Increase delay based on consecutive failures
         if self.consecutive_failures > 0:
-            max_delay *= (2 ** self.consecutive_failures)
+            max_delay *= 2**self.consecutive_failures
 
         required_delay = random.uniform(min_delay, max_delay)
 
@@ -276,8 +335,10 @@ class RateLimiter:
     def apply_backoff_delay(self) -> None:
         """Apply exponential backoff delay."""
         self.consecutive_failures += 1
-        delay = self.config.rate_limit_max_delay * (2 ** self.consecutive_failures)
-        logger.info(f"Applying backoff delay: {delay:.2f}s (failure #{self.consecutive_failures})")
+        delay = self.config.rate_limit_max_delay * (2**self.consecutive_failures)
+        logger.info(
+            f"Applying backoff delay: {delay:.2f}s (failure #{self.consecutive_failures})"
+        )
         time.sleep(delay)
 
     def update_after_action(self, success: bool) -> None:
@@ -296,22 +357,24 @@ class HumanBehaviorSimulator:
 
     def simulate_pre_action(self, action: str, params: Dict[str, Any]) -> None:
         """Simulate human behavior before an action."""
-        if action == 'click':
+        if action == "click":
             # Random mouse movement before click
             time.sleep(random.uniform(0.1, 0.5))
-        elif action == 'input_text':
+        elif action == "input_text":
             # Typing delay
             time.sleep(random.uniform(0.05, 0.2))
-        elif action == 'navigate':
+        elif action == "navigate":
             # Page reading time
             time.sleep(random.uniform(1, 3))
 
-    def simulate_post_action(self, action: str, params: Dict[str, Any], success: bool) -> None:
+    def simulate_post_action(
+        self, action: str, params: Dict[str, Any], success: bool
+    ) -> None:
         """Simulate human behavior after an action."""
-        if action == 'navigate' and success:
+        if action == "navigate" and success:
             # Simulate reading time
             time.sleep(random.uniform(2, 5))
-        elif action == 'click' and success:
+        elif action == "click" and success:
             # Post-click pause
             time.sleep(random.uniform(0.5, 2))
 
@@ -323,14 +386,16 @@ class SessionManager:
         self.config = config
         self.request_count = 0
 
-    def check_session_rotation(self, manager: 'AntiDetectionManager') -> None:
+    def check_session_rotation(self, manager: "AntiDetectionManager") -> None:
         """Check if session should be rotated."""
         self.request_count += 1
         if self.request_count >= self.config.session_rotation_interval:
-            logger.info(f"Session rotation triggered after {self.request_count} requests")
+            logger.info(
+                f"Session rotation triggered after {self.request_count} requests"
+            )
             self.rotate_session(manager)
 
-    def rotate_session(self, manager: 'AntiDetectionManager') -> bool:
+    def rotate_session(self, manager: "AntiDetectionManager") -> bool:
         """Rotate the browser session."""
         try:
             # Close current browser
@@ -339,10 +404,11 @@ class SessionManager:
 
             # Create new browser instance
             from src.utils.scraping.browser import create_browser
+
             manager.browser = create_browser(
                 site_name="rotated_session",
                 headless=True,  # Assume headless for now
-                profile_suffix=f"rotated_{int(time.time())}"
+                profile_suffix=f"rotated_{int(time.time())}",
             )
 
             # Reset counters
@@ -371,14 +437,19 @@ class BlockingHandler:
                 try:
                     elements = driver.find_elements(By.CSS_SELECTOR, selector)
                     if elements:
-                        logger.info(f"Blocking page detected using selector: {selector}")
+                        logger.info(
+                            f"Blocking page detected using selector: {selector}"
+                        )
                         return True
                 except:
                     continue
 
             # Check page title/content for blocking indicators
             title = driver.title.lower()
-            if any(term in title for term in ['blocked', 'banned', 'access denied', 'forbidden']):
+            if any(
+                term in title
+                for term in ["blocked", "banned", "access denied", "forbidden"]
+            ):
                 logger.info("Blocking page detected in page title")
                 return True
 

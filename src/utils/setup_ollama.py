@@ -12,6 +12,7 @@ import subprocess
 import requests
 from pathlib import Path
 
+
 def run_command(command, shell=False):
     """Run a command and return success status."""
     try:
@@ -20,19 +21,21 @@ def run_command(command, shell=False):
     except Exception as e:
         return False, "", str(e)
 
+
 def download_file(url, destination):
     """Download a file from URL to destination."""
     try:
         response = requests.get(url, stream=True)
         response.raise_for_status()
 
-        with open(destination, 'wb') as f:
+        with open(destination, "wb") as f:
             for chunk in response.iter_content(chunk_size=8192):
                 f.write(chunk)
         return True
     except Exception as e:
         print(f"❌ Download failed: {e}")
         return False
+
 
 def install_ollama_windows():
     """Install Ollama on Windows."""
@@ -53,11 +56,14 @@ def install_ollama_windows():
 
     return True
 
+
 def install_ollama_linux():
     """Install Ollama on Linux."""
     print("🐧 Installing Ollama on Linux...")
 
-    success, stdout, stderr = run_command("curl -fsSL https://ollama.com/install.sh | sh", shell=True)
+    success, stdout, stderr = run_command(
+        "curl -fsSL https://ollama.com/install.sh | sh", shell=True
+    )
     if success:
         print("✅ Ollama installed successfully!")
         print("🔧 Starting Ollama service...")
@@ -66,6 +72,7 @@ def install_ollama_linux():
     else:
         print(f"❌ Installation failed: {stderr}")
         return False
+
 
 def install_ollama_macos():
     """Install Ollama on macOS."""
@@ -85,6 +92,7 @@ def install_ollama_macos():
 
     return True
 
+
 def check_ollama_installation():
     """Check if Ollama is installed and running."""
     print("🔍 Checking Ollama installation...")
@@ -99,6 +107,7 @@ def check_ollama_installation():
     # Check if Ollama is running
     try:
         import ollama
+
         ollama.list()
         print("✅ Ollama service is running")
         return True
@@ -106,6 +115,7 @@ def check_ollama_installation():
         print(f"⚠️ Ollama service is not running: {e}")
         print("   Try running: ollama serve")
         return False
+
 
 def pull_default_model():
     """Pull the default model (llama3.2)."""
@@ -119,6 +129,7 @@ def pull_default_model():
         print(f"❌ Failed to pull model: {stderr}")
         return False
 
+
 def main():
     """Main installation function."""
     print("🚀 ProductScraper Ollama Setup")
@@ -129,7 +140,7 @@ def main():
     # Check if already installed
     if check_ollama_installation():
         print("🎉 Ollama is already installed and running!")
-        if input("Pull default model (llama3.2)? [y/N]: ").lower().startswith('y'):
+        if input("Pull default model (llama3.2)? [y/N]: ").lower().startswith("y"):
             pull_default_model()
         return
 
@@ -140,13 +151,17 @@ def main():
             print("1. Run the downloaded installer")
             print("2. Start Ollama: ollama serve")
             print("3. Pull a model: ollama pull llama3.2")
-            print("4. Test in ProductScraper by selecting 'local_llm' classification method")
+            print(
+                "4. Test in ProductScraper by selecting 'local_llm' classification method"
+            )
 
     elif system == "linux":
         if install_ollama_linux():
             pull_default_model()
             print("\n📋 Next steps:")
-            print("1. Test in ProductScraper by selecting 'local_llm' classification method")
+            print(
+                "1. Test in ProductScraper by selecting 'local_llm' classification method"
+            )
 
     elif system == "darwin":  # macOS
         if install_ollama_macos():
@@ -154,14 +169,19 @@ def main():
             print("1. Run the downloaded installer")
             print("2. Ollama should start automatically")
             print("3. Pull a model: ollama pull llama3.2")
-            print("4. Test in ProductScraper by selecting 'local_llm' classification method")
+            print(
+                "4. Test in ProductScraper by selecting 'local_llm' classification method"
+            )
 
     else:
         print(f"❌ Unsupported platform: {system}")
         print("Please visit https://ollama.com/download for manual installation")
 
     print("\n📖 For more information, visit: https://ollama.com")
-    print("🔧 To use in ProductScraper: Set classification method to 'local_llm' in settings")
+    print(
+        "🔧 To use in ProductScraper: Set classification method to 'local_llm' in settings"
+    )
+
 
 if __name__ == "__main__":
     main()

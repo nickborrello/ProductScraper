@@ -14,26 +14,31 @@ logger = logging.getLogger(__name__)
 
 class TestingMode(Enum):
     """Testing mode enumeration."""
+
     LOCAL = "local"
 
 
 class PlatformTestingError(Exception):
     """Base exception for platform testing errors."""
+
     pass
 
 
 class PlatformTestingAuthError(PlatformTestingError):
     """Authentication error."""
+
     pass
 
 
 class PlatformTestingTimeoutError(PlatformTestingError):
     """Timeout error."""
+
     pass
 
 
 class PlatformTestingJobError(PlatformTestingError):
     """Job execution error."""
+
     pass
 
 
@@ -64,7 +69,9 @@ class PlatformTestingClient:
         """Exit async context."""
         pass
 
-    async def run_scraper(self, scraper_name: str, skus: List[str], **kwargs) -> Dict[str, Any]:
+    async def run_scraper(
+        self, scraper_name: str, skus: List[str], **kwargs
+    ) -> Dict[str, Any]:
         """
         Run a scraper locally with the specified SKUs.
 
@@ -78,7 +85,9 @@ class PlatformTestingClient:
         """
         return await self._run_local_scraper(scraper_name, skus, **kwargs)
 
-    async def _run_local_scraper(self, scraper_name: str, skus: List[str], **kwargs) -> Dict[str, Any]:
+    async def _run_local_scraper(
+        self, scraper_name: str, skus: List[str], **kwargs
+    ) -> Dict[str, Any]:
         """
         Run scraper locally.
 
@@ -106,7 +115,7 @@ class PlatformTestingClient:
             "run_id": None,
             "dataset_id": None,
             "execution_time": local_results.get("execution_time", 0),
-            "errors": local_results.get("errors", [])
+            "errors": local_results.get("errors", []),
         }
 
         return results

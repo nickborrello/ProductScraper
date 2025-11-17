@@ -13,16 +13,19 @@ import requests
 # Import settings manager
 try:
     from src.core.settings_manager import settings
+
     OPENROUTER_API_KEY = settings.get("openrouter_api_key")
 except ImportError:
     try:
         # Fallback for when run as standalone
         from ..settings_manager import settings
+
         OPENROUTER_API_KEY = settings.get("openrouter_api_key")
     except ImportError:
         # Last resort - try to load from settings.json directly
         import json
         from pathlib import Path
+
         config_path = Path(__file__).parent.parent.parent.parent / "settings.json"
         if config_path.exists():
             with open(config_path, "r") as f:
@@ -39,7 +42,11 @@ TEMPERATURE = 0.1  # Low temperature for consistent classifications
 class LLMProductClassifier:
     """LLM-based product classifier using OpenRouter API with conversation threads."""
 
-    def __init__(self, product_taxonomy: Dict[str, List[str]] = None, product_pages: List[str] = None):
+    def __init__(
+        self,
+        product_taxonomy: Dict[str, List[str]] = None,
+        product_pages: List[str] = None,
+    ):
         if not OPENROUTER_API_KEY:
             raise ValueError(
                 "OpenRouter API key not found. Set OPENROUTER_API_KEY environment variable or add to settings.json"
@@ -49,16 +56,28 @@ class LLMProductClassifier:
         if product_taxonomy is None:
             try:
                 from .manager import GENERAL_PRODUCT_TAXONOMY
+
                 self.product_taxonomy = GENERAL_PRODUCT_TAXONOMY
             except ImportError:
                 try:
                     from src.core.classification.manager import GENERAL_PRODUCT_TAXONOMY
+
                     self.product_taxonomy = GENERAL_PRODUCT_TAXONOMY
                 except ImportError:
                     # Fallback - use a basic taxonomy
                     self.product_taxonomy = {
-                        "Dog Food": ["Dry Dog Food", "Wet Dog Food", "Adult Dog Food", "Puppy Food"],
-                        "Cat Food": ["Dry Cat Food", "Wet Cat Food", "Adult Cat Food", "Kitten Food"],
+                        "Dog Food": [
+                            "Dry Dog Food",
+                            "Wet Dog Food",
+                            "Adult Dog Food",
+                            "Puppy Food",
+                        ],
+                        "Cat Food": [
+                            "Dry Cat Food",
+                            "Wet Cat Food",
+                            "Adult Cat Food",
+                            "Kitten Food",
+                        ],
                     }
         else:
             self.product_taxonomy = product_taxonomy
@@ -66,14 +85,21 @@ class LLMProductClassifier:
         if product_pages is None:
             try:
                 from .manager import PRODUCT_PAGES
+
                 self.product_pages = PRODUCT_PAGES
             except ImportError:
                 try:
                     from src.core.classification.manager import PRODUCT_PAGES
+
                     self.product_pages = PRODUCT_PAGES
                 except ImportError:
                     # Fallback - use basic pages
-                    self.product_pages = ["Dog Food", "Cat Food", "Bird Supplies", "All Pets"]
+                    self.product_pages = [
+                        "Dog Food",
+                        "Cat Food",
+                        "Bird Supplies",
+                        "All Pets",
+                    ]
         else:
             self.product_pages = product_pages
 
@@ -88,9 +114,15 @@ class LLMProductClassifier:
     def _initialize_conversation(self):
         """Initialize conversation with taxonomy and instructions."""
         try:
-            from src.core.classification.manager import UNIFIED_SYSTEM_PROMPT, UNIFIED_SINGLE_PRODUCT_JSON_FORMAT
+            from src.core.classification.manager import (
+                UNIFIED_SYSTEM_PROMPT,
+                UNIFIED_SINGLE_PRODUCT_JSON_FORMAT,
+            )
         except ImportError:
-            from .manager import UNIFIED_SYSTEM_PROMPT, UNIFIED_SINGLE_PRODUCT_JSON_FORMAT
+            from .manager import (
+                UNIFIED_SYSTEM_PROMPT,
+                UNIFIED_SINGLE_PRODUCT_JSON_FORMAT,
+            )
 
         # Create comprehensive system prompt
         taxonomy_text = "PRODUCT TAXONOMY:\n"
@@ -103,14 +135,18 @@ class LLMProductClassifier:
             f"  - {page}" for page in self.product_pages
         )
 
-        system_prompt = UNIFIED_SYSTEM_PROMPT.format(
-            taxonomy_text=taxonomy_text,
-            pages_text=pages_text
-        ) + UNIFIED_SINGLE_PRODUCT_JSON_FORMAT
+        system_prompt = (
+            UNIFIED_SYSTEM_PROMPT.format(
+                taxonomy_text=taxonomy_text, pages_text=pages_text
+            )
+            + UNIFIED_SINGLE_PRODUCT_JSON_FORMAT
+        )
 
         self.conversation_history = [{"role": "system", "content": system_prompt}]
 
-    def _call_openrouter(self, messages: List[Dict], max_retries: int = 3) -> Optional[str]:
+    def _call_openrouter(
+        self, messages: List[Dict], max_retries: int = 3
+    ) -> Optional[str]:
         """Call OpenRouter API with retry logic."""
         for attempt in range(max_retries):
             try:
@@ -270,7 +306,7 @@ class LLMProductClassifier:
         """Make a single API call for multiple products."""
         if not products:
             return []
-            
+
         try:
             from src.core.classification.manager import UNIFIED_BATCH_JSON_FORMAT
         except ImportError:
@@ -295,7 +331,9 @@ class LLMProductClassifier:
         batch_prompt += UNIFIED_BATCH_JSON_FORMAT
 
         # Construct messages for this specific call to keep it stateless and manage token usage
-        messages_for_call = self.conversation_history[:1]  # Start with just the system prompt
+        messages_for_call = self.conversation_history[
+            :1
+        ]  # Start with just the system prompt
         messages_for_call.append({"role": "user", "content": batch_prompt})
 
         # Call API
@@ -451,7 +489,9 @@ class LLMProductClassifier:
 _llm_classifier = None
 
 
-def get_llm_classifier(product_taxonomy: Dict[str, List[str]] = None, product_pages: List[str] = None) -> LLMProductClassifier:
+def get_llm_classifier(
+    product_taxonomy: Dict[str, List[str]] = None, product_pages: List[str] = None
+) -> LLMProductClassifier:
     """Get or create LLM classifier instance."""
     global _llm_classifier
     if _llm_classifier is None:
@@ -504,8 +544,11 @@ def classify_product_llm(product_info: Dict[str, Any]) -> Dict[str, str]:
 if __name__ == "__main__":
     import sys
     import os
+
     # Add project root to path to allow direct script execution
-    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
+    sys.path.insert(
+        0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+    )
     from src.core.classification.llm_classifier import get_llm_classifier
 
     print("🧠 Testing LLM Product Classifier")

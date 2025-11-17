@@ -33,7 +33,7 @@ class LocalKeyValueStore:
         """Load existing data from storage file."""
         if self.storage_file.exists():
             try:
-                with open(self.storage_file, 'r', encoding='utf-8') as f:
+                with open(self.storage_file, "r", encoding="utf-8") as f:
                     self._data = json.load(f)
             except (json.JSONDecodeError, IOError):
                 self._data = {}
@@ -43,7 +43,7 @@ class LocalKeyValueStore:
     def _save_data(self):
         """Save data to storage file."""
         self.storage_file.parent.mkdir(parents=True, exist_ok=True)
-        with open(self.storage_file, 'w', encoding='utf-8') as f:
+        with open(self.storage_file, "w", encoding="utf-8") as f:
             json.dump(self._data, f, ensure_ascii=False, indent=2)
 
     def set_value(self, key: str, value: Any):
@@ -105,7 +105,7 @@ class LocalKeyValueStore:
         return {
             "id": self.store_id,
             "keyCount": len(self._data),
-            "storageDir": str(self.storage_file)
+            "storageDir": str(self.storage_file),
         }
 
     def drop(self):

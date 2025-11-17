@@ -40,7 +40,7 @@ class LocalRequestQueue:
         # Load pending requests
         if self.pending_file.exists():
             try:
-                with open(self.pending_file, 'r', encoding='utf-8') as f:
+                with open(self.pending_file, "r", encoding="utf-8") as f:
                     data = json.load(f)
                     self._pending_requests = data.get("requests", [])
             except (json.JSONDecodeError, IOError):
@@ -51,7 +51,7 @@ class LocalRequestQueue:
         # Load handled requests
         if self.handled_file.exists():
             try:
-                with open(self.handled_file, 'r', encoding='utf-8') as f:
+                with open(self.handled_file, "r", encoding="utf-8") as f:
                     data = json.load(f)
                     self._handled_requests = data.get("requests", [])
             except (json.JSONDecodeError, IOError):
@@ -61,13 +61,17 @@ class LocalRequestQueue:
 
     def _save_pending(self):
         """Save pending requests to file."""
-        with open(self.pending_file, 'w', encoding='utf-8') as f:
-            json.dump({"requests": self._pending_requests}, f, ensure_ascii=False, indent=2)
+        with open(self.pending_file, "w", encoding="utf-8") as f:
+            json.dump(
+                {"requests": self._pending_requests}, f, ensure_ascii=False, indent=2
+            )
 
     def _save_handled(self):
         """Save handled requests to file."""
-        with open(self.handled_file, 'w', encoding='utf-8') as f:
-            json.dump({"requests": self._handled_requests}, f, ensure_ascii=False, indent=2)
+        with open(self.handled_file, "w", encoding="utf-8") as f:
+            json.dump(
+                {"requests": self._handled_requests}, f, ensure_ascii=False, indent=2
+            )
 
     def add_request(self, request: Dict[str, Any]) -> str:
         """
@@ -135,7 +139,8 @@ class LocalRequestQueue:
             "id": self.queue_id,
             "pendingRequestCount": len(self._pending_requests),
             "handledRequestCount": len(self._handled_requests),
-            "totalRequestCount": len(self._pending_requests) + len(self._handled_requests)
+            "totalRequestCount": len(self._pending_requests)
+            + len(self._handled_requests),
         }
 
     def drop(self):

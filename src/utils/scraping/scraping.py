@@ -3,7 +3,9 @@ import os
 from selenium.webdriver.chrome.options import Options
 
 
-def get_standard_chrome_options(headless=True, profile_suffix="default", enable_devtools=False, devtools_port=9222):
+def get_standard_chrome_options(
+    headless=True, profile_suffix="default", enable_devtools=False, devtools_port=9222
+):
     """Get standardized Chrome options that suppress common errors and warnings."""
     options = Options()
 

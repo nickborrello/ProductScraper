@@ -9,8 +9,4 @@ from .dataset import LocalDataset
 from .key_value_store import LocalKeyValueStore
 from .request_queue import LocalRequestQueue
 
-__all__ = [
-    "LocalDataset",
-    "LocalKeyValueStore",
-    "LocalRequestQueue"
-]
+__all__ = ["LocalDataset", "LocalKeyValueStore", "LocalRequestQueue"]

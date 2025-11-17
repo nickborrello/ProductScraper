@@ -64,9 +64,15 @@ def validate_scraper_structure(scraper_name: str):
         "main.py exists": (scraper_dir / "src" / "main.py").exists(),
         ".actor/ directory exists": (scraper_dir / ".actor").exists(),
         "actor.json exists": (scraper_dir / ".actor" / "actor.json").exists(),
-        "input_schema.json exists": (scraper_dir / ".actor" / "input_schema.json").exists(),
-        "output_schema.json exists": (scraper_dir / ".actor" / "output_schema.json").exists(),
-        "dataset_schema.json exists": (scraper_dir / ".actor" / "dataset_schema.json").exists(),
+        "input_schema.json exists": (
+            scraper_dir / ".actor" / "input_schema.json"
+        ).exists(),
+        "output_schema.json exists": (
+            scraper_dir / ".actor" / "output_schema.json"
+        ).exists(),
+        "dataset_schema.json exists": (
+            scraper_dir / ".actor" / "dataset_schema.json"
+        ).exists(),
         "requirements.txt exists": (scraper_dir / "requirements.txt").exists(),
         "Dockerfile exists": (scraper_dir / "Dockerfile").exists(),
     }
@@ -87,7 +93,9 @@ def validate_scraper_structure(scraper_name: str):
     return all_passed
 
 
-def test_single_scraper(scraper_name: str, skus: Optional[List[str]] = None, verbose: bool = False):
+def test_single_scraper(
+    scraper_name: str, skus: Optional[List[str]] = None, verbose: bool = False
+):
     """Test a single scraper."""
     tester = ScraperIntegrationTester()
 
@@ -152,11 +160,15 @@ def test_all_scrapers(verbose: bool = False):
 
         print(f"\n🔧 COMMON ISSUES:")
         common_errors = results["summary"]["common_errors"]
-        for error, count in sorted(common_errors.items(), key=lambda x: x[1], reverse=True)[:5]:
+        for error, count in sorted(
+            common_errors.items(), key=lambda x: x[1], reverse=True
+        )[:5]:
             print(f"  • {error} ({count} times)")
 
     if results["successful_scrapers"] > 0:
-        print(f"Average Quality Score: {results['summary']['average_quality_score']:.1f}")
+        print(
+            f"Average Quality Score: {results['summary']['average_quality_score']:.1f}"
+        )
 
     success = results["failed_scrapers"] == 0
     if success:
@@ -184,21 +196,27 @@ Examples:
   python test_scrapers.py --scraper amazon --skus B07G5J5FYP B08N5WRWNW
   python test_scrapers.py --list                   # List available scrapers
   python test_scrapers.py --validate amazon        # Validate structure only
-        """
+        """,
     )
 
-    parser.add_argument("--all", action="store_true",
-                       help="Test all available scrapers")
-    parser.add_argument("--scraper", type=str,
-                       help="Test specific scraper by name")
-    parser.add_argument("--skus", nargs="+",
-                       help="Custom SKUs to test with (space-separated)")
-    parser.add_argument("--list", action="store_true",
-                       help="List all available scrapers")
-    parser.add_argument("--validate", type=str,
-                       help="Validate scraper structure without running")
-    parser.add_argument("--verbose", action="store_true",
-                       help="Show detailed output and debug information")
+    parser.add_argument(
+        "--all", action="store_true", help="Test all available scrapers"
+    )
+    parser.add_argument("--scraper", type=str, help="Test specific scraper by name")
+    parser.add_argument(
+        "--skus", nargs="+", help="Custom SKUs to test with (space-separated)"
+    )
+    parser.add_argument(
+        "--list", action="store_true", help="List all available scrapers"
+    )
+    parser.add_argument(
+        "--validate", type=str, help="Validate scraper structure without running"
+    )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Show detailed output and debug information",
+    )
 
     args = parser.parse_args()
 

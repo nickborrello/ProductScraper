@@ -177,11 +177,11 @@ class ShopSiteXMLClient:
     def __init__(self, log_callback=None):
         self.session = requests.Session()
         self.config = SHOPSITE_CONFIG
-        
+
         # Handle log callback properly
         if log_callback is None:
             self.log = print
-        elif hasattr(log_callback, 'emit'):
+        elif hasattr(log_callback, "emit"):
             # If it's a Qt signal object, use emit method
             self.log = log_callback.emit
         else:
@@ -195,16 +195,16 @@ class ShopSiteXMLClient:
             xml_file_path = os.path.join(
                 PROJECT_ROOT, "data", "databases", "shopsite_products_raw.xml"
             )
-            
+
             if os.path.exists(xml_file_path):
                 size = os.path.getsize(xml_file_path)
                 # Add 10% buffer for potential changes
                 return int(size * 1.1)
-            
+
             # Could also check logs for previous download sizes
             # For now, return 0 if no previous data
             return 0
-            
+
         except Exception:
             return 0
 
@@ -248,7 +248,9 @@ class ShopSiteXMLClient:
                 estimated_size = self._estimate_download_size()
                 if estimated_size > 0:
                     estimated_mb = estimated_size / (1024 * 1024)
-                    self.log(f"📊 Estimated download size: ~{estimated_mb:.1f} MB (based on previous downloads)")
+                    self.log(
+                        f"📊 Estimated download size: ~{estimated_mb:.1f} MB (based on previous downloads)"
+                    )
 
                 total_size = int(response.headers.get("content-length", 0))
                 downloaded_size = 0
@@ -259,7 +261,9 @@ class ShopSiteXMLClient:
                     total_mb = total_size / (1024 * 1024)
                     self.log(f"📊 Downloading {total_mb:.1f} MB...")
                 else:
-                    self.log(f"📊 Downloading (size unknown - showing progress info)...")
+                    self.log(
+                        f"📊 Downloading (size unknown - showing progress info)..."
+                    )
 
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:
@@ -284,11 +288,15 @@ class ShopSiteXMLClient:
                                 )
                             else:
                                 eta_str = ""
-                            
+
                             # Send progress update to log callback (every 1MB or every 5 seconds)
                             current_time = time.time()
-                            if (downloaded_size % (1024 * 1024) < 8192 or  # Every ~1MB
-                                current_time - (getattr(self, 'last_progress_time', 0)) > 5):  # Or every 5 seconds
+                            if (
+                                downloaded_size % (1024 * 1024) < 8192  # Every ~1MB
+                                or current_time
+                                - (getattr(self, "last_progress_time", 0))
+                                > 5
+                            ):  # Or every 5 seconds
                                 downloaded_mb = downloaded_size / (1024 * 1024)
                                 total_mb = total_size / (1024 * 1024)
                                 progress_msg = f"📥 Progress: {progress:.1f}% ({downloaded_mb:.1f}/{total_mb:.1f} MB){eta_str}"
@@ -305,10 +313,13 @@ class ShopSiteXMLClient:
                                 )
                             else:
                                 speed_str = ""
-                            
+
                             # Send progress update to log callback (every 5 seconds)
                             current_time = time.time()
-                            if current_time - getattr(self, 'last_progress_time', 0) > 5:
+                            if (
+                                current_time - getattr(self, "last_progress_time", 0)
+                                > 5
+                            ):
                                 downloaded_mb = downloaded_size / (1024 * 1024)
                                 progress_msg = f"📥 Downloaded: {downloaded_mb:.1f} MB{speed_str} ({elapsed:.1f}s elapsed)"
                                 self.log(progress_msg)
@@ -316,7 +327,9 @@ class ShopSiteXMLClient:
 
                 # Send final download complete message
                 downloaded_mb = downloaded_size / (1024 * 1024)
-                speed_mbps = (downloaded_size / (time.time() - start_time)) / (1024 * 1024)
+                speed_mbps = (downloaded_size / (time.time() - start_time)) / (
+                    1024 * 1024
+                )
                 final_msg = f"📥 Downloaded: {downloaded_mb:.1f} MB @ {speed_mbps:.2f} MB/s ({time.time()-start_time:.1f}s elapsed)"
                 self.log(final_msg)
 
@@ -423,14 +436,20 @@ def save_dataframe_to_database(
                     """Split by |, remove duplicates while preserving order, rejoin with |"""
                     if not value:
                         return ""
-                    parts = [part.strip() for part in str(value).split("|") if part.strip()]
-                    unique_parts = list(dict.fromkeys(parts))  # Preserve order while removing duplicates
+                    parts = [
+                        part.strip() for part in str(value).split("|") if part.strip()
+                    ]
+                    unique_parts = list(
+                        dict.fromkeys(parts)
+                    )  # Preserve order while removing duplicates
                     return "|".join(unique_parts)
 
                 # Apply deduplication to relevant fields
                 for field in ["Category", "Product_Type", "Product_On_Pages"]:
                     if field in product_data:
-                        product_data[field] = deduplicate_pipe_separated(product_data[field])
+                        product_data[field] = deduplicate_pipe_separated(
+                            product_data[field]
+                        )
 
                 # Extract individual fields for database columns
                 sku = str(product_data.get("SKU", "")).strip()
@@ -721,13 +740,16 @@ def parse_xml_to_dataframe(xml_content: str) -> Optional[pd.DataFrame]:
 
 
 def import_from_shopsite_xml(
-    save_excel: bool = True, save_to_db: bool = False, interactive: bool = True, log_callback=None
+    save_excel: bool = True,
+    save_to_db: bool = False,
+    interactive: bool = True,
+    log_callback=None,
 ) -> Tuple[bool, str]:
     """
     Import products from ShopSite using Database Automated XML Download.
 
     Downloads product data as XML from the products database and saves to Excel and/or database.
-    
+
     Args:
         save_excel: Whether to save to Excel file
         save_to_db: Whether to save to database
@@ -812,7 +834,7 @@ def publish_shopsite_changes(
     search_index: bool = True,
     sitemap: bool = True,
     full_regen: bool = False,
-    log_callback=None
+    log_callback=None,
 ) -> Tuple[bool, str]:
     """
     Publish changes to ShopSite by regenerating website content.
@@ -831,13 +853,13 @@ def publish_shopsite_changes(
     # Handle log callback properly
     if log_callback is None:
         log = print
-    elif hasattr(log_callback, 'emit'):
+    elif hasattr(log_callback, "emit"):
         # If it's a Qt signal object, use emit method
         log = log_callback.emit
     else:
         # If it's already a callable (like emit method or function), use it directly
         log = log_callback
-    
+
     try:
         # Get ShopSite credentials
         config = SHOPSITE_CONFIG
@@ -873,7 +895,9 @@ def publish_shopsite_changes(
         session.auth = (config["username"], config["password"])
 
         # Make the publish request
-        response = session.get(publish_url, params=params, timeout=600)  # 10 minute timeout
+        response = session.get(
+            publish_url, params=params, timeout=600
+        )  # 10 minute timeout
 
         if response.status_code == 200:
             success_msg = "✅ ShopSite publish completed successfully"
@@ -886,7 +910,9 @@ def publish_shopsite_changes(
 
             return True, success_msg
         else:
-            error_msg = f"❌ Publish failed: {response.status_code} - {response.text[:200]}"
+            error_msg = (
+                f"❌ Publish failed: {response.status_code} - {response.text[:200]}"
+            )
             log(error_msg)
             return False, error_msg
 
@@ -898,7 +924,11 @@ def publish_shopsite_changes(
         error_msg = f"❌ Unexpected error during publish: {e}"
         log(error_msg)
         return False, error_msg
-def import_from_saved_xml(xml_file_path: Optional[str] = None, save_to_db: bool = False) -> Tuple[bool, str]:
+
+
+def import_from_saved_xml(
+    xml_file_path: Optional[str] = None, save_to_db: bool = False
+) -> Tuple[bool, str]:
     """
     Import products from a saved ShopSite XML file (for testing/debugging).
 

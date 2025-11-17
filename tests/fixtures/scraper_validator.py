@@ -1,6 +1,7 @@
 """
 Scraper output validation utilities for testing and debugging.
 """
+
 import json
 import re
 from typing import Dict, List, Any, Optional
@@ -15,12 +16,14 @@ class ScraperValidator:
         if test_data_path is None:
             test_data_path = "tests/fixtures/scraper_test_data.json"
 
-        with open(test_data_path, 'r') as f:
+        with open(test_data_path, "r") as f:
             self.test_config = json.load(f)
 
         self.common_rules = self.test_config.get("common_validation_rules", {})
 
-    def validate_product_data(self, products: List[Dict], scraper_name: str) -> Dict[str, Any]:
+    def validate_product_data(
+        self, products: List[Dict], scraper_name: str
+    ) -> Dict[str, Any]:
         """
         Validate a list of product dictionaries from a scraper.
 
@@ -39,7 +42,7 @@ class ScraperValidator:
             "errors": [],
             "warnings": [],
             "field_coverage": {},
-            "data_quality_score": 0.0
+            "data_quality_score": 0.0,
         }
 
         if not products:
@@ -54,7 +57,9 @@ class ScraperValidator:
 
         for i, product in enumerate(products):
             if not isinstance(product, dict):
-                results["errors"].append(f"Product {i}: Not a dictionary (type: {type(product)})")
+                results["errors"].append(
+                    f"Product {i}: Not a dictionary (type: {type(product)})"
+                )
                 results["invalid_products"] += 1
                 continue
 
@@ -67,8 +72,12 @@ class ScraperValidator:
                 if field not in product or product[field] is None:
                     product_errors.append(f"Missing required field: {field}")
                     product_valid = False
-                elif str(product[field]).strip() in self.common_rules.get("invalid_values", []):
-                    product_errors.append(f"Invalid value for required field {field}: '{product[field]}'")
+                elif str(product[field]).strip() in self.common_rules.get(
+                    "invalid_values", []
+                ):
+                    product_errors.append(
+                        f"Invalid value for required field {field}: '{product[field]}'"
+                    )
                     product_valid = False
                 # Note: field_counts increment moved to expected fields loop below
 
@@ -79,41 +88,69 @@ class ScraperValidator:
 
                     # Field-specific validation
                     if field == "SKU" and not self._validate_sku(product[field]):
-                        product_warnings.append(f"SKU format may be invalid: {product[field]}")
+                        product_warnings.append(
+                            f"SKU format may be invalid: {product[field]}"
+                        )
 
                     elif field == "Price" and not self._validate_price(product[field]):
-                        product_warnings.append(f"Price format may be invalid: {product[field]}")
+                        product_warnings.append(
+                            f"Price format may be invalid: {product[field]}"
+                        )
 
-                    elif field == "Images" and not self._validate_images(product[field]):
-                        product_warnings.append(f"Images format may be invalid: {product[field]}")
+                    elif field == "Images" and not self._validate_images(
+                        product[field]
+                    ):
+                        product_warnings.append(
+                            f"Images format may be invalid: {product[field]}"
+                        )
 
-                    elif field == "Weight" and not self._validate_weight(product[field]):
-                        product_warnings.append(f"Weight format may be invalid: {product[field]}")
+                    elif field == "Weight" and not self._validate_weight(
+                        product[field]
+                    ):
+                        product_warnings.append(
+                            f"Weight format may be invalid: {product[field]}"
+                        )
 
             if product_valid:
                 results["valid_products"] += 1
             else:
                 results["invalid_products"] += 1
-                results["errors"].extend([f"Product {i}: {err}" for err in product_errors])
+                results["errors"].extend(
+                    [f"Product {i}: {err}" for err in product_errors]
+                )
 
             if product_warnings:
-                results["warnings"].extend([f"Product {i}: {warn}" for warn in product_warnings])
+                results["warnings"].extend(
+                    [f"Product {i}: {warn}" for warn in product_warnings]
+                )
 
         # Calculate field coverage percentages
         results["field_coverage"] = {
-            field: (count / results["total_products"]) * 100 if results["total_products"] > 0 else 0
+            field: (
+                (count / results["total_products"]) * 100
+                if results["total_products"] > 0
+                else 0
+            )
             for field, count in field_counts.items()
         }
 
         # Calculate data quality score (0-100)
         if results["total_products"] > 0:
             valid_ratio = results["valid_products"] / results["total_products"]
-            field_coverage_avg = sum(results["field_coverage"].values()) / len(results["field_coverage"]) if results["field_coverage"] else 0
-            results["data_quality_score"] = (valid_ratio * 0.6 + (field_coverage_avg / 100) * 0.4)
+            field_coverage_avg = (
+                sum(results["field_coverage"].values()) / len(results["field_coverage"])
+                if results["field_coverage"]
+                else 0
+            )
+            results["data_quality_score"] = (
+                valid_ratio * 0.6 + (field_coverage_avg / 100) * 0.4
+            )
 
         return results
 
-    def validate_dataframe_output(self, df: pd.DataFrame, scraper_name: str) -> Dict[str, Any]:
+    def validate_dataframe_output(
+        self, df: pd.DataFrame, scraper_name: str
+    ) -> Dict[str, Any]:
         """
         Validate pandas DataFrame output from scraper.
 
@@ -129,7 +166,7 @@ class ScraperValidator:
             "dataframe_shape": df.shape,
             "columns": list(df.columns),
             "errors": [],
-            "warnings": []
+            "warnings": [],
         }
 
         if df.empty:
@@ -142,13 +179,17 @@ class ScraperValidator:
         # Check for expected columns
         missing_columns = set(expected_fields) - set(df.columns)
         if missing_columns:
-            results["warnings"].append(f"Missing expected columns: {list(missing_columns)}")
+            results["warnings"].append(
+                f"Missing expected columns: {list(missing_columns)}"
+            )
 
         # Check for required columns
         required_fields = self.common_rules.get("required_fields", [])
         missing_required = set(required_fields) - set(df.columns)
         if missing_required:
-            results["errors"].append(f"Missing required columns: {list(missing_required)}")
+            results["errors"].append(
+                f"Missing required columns: {list(missing_required)}"
+            )
 
         # Validate each row
         for idx, row in df.iterrows():
@@ -156,8 +197,12 @@ class ScraperValidator:
             for field in required_fields:
                 if field in df.columns:
                     value = row[field]
-                    if pd.isna(value) or str(value).strip() in self.common_rules.get("invalid_values", []):
-                        row_errors.append(f"Row {idx}: Invalid {field} value: '{value}'")
+                    if pd.isna(value) or str(value).strip() in self.common_rules.get(
+                        "invalid_values", []
+                    ):
+                        row_errors.append(
+                            f"Row {idx}: Invalid {field} value: '{value}'"
+                        )
 
             if row_errors:
                 results["errors"].extend(row_errors)
@@ -178,28 +223,28 @@ class ScraperValidator:
             return False
         price_str = str(price).strip()
         # Allow various price formats: $10.99, 10.99, 10, etc.
-        price_pattern = r'^\$?\d+(\.\d{1,2})?$'
+        price_pattern = r"^\$?\d+(\.\d{1,2})?$"
         return bool(re.match(price_pattern, price_str))
 
     def _validate_images(self, images: Any) -> bool:
         """Validate images format (list of URLs)."""
         if not images:
             return False
-        
+
         # Handle both "Images" and "Image URLs" field names
         if isinstance(images, list):
             image_list = images
         elif isinstance(images, str):
             # If it's a string, it might be comma-separated
-            image_list = [url.strip() for url in images.split(',') if url.strip()]
+            image_list = [url.strip() for url in images.split(",") if url.strip()]
         else:
             return False
-        
+
         if not image_list:
             return False
 
         # Check that all items are valid URLs
-        url_pattern = r'^https?://[^\s,]+$'
+        url_pattern = r"^https?://[^\s,]+$"
         return all(re.match(url_pattern, str(url)) for url in image_list if url)
 
     def _validate_weight(self, weight: Any) -> bool:
@@ -209,11 +254,11 @@ class ScraperValidator:
         weight_str = str(weight).strip().upper()
 
         # Check for LB unit
-        if 'LB' not in weight_str and 'POUND' not in weight_str:
+        if "LB" not in weight_str and "POUND" not in weight_str:
             return False
 
         # Extract numeric part
-        weight_match = re.search(r'(\d+(?:\.\d+)?)', weight_str)
+        weight_match = re.search(r"(\d+(?:\.\d+)?)", weight_str)
         if not weight_match:
             return False
 

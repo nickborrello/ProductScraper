@@ -35,7 +35,7 @@ class LocalDataset:
         self._cache = []
         for json_file in sorted(self.storage_dir.glob("*.json")):
             try:
-                with open(json_file, 'r', encoding='utf-8') as f:
+                with open(json_file, "r", encoding="utf-8") as f:
                     data = json.load(f)
                     self._cache.append(data)
             except (json.JSONDecodeError, IOError):
@@ -54,17 +54,20 @@ class LocalDataset:
         for item in data:
             # Generate unique filename
             import uuid
+
             filename = f"{uuid.uuid4()}.json"
             filepath = self.storage_dir / filename
 
             # Write to file
-            with open(filepath, 'w', encoding='utf-8') as f:
+            with open(filepath, "w", encoding="utf-8") as f:
                 json.dump(item, f, ensure_ascii=False, indent=2)
 
             # Add to cache
             self._cache.append(item)
 
-    def get_data(self, limit: Optional[int] = None, offset: int = 0) -> List[Dict[str, Any]]:
+    def get_data(
+        self, limit: Optional[int] = None, offset: int = 0
+    ) -> List[Dict[str, Any]]:
         """
         Get data from the dataset.
 
@@ -90,7 +93,7 @@ class LocalDataset:
         return {
             "id": self.dataset_id,
             "itemCount": len(self._cache),
-            "storageDir": str(self.storage_dir)
+            "storageDir": str(self.storage_dir),
         }
 
     def drop(self):

@@ -3,9 +3,12 @@ import sys
 from PyQt6.QtWidgets import QApplication, QFileDialog
 
 # Ensure project root is on sys.path
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+PROJECT_ROOT = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
+
 
 def select_excel_file():
     """Select an Excel file using GUI dialog if available, otherwise text-based."""
@@ -31,6 +34,7 @@ def select_excel_file():
         print(f"❌ PyQt6 dialog failed: {e}")
         print("💡 Falling back to text-based file selection...")
         return select_excel_file_text()
+
 
 def select_excel_file_text():
     """Text-based file selection fallback when GUI is not available."""

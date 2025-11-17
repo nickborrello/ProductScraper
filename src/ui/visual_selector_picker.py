@@ -22,8 +22,9 @@ from PyQt6.QtWidgets import (
     QComboBox,
     QMessageBox,
     QProgressBar,
-    QSplitter
+    QSplitter,
 )
+
 try:
     from PyQt6.QtWebEngineWidgets import QWebEngineView, QWebEnginePage  # type: ignore
 except ImportError:
@@ -38,7 +39,9 @@ class VisualSelectorPicker(QWidget):
     # Signals
     selector_selected = pyqtSignal(str, str, str)  # selector, attribute, field_name
     page_loaded = pyqtSignal()
-    selector_validated = pyqtSignal(str, bool, str)  # selector, is_valid, extracted_value
+    selector_validated = pyqtSignal(
+        str, bool, str
+    )  # selector, is_valid, extracted_value
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -53,9 +56,11 @@ class VisualSelectorPicker(QWidget):
 
         # Check if web engine is available
         if QWebEngineView is None:
-            error_label = QLabel("❌ PyQt6-WebEngine is not installed.\n\n"
-                               "To use the visual selector picker, install PyQt6-WebEngine:\n"
-                               "pip install PyQt6-WebEngine")
+            error_label = QLabel(
+                "❌ PyQt6-WebEngine is not installed.\n\n"
+                "To use the visual selector picker, install PyQt6-WebEngine:\n"
+                "pip install PyQt6-WebEngine"
+            )
             error_label.setStyleSheet("color: red; font-weight: bold;")
             layout.addWidget(error_label)
             return
@@ -125,7 +130,9 @@ class VisualSelectorPicker(QWidget):
         self.element_info.setReadOnly(True)
         self.element_info.setMaximumHeight(100)
         self.element_info.setFont(QFont("Consolas", 9))
-        self.element_info.setPlainText("Click 'Start Selection' and click on an element in the web page...")
+        self.element_info.setPlainText(
+            "Click 'Start Selection' and click on an element in the web page..."
+        )
         element_layout.addWidget(self.element_info)
 
         selector_layout.addWidget(element_info_group)
@@ -134,10 +141,19 @@ class VisualSelectorPicker(QWidget):
         field_layout = QHBoxLayout()
         field_layout.addWidget(QLabel("Field:"))
         self.field_combo = QComboBox()
-        self.field_combo.addItems([
-            "product_name", "price", "description", "image_urls",
-            "sku", "brand", "availability", "rating", "specifications"
-        ])
+        self.field_combo.addItems(
+            [
+                "product_name",
+                "price",
+                "description",
+                "image_urls",
+                "sku",
+                "brand",
+                "availability",
+                "rating",
+                "specifications",
+            ]
+        )
         field_layout.addWidget(self.field_combo)
         selector_layout.addLayout(field_layout)
 
@@ -197,8 +213,8 @@ class VisualSelectorPicker(QWidget):
             return
 
         # Add protocol if missing
-        if not url.startswith(('http://', 'https://')):
-            url = 'https://' + url
+        if not url.startswith(("http://", "https://")):
+            url = "https://" + url
             self.url_input.setText(url)
 
         self.current_url = url
@@ -395,7 +411,9 @@ class VisualSelectorPicker(QWidget):
         script = "window.startSelection();"
         self.web_view.page().runJavaScript(script)
         self.select_mode_btn.setText("⏹️ Stop Selection")
-        self.element_info.setPlainText("Click on elements in the web page to select them...")
+        self.element_info.setPlainText(
+            "Click on elements in the web page to select them..."
+        )
 
     def stop_selection_mode(self):
         """Stop element selection mode."""
@@ -408,7 +426,9 @@ class VisualSelectorPicker(QWidget):
         """Clear current selection."""
         script = "window.clearSelection();"
         self.web_view.page().runJavaScript(script)
-        self.element_info.setPlainText("Selection cleared. Click 'Start Selection' to begin again...")
+        self.element_info.setPlainText(
+            "Selection cleared. Click 'Start Selection' to begin again..."
+        )
         self.selector_display.clear()
         self.validation_result.clear()
 
@@ -451,9 +471,9 @@ class VisualSelectorPicker(QWidget):
         """
 
         def handle_result(result):
-            if result.get('success'):
-                value = result.get('value', '')
-                count = result.get('count', 0)
+            if result.get("success"):
+                value = result.get("value", "")
+                count = result.get("count", 0)
                 message = f"✅ Valid - Found {count} element(s)\nExtracted: {value}"
                 self.validation_result.setPlainText(message)
                 self.selector_validated.emit(selector, True, value)
@@ -517,41 +537,40 @@ class SelectorJavaScriptBridge(QWidget if QWebEnginePage is None else QWebEngine
 def generate_css_selector(element_info: Dict[str, Any]) -> str:
     """Generate a CSS selector from element information."""
     # This is a simplified version - the JavaScript version is more sophisticated
-    tag = element_info.get('tagName', 'div')
+    tag = element_info.get("tagName", "div")
     selector = tag
 
-    if element_info.get('id'):
+    if element_info.get("id"):
         selector = f"{tag}#{element_info['id']}"
 
-    elif element_info.get('className'):
-        classes = element_info['className'].split()
+    elif element_info.get("className"):
+        classes = element_info["className"].split()
         if classes:
             selector = f"{tag}.{'.'.join(classes)}"
 
     return selector
 
 
-def validate_selector_on_page(html_content: str, selector: str, attribute: str = 'text') -> Dict[str, Any]:
+def validate_selector_on_page(
+    html_content: str, selector: str, attribute: str = "text"
+) -> Dict[str, Any]:
     """Validate a selector against HTML content."""
     try:
         from bs4 import BeautifulSoup
-        soup = BeautifulSoup(html_content, 'html.parser')
+
+        soup = BeautifulSoup(html_content, "html.parser")
 
         elements = soup.select(selector)
         if not elements:
-            return {'valid': False, 'message': 'No elements found'}
+            return {"valid": False, "message": "No elements found"}
 
         element = elements[0]
-        if attribute == 'text':
+        if attribute == "text":
             value = element.get_text(strip=True)
         else:
-            value = element.get(attribute, '')
+            value = element.get(attribute, "")
 
-        return {
-            'valid': True,
-            'value': value,
-            'count': len(elements)
-        }
+        return {"valid": True, "value": value, "count": len(elements)}
 
     except Exception as e:
-        return {'valid': False, 'message': str(e)}
+        return {"valid": False, "message": str(e)}

@@ -44,7 +44,10 @@ class SettingsDialog(QDialog):
         # Apply the global dark theme.
         try:
             from src.ui.styling import STYLESHEET
-            self.setStyleSheet(STYLESHEET + """
+
+            self.setStyleSheet(
+                STYLESHEET
+                + """
                 QPushButton[text="💾 Save"] {
                     background-color: #4CAF50;
                     border: 1px solid #4CAF50;
@@ -61,7 +64,8 @@ class SettingsDialog(QDialog):
                     background-color: #d32f2f;
                     border: 1px solid #d32f2f;
                 }
-            """)
+            """
+            )
         except (ImportError, ModuleNotFoundError):
             print("CRITICAL: Could not import stylesheet. UI will be unstyled.")
             # Fallback to a very basic theme if the import fails
@@ -282,7 +286,9 @@ class SettingsDialog(QDialog):
 
         self.ollama_model = QLineEdit()
         self.ollama_model.setText("llama3.2")
-        self.ollama_model.setPlaceholderText("Enter Ollama model name (e.g., llama3.2, gemma3)")
+        self.ollama_model.setPlaceholderText(
+            "Enter Ollama model name (e.g., llama3.2, gemma3)"
+        )
         ai_layout.addRow("Ollama Model:", self.ollama_model)
 
         ai_group.setLayout(ai_layout)
@@ -339,7 +345,9 @@ class SettingsDialog(QDialog):
         )
 
         # AI/ML
-        self.openrouter_api_key.setText(self.current_settings.get("openrouter_api_key", ""))
+        self.openrouter_api_key.setText(
+            self.current_settings.get("openrouter_api_key", "")
+        )
         method = self.current_settings.get("classification_method", "llm")
         index = self.classification_method.findText(method)
         if index >= 0:

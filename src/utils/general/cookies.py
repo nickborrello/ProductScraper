@@ -64,7 +64,9 @@ def save_petfood_experts_cookies(driver):
 
 
 def load_petfood_experts_cookies(driver):
-    return load_cookies(driver, "petfoodex_cookies.pkl", "https://www.petfoodexperts.com")
+    return load_cookies(
+        driver, "petfoodex_cookies.pkl", "https://www.petfoodexperts.com"
+    )
 
 
 def save_phillips_cookies(driver):

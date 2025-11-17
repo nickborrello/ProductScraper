@@ -15,8 +15,12 @@ class ScraperConfigParser:
     def _preprocess_config_dict(self, config_dict: dict) -> dict:
         """Preprocess configuration dictionary to handle complex types."""
         # Convert anti_detection dict to AntiDetectionConfig if present
-        if 'anti_detection' in config_dict and isinstance(config_dict['anti_detection'], dict):
-            config_dict['anti_detection'] = AntiDetectionConfig(**config_dict['anti_detection'])
+        if "anti_detection" in config_dict and isinstance(
+            config_dict["anti_detection"], dict
+        ):
+            config_dict["anti_detection"] = AntiDetectionConfig(
+                **config_dict["anti_detection"]
+            )
 
         return config_dict
 
@@ -39,7 +43,7 @@ class ScraperConfigParser:
         if not file_path.exists():
             raise FileNotFoundError(f"Configuration file not found: {file_path}")
 
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             config_dict = yaml.safe_load(f)
 
         # Preprocess anti_detection field if present
@@ -76,5 +80,5 @@ class ScraperConfigParser:
         file_path.parent.mkdir(parents=True, exist_ok=True)
 
         config_dict = config.model_dump()
-        with open(file_path, 'w', encoding='utf-8') as f:
+        with open(file_path, "w", encoding="utf-8") as f:
             yaml.safe_dump(config_dict, f, default_flow_style=False, sort_keys=False)

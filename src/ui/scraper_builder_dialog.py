@@ -48,7 +48,8 @@ if TYPE_CHECKING:
 try:
     from src.core.classification.llm_classifier import get_llm_classifier  # type: ignore
 except ImportError:
-    def get_llm_classifier(model_name=None, product_taxonomy=None, product_pages=None) -> Optional['LLMProductClassifier']:  # type: ignore
+
+    def get_llm_classifier(model_name=None, product_taxonomy=None, product_pages=None) -> Optional["LLMProductClassifier"]:  # type: ignore
         return None
 
 
@@ -57,6 +58,7 @@ def set_wizard_data(key: str, value):
     """Set wizard data (to be called from wizard pages)."""
     # This will be set on the wizard instance
     pass
+
 
 def get_wizard_data(key: str, default=None):
     """Get wizard data (to be called from wizard pages)."""
@@ -74,9 +76,9 @@ class UrlInputPage(QWizardPage):
         self.setup_ui()
 
     @property
-    def typed_wizard(self) -> 'ScraperBuilderDialog':
+    def typed_wizard(self) -> "ScraperBuilderDialog":
         """Get the wizard cast to the correct type."""
-        return cast('ScraperBuilderDialog', self.wizard())
+        return cast("ScraperBuilderDialog", self.wizard())
 
     def setup_ui(self):
         """Setup the user interface."""
@@ -123,8 +125,8 @@ class UrlInputPage(QWizardPage):
             return
 
         # Validate URL
-        if not url.startswith(('http://', 'https://')):
-            url = 'https://' + url
+        if not url.startswith(("http://", "https://")):
+            url = "https://" + url
             self.url_input.setText(url)
 
         self.load_btn.setEnabled(False)
@@ -143,7 +145,7 @@ class UrlInputPage(QWizardPage):
         self.progress_bar.setVisible(False)
 
         # Store content for next steps
-        self.typed_wizard.set_wizard_data('page_content', content)
+        self.typed_wizard.set_wizard_data("page_content", content)
 
         # Show preview (first 2000 chars)
         preview = content[:2000]
@@ -163,8 +165,8 @@ class UrlInputPage(QWizardPage):
     def isComplete(self):
         """Check if page is complete."""
         return (
-            super().isComplete() and
-            self.typed_wizard.get_wizard_data('page_content') is not None
+            super().isComplete()
+            and self.typed_wizard.get_wizard_data("page_content") is not None
         )
 
 
@@ -174,13 +176,15 @@ class SelectorGenerationPage(QWizardPage):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setTitle("Step 2: Generate Selectors")
-        self.setSubTitle("Use AI analysis or visually select elements to generate CSS selectors")
+        self.setSubTitle(
+            "Use AI analysis or visually select elements to generate CSS selectors"
+        )
         self.setup_ui()
 
     @property
-    def typed_wizard(self) -> 'ScraperBuilderDialog':
+    def typed_wizard(self) -> "ScraperBuilderDialog":
         """Get the wizard cast to the correct type."""
-        return cast('ScraperBuilderDialog', self.wizard())
+        return cast("ScraperBuilderDialog", self.wizard())
 
     def setup_ui(self):
         """Setup the user interface."""
@@ -202,7 +206,9 @@ class SelectorGenerationPage(QWizardPage):
 
         self.selectors_table = QTableWidget()
         self.selectors_table.setColumnCount(4)
-        self.selectors_table.setHorizontalHeaderLabels(["Field", "Selector", "Attribute", "Source"])
+        self.selectors_table.setHorizontalHeaderLabels(
+            ["Field", "Selector", "Attribute", "Source"]
+        )
         self.selectors_table.horizontalHeader().setStretchLastSection(True)  # type: ignore
         self.selectors_table.setAlternatingRowColors(True)
         selectors_layout.addWidget(self.selectors_table)
@@ -222,10 +228,19 @@ class SelectorGenerationPage(QWizardPage):
         manual_layout = QHBoxLayout(manual_group)
 
         self.field_combo = QComboBox()
-        self.field_combo.addItems([
-            "product_name", "price", "description", "image_urls",
-            "sku", "brand", "availability", "rating", "specifications"
-        ])
+        self.field_combo.addItems(
+            [
+                "product_name",
+                "price",
+                "description",
+                "image_urls",
+                "sku",
+                "brand",
+                "availability",
+                "rating",
+                "specifications",
+            ]
+        )
         manual_layout.addWidget(QLabel("Field:"))
         manual_layout.addWidget(self.field_combo)
 
@@ -286,9 +301,13 @@ class SelectorGenerationPage(QWizardPage):
 
     def generate_selectors(self):
         """Generate selectors using AI."""
-        page_content = self.typed_wizard.get_wizard_data('page_content')
+        page_content = self.typed_wizard.get_wizard_data("page_content")
         if not page_content:
-            QMessageBox.warning(self, "Error", "No page content available. Please go back and load a page first.")
+            QMessageBox.warning(
+                self,
+                "Error",
+                "No page content available. Please go back and load a page first.",
+            )
             return
 
         self.generate_btn.setEnabled(False)
@@ -311,8 +330,8 @@ class SelectorGenerationPage(QWizardPage):
             if not isinstance(selector_info, dict):
                 selectors[field_name] = {}
                 selector_info = selectors[field_name]
-            selector_info['source'] = 'ai'
-        self.typed_wizard.set_wizard_data('suggested_selectors', selectors)
+            selector_info["source"] = "ai"
+        self.typed_wizard.set_wizard_data("suggested_selectors", selectors)
 
         # Populate table
         self.selectors_table.setRowCount(len(selectors))
@@ -323,11 +342,11 @@ class SelectorGenerationPage(QWizardPage):
             self.selectors_table.setItem(row, 0, field_item)
 
             # Selector
-            selector_item = QTableWidgetItem(selector_info.get('selector', ''))
+            selector_item = QTableWidgetItem(selector_info.get("selector", ""))
             self.selectors_table.setItem(row, 1, selector_item)
 
             # Attribute
-            attr_item = QTableWidgetItem(selector_info.get('attribute', 'text'))
+            attr_item = QTableWidgetItem(selector_info.get("attribute", "text"))
             self.selectors_table.setItem(row, 2, attr_item)
 
             # Source
@@ -342,7 +361,9 @@ class SelectorGenerationPage(QWizardPage):
         """Handle selector generation error."""
         self.generate_btn.setEnabled(True)
         self.progress_bar.setVisible(False)
-        QMessageBox.critical(self, "Error", f"Failed to generate selectors: {error_msg}")
+        QMessageBox.critical(
+            self, "Error", f"Failed to generate selectors: {error_msg}"
+        )
 
     def add_manual_selector(self):
         """Add a manual selector to the table."""
@@ -376,13 +397,15 @@ class SelectorGenerationPage(QWizardPage):
         self.selector_input.clear()
 
         # Update wizard data
-        suggested_selectors = self.typed_wizard.get_wizard_data('suggested_selectors', {}) or {}
+        suggested_selectors = (
+            self.typed_wizard.get_wizard_data("suggested_selectors", {}) or {}
+        )
         suggested_selectors[field] = {
-            'selector': selector,
-            'attribute': attribute,
-            'source': 'manual'
+            "selector": selector,
+            "attribute": attribute,
+            "source": "manual",
         }
-        self.typed_wizard.set_wizard_data('suggested_selectors', suggested_selectors)
+        self.typed_wizard.set_wizard_data("suggested_selectors", suggested_selectors)
 
         self.completeChanged.emit()
 
@@ -400,14 +423,13 @@ class SelectorGenerationPage(QWizardPage):
                 attribute = attr_item.text()
 
                 if selector.strip():
-                    selectors[field] = {
-                        'selector': selector,
-                        'attribute': attribute
-                    }
+                    selectors[field] = {"selector": selector, "attribute": attribute}
 
         return selectors
 
-    def on_visual_selector_selected(self, selector: str, attribute: str, field_name: str):
+    def on_visual_selector_selected(
+        self, selector: str, attribute: str, field_name: str
+    ):
         """Handle selector selection from visual picker."""
         # Add to table
         row_count = self.selectors_table.rowCount()
@@ -428,13 +450,15 @@ class SelectorGenerationPage(QWizardPage):
         self.selectors_table.setItem(row_count, 3, source_item)
 
         # Update wizard data
-        suggested_selectors = self.typed_wizard.get_wizard_data('suggested_selectors', {}) or {}
+        suggested_selectors = (
+            self.typed_wizard.get_wizard_data("suggested_selectors", {}) or {}
+        )
         suggested_selectors[field_name] = {
-            'selector': selector,
-            'attribute': attribute,
-            'source': 'visual'
+            "selector": selector,
+            "attribute": attribute,
+            "source": "visual",
         }
-        self.typed_wizard.set_wizard_data('suggested_selectors', suggested_selectors)
+        self.typed_wizard.set_wizard_data("suggested_selectors", suggested_selectors)
 
         self.completeChanged.emit()
 
@@ -446,16 +470,15 @@ class SelectorGenerationPage(QWizardPage):
     def clear_all_selectors(self):
         """Clear all selectors from the table."""
         self.selectors_table.setRowCount(0)
-        self.typed_wizard.set_wizard_data('suggested_selectors', {})
+        self.typed_wizard.set_wizard_data("suggested_selectors", {})
         self.completeChanged.emit()
 
     def isComplete(self):
         """Check if page is complete."""
-        suggested_selectors = self.typed_wizard.get_wizard_data('suggested_selectors', {}) or {}
-        return (
-            super().isComplete() and
-            len(suggested_selectors) > 0
+        suggested_selectors = (
+            self.typed_wizard.get_wizard_data("suggested_selectors", {}) or {}
         )
+        return super().isComplete() and len(suggested_selectors) > 0
 
 
 class SelectorTestingPage(QWizardPage):
@@ -468,9 +491,9 @@ class SelectorTestingPage(QWizardPage):
         self.setup_ui()
 
     @property
-    def typed_wizard(self) -> 'ScraperBuilderDialog':
+    def typed_wizard(self) -> "ScraperBuilderDialog":
         """Get the wizard cast to the correct type."""
-        return cast('ScraperBuilderDialog', self.wizard())
+        return cast("ScraperBuilderDialog", self.wizard())
 
     def setup_ui(self):
         """Setup the user interface."""
@@ -492,7 +515,9 @@ class SelectorTestingPage(QWizardPage):
 
         self.results_table = QTableWidget()
         self.results_table.setColumnCount(4)
-        self.results_table.setHorizontalHeaderLabels(["Field", "Selector", "Status", "Extracted Value"])
+        self.results_table.setHorizontalHeaderLabels(
+            ["Field", "Selector", "Status", "Extracted Value"]
+        )
         self.results_table.horizontalHeader().setStretchLastSection(True)  # type: ignore
         self.results_table.setAlternatingRowColors(True)
         results_layout.addWidget(self.results_table)
@@ -520,7 +545,7 @@ class SelectorTestingPage(QWizardPage):
             self.results_table.setItem(row, 0, field_item)
 
             # Selector
-            selector_item = QTableWidgetItem(selector_info.get('selector', ''))
+            selector_item = QTableWidgetItem(selector_info.get("selector", ""))
             selector_item.setFlags(selector_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
             self.results_table.setItem(row, 1, selector_item)
 
@@ -536,7 +561,7 @@ class SelectorTestingPage(QWizardPage):
 
     def test_all_selectors(self):
         """Test all selectors against the page content."""
-        page_content = self.typed_wizard.get_wizard_data('page_content')
+        page_content = self.typed_wizard.get_wizard_data("page_content")
         if not page_content:
             QMessageBox.warning(self, "Error", "No page content available for testing.")
             return
@@ -547,10 +572,7 @@ class SelectorTestingPage(QWizardPage):
 
         # Start testing in background
         selectors = self.get_selectors_from_table()
-        self.test_thread = SelectorTestingThread(
-            page_content,
-            selectors
-        )
+        self.test_thread = SelectorTestingThread(page_content, selectors)
         self.test_thread.progress.connect(self.update_progress)
         self.test_thread.result.connect(self.on_test_result)
         self.test_thread.finished.connect(self.on_testing_finished)
@@ -567,7 +589,7 @@ class SelectorTestingPage(QWizardPage):
                 field = field_item.text()
                 selector = selector_item.text()
                 if selector.strip():
-                    selectors[field] = {'selector': selector}
+                    selectors[field] = {"selector": selector}
         return selectors
 
     def update_progress(self, row: int, status: str, value: str):
@@ -604,7 +626,7 @@ class SelectorTestingPage(QWizardPage):
 
         # Update summary
         total = len(results)
-        successful = sum(1 for r in results.values() if r.get('success', False))
+        successful = sum(1 for r in results.values() if r.get("success", False))
         self.summary_label.setText(
             f"Testing complete: {successful}/{total} selectors successful"
         )
@@ -617,10 +639,7 @@ class SelectorTestingPage(QWizardPage):
 
     def isComplete(self):
         """Check if page is complete."""
-        return (
-            super().isComplete() and
-            hasattr(self.typed_wizard, 'test_results')
-        )
+        return super().isComplete() and hasattr(self.typed_wizard, "test_results")
 
 
 class ConfigurationSavingPage(QWizardPage):
@@ -633,9 +652,9 @@ class ConfigurationSavingPage(QWizardPage):
         self.setup_ui()
 
     @property
-    def typed_wizard(self) -> 'ScraperBuilderDialog':
+    def typed_wizard(self) -> "ScraperBuilderDialog":
         """Get the wizard cast to the correct type."""
-        return cast('ScraperBuilderDialog', self.wizard())
+        return cast("ScraperBuilderDialog", self.wizard())
 
     def setup_ui(self):
         """Setup the user interface."""
@@ -694,19 +713,21 @@ class ConfigurationSavingPage(QWizardPage):
             scraper_name = self.name_input.text().strip() or "Generated Scraper"
 
             # Parse domain from URL
-            domain = urlparse(url).netloc.replace('www.', '')
+            domain = urlparse(url).netloc.replace("www.", "")
 
             # Get successful selectors from test results
             selectors = []
             if self.typed_wizard.test_results:
                 for field_name, result in self.typed_wizard.test_results.items():
-                    if result.get('success', False):
-                        selector_info = result.get('selector_info', {})
+                    if result.get("success", False):
+                        selector_info = result.get("selector_info", {})
                         selector_config = SelectorConfig(
                             name=field_name,
-                            selector=selector_info.get('selector', ''),
-                            attribute=selector_info.get('attribute', 'text'),
-                            multiple=field_name.endswith('s')  # Plural fields are multiple
+                            selector=selector_info.get("selector", ""),
+                            attribute=selector_info.get("attribute", "text"),
+                            multiple=field_name.endswith(
+                                "s"
+                            ),  # Plural fields are multiple
                         )
                         selectors.append(selector_config)
 
@@ -714,18 +735,13 @@ class ConfigurationSavingPage(QWizardPage):
             workflows = []
             if self.create_workflow_cb.isChecked():
                 workflows = [
+                    WorkflowStep(action="navigate", params={"url": url}),
                     WorkflowStep(
-                        action="navigate",
-                        params={"url": url}
+                        action="wait", params={"selector": "body", "timeout": 5}
                     ),
                     WorkflowStep(
-                        action="wait",
-                        params={"selector": "body", "timeout": 5}
+                        action="extract", params={"fields": [s.name for s in selectors]}
                     ),
-                    WorkflowStep(
-                        action="extract",
-                        params={"fields": [s.name for s in selectors]}
-                    )
                 ]
 
             # Create config
@@ -737,15 +753,14 @@ class ConfigurationSavingPage(QWizardPage):
                 login=None,
                 timeout=30,
                 retries=3,
-                anti_detection=None
+                anti_detection=None,
             )
 
             # Convert to YAML
             import yaml
+
             yaml_content = yaml.safe_dump(
-                config.model_dump(),
-                default_flow_style=False,
-                sort_keys=False
+                config.model_dump(), default_flow_style=False, sort_keys=False
             )
 
             self.yaml_preview.setPlainText(yaml_content)
@@ -786,7 +801,7 @@ class ConfigurationSavingPage(QWizardPage):
                 f"Scraper configuration saved successfully!\n\n"
                 f"File: {config_file}\n"
                 f"Selectors: {len(config.selectors)}\n"
-                f"Workflows: {len(config.workflows)}"
+                f"Workflows: {len(config.workflows)}",
             )
 
             # Mark wizard as complete
@@ -794,7 +809,9 @@ class ConfigurationSavingPage(QWizardPage):
             self.completeChanged.emit()
 
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to save configuration: {str(e)}")
+            QMessageBox.critical(
+                self, "Error", f"Failed to save configuration: {str(e)}"
+            )
 
     def save_selectors_to_storage(self, config: ScraperConfig):
         """Save successful selectors to storage for learning."""
@@ -806,12 +823,12 @@ class ConfigurationSavingPage(QWizardPage):
                 # Only save if we have test results indicating success
                 if self.typed_wizard.test_results:
                     test_result = self.typed_wizard.test_results.get(selector.name, {})
-                    if test_result.get('success', False):
+                    if test_result.get("success", False):
                         manager.learn_selector(
                             domain=domain,
                             field_name=selector.name,
                             selector=selector.selector,
-                            success=True
+                            success=True,
                         )
 
         except Exception as e:
@@ -819,10 +836,7 @@ class ConfigurationSavingPage(QWizardPage):
 
     def isComplete(self):
         """Check if page is complete."""
-        return (
-            super().isComplete() and
-            self.typed_wizard.config_saved
-        )
+        return super().isComplete() and self.typed_wizard.config_saved
 
 
 class ScraperBuilderDialog(QWizard):
@@ -845,10 +859,10 @@ class ScraperBuilderDialog(QWizard):
 
         # Initialize wizard data storage
         self._wizard_data = {
-            'page_content': None,
-            'suggested_selectors': {},
-            'test_results': {},
-            'config_saved': False
+            "page_content": None,
+            "suggested_selectors": {},
+            "test_results": {},
+            "config_saved": False,
         }
 
         # Additional attributes for wizard state
@@ -869,6 +883,7 @@ class ScraperBuilderDialog(QWizard):
 
 # Background worker threads
 
+
 class PageLoadThread(QThread):
     """Thread for loading page content using HTTP request."""
 
@@ -887,21 +902,21 @@ class PageLoadThread(QThread):
             from bs4 import BeautifulSoup
 
             headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
             }
 
             response = requests.get(self.url, headers=headers, timeout=30)
             response.raise_for_status()
 
             # Parse HTML and extract text content
-            soup = BeautifulSoup(response.text, 'html.parser')
+            soup = BeautifulSoup(response.text, "html.parser")
 
             # Remove script and style elements
             for script in soup(["script", "style"]):
                 script.extract()
 
             # Get text content
-            content = soup.get_text(separator='\n', strip=True)
+            content = soup.get_text(separator="\n", strip=True)
 
             self.finished.emit(content)
 
@@ -991,20 +1006,20 @@ Return only valid JSON.
         return {
             "product_name": {
                 "selector": "h1, .product-title, .product-name, [class*='title']",
-                "attribute": "text"
+                "attribute": "text",
             },
             "price": {
                 "selector": ".price, [class*='price'], .cost, .amount",
-                "attribute": "text"
+                "attribute": "text",
             },
             "description": {
                 "selector": ".description, [class*='description'], .details, .info",
-                "attribute": "text"
+                "attribute": "text",
             },
             "image_urls": {
                 "selector": "img[src*='product'], .product-image img",
-                "attribute": "src"
-            }
+                "attribute": "src",
+            },
         }
 
 
@@ -1026,31 +1041,34 @@ class SelectorTestingThread(QThread):
 
         try:
             from bs4 import BeautifulSoup
-            soup = BeautifulSoup(self.page_content, 'html.parser')
+
+            soup = BeautifulSoup(self.page_content, "html.parser")
         except ImportError:
             # Fallback without BeautifulSoup
             soup = None
 
         for row, (field_name, selector_info) in enumerate(self.selectors.items()):
-            selector = selector_info.get('selector', '')
-            attribute = selector_info.get('attribute', 'text')
+            selector = selector_info.get("selector", "")
+            attribute = selector_info.get("attribute", "text")
 
             try:
                 if soup:
                     # Use BeautifulSoup for proper parsing
                     elements = soup.select(selector)
                     if elements:
-                        if attribute == 'text':
+                        if attribute == "text":
                             value = elements[0].get_text(strip=True)
                         else:
-                            value = elements[0].get(attribute, '')
+                            value = elements[0].get(attribute, "")
 
                         if isinstance(value, str):
                             success = bool(value.strip())
                             extracted_value = value[:200] if value else "No value found"
                         else:
                             success = bool(value)
-                            extracted_value = str(value)[:200] if value else "No value found"
+                            extracted_value = (
+                                str(value)[:200] if value else "No value found"
+                            )
                     else:
                         success = False
                         extracted_value = "Selector not found"
@@ -1064,9 +1082,9 @@ class SelectorTestingThread(QThread):
                 self.result.emit(row, success, extracted_value)
 
                 results[field_name] = {
-                    'success': success,
-                    'value': extracted_value,
-                    'selector_info': selector_info
+                    "success": success,
+                    "value": extracted_value,
+                    "selector_info": selector_info,
                 }
 
             except Exception as e:
@@ -1074,9 +1092,9 @@ class SelectorTestingThread(QThread):
                 self.progress.emit(row, "❌ Error", error_msg)
                 self.result.emit(row, False, error_msg)
                 results[field_name] = {
-                    'success': False,
-                    'value': error_msg,
-                    'selector_info': selector_info
+                    "success": False,
+                    "value": error_msg,
+                    "selector_info": selector_info,
                 }
 
         self.finished.emit(results)

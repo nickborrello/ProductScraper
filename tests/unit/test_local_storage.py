@@ -40,7 +40,7 @@ class TestLocalDataset:
         assert len(files) == 1
 
         # Check file contents
-        with open(files[0], 'r') as f:
+        with open(files[0], "r") as f:
             saved_data = json.load(f)
             assert saved_data == data
 
@@ -48,7 +48,7 @@ class TestLocalDataset:
         """Test pushing multiple data items."""
         data_list = [
             {"name": "Product 1", "price": 10.99},
-            {"name": "Product 2", "price": 20.99}
+            {"name": "Product 2", "price": 20.99},
         ]
         self.dataset.push_data(data_list)
 

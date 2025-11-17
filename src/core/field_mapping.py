@@ -69,23 +69,29 @@ def map_shopsite_fields(product_data):
 
         # Special handling for Category - ensure unique values
         if editor_field == "Category" and value:
-            # Split by "|", deduplicate, and rejoin with "|" 
+            # Split by "|", deduplicate, and rejoin with "|"
             categories = [cat.strip() for cat in str(value).split("|") if cat.strip()]
-            unique_categories = list(dict.fromkeys(categories))  # Preserve order while removing duplicates
+            unique_categories = list(
+                dict.fromkeys(categories)
+            )  # Preserve order while removing duplicates
             value = "|".join(unique_categories)
 
         # Special handling for Product_Type - ensure unique values
         if editor_field == "Product_Type" and value:
             # Split by "|", deduplicate, and rejoin with "|"
             types = [pt.strip() for pt in str(value).split("|") if pt.strip()]
-            unique_types = list(dict.fromkeys(types))  # Preserve order while removing duplicates
+            unique_types = list(
+                dict.fromkeys(types)
+            )  # Preserve order while removing duplicates
             value = "|".join(unique_types)
 
         # Special handling for Product_On_Pages - ensure "|" separator and unique values
         if editor_field == "Product_On_Pages" and value:
             # Split by comma, deduplicate, and rejoin with "|" to standardize separator
             pages = [page.strip() for page in str(value).split(",") if page.strip()]
-            unique_pages = list(dict.fromkeys(pages))  # Preserve order while removing duplicates
+            unique_pages = list(
+                dict.fromkeys(pages)
+            )  # Preserve order while removing duplicates
             value = "|".join(unique_pages)
 
         # Special handling for Special_Order

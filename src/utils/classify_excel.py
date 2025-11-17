@@ -12,7 +12,9 @@ from tkinter import filedialog
 from pathlib import Path
 
 # Add project root to path
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+PROJECT_ROOT = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
@@ -55,7 +57,7 @@ def classify_excel_file():
 
     try:
         # Load the original DataFrame, keeping all original data
-        df = pd.read_excel(file_path, dtype=str).fillna('')
+        df = pd.read_excel(file_path, dtype=str).fillna("")
         print(f"📊 Loaded {len(df)} rows from Excel file")
 
         if df.empty:
@@ -71,17 +73,21 @@ def classify_excel_file():
 
         # Create a temporary list of dicts for the classification functions
         # This uses the specific column names the classifiers expect
-        products_for_classification = df.rename(columns={
-            "Product Field 16": "Brand",
-            "Product Field 11": "Special Order",
-            "ProductDisabled": "Product Disabled"
-        }).to_dict('records')
+        products_for_classification = df.rename(
+            columns={
+                "Product Field 16": "Brand",
+                "Product Field 11": "Special Order",
+                "ProductDisabled": "Product Disabled",
+            }
+        ).to_dict("records")
 
         # --- Classification Process ---
         settings = SettingsManager()
         classification_method = settings.get("classification_method", "llm")
-        
-        print(f"🤖 Running automatic classification using {classification_method} method...")
+
+        print(
+            f"🤖 Running automatic classification using {classification_method} method..."
+        )
         classified_products = classify_products_batch(
             products_for_classification, method=classification_method
         )
@@ -101,27 +107,28 @@ def classify_excel_file():
         results_df = pd.DataFrame(edited_products)
 
         # Set SKU as the index on both DataFrames to join the data
-        df = df.set_index('SKU')
-        results_df = results_df.set_index('SKU')
+        df = df.set_index("SKU")
+        results_df = results_df.set_index("SKU")
 
         # Define the mapping from classification results to final Excel columns
         column_mapping = {
             "Category": "Product Field 24",
             "Product Type": "Product Field 25",
-            "Product On Pages": "Product On Pages"
+            "Product On Pages": "Product On Pages",
         }
-        
+
         # Rename the columns in the results DataFrame to match the target columns
         results_to_update = results_df.rename(columns=column_mapping)
 
         # Update the original DataFrame with the new classification data
         # This only affects columns present in `results_to_update` and preserves all others
         df.update(results_to_update)
-        
+
         # Add/update the 'Last Edited' timestamp
         from datetime import datetime
+
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        df['Last Edited'] = timestamp
+        df["Last Edited"] = timestamp
 
         # Restore SKU from index to a column
         df.reset_index(inplace=True)
@@ -131,7 +138,9 @@ def classify_excel_file():
         # Always save as .xlsx for compatibility, even if original was .xls
         if save_path.suffix.lower() == ".xls":
             save_path = save_path.with_suffix(".xlsx")
-            print(f"📝 Original was .xls, saving as .xlsx to preserve features: {save_path.name}")
+            print(
+                f"📝 Original was .xls, saving as .xlsx to preserve features: {save_path.name}"
+            )
 
         df.to_excel(save_path, index=False)
 
@@ -141,6 +150,7 @@ def classify_excel_file():
     except Exception as e:
         print(f"❌ Error during classification: {e}")
         import traceback
+
         traceback.print_exc()
 
 

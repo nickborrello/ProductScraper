@@ -24,6 +24,7 @@ except ImportError:
         # Last resort - try direct import from current directory
         import sys
         import os
+
         current_dir = os.path.dirname(os.path.abspath(__file__))
         if current_dir not in sys.path:
             sys.path.insert(0, current_dir)
@@ -32,6 +33,7 @@ except ImportError:
 # Ensure src directory is in path for standalone execution
 import sys
 import os
+
 src_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if src_dir not in sys.path:
     sys.path.insert(0, src_dir)
@@ -39,16 +41,19 @@ if src_dir not in sys.path:
 # Import settings manager
 try:
     from src.core.settings_manager import settings
+
     _settings_available = True
 except ImportError:
     try:
         # Fallback for when run as standalone
         from ..settings_manager import settings
+
         _settings_available = True
     except ImportError:
         # Last resort - try to load from settings.json directly
         import json
         from pathlib import Path
+
         config_path = Path(__file__).parent.parent.parent.parent / "settings.json"
         if config_path.exists():
             with open(config_path, "r") as f:
@@ -59,7 +64,9 @@ except ImportError:
         _settings_available = False
 
 # Database path instead of Excel
-DB_PATH = Path(__file__).parent.parent.parent.parent / "data" / "databases" / "products.db"
+DB_PATH = (
+    Path(__file__).parent.parent.parent.parent / "data" / "databases" / "products.db"
+)
 
 
 # Unified prompts for all LLM classifiers
@@ -118,6 +125,7 @@ RECOMMEND_COLS = [
 # Centralized product taxonomy - shared between all classifiers
 GENERAL_PRODUCT_TAXONOMY = get_product_taxonomy()
 
+
 def get_product_pages() -> List[str]:
     """
     Load product pages from JSON file
@@ -125,13 +133,19 @@ def get_product_pages() -> List[str]:
     Returns:
         List of product page names
     """
-    pages_file = Path(__file__).parent.parent.parent.parent / "src" / "data" / "product_pages.json"
+    pages_file = (
+        Path(__file__).parent.parent.parent.parent
+        / "src"
+        / "data"
+        / "product_pages.json"
+    )
     try:
-        with open(pages_file, 'r', encoding='utf-8') as f:
+        with open(pages_file, "r", encoding="utf-8") as f:
             return json.load(f)
     except (json.JSONDecodeError, IOError) as e:
         print(f"[WARNING] Error loading product pages file: {e}")
         return []
+
 
 # Product pages from ShopSite
 PRODUCT_PAGES = get_product_pages()
@@ -154,7 +168,7 @@ def classify_products_batch(products_list, method=None):
             method = settings.get("classification_method", "llm")
         else:
             method = _classification_method
-    
+
     print(
         f"[CLASSIFY] Batch Classification: Using {method} approach for {len(products_list)} products..."
     )
@@ -171,12 +185,17 @@ def classify_products_batch(products_list, method=None):
                 # Fall through to individual processing
 
         try:
-            classifier = get_llm_classifier(product_taxonomy=GENERAL_PRODUCT_TAXONOMY, product_pages=PRODUCT_PAGES)
+            classifier = get_llm_classifier(
+                product_taxonomy=GENERAL_PRODUCT_TAXONOMY, product_pages=PRODUCT_PAGES
+            )
             if classifier:
                 # Create batches with merging logic for last small batch
                 batch_size = 15
                 min_batch_size = 10
-                batches = [products_list[i:i + batch_size] for i in range(0, len(products_list), batch_size)]
+                batches = [
+                    products_list[i : i + batch_size]
+                    for i in range(0, len(products_list), batch_size)
+                ]
                 if len(batches) > 1 and len(batches[-1]) < min_batch_size:
                     batches[-2].extend(batches[-1])
                     batches.pop()
@@ -192,14 +211,20 @@ def classify_products_batch(products_list, method=None):
                 )
                 return classified_products
             else:
-                print("[WARNING] LLM classifier not available, leaving products unclassified")
+                print(
+                    "[WARNING] LLM classifier not available, leaving products unclassified"
+                )
         except Exception as e:
-            print(f"[WARNING] LLM batch classification failed: {e}, leaving products unclassified")
+            print(
+                f"[WARNING] LLM batch classification failed: {e}, leaving products unclassified"
+            )
 
     # Special handling for local_llm method - use batch processing
     if method == "local_llm":
         try:
-            from src.core.classification.local_llm_classifier import get_local_llm_classifier
+            from src.core.classification.local_llm_classifier import (
+                get_local_llm_classifier,
+            )
         except ImportError:
             try:
                 from local_llm_classifier import get_local_llm_classifier
@@ -208,12 +233,17 @@ def classify_products_batch(products_list, method=None):
                 # Fall through to individual processing
 
         try:
-            classifier = get_local_llm_classifier(product_taxonomy=GENERAL_PRODUCT_TAXONOMY, product_pages=PRODUCT_PAGES)
+            classifier = get_local_llm_classifier(
+                product_taxonomy=GENERAL_PRODUCT_TAXONOMY, product_pages=PRODUCT_PAGES
+            )
             if classifier:
                 # Create batches with merging logic for last small batch
                 batch_size = 15
                 min_batch_size = 10
-                batches = [products_list[i:i + batch_size] for i in range(0, len(products_list), batch_size)]
+                batches = [
+                    products_list[i : i + batch_size]
+                    for i in range(0, len(products_list), batch_size)
+                ]
                 if len(batches) > 1 and len(batches[-1]) < min_batch_size:
                     batches[-2].extend(batches[-1])
                     batches.pop()
@@ -224,10 +254,12 @@ def classify_products_batch(products_list, method=None):
                     # Convert to format expected by batch classifier
                     batch_products = []
                     for product in batch:
-                        batch_products.append({
-                            "Name": product.get("Name", ""),
-                            "Brand": product.get("Brand", "")
-                        })
+                        batch_products.append(
+                            {
+                                "Name": product.get("Name", ""),
+                                "Brand": product.get("Brand", ""),
+                            }
+                        )
 
                     # Use batch classification
                     batch_results = classifier.classify_products_batch(batch_products)
@@ -237,7 +269,9 @@ def classify_products_batch(products_list, method=None):
                         product_copy = product_info.copy()
                         product_copy["Category"] = result.get("category", "")
                         product_copy["Product Type"] = result.get("product_type", "")
-                        product_copy["Product On Pages"] = result.get("product_on_pages", "")
+                        product_copy["Product On Pages"] = result.get(
+                            "product_on_pages", ""
+                        )
                         classified_products.append(product_copy)
 
                 print(
@@ -245,9 +279,13 @@ def classify_products_batch(products_list, method=None):
                 )
                 return classified_products
             else:
-                print("[WARNING] Local LLM classifier not available, leaving products unclassified")
+                print(
+                    "[WARNING] Local LLM classifier not available, leaving products unclassified"
+                )
         except Exception as e:
-            print(f"[WARNING] Local LLM batch classification failed: {e}, leaving products unclassified")
+            print(
+                f"[WARNING] Local LLM batch classification failed: {e}, leaving products unclassified"
+            )
 
     # Default: process each product individually
     classified_products = []
@@ -283,7 +321,7 @@ def classify_single_product(product_info, method=None):
             method = settings.get("classification_method", "llm")
         else:
             method = _classification_method
-    
+
     product_name = product_info.get("Name", "").strip()
 
     # LLM-based classification (most accurate)
@@ -318,7 +356,9 @@ def classify_single_product(product_info, method=None):
     # Local LLM-based classification (Ollama - no API key required)
     elif method == "local_llm":
         try:
-            from src.core.classification.local_llm_classifier import classify_product_local_llm
+            from src.core.classification.local_llm_classifier import (
+                classify_product_local_llm,
+            )
         except ImportError:
             try:
                 from local_llm_classifier import classify_product_local_llm
@@ -327,7 +367,11 @@ def classify_single_product(product_info, method=None):
                 return product_info
 
         try:
-            llm_result = classify_product_local_llm(product_info, product_taxonomy=GENERAL_PRODUCT_TAXONOMY, product_pages=PRODUCT_PAGES)
+            llm_result = classify_product_local_llm(
+                product_info,
+                product_taxonomy=GENERAL_PRODUCT_TAXONOMY,
+                product_pages=PRODUCT_PAGES,
+            )
 
             # Apply LLM results
             product_info["Category"] = llm_result.get("Category", "")
@@ -367,7 +411,12 @@ if __name__ == "__main__":
     try:
         # Import check - manager should not import any UI components
         import sys
-        ui_modules = [name for name in sys.modules.keys() if 'ui' in name.lower() or 'qt' in name.lower() or 'tkinter' in name.lower()]
+
+        ui_modules = [
+            name
+            for name in sys.modules.keys()
+            if "ui" in name.lower() or "qt" in name.lower() or "tkinter" in name.lower()
+        ]
         if ui_modules:
             print(f"WARNING: Manager imported UI modules: {ui_modules}")
         else:
@@ -412,11 +461,15 @@ if __name__ == "__main__":
         print("RESULTS: Classification Results:")
         print(f"   Category: {classified_product.get('Category', 'None')}")
         print(f"   Product Type: {classified_product.get('Product Type', 'None')}")
-        print(f"   Product On Pages: {classified_product.get('Product On Pages', 'None')}")
+        print(
+            f"   Product On Pages: {classified_product.get('Product On Pages', 'None')}"
+        )
 
         # Verify classification added expected fields
         expected_fields = ["Category", "Product Type", "Product On Pages"]
-        missing_fields = [field for field in expected_fields if not classified_product.get(field)]
+        missing_fields = [
+            field for field in expected_fields if not classified_product.get(field)
+        ]
         if missing_fields:
             print(f"WARNING: Missing classification fields: {missing_fields}")
         else:
@@ -459,10 +512,16 @@ if __name__ == "__main__":
         if len(classified_batch) == len(test_products):
             print("PASS: Batch processing returned correct number of products")
         else:
-            print(f"FAIL: Batch processing failed: expected {len(test_products)}, got {len(classified_batch)}")
+            print(
+                f"FAIL: Batch processing failed: expected {len(test_products)}, got {len(classified_batch)}"
+            )
 
         # Verify all products have classification
-        unclassified = [i for i, p in enumerate(classified_batch) if not any(p.get(field) for field in expected_fields)]
+        unclassified = [
+            i
+            for i, p in enumerate(classified_batch)
+            if not any(p.get(field) for field in expected_fields)
+        ]
         if unclassified:
             print(f"WARNING: Products {unclassified} appear unclassified")
         else:

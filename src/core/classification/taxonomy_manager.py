@@ -46,7 +46,7 @@ class TaxonomyManager:
         """
         if self.taxonomy_file.exists():
             try:
-                with open(self.taxonomy_file, 'r', encoding='utf-8') as f:
+                with open(self.taxonomy_file, "r", encoding="utf-8") as f:
                     return json.load(f)
             except (json.JSONDecodeError, IOError) as e:
                 print(f"⚠️ Error loading taxonomy file: {e}")
@@ -63,7 +63,7 @@ class TaxonomyManager:
             taxonomy: Dictionary mapping categories to lists of product types
         """
         try:
-            with open(self.taxonomy_file, 'w', encoding='utf-8') as f:
+            with open(self.taxonomy_file, "w", encoding="utf-8") as f:
                 json.dump(taxonomy, f, indent=2, ensure_ascii=False)
             print(f"💾 Taxonomy saved to {self.taxonomy_file}")
         except IOError as e:
@@ -114,21 +114,30 @@ class TaxonomyManager:
             cursor = conn.cursor()
 
             # Query distinct categories (exclude empty/null values)
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT DISTINCT Category
                 FROM products
                 WHERE Category IS NOT NULL
                 AND Category != ''
                 AND TRIM(Category) != ''
-            """)
+            """
+            )
 
             for row in cursor.fetchall():
                 if row[0]:
                     # Split combined categories on "|" and add each individual category
                     combined_category = row[0].strip()
-                    individual_categories = [cat.strip() for cat in combined_category.split('|') if cat.strip()]
+                    individual_categories = [
+                        cat.strip()
+                        for cat in combined_category.split("|")
+                        if cat.strip()
+                    ]
                     # Normalize each category name
-                    normalized_categories = [self._normalize_category_name(cat) for cat in individual_categories]
+                    normalized_categories = [
+                        self._normalize_category_name(cat)
+                        for cat in individual_categories
+                    ]
                     categories.update(normalized_categories)
 
             conn.close()
@@ -154,13 +163,15 @@ class TaxonomyManager:
             cursor = conn.cursor()
 
             # Query product types with their categories
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT Category, Product_Type
                 FROM products
                 WHERE Product_Type IS NOT NULL
                 AND Product_Type != ''
                 AND TRIM(Product_Type) != ''
-            """)
+            """
+            )
 
             for row in cursor.fetchall():
                 category = row[0].strip() if row[0] else ""
@@ -168,16 +179,26 @@ class TaxonomyManager:
 
                 if category and product_type:
                     # Split combined categories on "|" and add product type to each individual category
-                    individual_categories = [cat.strip() for cat in category.split('|') if cat.strip()]
+                    individual_categories = [
+                        cat.strip() for cat in category.split("|") if cat.strip()
+                    ]
 
                     # Split combined product types on "|" and add each individual type
-                    individual_product_types = [self._normalize_category_name(pt.strip()) for pt in product_type.split('|') if pt.strip()]
+                    individual_product_types = [
+                        self._normalize_category_name(pt.strip())
+                        for pt in product_type.split("|")
+                        if pt.strip()
+                    ]
 
                     for individual_category in individual_categories:
-                        normalized_category = self._normalize_category_name(individual_category)
+                        normalized_category = self._normalize_category_name(
+                            individual_category
+                        )
                         if normalized_category not in product_types:
                             product_types[normalized_category] = set()
-                        product_types[normalized_category].update(individual_product_types)
+                        product_types[normalized_category].update(
+                            individual_product_types
+                        )
 
             conn.close()
 
@@ -188,9 +209,12 @@ class TaxonomyManager:
 
         return product_types
 
-    def _merge_database_entries(self, current_taxonomy: Dict[str, List[str]],
-                               db_categories: Set[str],
-                               db_product_types: Dict[str, Set[str]]) -> Dict[str, List[str]]:
+    def _merge_database_entries(
+        self,
+        current_taxonomy: Dict[str, List[str]],
+        db_categories: Set[str],
+        db_product_types: Dict[str, Set[str]],
+    ) -> Dict[str, List[str]]:
         """
         Merge database entries into current taxonomy
 
@@ -220,7 +244,9 @@ class TaxonomyManager:
 
             if new_types:
                 updated_taxonomy[category].extend(sorted(new_types))
-                print(f"➕ Added {len(new_types)} new product types to {category}: {sorted(new_types)}")
+                print(
+                    f"➕ Added {len(new_types)} new product types to {category}: {sorted(new_types)}"
+                )
 
         # Sort product types within each category
         for category in updated_taxonomy:
@@ -228,7 +254,9 @@ class TaxonomyManager:
 
         return updated_taxonomy
 
-    def _report_changes(self, old_taxonomy: Dict[str, List[str]], new_taxonomy: Dict[str, List[str]]) -> None:
+    def _report_changes(
+        self, old_taxonomy: Dict[str, List[str]], new_taxonomy: Dict[str, List[str]]
+    ) -> None:
         """Report taxonomy changes"""
         old_categories = set(old_taxonomy.keys())
         new_categories = set(new_taxonomy.keys())
@@ -254,20 +282,20 @@ class TaxonomyManager:
 
         # Handle special cases that shouldn't be title cased
         special_cases = {
-            'And': 'and',
-            'Or': 'or',
-            'Of': 'of',
-            'The': 'the',
-            'A': 'a',
-            'An': 'an',
-            'In': 'in',
-            'On': 'on',
-            'At': 'at',
-            'To': 'to',
-            'For': 'for',
-            'With': 'with',
-            'By': 'by',
-            'From': 'from',
+            "And": "and",
+            "Or": "or",
+            "Of": "of",
+            "The": "the",
+            "A": "a",
+            "An": "an",
+            "In": "in",
+            "On": "on",
+            "At": "at",
+            "To": "to",
+            "For": "for",
+            "With": "with",
+            "By": "by",
+            "From": "from",
         }
 
         words = normalized.split()
@@ -275,89 +303,216 @@ class TaxonomyManager:
             if word in special_cases and i > 0:  # Don't lowercase first word
                 words[i] = special_cases[word]
 
-        return ' '.join(words)
+        return " ".join(words)
 
     def _get_default_taxonomy(self) -> Dict[str, List[str]]:
         """Get the default taxonomy (same as in manager.py)"""
         return {
             # Pet Products
             "Dog Food": [
-                "Dry Dog Food", "Wet Dog Food", "Raw Dog Food", "Freeze Dried Dog Food",
-                "Puppy Food", "Adult Dog Food", "Senior Dog Food", "Grain Free Dog Food",
-                "Limited Ingredient Dog Food", "Organic Dog Food", "Dog Treats", "Dog Biscuits",
-                "Dog Dental Chews", "Dog Training Treats",
+                "Dry Dog Food",
+                "Wet Dog Food",
+                "Raw Dog Food",
+                "Freeze Dried Dog Food",
+                "Puppy Food",
+                "Adult Dog Food",
+                "Senior Dog Food",
+                "Grain Free Dog Food",
+                "Limited Ingredient Dog Food",
+                "Organic Dog Food",
+                "Dog Treats",
+                "Dog Biscuits",
+                "Dog Dental Chews",
+                "Dog Training Treats",
             ],
             "Cat Food": [
-                "Dry Cat Food", "Wet Cat Food", "Raw Cat Food", "Freeze Dried Cat Food",
-                "Kitten Food", "Adult Cat Food", "Senior Cat Food", "Hairball Cat Food",
-                "Grain Free Cat Food", "Limited Ingredient Cat Food", "Organic Cat Food",
-                "Cat Treats", "Cat Hairball Treats", "Cat Dental Treats",
+                "Dry Cat Food",
+                "Wet Cat Food",
+                "Raw Cat Food",
+                "Freeze Dried Cat Food",
+                "Kitten Food",
+                "Adult Cat Food",
+                "Senior Cat Food",
+                "Hairball Cat Food",
+                "Grain Free Cat Food",
+                "Limited Ingredient Cat Food",
+                "Organic Cat Food",
+                "Cat Treats",
+                "Cat Hairball Treats",
+                "Cat Dental Treats",
             ],
             "Bird Supplies": [
-                "Bird Food", "Bird Seed", "Bird Pellets", "Bird Treats", "Bird Cages",
-                "Bird Toys", "Bird Perches", "Bird Healthcare", "Bird Vitamins", "Bird Supplements",
+                "Bird Food",
+                "Bird Seed",
+                "Bird Pellets",
+                "Bird Treats",
+                "Bird Cages",
+                "Bird Toys",
+                "Bird Perches",
+                "Bird Healthcare",
+                "Bird Vitamins",
+                "Bird Supplements",
             ],
             "Fish Supplies": [
-                "Fish Food", "Tropical Fish Flakes", "Goldfish Food", "Betta Food", "Fish Tanks",
-                "Aquarium Filters", "Fish Water Treatments", "Fish Tank Decorations", "Fish Nets", "Fish Healthcare",
+                "Fish Food",
+                "Tropical Fish Flakes",
+                "Goldfish Food",
+                "Betta Food",
+                "Fish Tanks",
+                "Aquarium Filters",
+                "Fish Water Treatments",
+                "Fish Tank Decorations",
+                "Fish Nets",
+                "Fish Healthcare",
             ],
             "Small Pet Food": [
-                "Rabbit Food", "Guinea Pig Food", "Hamster Food", "Gerbil Food", "Mouse Food",
-                "Rat Food", "Ferret Food", "Chinchilla Food", "Small Pet Treats", "Small Pet Hay", "Small Pet Bedding",
+                "Rabbit Food",
+                "Guinea Pig Food",
+                "Hamster Food",
+                "Gerbil Food",
+                "Mouse Food",
+                "Rat Food",
+                "Ferret Food",
+                "Chinchilla Food",
+                "Small Pet Treats",
+                "Small Pet Hay",
+                "Small Pet Bedding",
             ],
             "Reptile Supplies": [
-                "Reptile Food", "Bearded Dragon Food", "Leopard Gecko Food", "Snake Food", "Lizard Food",
-                "Turtle Food", "Reptile Vitamins", "Reptile Heating", "Reptile Lighting", "Reptile Substrates",
-                "Reptile Terrariums", "Reptile Healthcare",
+                "Reptile Food",
+                "Bearded Dragon Food",
+                "Leopard Gecko Food",
+                "Snake Food",
+                "Lizard Food",
+                "Turtle Food",
+                "Reptile Vitamins",
+                "Reptile Heating",
+                "Reptile Lighting",
+                "Reptile Substrates",
+                "Reptile Terrariums",
+                "Reptile Healthcare",
             ],
             "Pet Toys": [
-                "Dog Toys", "Cat Toys", "Bird Toys", "Small Pet Toys", "Chew Toys", "Plush Toys",
-                "Interactive Toys", "Puzzle Toys",
+                "Dog Toys",
+                "Cat Toys",
+                "Bird Toys",
+                "Small Pet Toys",
+                "Chew Toys",
+                "Plush Toys",
+                "Interactive Toys",
+                "Puzzle Toys",
             ],
             "Pet Healthcare": [
-                "Dog Medications", "Cat Medications", "Bird Medications", "Joint Supplements",
-                "Digestive Supplements", "Skin Care", "Flea & Tick", "Heartworm Prevention", "Dental Care",
+                "Dog Medications",
+                "Cat Medications",
+                "Bird Medications",
+                "Joint Supplements",
+                "Digestive Supplements",
+                "Skin Care",
+                "Flea & Tick",
+                "Heartworm Prevention",
+                "Dental Care",
             ],
             "Pet Grooming": [
-                "Dog Shampoos", "Cat Shampoos", "Pet Brushes", "Pet Clippers", "Nail Clippers",
-                "Ear Cleaners", "Pet Cologne",
+                "Dog Shampoos",
+                "Cat Shampoos",
+                "Pet Brushes",
+                "Pet Clippers",
+                "Nail Clippers",
+                "Ear Cleaners",
+                "Pet Cologne",
             ],
             "Pet Beds & Carriers": [
-                "Dog Beds", "Cat Beds", "Pet Carriers", "Pet Crates", "Pet Blankets", "Pet Pillows",
+                "Dog Beds",
+                "Cat Beds",
+                "Pet Carriers",
+                "Pet Crates",
+                "Pet Blankets",
+                "Pet Pillows",
             ],
             "Pet Bowls & Feeders": [
-                "Dog Bowls", "Cat Bowls", "Bird Bowls", "Automatic Feeders", "Pet Water Fountains", "Slow Feed Bowls",
+                "Dog Bowls",
+                "Cat Bowls",
+                "Bird Bowls",
+                "Automatic Feeders",
+                "Pet Water Fountains",
+                "Slow Feed Bowls",
             ],
             # Non-Pet Products
             "Hardware": [
-                "Tools", "Fasteners", "Plumbing", "Electrical", "HVAC", "Paint", "Lumber",
-                "Hardware Accessories", "Power Tools", "Hand Tools",
+                "Tools",
+                "Fasteners",
+                "Plumbing",
+                "Electrical",
+                "HVAC",
+                "Paint",
+                "Lumber",
+                "Hardware Accessories",
+                "Power Tools",
+                "Hand Tools",
             ],
             "Lawn & Garden": [
-                "Seeds", "Fertilizer", "Tools", "Plants", "Gardening Supplies", "Lawn Care",
-                "Outdoor Furniture", "Grills", "Pest Control", "Irrigation",
+                "Seeds",
+                "Fertilizer",
+                "Tools",
+                "Plants",
+                "Gardening Supplies",
+                "Lawn Care",
+                "Outdoor Furniture",
+                "Grills",
+                "Pest Control",
+                "Irrigation",
             ],
             "Farm Supplies": [
-                "Fencing", "Feeders", "Equipment", "Animal Health", "Farm Tools", "Livestock Supplies",
-                "Poultry Supplies", "Barn Equipment", "Tractor Parts",
+                "Fencing",
+                "Feeders",
+                "Equipment",
+                "Animal Health",
+                "Farm Tools",
+                "Livestock Supplies",
+                "Poultry Supplies",
+                "Barn Equipment",
+                "Tractor Parts",
             ],
             "Home & Kitchen": [
-                "Cleaning", "Storage", "Appliances", "Decor", "Kitchen Tools", "Bathroom Supplies",
-                "Bedding", "Furniture", "Home Improvement", "Organization",
+                "Cleaning",
+                "Storage",
+                "Appliances",
+                "Decor",
+                "Kitchen Tools",
+                "Bathroom Supplies",
+                "Bedding",
+                "Furniture",
+                "Home Improvement",
+                "Organization",
             ],
             "Automotive": [
-                "Parts", "Tools", "Maintenance", "Accessories", "Tires", "Batteries", "Oil",
-                "Filters", "Brakes", "Engine Parts",
+                "Parts",
+                "Tools",
+                "Maintenance",
+                "Accessories",
+                "Tires",
+                "Batteries",
+                "Oil",
+                "Filters",
+                "Brakes",
+                "Engine Parts",
             ],
             "Farm Animal Supplies": [
-                "Chicken Feed", "Goat Feed", "Sheep Feed", "Pig Feed", "Livestock Medications",
-                "Animal Supplements", "Farm Equipment",
+                "Chicken Feed",
+                "Goat Feed",
+                "Sheep Feed",
+                "Pig Feed",
+                "Livestock Medications",
+                "Animal Supplements",
+                "Farm Equipment",
             ],
         }
 
 
 # Global instance for easy access
 _taxonomy_manager = None
+
 
 def get_taxonomy_manager() -> TaxonomyManager:
     """Get global taxonomy manager instance"""
@@ -366,9 +521,11 @@ def get_taxonomy_manager() -> TaxonomyManager:
         _taxonomy_manager = TaxonomyManager()
     return _taxonomy_manager
 
+
 def get_product_taxonomy() -> Dict[str, List[str]]:
     """Get current product taxonomy"""
     return get_taxonomy_manager().load_taxonomy()
+
 
 def refresh_taxonomy_from_database(save_changes: bool = True) -> Dict[str, List[str]]:
     """Refresh taxonomy from database and optionally save changes"""

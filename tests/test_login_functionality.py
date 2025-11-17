@@ -1,9 +1,13 @@
 """
 Test login functionality for workflow executor.
 """
+
 import pytest
 from unittest.mock import MagicMock, patch
-from src.scrapers.executor.workflow_executor import WorkflowExecutor, WorkflowExecutionError
+from src.scrapers.executor.workflow_executor import (
+    WorkflowExecutor,
+    WorkflowExecutionError,
+)
 from src.scrapers.models.config import ScraperConfig, LoginConfig
 
 
@@ -22,8 +26,8 @@ def login_config():
             username_field="#username",
             password_field="#password",
             submit_button="#login-btn",
-            success_indicator=".dashboard"
-        )
+            success_indicator=".dashboard",
+        ),
     )
 
 
@@ -32,7 +36,9 @@ class TestLoginFunctionality:
 
     def test_login_action_success(self, login_config):
         """Test successful login action."""
-        with patch("src.scrapers.executor.workflow_executor.create_browser") as mock_create:
+        with patch(
+            "src.scrapers.executor.workflow_executor.create_browser"
+        ) as mock_create:
             mock_browser = MagicMock()
             mock_create.return_value = mock_browser
 
@@ -48,7 +54,7 @@ class TestLoginFunctionality:
                 mock_username_field,
                 mock_password_field,
                 mock_submit_button,
-                mock_success_indicator
+                mock_success_indicator,
             ]
 
             params = {
@@ -58,7 +64,7 @@ class TestLoginFunctionality:
                 "username_field": "#username",
                 "password_field": "#password",
                 "submit_button": "#login-btn",
-                "success_indicator": ".dashboard"
+                "success_indicator": ".dashboard",
             }
 
             # This should not raise an exception
@@ -81,15 +87,20 @@ class TestLoginFunctionality:
                 "url": "https://example.com/login",
                 "username_field": "#username",
                 "password_field": "#password",
-                "submit_button": "#login-btn"
+                "submit_button": "#login-btn",
             }
 
-            with pytest.raises(WorkflowExecutionError, match="Login action requires username, password, url, username_field, password_field, and submit_button parameters"):
+            with pytest.raises(
+                WorkflowExecutionError,
+                match="Login action requires username, password, url, username_field, password_field, and submit_button parameters",
+            ):
                 executor._action_login(params)
 
     def test_login_action_no_success_indicator(self, login_config):
         """Test login action without success indicator."""
-        with patch("src.scrapers.executor.workflow_executor.create_browser") as mock_create:
+        with patch(
+            "src.scrapers.executor.workflow_executor.create_browser"
+        ) as mock_create:
             mock_browser = MagicMock()
             mock_create.return_value = mock_browser
 
@@ -103,7 +114,7 @@ class TestLoginFunctionality:
             mock_browser.driver.find_element.side_effect = [
                 mock_username_field,
                 mock_password_field,
-                mock_submit_button
+                mock_submit_button,
             ]
 
             params = {
@@ -112,7 +123,7 @@ class TestLoginFunctionality:
                 "url": "https://example.com/login",
                 "username_field": "#username",
                 "password_field": "#password",
-                "submit_button": "#login-btn"
+                "submit_button": "#login-btn",
                 # No success_indicator
             }
 

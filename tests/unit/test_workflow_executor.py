@@ -9,7 +9,10 @@ PROJECT_ROOT = os.path.dirname(
 )
 sys.path.insert(0, PROJECT_ROOT)
 
-from src.scrapers.executor.workflow_executor import WorkflowExecutor, WorkflowExecutionError
+from src.scrapers.executor.workflow_executor import (
+    WorkflowExecutor,
+    WorkflowExecutionError,
+)
 from src.scrapers.models.config import ScraperConfig, WorkflowStep, SelectorConfig
 
 
@@ -22,16 +25,35 @@ def sample_config():
         timeout=30,
         retries=3,
         selectors=[
-            SelectorConfig(name="product_name", selector=".product-title", attribute="text", multiple=False),
-            SelectorConfig(name="price", selector=".price", attribute="text", multiple=False),
-            SelectorConfig(name="image_urls", selector=".product-image img", attribute="src", multiple=True),
+            SelectorConfig(
+                name="product_name",
+                selector=".product-title",
+                attribute="text",
+                multiple=False,
+            ),
+            SelectorConfig(
+                name="price", selector=".price", attribute="text", multiple=False
+            ),
+            SelectorConfig(
+                name="image_urls",
+                selector=".product-image img",
+                attribute="src",
+                multiple=True,
+            ),
         ],
         workflows=[
-            WorkflowStep(action="navigate", params={"url": "https://example.com/products"}),
-            WorkflowStep(action="wait_for", params={"selector": ".product-list", "timeout": 10}),
-            WorkflowStep(action="extract", params={"fields": ["product_name", "price", "image_urls"]}),
+            WorkflowStep(
+                action="navigate", params={"url": "https://example.com/products"}
+            ),
+            WorkflowStep(
+                action="wait_for", params={"selector": ".product-list", "timeout": 10}
+            ),
+            WorkflowStep(
+                action="extract",
+                params={"fields": ["product_name", "price", "image_urls"]},
+            ),
         ],
-        login=None
+        login=None,
     )
 
 
@@ -77,11 +99,18 @@ class TestWorkflowExecutor:
 
     def test_init_browser_failure(self, sample_config):
         """Test initialization failure when browser creation fails."""
-        with patch("src.scrapers.executor.workflow_executor.create_browser", side_effect=Exception("Browser failed")):
-            with pytest.raises(WorkflowExecutionError, match="Failed to initialize browser"):
+        with patch(
+            "src.scrapers.executor.workflow_executor.create_browser",
+            side_effect=Exception("Browser failed"),
+        ):
+            with pytest.raises(
+                WorkflowExecutionError, match="Failed to initialize browser"
+            ):
                 WorkflowExecutor(sample_config)
 
-    def test_execute_workflow_success(self, sample_config, mock_create_browser, mock_browser):
+    def test_execute_workflow_success(
+        self, sample_config, mock_create_browser, mock_browser
+    ):
         """Test successful workflow execution."""
         # Setup mock elements
         mock_element = Mock()
@@ -105,14 +134,18 @@ class TestWorkflowExecutor:
         # Verify browser was quit
         mock_browser.quit.assert_called_once()
 
-    def test_execute_workflow_step_failure(self, sample_config, mock_create_browser, mock_browser):
+    def test_execute_workflow_step_failure(
+        self, sample_config, mock_create_browser, mock_browser
+    ):
         """Test workflow execution failure on a step."""
         # Make navigate action fail
         mock_browser.get.side_effect = Exception("Navigation failed")
 
         executor = WorkflowExecutor(sample_config, headless=True)
 
-        with pytest.raises(WorkflowExecutionError, match="Failed to execute step 'navigate'"):
+        with pytest.raises(
+            WorkflowExecutionError, match="Failed to execute step 'navigate'"
+        ):
             executor.execute_workflow()
 
         # Browser should still be quit
@@ -131,10 +164,14 @@ class TestWorkflowExecutor:
         """Test navigate action without URL parameter."""
         executor = WorkflowExecutor(sample_config, headless=True)
 
-        with pytest.raises(WorkflowExecutionError, match="Navigate action requires 'url' parameter"):
+        with pytest.raises(
+            WorkflowExecutionError, match="Navigate action requires 'url' parameter"
+        ):
             executor._action_navigate({})
 
-    def test_action_wait_for_success(self, sample_config, mock_create_browser, mock_browser):
+    def test_action_wait_for_success(
+        self, sample_config, mock_create_browser, mock_browser
+    ):
         """Test successful wait_for action."""
         from selenium.webdriver.support.ui import WebDriverWait
 
@@ -146,27 +183,38 @@ class TestWorkflowExecutor:
         # Verify WebDriverWait was called correctly
         # This is tricky to test directly, but we can verify no exception was raised
 
-    def test_action_wait_for_timeout(self, sample_config, mock_create_browser, mock_browser):
+    def test_action_wait_for_timeout(
+        self, sample_config, mock_create_browser, mock_browser
+    ):
         """Test wait_for action that times out."""
         from selenium.common.exceptions import TimeoutException
 
         executor = WorkflowExecutor(sample_config, headless=True)
 
         # Mock WebDriverWait to raise TimeoutException
-        with patch("src.scrapers.executor.workflow_executor.WebDriverWait") as mock_wait:
+        with patch(
+            "src.scrapers.executor.workflow_executor.WebDriverWait"
+        ) as mock_wait:
             mock_wait.return_value.until.side_effect = TimeoutException()
 
-            with pytest.raises(WorkflowExecutionError, match="Element not found within 30s"):
+            with pytest.raises(
+                WorkflowExecutionError, match="Element not found within 30s"
+            ):
                 executor._action_wait_for({"selector": ".missing"})
 
     def test_action_wait_for_no_selector(self, sample_config, mock_create_browser):
         """Test wait_for action without selector parameter."""
         executor = WorkflowExecutor(sample_config, headless=True)
 
-        with pytest.raises(WorkflowExecutionError, match="Wait_for action requires 'selector' parameter"):
+        with pytest.raises(
+            WorkflowExecutionError,
+            match="Wait_for action requires 'selector' parameter",
+        ):
             executor._action_wait_for({})
 
-    def test_action_extract_single_success(self, sample_config, mock_create_browser, mock_browser):
+    def test_action_extract_single_success(
+        self, sample_config, mock_create_browser, mock_browser
+    ):
         """Test successful extract_single action."""
         executor = WorkflowExecutor(sample_config, headless=True)
 
@@ -178,9 +226,13 @@ class TestWorkflowExecutor:
         executor._action_extract_single(params)
 
         assert executor.results["product_name"] == "Product Name"
-        mock_browser.driver.find_element.assert_called_once_with("css selector", ".product-title")
+        mock_browser.driver.find_element.assert_called_once_with(
+            "css selector", ".product-title"
+        )
 
-    def test_action_extract_single_element_not_found(self, sample_config, mock_create_browser, mock_browser):
+    def test_action_extract_single_element_not_found(
+        self, sample_config, mock_create_browser, mock_browser
+    ):
         """Test extract_single when element is not found."""
         from selenium.common.exceptions import NoSuchElementException
 
@@ -193,7 +245,9 @@ class TestWorkflowExecutor:
 
         assert executor.results["product_name"] is None
 
-    def test_action_extract_multiple_success(self, sample_config, mock_create_browser, mock_browser):
+    def test_action_extract_multiple_success(
+        self, sample_config, mock_create_browser, mock_browser
+    ):
         """Test successful extract_multiple action."""
         executor = WorkflowExecutor(sample_config, headless=True)
 
@@ -206,9 +260,13 @@ class TestWorkflowExecutor:
         executor._action_extract_multiple(params)
 
         assert executor.results["image_urls"] == ["url1.jpg", "url2.jpg"]
-        mock_browser.driver.find_elements.assert_called_once_with("css selector", ".product-image img")
+        mock_browser.driver.find_elements.assert_called_once_with(
+            "css selector", ".product-image img"
+        )
 
-    def test_action_input_text_success(self, sample_config, mock_create_browser, mock_browser):
+    def test_action_input_text_success(
+        self, sample_config, mock_create_browser, mock_browser
+    ):
         """Test successful input_text action."""
         executor = WorkflowExecutor(sample_config, headless=True)
 
@@ -221,7 +279,9 @@ class TestWorkflowExecutor:
         mock_element.clear.assert_called_once()
         mock_element.send_keys.assert_called_once_with("testuser")
 
-    def test_action_input_text_no_clear(self, sample_config, mock_create_browser, mock_browser):
+    def test_action_input_text_no_clear(
+        self, sample_config, mock_create_browser, mock_browser
+    ):
         """Test input_text action without clearing first."""
         executor = WorkflowExecutor(sample_config, headless=True)
 
@@ -234,7 +294,9 @@ class TestWorkflowExecutor:
         mock_element.clear.assert_not_called()
         mock_element.send_keys.assert_called_once_with("testuser")
 
-    def test_action_click_success(self, sample_config, mock_create_browser, mock_browser):
+    def test_action_click_success(
+        self, sample_config, mock_create_browser, mock_browser
+    ):
         """Test successful click action."""
         executor = WorkflowExecutor(sample_config, headless=True)
 
@@ -256,7 +318,9 @@ class TestWorkflowExecutor:
         result = executor._extract_value_from_element(mock_element, "text")
         assert result == "Sample Text"
 
-    def test_extract_value_from_element_attribute(self, sample_config, mock_create_browser):
+    def test_extract_value_from_element_attribute(
+        self, sample_config, mock_create_browser
+    ):
         """Test extracting attribute from element."""
         executor = WorkflowExecutor(sample_config, headless=True)
 
@@ -267,7 +331,9 @@ class TestWorkflowExecutor:
         assert result == "https://example.com/image.jpg"
         mock_element.get_attribute.assert_called_once_with("src")
 
-    def test_extract_value_from_element_none_attribute(self, sample_config, mock_create_browser):
+    def test_extract_value_from_element_none_attribute(
+        self, sample_config, mock_create_browser
+    ):
         """Test extracting text when attribute is None."""
         executor = WorkflowExecutor(sample_config, headless=True)
 

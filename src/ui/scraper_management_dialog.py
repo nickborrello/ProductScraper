@@ -138,7 +138,9 @@ class ScraperManagementDialog(QDialog):
         layout.addWidget(self.details_text)
 
         # Placeholder text
-        self.details_text.setPlainText("Select a scraper to view its configuration details.")
+        self.details_text.setPlainText(
+            "Select a scraper to view its configuration details."
+        )
 
         return panel
 
@@ -152,21 +154,27 @@ class ScraperManagementDialog(QDialog):
             config_files = list(self.scrapers_dir.glob("*.yaml"))
 
             if not config_files:
-                self.status_label.setText("No scraper configurations found. Click 'Add New Scraper' to create one.")
-                self.details_text.setPlainText("No scrapers available. Create your first scraper configuration.")
+                self.status_label.setText(
+                    "No scraper configurations found. Click 'Add New Scraper' to create one."
+                )
+                self.details_text.setPlainText(
+                    "No scrapers available. Create your first scraper configuration."
+                )
                 return
 
             for config_file in config_files:
                 try:
                     config = self.parser.load_from_file(config_file)
                     self.scraper_configs[config.name] = {
-                        'config': config,
-                        'file_path': config_file
+                        "config": config,
+                        "file_path": config_file,
                     }
 
                     # Add to list
                     item = QListWidgetItem(f"📄 {config.name}")
-                    item.setToolTip(f"Base URL: {config.base_url}\nTimeout: {config.timeout}s\nRetries: {config.retries}")
+                    item.setToolTip(
+                        f"Base URL: {config.base_url}\nTimeout: {config.timeout}s\nRetries: {config.retries}"
+                    )
                     self.scraper_list.addItem(item)
 
                 except Exception as e:
@@ -176,7 +184,9 @@ class ScraperManagementDialog(QDialog):
                     self.scraper_list.addItem(item)
 
             count = len(self.scraper_configs)
-            self.status_label.setText(f"Loaded {count} scraper configuration{'s' if count != 1 else ''}")
+            self.status_label.setText(
+                f"Loaded {count} scraper configuration{'s' if count != 1 else ''}"
+            )
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to load scrapers: {str(e)}")
@@ -191,20 +201,26 @@ class ScraperManagementDialog(QDialog):
         self.delete_btn.setEnabled(has_selection)
 
         if has_selection:
-            scraper_name = selected_items[0].text().replace("📄 ", "").replace("❌ ", "")
+            scraper_name = (
+                selected_items[0].text().replace("📄 ", "").replace("❌ ", "")
+            )
             self.show_scraper_details(scraper_name)
         else:
-            self.details_text.setPlainText("Select a scraper to view its configuration details.")
+            self.details_text.setPlainText(
+                "Select a scraper to view its configuration details."
+            )
 
     def show_scraper_details(self, scraper_name):
         """Show details for the selected scraper."""
         if scraper_name not in self.scraper_configs:
-            self.details_text.setPlainText(f"Configuration for '{scraper_name}' could not be loaded.")
+            self.details_text.setPlainText(
+                f"Configuration for '{scraper_name}' could not be loaded."
+            )
             return
 
         config_data = self.scraper_configs[scraper_name]
-        config = config_data['config']
-        file_path = config_data['file_path']
+        config = config_data["config"]
+        file_path = config_data["file_path"]
 
         # Build details text
         details = f"""Scraper Configuration: {config.name}
@@ -255,11 +271,17 @@ class ScraperManagementDialog(QDialog):
 
         scraper_name = selected_items[0].text().replace("📄 ", "").replace("❌ ", "")
         if scraper_name not in self.scraper_configs:
-            QMessageBox.warning(self, "Error", f"Cannot edit '{scraper_name}': configuration not loaded.")
+            QMessageBox.warning(
+                self,
+                "Error",
+                f"Cannot edit '{scraper_name}': configuration not loaded.",
+            )
             return
 
         config_data = self.scraper_configs[scraper_name]
-        dialog = EditScraperDialog(config_data['config'], config_data['file_path'], self)
+        dialog = EditScraperDialog(
+            config_data["config"], config_data["file_path"], self
+        )
         if dialog.exec() == QDialog.DialogCode.Accepted:
             self.load_scrapers()  # Refresh the list
 
@@ -276,20 +298,26 @@ class ScraperManagementDialog(QDialog):
             "Confirm Delete",
             f"Are you sure you want to delete the scraper '{scraper_name}'?\n\nThis action cannot be undone.",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No
+            QMessageBox.StandardButton.No,
         )
 
         if reply == QMessageBox.StandardButton.Yes:
             try:
                 if scraper_name in self.scraper_configs:
-                    file_path = self.scraper_configs[scraper_name]['file_path']
+                    file_path = self.scraper_configs[scraper_name]["file_path"]
                     os.remove(file_path)
-                    QMessageBox.information(self, "Success", f"Scraper '{scraper_name}' has been deleted.")
+                    QMessageBox.information(
+                        self, "Success", f"Scraper '{scraper_name}' has been deleted."
+                    )
                     self.load_scrapers()  # Refresh the list
                 else:
-                    QMessageBox.warning(self, "Error", f"Scraper '{scraper_name}' not found.")
+                    QMessageBox.warning(
+                        self, "Error", f"Scraper '{scraper_name}' not found."
+                    )
             except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to delete scraper: {str(e)}")
+                QMessageBox.critical(
+                    self, "Error", f"Failed to delete scraper: {str(e)}"
+                )
 
 
 class AddScraperDialog(QDialog):
@@ -363,7 +391,7 @@ class AddScraperDialog(QDialog):
                 self,
                 "Scraper Name",
                 "Enter a name for the new scraper:",
-                text=sample_config.name + " Copy"
+                text=sample_config.name + " Copy",
             )
 
             if not ok or not new_name.strip():
@@ -382,12 +410,14 @@ class AddScraperDialog(QDialog):
             QMessageBox.information(
                 self,
                 "Success",
-                f"New scraper '{new_name}' has been created!\n\nFile: {file_path}"
+                f"New scraper '{new_name}' has been created!\n\nFile: {file_path}",
             )
             self.accept()
 
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to create scraper from sample: {str(e)}")
+            QMessageBox.critical(
+                self, "Error", f"Failed to create scraper from sample: {str(e)}"
+            )
 
     def create_from_scratch(self):
         """Create a new scraper from scratch."""
@@ -401,7 +431,7 @@ class AddScraperDialog(QDialog):
                 workflows=[],
                 login=None,
                 timeout=30,
-                retries=3
+                retries=3,
             )
 
             # Ask for name
@@ -409,7 +439,7 @@ class AddScraperDialog(QDialog):
                 self,
                 "Scraper Name",
                 "Enter a name for the new scraper:",
-                text="New Scraper"
+                text="New Scraper",
             )
 
             if not ok or not name.strip():
@@ -426,7 +456,7 @@ class AddScraperDialog(QDialog):
                 self,
                 "Success",
                 f"New scraper '{name}' has been created!\n\nFile: {file_path}\n\n"
-                "You can now edit it to add selectors and workflows."
+                "You can now edit it to add selectors and workflows.",
             )
             self.accept()
 
@@ -472,10 +502,9 @@ class EditScraperDialog(QDialog):
         # Load current config as YAML
         try:
             import yaml
+
             yaml_content = yaml.safe_dump(
-                self.config.model_dump(),
-                default_flow_style=False,
-                sort_keys=False
+                self.config.model_dump(), default_flow_style=False, sort_keys=False
             )
             self.yaml_editor.setPlainText(yaml_content)
         except Exception as e:
@@ -511,13 +540,11 @@ class EditScraperDialog(QDialog):
             QMessageBox.information(
                 self,
                 "Validation Success",
-                f"✅ Configuration is valid!\n\nScraper: {config.name}\nBase URL: {config.base_url}\nSelectors: {len(config.selectors)}\nWorkflows: {len(config.workflows)}"
+                f"✅ Configuration is valid!\n\nScraper: {config.name}\nBase URL: {config.base_url}\nSelectors: {len(config.selectors)}\nWorkflows: {len(config.workflows)}",
             )
         except Exception as e:
             QMessageBox.warning(
-                self,
-                "Validation Error",
-                f"❌ Configuration is invalid:\n\n{str(e)}"
+                self, "Validation Error", f"❌ Configuration is invalid:\n\n{str(e)}"
             )
 
     def save_changes(self):
@@ -532,13 +559,11 @@ class EditScraperDialog(QDialog):
             QMessageBox.information(
                 self,
                 "Success",
-                f"✅ Scraper '{config.name}' has been updated successfully!"
+                f"✅ Scraper '{config.name}' has been updated successfully!",
             )
             self.accept()
 
         except Exception as e:
             QMessageBox.critical(
-                self,
-                "Save Error",
-                f"❌ Failed to save configuration:\n\n{str(e)}"
+                self, "Save Error", f"❌ Failed to save configuration:\n\n{str(e)}"
             )

@@ -73,7 +73,9 @@ def validate_scraper_structure(scraper_name: str):
     return all_passed
 
 
-async def test_single_scraper(scraper_name: str, skus: Optional[List[str]] = None, verbose: bool = False):
+async def test_single_scraper(
+    scraper_name: str, skus: Optional[List[str]] = None, verbose: bool = False
+):
     """Test a single scraper."""
     tester = PlatformScraperIntegrationTester()
 
@@ -98,7 +100,9 @@ async def test_single_scraper(scraper_name: str, skus: Optional[List[str]] = Non
                 if i < len(result["run_results"]["products"]) - 1:
                     print("---")
             if len(result["run_results"]["products"]) > 3:
-                print(f"... and {len(result['run_results']['products']) - 3} more products")
+                print(
+                    f"... and {len(result['run_results']['products']) - 3} more products"
+                )
             print("-" * 40)
 
         return result["overall_success"]
@@ -143,17 +147,23 @@ async def test_all_scrapers(verbose: bool = False):
 
         print(f"\n[ISSUES] COMMON ISSUES:")
         common_errors = results["summary"]["common_errors"]
-        for error, count in sorted(common_errors.items(), key=lambda x: x[1], reverse=True)[:5]:
+        for error, count in sorted(
+            common_errors.items(), key=lambda x: x[1], reverse=True
+        )[:5]:
             print(f"  • {error} ({count} times)")
 
     if results["successful_scrapers"] > 0:
-        print(f"Average Quality Score: {results['summary']['average_quality_score']:.1f}")
+        print(
+            f"Average Quality Score: {results['summary']['average_quality_score']:.1f}"
+        )
 
     success = results["failed_scrapers"] == 0
     if success:
         print(f"\n[SUCCESS] ALL SCRAPERS PASSED LOCAL TESTS!")
     else:
-        print(f"\n[WARNING] SOME SCRAPERS FAILED LOCAL TESTS. Fix issues before deploying.")
+        print(
+            f"\n[WARNING] SOME SCRAPERS FAILED LOCAL TESTS. Fix issues before deploying."
+        )
 
     return success
 
@@ -174,21 +184,27 @@ async def main():
    python platform_test_scrapers.py --scraper amazon --skus B07G5J5FYP B08N5WRWNW
    python platform_test_scrapers.py --list                   # List available scrapers
    python platform_test_scrapers.py --validate amazon        # Validate structure only
-         """
+         """,
     )
 
-    parser.add_argument("--all", action="store_true",
-                        help="Test all available scrapers")
-    parser.add_argument("--scraper", type=str,
-                        help="Test specific scraper by name")
-    parser.add_argument("--skus", nargs="+",
-                        help="Custom SKUs to test with (space-separated)")
-    parser.add_argument("--list", action="store_true",
-                        help="List all available scrapers")
-    parser.add_argument("--validate", type=str,
-                        help="Validate scraper structure without running")
-    parser.add_argument("--verbose", action="store_true",
-                        help="Show detailed output and debug information")
+    parser.add_argument(
+        "--all", action="store_true", help="Test all available scrapers"
+    )
+    parser.add_argument("--scraper", type=str, help="Test specific scraper by name")
+    parser.add_argument(
+        "--skus", nargs="+", help="Custom SKUs to test with (space-separated)"
+    )
+    parser.add_argument(
+        "--list", action="store_true", help="List all available scrapers"
+    )
+    parser.add_argument(
+        "--validate", type=str, help="Validate scraper structure without running"
+    )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Show detailed output and debug information",
+    )
 
     args = parser.parse_args()
 
@@ -216,4 +232,5 @@ async def main():
 
 if __name__ == "__main__":
     import asyncio
+
     sys.exit(asyncio.run(main()))

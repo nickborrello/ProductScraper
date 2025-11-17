@@ -62,11 +62,12 @@ class SettingsManager:
         try:
             import json
             from pathlib import Path
+
             settings_file = Path(__file__).parent.parent.parent / "settings.json"
             if settings_file.exists():
                 with open(settings_file, "r") as f:
                     json_settings = json.load(f)
-                
+
                 # Load values from JSON (always override with JSON values for consistency)
                 for key, value in json_settings.items():
                     if key in self.DEFAULTS:
