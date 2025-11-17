@@ -9,7 +9,7 @@ selectors:
     attribute: "text"
   - name: "brand"
     selector: "a[ng-if='vm.product.brand.detailPagePath']"
-    attribute: "title"
+    attribute: "text"
   - name: "short_description"
     selector: "#tst_productDetail_shortDescription"
     attribute: "text"
@@ -17,8 +17,8 @@ selectors:
     selector: "//div[@class='specification-container']//li[strong[contains(text(), 'Product Gross Weight')]]/span"
     attribute: "innerHTML"
   - name: "images"
-    selector: "li[id^='tst_productDetailPage_mainThumbnail']"
-    attribute: "ng-src"
+    selector: "li[id^='tst_productDetailPage_mainThumbnail'] img"
+    attribute: "src"
     multiple: true
 
 workflows:
