@@ -28,7 +28,7 @@ workflows:
       timeout: 10
   - action: "click"
     params:
-      selector: ".s-result-item a.a-link-normal[href*='/dp/']"
+      selector: "[data-component-type='s-search-result'] a.a-link-normal"
   - action: "wait"
     params:
       selector: "#productTitle"

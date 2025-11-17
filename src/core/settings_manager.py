@@ -17,10 +17,13 @@ class SettingsManager:
         # Scraper Credentials
         "petfood_username": "",
         "petfood_password": "",
-        "phillips_username": "",
-        "phillips_password": "",
-        "orgill_username": "",
-        "orgill_password": "",
+    "phillips_username": "",
+    "phillips_password": "",
+    "orgill_username": "",
+    "orgill_password": "",
+    "petfoodex_username": "",
+    "petfoodex_password": "",
+    "headless_scraping": True,
         # ShopSite API Credentials
         "shopsite_client_id": "",
         "shopsite_secret_key": "",
@@ -86,6 +89,8 @@ class SettingsManager:
             "phillips_password": "PHILLIPS_PASSWORD",
             "orgill_username": "ORGILL_USERNAME",
             "orgill_password": "ORGILL_PASSWORD",
+            "petfoodex_username": "PETFOODEX_USERNAME",
+            "petfoodex_password": "PETFOODEX_PASSWORD",
             "shopsite_client_id": "SHOPSITE_CLIENT_ID",
             "shopsite_secret_key": "SHOPSITE_SECRET_KEY",
             "shopsite_authorization_code": "SHOPSITE_AUTHORIZATION_CODE",
@@ -145,6 +150,7 @@ class SettingsManager:
             "petfood_password",
             "phillips_password",
             "orgill_password",
+            "petfoodex_password",
             "shopsite_secret_key",
             "shopsite_authorization_code",
             "shopsite_password",
@@ -175,6 +181,12 @@ class SettingsManager:
     def orgill_credentials(self) -> tuple[str, str]:
         """Get Orgill credentials as (username, password)."""
         return self.get("orgill_username"), self.get("orgill_password")
+
+    @property
+    def petfoodex_credentials(self) -> tuple[str, str]:
+        """Get Petfoodex credentials as (username, password)."""
+        return self.get("petfoodex_username"), self.get("petfoodex_password")
+
 
     @property
     def shopsite_credentials(self) -> Dict[str, str]:

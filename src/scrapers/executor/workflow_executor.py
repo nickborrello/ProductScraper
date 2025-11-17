@@ -16,6 +16,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 from src.core.anti_detection_manager import (AntiDetectionConfig,
                                              AntiDetectionManager)
+from src.core.settings_manager import SettingsManager
 from src.scrapers.models.config import (ScraperConfig, SelectorConfig,
                                         WorkflowStep)
 from src.utils.scraping.browser import ScraperBrowser, create_browser
@@ -57,6 +58,7 @@ class WorkflowExecutor:
         self.results = {}
         self.selectors = {selector.name: selector for selector in config.selectors}
         self.anti_detection_manager: Optional[AntiDetectionManager] = None
+        self.settings = SettingsManager()
 
         # Initialize browser
         try:
@@ -459,6 +461,25 @@ class WorkflowExecutor:
 
     def _action_login(self, params: Dict[str, Any]):
         """Execute login workflow with credentials."""
+        # Merge login details from config into params
+        if self.config.login:
+            params.update(self.config.login.dict())
+
+        # Get credentials from settings manager
+        scraper_name = self.config.name
+        if scraper_name == "phillips":
+            username, password = self.settings.phillips_credentials()
+            params["username"] = username
+            params["password"] = password
+        elif scraper_name == "orgill":
+            username, password = self.settings.orgill_credentials()
+            params["username"] = username
+            params["password"] = password
+        elif scraper_name == "petfoodex":
+            username, password = self.settings.petfoodex_credentials()
+            params["username"] = username
+            params["password"] = password
+
         username = params.get("username")
         password = params.get("password")
         login_url = params.get("url")

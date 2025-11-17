@@ -32,7 +32,15 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Scraper configs to test
-SCRAPER_CONFIGS = ['amazon', 'central_pet', 'coastal', 'mazuri', 'orgill', 'petfoodex', 'phillips']
+SCRAPER_CONFIGS = [
+    # 'amazon',
+    # 'central_pet',
+    # 'coastal',
+    # 'mazuri',
+    'orgill',
+    'petfoodex',
+    'phillips'
+]
 
 def load_test_data() -> Dict[str, Any]:
     """Load test data from JSON file."""

@@ -28,6 +28,10 @@ workflows:
       timeout: 15
   - action: "click"
     params:
+      selector: "//button[contains(text(),'Accept')]"
+      wait_after: 2
+  - action: "click"
+    params:
       selector: ".snize-view-link"
   - action: "wait"
     params:
