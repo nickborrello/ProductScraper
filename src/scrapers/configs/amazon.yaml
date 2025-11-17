@@ -4,17 +4,17 @@ timeout: 30
 retries: 3
 
 selectors:
-  - name: "product_name"
+  - name: "Name"
     selector: "#productTitle"
     attribute: "text"
-  - name: "brand"
+  - name: "Brand"
     selector: "a[href*='/stores/']"
     attribute: "text"
-  - name: "images"
+  - name: "Image URLs"
     selector: "#altImages li.imageThumbnail img"
     attribute: "src"
     multiple: true
-  - name: "weight"
+  - name: "Weight"
     selector: "//tr[.//th[contains(., 'Weight')]] | //li[contains(., 'ounces')] | //li[contains(., 'pounds')]"
     attribute: "text"
 
@@ -28,14 +28,14 @@ workflows:
       timeout: 10
   - action: "click"
     params:
-      selector: "[data-component-type='s-search-result'] a.a-link-normal"
+      selector: ".s-result-item a[href*='/dp/']"
   - action: "wait"
     params:
       selector: "#productTitle"
       timeout: 10
   - action: "extract"
     params:
-      fields: ["product_name", "brand", "images", "weight"]
+      fields: ["Name", "Brand", "Image URLs", "Weight"]
 
 anti_detection:
   enable_captcha_detection: true

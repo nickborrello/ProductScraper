@@ -285,11 +285,11 @@ class WorkflowExecutor:
                 By.CSS_SELECTOR, selector_config.selector
             )
             value = self._extract_value_from_element(element, selector_config.attribute)
-            if field_name == "brand" and value:
+            if field_name == "Brand" and value:
                 match = re.match(r"Visit (?:the )?(.+?) Store", value)
                 if match:
                     value = match.group(1)
-            elif field_name == "weight" and value:
+            elif field_name == "Weight" and value:
                 # Process weight: extract number and convert ounces to pounds
                 weight_match = re.search(r"(\d+(?:\.\d+)?)", value)
                 if weight_match:
@@ -334,7 +334,7 @@ class WorkflowExecutor:
                 if value:
                     values.append(value)
 
-            if field_name == "brand":
+            if field_name == "Brand":
                 cleaned_values = []
                 for v in values:
                     if v:
@@ -344,7 +344,7 @@ class WorkflowExecutor:
                         else:
                             cleaned_values.append(v)
                 values = cleaned_values
-            elif field_name == "weight":
+            elif field_name == "Weight":
                 # Process weight values: extract number and convert ounces to pounds
                 processed_values = []
                 for v in values:
@@ -373,6 +373,7 @@ class WorkflowExecutor:
     def _action_extract(self, params: Dict[str, Any]):
         """Extract multiple fields at once (legacy compatibility)."""
         fields = params.get("fields", [])
+        logger.debug(f"Starting extract action for fields: {fields}")
         for field_name in fields:
             selector_config = self.selectors.get(field_name)
             if not selector_config:
@@ -392,7 +393,7 @@ class WorkflowExecutor:
                         )
                         if value:
                             values.append(value)
-                    if field_name == "brand":
+                    if field_name == "Brand":
                         cleaned_values = []
                         for v in values:
                             if v:
@@ -410,7 +411,7 @@ class WorkflowExecutor:
                     value = self._extract_value_from_element(
                         element, selector_config.attribute
                     )
-                    if field_name == "brand" and value:
+                    if field_name == "Brand" and value:
                         match = re.match(r"Visit (?:the )?(.+?) Store", value)
                         if match:
                             value = match.group(1)
@@ -419,6 +420,7 @@ class WorkflowExecutor:
             except NoSuchElementException:
                 logger.warning(f"Element not found for field: {field_name}")
                 self.results[field_name] = [] if selector_config.multiple else None
+        logger.debug(f"Extract action completed. Results: {self.results}")
 
     def _action_input_text(self, params: Dict[str, Any]):
         """Input text into a form field."""
@@ -448,7 +450,8 @@ class WorkflowExecutor:
             raise WorkflowExecutionError("Click action requires 'selector' parameter")
 
         try:
-            element = self.browser.driver.find_element(By.CSS_SELECTOR, selector)
+            locator_type = self._get_locator_type(selector)
+            element = self.browser.driver.find_element(locator_type, selector)
             element.click()
             logger.debug(f"Clicked element: {selector}")
 
@@ -468,15 +471,15 @@ class WorkflowExecutor:
         # Get credentials from settings manager
         scraper_name = self.config.name
         if scraper_name == "phillips":
-            username, password = self.settings.phillips_credentials()
+            username, password = self.settings.phillips_credentials
             params["username"] = username
             params["password"] = password
         elif scraper_name == "orgill":
-            username, password = self.settings.orgill_credentials()
+            username, password = self.settings.orgill_credentials
             params["username"] = username
             params["password"] = password
         elif scraper_name == "petfoodex":
-            username, password = self.settings.petfoodex_credentials()
+            username, password = self.settings.petfoodex_credentials
             params["username"] = username
             params["password"] = password
 

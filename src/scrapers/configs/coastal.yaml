@@ -4,13 +4,13 @@ timeout: 30
 retries: 3
 
 selectors:
-  - name: "product_name"
+  - name: "Name"
     selector: "p.product-listing__title--text a"
     attribute: "text"
-  - name: "brand"
+  - name: "Brand"
     selector: "body"
     attribute: "text"
-  - name: "images"
+  - name: "Image URLs"
     selector: "img.product-listing__product-image--image"
     attribute: "src"
 
@@ -24,7 +24,7 @@ workflows:
       timeout: 10
   - action: "extract"
     params:
-      fields: ["product_name", "brand", "images"]
+      fields: ["Name", "Brand", "Image URLs"]
 
 anti_detection:
   enable_captcha_detection: false

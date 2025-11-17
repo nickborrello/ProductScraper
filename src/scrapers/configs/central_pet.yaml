@@ -4,19 +4,16 @@ timeout: 30
 retries: 3
 
 selectors:
-  - name: "product_name"
+  - name: "Name"
     selector: "#tst_productDetail_erpDescription"
     attribute: "text"
-  - name: "brand"
+  - name: "Brand"
     selector: "a[ng-if='vm.product.brand.detailPagePath']"
     attribute: "text"
-  - name: "short_description"
-    selector: "#tst_productDetail_shortDescription"
-    attribute: "text"
-  - name: "weight"
+  - name: "Weight"
     selector: "//div[@class='specification-container']//li[strong[contains(text(), 'Product Gross Weight')]]/span"
     attribute: "innerHTML"
-  - name: "images"
+  - name: "Image URLs"
     selector: "li[id^='tst_productDetailPage_mainThumbnail'] img"
     attribute: "src"
     multiple: true
@@ -31,7 +28,7 @@ workflows:
       timeout: 10
   - action: "extract"
     params:
-      fields: ["product_name", "brand", "short_description", "weight", "images"]
+      fields: ["Name", "Brand", "Weight", "Image URLs"]
 
 anti_detection:
   enable_captcha_detection: false

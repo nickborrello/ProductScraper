@@ -108,7 +108,7 @@ class ScraperIntegrationTester:
                     if workflow_result["success"]:
                         # Extract product data
                         product_data = workflow_result["results"]
-                        product_data["sku"] = sku
+                        product_data["SKU"] = sku
                         products.append(product_data)
                     else:
                         results["errors"].append(f"Failed to scrape SKU {sku}")
