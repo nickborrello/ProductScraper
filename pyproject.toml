@@ -52,8 +52,3 @@ productscraper = "src.main:main"
 
 [tool.pytest.ini_options]
 norecursedirs = ["tests/unit/test_scrapers.py"]
-
-[tool.flake8]
-per-file-ignores = [
-    "src/utils/scraping/dev_tools.py: F821"
-]

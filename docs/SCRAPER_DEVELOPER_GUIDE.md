@@ -508,7 +508,7 @@ print(f"Session start time: {anti_detection.session_start_time}")
 #### Scraper Development CLI
 
 ```python
-# src/utils/scraping/dev_cli.py
+
 import click
 from src.scrapers.parser.yaml_parser import YAMLParser
 from src.scrapers.executor.workflow_executor import WorkflowExecutor

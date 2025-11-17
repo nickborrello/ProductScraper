@@ -97,8 +97,6 @@ ProductScraper/
 │       └── scraping/             # Scraping utilities
 │           ├── __init__.py
 │           ├── browser.py
-│           ├── dev_cli.py
-│           ├── dev_tools.py
 │           └── scraping.py
 ├── scripts/                      # Utility scripts
 │   └── devtools_setup.py
