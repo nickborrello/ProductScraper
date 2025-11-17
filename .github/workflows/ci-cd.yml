@@ -67,6 +67,7 @@ jobs:
         uv run python tests/platform_test_scrapers.py --all --verbose
       env:
         PYTHONPATH: ${{ github.workspace }}
+        CI: true
 
     - name: Run performance tests
       run: |

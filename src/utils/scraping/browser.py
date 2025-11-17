@@ -65,8 +65,13 @@ class ScraperBrowser:
 
         # Initialize browser
         self.driver = webdriver.Chrome(service=service, options=options)
+
+        # Ensure consistent window size for responsive design consistency
+        self.driver.set_window_size(1920, 1080)
+        self.driver.maximize_window()
+
         print(
-            f"[WEB] [{site_name}] Browser initialized (headless={headless}, devtools={enable_devtools})"
+            f"[WEB] [{site_name}] Browser initialized (headless={headless}, devtools={enable_devtools}, size=1920x1080)"
         )
 
     def __getattr__(self, name):
