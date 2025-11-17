@@ -43,7 +43,6 @@ class ShopSiteDatabase:
                 # Check if we have old schema columns (migration needed)
                 old_schema_indicators = [
                     "categories",
-                    "cross_sell_skus",
                     "brand",
                     "category",
                     "product_type",
@@ -81,7 +80,6 @@ class ShopSiteDatabase:
                             Category TEXT,
                             Product_Type TEXT,
                             Product_On_Pages TEXT,
-                            Product_Cross_Sell TEXT,
                             ProductDisabled TEXT,
                             last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                         )
@@ -92,12 +90,12 @@ class ShopSiteDatabase:
                     # Handle partially migrated schema - this will be a best-effort migration
                     conn.execute(
                         """
-                        INSERT INTO products_new (id, SKU, Name, Price, Images, Weight, Brand, 
-                                                Special_Order, Category, Product_Type, 
-                                                Product_On_Pages, Product_Cross_Sell, ProductDisabled, last_updated)
-                        SELECT id, sku, name, '', '[]', weight, 
+                        INSERT INTO products_new (id, SKU, Name, Price, Images, Weight, Brand,
+                                                Special_Order, Category, Product_Type,
+                                                Product_On_Pages, ProductDisabled, last_updated)
+                        SELECT id, sku, name, '', '[]', weight,
                                Product_Field_16, Product_Field_11,
-                               Product_Field_24, Product_Field_25, Product_On_Pages, Product_Field_32, ProductDisabled, last_updated
+                               Product_Field_24, Product_Field_25, Product_On_Pages, ProductDisabled, last_updated
                         FROM products
                     """
                     )
@@ -137,7 +135,6 @@ class ShopSiteDatabase:
                         Category TEXT,
                         Product_Type TEXT,
                         Product_On_Pages TEXT,
-                        Product_Cross_Sell TEXT,
                         ProductDisabled TEXT,
                         last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
@@ -204,9 +201,6 @@ class ShopSiteDatabase:
         product_on_pages = product_data.get(
             "ProductOnPages", product_data.get("Product On Pages", "")
         )
-        product_cross_sell = product_data.get(
-            "ProductField32", product_data.get("Product Field 32", "")
-        )
         product_disabled = product_data.get("ProductDisabled", "")
 
         with sqlite3.connect(self.db_path) as conn:
@@ -215,9 +209,9 @@ class ShopSiteDatabase:
             conn.execute(
                 """
                 INSERT OR REPLACE INTO products
-                (SKU, Name, Price, Images, Weight, Brand, Special_Order, 
-                 Category, Product_Type, Product_On_Pages, Product_Cross_Sell, ProductDisabled, last_updated)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (SKU, Name, Price, Images, Weight, Brand, Special_Order,
+                 Category, Product_Type, Product_On_Pages, ProductDisabled, last_updated)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 (
                     sku,
@@ -230,7 +224,6 @@ class ShopSiteDatabase:
                     category,
                     product_type,
                     product_on_pages,
-                    product_cross_sell,
                     product_disabled,
                     datetime.now(),
                 ),
@@ -289,9 +282,6 @@ class ShopSiteDatabase:
             product_on_pages = product_data.get(
                 "ProductOnPages", product_data.get("Product On Pages", "")
             )
-            product_cross_sell = product_data.get(
-                "ProductField32", product_data.get("Product Field 32", "")
-            )
             product_disabled = product_data.get("ProductDisabled", "")
 
             products_data.append(
@@ -306,7 +296,6 @@ class ShopSiteDatabase:
                     category,
                     product_type,
                     product_on_pages,
-                    product_cross_sell,
                     product_disabled,
                     datetime.now(),
                 )
@@ -321,9 +310,9 @@ class ShopSiteDatabase:
                 conn.executemany(
                     """
                     INSERT OR REPLACE INTO products
-                    (SKU, Name, Price, Images, Weight, Brand, Special_Order, 
-                     Category, Product_Type, Product_On_Pages, Product_Cross_Sell, ProductDisabled, last_updated)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (SKU, Name, Price, Images, Weight, Brand, Special_Order,
+                     Category, Product_Type, Product_On_Pages, ProductDisabled, last_updated)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                     products_data,
                 )
@@ -396,7 +385,6 @@ class ShopSiteDatabase:
             "Category": "Category",
             "Product_Type": "Product Type",
             "Product_On_Pages": "Product On Pages",
-            "Product_Cross_Sell": "Cross Sell Products",
             "ProductDisabled": "Product Disabled",
         }
 
@@ -412,7 +400,6 @@ class ShopSiteDatabase:
             "Category",
             "Product_Type",
             "Product_On_Pages",
-            "Product_Cross_Sell",
             "ProductDisabled",
         ]
         other_cols = sorted([col for col in stats.keys() if col not in important_cols])

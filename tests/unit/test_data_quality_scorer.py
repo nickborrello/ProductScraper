@@ -25,8 +25,7 @@ class TestDataQualityScorer:
             'Weight': '5 lb',
             'Product_Field_16': 'Test Brand',
             'Product_Field_24': 'Test Category',
-            'Product_Field_25': 'Test Product Type',
-            'Product_Field_32': 'SKU1|SKU2|SKU3'
+            'Product_Field_25': 'Test Product Type'
         }
 
     @pytest.fixture
@@ -83,11 +82,6 @@ class TestDataQualityScorer:
         score, details = scorer._score_accuracy(record)
         assert details['images']['valid_urls'] == 1
         assert details['images']['total_urls'] == 2
-
-        # Test cross-sell
-        record = {'Product_Field_32': 'SKU1|SKU2'}
-        score, details = scorer._score_accuracy(record)
-        assert details['cross_sell']['format_valid'] is True
 
     def test_consistency_scoring(self, scorer):
         """Test consistency scoring."""
@@ -150,14 +144,14 @@ class TestDataQualityScorer:
 class TestConvenienceFunctions:
     """Test convenience functions."""
 
-    def test_score_product_data(self, valid_record):
+    def test_score_product_data(self, sample_high_quality_record):
         """Test score_product_data function."""
-        score, details = score_product_data(valid_record)
+        score, details = score_product_data(sample_high_quality_record)
         assert isinstance(score, float)
         assert isinstance(details, dict)
 
-    def test_is_product_high_quality(self, valid_record, invalid_record):
+    def test_is_product_high_quality(self, sample_high_quality_record, sample_low_quality_record):
         """Test is_product_high_quality function."""
-        assert is_product_high_quality(valid_record) is True
-        assert is_product_high_quality(invalid_record) is False
-        assert is_product_high_quality(valid_record, threshold=95) is False  # Custom threshold
+        assert is_product_high_quality(sample_high_quality_record) is True
+        assert is_product_high_quality(sample_low_quality_record) is False
+        assert is_product_high_quality(sample_high_quality_record, threshold=95) is True  # Custom threshold

@@ -64,8 +64,6 @@ class DataQualityScorer:
 
         return overall_score, details
 
-        return overall_score, details
-
     def is_high_quality(self, score: float, threshold: float = 85.0) -> bool:
         """
         Check if score meets high quality threshold.
@@ -92,7 +90,7 @@ class DataQualityScorer:
 
         for field in self.REQUIRED_FIELDS:
             value = record.get(field)
-            is_valid = self._is_field_valid(value)
+            is_valid = self._is_field_valid(value, field)
             details[field] = {'present': value is not None, 'valid': is_valid}
             if is_valid:
                 valid_fields += 1
@@ -121,12 +119,6 @@ class DataQualityScorer:
         images_score, images_details = self._score_images_accuracy(images_value)
         score_components.append(images_score)
         details['images'] = images_details
-
-        # Cross-sell accuracy
-        cross_sell_value = record.get('Product_Field_32', '')
-        cross_sell_score, cross_sell_details = self._score_cross_sell_accuracy(cross_sell_value)
-        score_components.append(cross_sell_score)
-        details['cross_sell'] = cross_sell_details
 
         # Price accuracy (basic numeric check)
         price_value = record.get('Price', '')
@@ -184,12 +176,23 @@ class DataQualityScorer:
         overall_score = sum(score_components) / len(score_components) if score_components else 0
         return overall_score, details
 
-    def _is_field_valid(self, value: Any) -> bool:
-        """Check if a field value is valid (not invalid and not empty)."""
+    def _is_field_valid(self, value: Any, field_name: str = "") -> bool:
+        """Check if a field value is valid (not invalid and has meaningful content)."""
         if value in self.INVALID_VALUES:
             return False
-        if isinstance(value, str) and value.strip() in self.INVALID_VALUES:
-            return False
+        if isinstance(value, str):
+            stripped = value.strip()
+            if stripped in self.INVALID_VALUES:
+                return False
+            # Additional checks for meaningless content
+            if stripped.lower() in {'invalid', 'not-a-url', 'n/a', 'none', 'null'}:
+                return False
+            # For price, check if it contains digits
+            if field_name.lower() == 'price' and not any(c.isdigit() for c in stripped):
+                return False
+            # For images, check if it contains http
+            if field_name.lower() == 'images' and 'http' not in stripped.lower():
+                return False
         return True
 
     def _score_weight_accuracy(self, weight_str: str) -> Tuple[float, Dict[str, Any]]:
@@ -248,25 +251,6 @@ class DataQualityScorer:
         except:
             return False
 
-    def _score_cross_sell_accuracy(self, cross_sell_str: str) -> Tuple[float, Dict[str, Any]]:
-        """Score cross-sell field accuracy (pipe-separated format)."""
-        if not cross_sell_str or cross_sell_str.strip() in self.INVALID_VALUES:
-            return 100, {'format_valid': True, 'skus': []}  # Empty is valid
-
-        # Should be pipe-separated
-        if '|' not in cross_sell_str:
-            # If no pipes, might be single SKU or invalid
-            skus = [cross_sell_str.strip()]
-        else:
-            skus = [sku.strip() for sku in cross_sell_str.split('|') if sku.strip()]
-
-        # Check if all SKUs look reasonable (alphanumeric)
-        valid_skus = all(re.match(r'^[A-Za-z0-9\-_]+$', sku) for sku in skus)
-
-        return 100 if valid_skus else 0, {
-            'format_valid': valid_skus,
-            'skus': skus
-        }
 
     def _score_price_accuracy(self, price_str: str) -> Tuple[float, Any]:
         """Score price field accuracy (numeric format)."""

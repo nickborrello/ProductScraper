@@ -44,7 +44,6 @@
     "weight_unit": "LB",
     "image_format": "list_of_urls",
     "price_format": "string",
-    "cross_sell_format": "pipe_separated",
     "invalid_values": ["N/A", "n/a", "NA", "null", "NULL", ""]
   }
 }

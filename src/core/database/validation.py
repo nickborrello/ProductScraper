@@ -43,7 +43,6 @@ if row:
     print(f'✅ Brand: {extra.get("Brand", "MISSING")}')
     print(f'✅ Product_Type: {extra.get("Product_Type", "MISSING")}')
     print(f'✅ Product_On_Pages: {extra.get("Product_On_Pages", "MISSING")}')
-    print(f'✅ Product_Cross_Sell: {extra.get("Product_Cross_Sell", "MISSING")}')
     print()
     print("📊 Summary:")
     print("• Total products in DB: 20,875")

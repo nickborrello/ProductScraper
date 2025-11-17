@@ -27,10 +27,6 @@ ProductScraper/
 │   │   │   ├── manager.py
 │   │   │   ├── taxonomy_manager.py
 │   │   │   └── ui.py
-│   │   ├── cross_sell/           # Cross-sell logic
-│   │   │   ├── __init__.py
-│   │   │   ├── assign.py
-│   │   │   └── logic.py
 │   │   └── database/             # Database operations
 │   │       ├── __init__.py
 │   │       ├── queries.py

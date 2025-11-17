@@ -798,7 +798,6 @@ class ProductViewer(QMainWindow):
                     'Category': deduplicate_pipe_separated(category),
                     'Product Type': deduplicate_pipe_separated(product_type),
                     'Product On Pages': deduplicate_pipe_separated(product_on_pages),
-                    'Product Cross Sell': '',  # Not in schema, keep empty
                     'Image URLs': image_urls,
                     'Product Disabled': product_disabled or ''
                 }

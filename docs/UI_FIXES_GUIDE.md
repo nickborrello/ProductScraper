@@ -46,19 +46,6 @@
 - Use QMetaObject.invokeMethod() for cross-thread calls
 - Ensure database operations are thread-safe
 
-### Cross-Sell UI (product_cross_sell_ui.py)
-**Potential Issues**:
-- Complex widget hierarchies may have threading issues
-- Multiple widget interactions need null safety
-- Progress callbacks from background operations
-- Large data sets causing UI freezing
-
-**Recommended Fixes**:
-- Signal-based progress updates
-- Null checks on all widget access
-- Implement virtual scrolling for large datasets
-- Background processing with proper cancellation
-
 ### Product Creator UI (product_creator_ui.py)
 **Potential Issues**:
 - File dialog operations may block UI thread
@@ -85,7 +72,8 @@
 - Move database queries to background threads
 - Proper widget cleanup in closeEvent()
 
-### Main Window (un_gui.py)
+### Main Window (
+un_gui.py)
 **Potential Issues**:
 - Worker thread communication
 - Progress bar updates from background threads

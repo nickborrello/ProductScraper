@@ -56,7 +56,6 @@ def _map_product_to_shopsite_row(product, date_string):
     row["Product Field 24"] = product.get("Category", "")
     row["Product Field 25"] = product.get("Product Type", "")
     row["Product On Pages"] = product.get("Product On Pages", "")
-    row["Product Field 32"] = product.get("Product Cross Sell", "")
     row["ProductDisabled"] = product.get("ProductDisabled", "")
 
     return row
@@ -117,7 +116,6 @@ def append_row_to_site_file(row: dict, site: str, output_dir=None):
             "Product Field 24",
             "Product Field 25",
             "Product On Pages",
-            "Product Field 32",
             "ProductDisabled",
         ]
     )
@@ -157,7 +155,6 @@ def create_new_product_via_editor(output_dir=None):
         "Product On Pages": "",
         "Special Order": "",
         "Product Disabled": "",
-        "Product Cross Sell": "",
     }
 
     edited = product_editor_interactive(template)

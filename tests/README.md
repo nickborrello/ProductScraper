@@ -91,7 +91,6 @@ The testing system validates:
 - Weight units normalized to LB
 - Image URLs are valid HTTP/HTTPS
 - Price format validation
-- Cross-sell data in pipe-separated format
 
 ### Execution
 

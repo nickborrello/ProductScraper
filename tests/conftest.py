@@ -24,7 +24,7 @@ def sample_high_quality_record():
         'Product_Field_16': 'Premium Pet Foods',
         'Product_Field_24': 'Dog Food',
         'Product_Field_25': 'Dry Dog Food',
-        'Product_Field_32': 'RELATED001|RELATED002|CROSSSELL001',
+        'Product_Field_32': 'RELATED001|RELATED002',
         'Product_On_Pages': 'page1|page2',
         'last_updated': '2025-11-15 12:00:00',
         'ProductDisabled': 'checked'

@@ -1094,7 +1094,6 @@ class MainWindow(QMainWindow):
             products_for_classification = df.rename(columns={
                 "Product Field 16": "Brand",
                 "Product Field 11": "Special Order",
-                "Product Field 32": "Product Cross Sell",
                 "ProductDisabled": "Product Disabled"
             }).to_dict('records')
             log(f"Converted {len(products_for_classification)} products for classification")

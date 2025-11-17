@@ -889,7 +889,7 @@ class ClassificationEditorWindow(QMainWindow):
 def edit_classification_in_batch(products_list):
     """
     Interactive batch editor for product classification fields (Category, Product Type, Product On Pages).
-    Similar to cross-sell editor but focused on classification selection.
+    Focused on classification selection.
     Returns updated products_list with selected classifications.
     """
     # Import facet options only

@@ -254,7 +254,7 @@ class GranularScraperTester:
                 duration,
             )
 
-        elif field_name in ["Special Order", "Product Disabled", "Product Cross Sell"]:
+        elif field_name in ["Special Order", "Product Disabled"]:
             # These are optional fields - pass if present or empty
             return FieldTestResult(
                 field_name, FieldTestStatus.PASS, value, "", duration

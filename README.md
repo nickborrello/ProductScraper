@@ -17,7 +17,6 @@ A comprehensive product data management and scraping platform built with Python.
 - **SQLite Database**: Local storage with SQLAlchemy ORM
 - **ShopSite Integration**: XML import/export capabilities with publish automation
 - **Product Classification**: Interactive UI with LLM-powered categorization
-- **Cross-sell Relationships**: Advanced product relationship mapping
 
 ### 🧪 Advanced Testing Framework
 

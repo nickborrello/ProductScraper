@@ -1032,7 +1032,6 @@ class MainWindow(QMainWindow):
                     "Category": "",
                     "Product Type": "",
                     "Product On Pages": "",
-                    "Product Cross Sell": str(row.get("Product Field 32", "")).strip(),
                     "Product Disabled": (
                         "checked"
                         if str(row.get("ProductDisabled", "")).strip().lower()
@@ -1075,7 +1074,6 @@ class MainWindow(QMainWindow):
                     "Product Field 24": product.get("Category", ""),
                     "Product Field 25": product.get("Product Type", ""),
                     "Product On Pages": product.get("Product On Pages", ""),
-                    "Product Field 32": product.get("Product Cross Sell", ""),
                     "ProductDisabled": (
                         "checked"
                         if product.get("Product Disabled") == "checked"

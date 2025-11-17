@@ -90,7 +90,6 @@ class ProductDatabase:
             "Category": "Category",
             "Product_Type": "Product_Type",
             "Product_On_Pages": "Product_On_Pages",
-            "Product_Cross_Sell": "Product_Cross_Sell",
             "ProductDisabled": "ProductDisabled",
         }
 
@@ -161,7 +160,7 @@ def main():
 
             elif choice == "2":
                 print(
-                    "Enter SQL query (products table has: id, SKU, Name, Price, Images, Weight, Brand, Special_Order, Category, Product_Type, Product_On_Pages, Product_Cross_Sell, ProductDisabled, last_updated)"
+                    "Enter SQL query (products table has: id, SKU, Name, Price, Images, Weight, Brand, Special_Order, Category, Product_Type, Product_On_Pages, ProductDisabled, last_updated)"
                 )
                 query = input("SQL> ").strip()
                 if query:

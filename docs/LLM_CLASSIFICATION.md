@@ -39,7 +39,7 @@ The LLM classifier uses OpenAI's GPT-4o-mini API to provide accurate, consistent
 The system includes comprehensive categories for:
 - Dog, Cat, Bird, Fish, Reptile, and Small Pet products
 - Food, treats, toys, healthcare, grooming, beds, bowls
-- All major product pages and cross-sell relationships
+- All major product pages
 
 ## Usage
 
