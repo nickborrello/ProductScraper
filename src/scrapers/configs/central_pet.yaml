@@ -41,3 +41,22 @@ anti_detection:
   rate_limit_max_delay: 3.0
   session_rotation_interval: 100
   max_retries_on_detection: 3
+
+http_status:
+  enabled: true
+  fail_on_error_status: true
+  error_status_codes: [400, 401, 403, 404, 500, 502, 503, 504]
+  warning_status_codes: [301, 302, 307, 308]
+
+validation:
+  no_results_selectors:
+    - "span.no-results-found"
+    - ".no-results"
+    - ".empty-search"
+    - "[data-testid*='no-results']"
+  no_results_text_patterns:
+    - "no results found"
+    - "no products found"
+    - "your search returned no results"
+    - "we couldn't find any results"
+    - "no items match your search"

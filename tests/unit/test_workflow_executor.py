@@ -57,6 +57,7 @@ def sample_config():
         ],
         login=None,
         anti_detection=None,
+        http_status=None,
         test_skus=["035585499741"],
     )
 
@@ -528,9 +529,11 @@ class TestWorkflowExecutor:
                 username_field="#username",
                 password_field="#password",
                 submit_button="#submit",
-                success_indicator=".dashboard"
+                success_indicator=".dashboard",
+                failure_indicators=None
             ),
             anti_detection=None,
+            http_status=None,
             test_skus=None
         )
 
@@ -697,3 +700,195 @@ class TestWorkflowExecutor:
 
         result = executor._extract_value_from_element(mock_element, "href")
         assert result is None
+
+    def test_no_results_failure_no_retry(self, sample_config, mock_create_browser, mock_browser):
+        """Test that NO_RESULTS failures are properly classified and handled without retries."""
+        from src.core.failure_classifier import FailureType
+
+        # Mock the failure classifier to return NO_RESULTS
+        mock_failure_context = Mock()
+        mock_failure_context.failure_type = FailureType.NO_RESULTS
+        mock_failure_context.confidence = 0.8
+        mock_failure_context.details = {"no_results_detected": True}
+        mock_failure_context.recovery_strategy = "retry_with_different_query"
+
+        executor = WorkflowExecutor(sample_config, headless=True)
+
+        # Mock the failure classifier
+        with patch.object(executor.failure_classifier, 'classify_exception', return_value=mock_failure_context):
+            # Mock adaptive retry strategy to return config that would normally allow retries
+            mock_config = Mock()
+            mock_config.max_retries = 3
+            with patch.object(executor.adaptive_retry_strategy, 'get_adaptive_config', return_value=mock_config):
+                with patch.object(executor.adaptive_retry_strategy, 'calculate_delay', return_value=1.0):
+                    # Make extract_single fail
+                    mock_browser.driver.find_element.side_effect = Exception("No results found")
+
+                    step = WorkflowStep(action="extract_single", params={"field": "product_name", "selector": "product_name"})
+
+                    # Should not retry and should raise exception
+                    with pytest.raises(WorkflowExecutionError):
+                        executor._execute_step(step)
+
+                    # Verify browser.get was not called again (no retry)
+                    assert mock_browser.driver.find_element.call_count == 1
+
+    def test_no_results_failure_context_storage(self, sample_config, mock_create_browser, mock_browser):
+        """Test that failure context is correctly stored in workflow results for NO_RESULTS."""
+        from src.core.failure_classifier import FailureType
+
+        # Mock the failure classifier to return NO_RESULTS
+        mock_failure_context = Mock()
+        mock_failure_context.failure_type = FailureType.NO_RESULTS
+        mock_failure_context.confidence = 0.9
+        mock_failure_context.details = {"selector_match": True, "text_match": True}
+        mock_failure_context.recovery_strategy = "retry_with_different_query"
+
+        executor = WorkflowExecutor(sample_config, headless=True)
+
+        # Mock the failure classifier
+        with patch.object(executor.failure_classifier, 'classify_exception', return_value=mock_failure_context):
+            # Mock adaptive retry strategy to prevent retries
+            mock_config = Mock()
+            mock_config.max_retries = 0
+            with patch.object(executor.adaptive_retry_strategy, 'get_adaptive_config', return_value=mock_config):
+                # Make extract_single fail
+                mock_browser.driver.find_element.side_effect = Exception("No results found")
+
+                step = WorkflowStep(action="extract_single", params={"field": "product_name", "selector": "product_name"})
+
+                with pytest.raises(WorkflowExecutionError):
+                    executor._execute_step(step)
+
+                # Verify failure context is stored in results
+                assert "failure_context" in executor.results
+                failure_context = executor.results["failure_context"]
+                assert failure_context["type"] == "no_results"
+                assert failure_context["confidence"] == 0.9
+                assert failure_context["details"]["selector_match"] is True
+                assert failure_context["recovery_strategy"] == "retry_with_different_query"
+                assert failure_context["retries_attempted"] == 0
+
+    def test_no_results_analytics_recording(self, sample_config, mock_create_browser, mock_browser):
+        """Test that NO_RESULTS failures trigger appropriate analytics recording."""
+        from src.core.failure_classifier import FailureType
+
+        # Mock the failure classifier to return NO_RESULTS
+        mock_failure_context = Mock()
+        mock_failure_context.failure_type = FailureType.NO_RESULTS
+        mock_failure_context.confidence = 0.7
+        mock_failure_context.details = {"no_results_detected": True}
+
+        executor = WorkflowExecutor(sample_config, headless=True)
+
+        # Mock the failure classifier and analytics
+        with patch.object(executor.failure_classifier, 'classify_exception', return_value=mock_failure_context):
+            with patch.object(executor.failure_analytics, 'record_failure') as mock_record_failure:
+                # Mock adaptive retry strategy to prevent retries
+                mock_config = Mock()
+                mock_config.max_retries = 0
+                with patch.object(executor.adaptive_retry_strategy, 'get_adaptive_config', return_value=mock_config):
+                    # Make extract_single fail
+                    mock_browser.driver.find_element.side_effect = Exception("No results found")
+
+                    step = WorkflowStep(action="extract_single", params={"field": "product_name", "selector": "product_name"})
+
+                    with pytest.raises(WorkflowExecutionError):
+                        executor._execute_step(step)
+
+                    # Verify analytics recording was called
+                    mock_record_failure.assert_called_once()
+                    call_args = mock_record_failure.call_args
+                    assert call_args[1]["site_name"] == "Test Scraper"
+                    assert call_args[1]["failure_type"] == FailureType.NO_RESULTS
+                    assert call_args[1]["action"] == "extract_single"
+                    assert call_args[1]["retry_count"] == 0
+                    assert "exception" in call_args[1]["context"]
+                    assert "failure_details" in call_args[1]["context"]
+                    assert call_args[1]["context"]["failure_details"]["no_results_detected"] is True
+
+    def test_no_results_vs_other_failures_retry_logic(self, sample_config, mock_create_browser, mock_browser):
+        """Test differentiation between NO_RESULTS and other failure types in retry logic."""
+        from src.core.failure_classifier import FailureType
+
+        executor = WorkflowExecutor(sample_config, headless=True)
+
+        # Test 1: NO_RESULTS should NOT be retried
+        no_results_context = Mock()
+        no_results_context.failure_type = FailureType.NO_RESULTS
+        no_results_context.confidence = 0.8
+
+        with patch.object(executor.failure_classifier, 'classify_exception', return_value=no_results_context):
+            with patch.object(executor.adaptive_retry_strategy, 'get_adaptive_config') as mock_get_config:
+                mock_config = Mock()
+                mock_config.max_retries = 3  # Would normally retry
+                mock_get_config.return_value = mock_config
+
+                mock_browser.driver.find_element.side_effect = Exception("No results")
+
+                step = WorkflowStep(action="extract_single", params={"field": "product_name", "selector": "product_name"})
+
+                with pytest.raises(WorkflowExecutionError):
+                    executor._execute_step(step)
+
+                # Verify get_adaptive_config was called (but should not retry due to NO_RESULTS)
+                mock_get_config.assert_called_once()
+
+        # Reset browser mock
+        mock_browser.driver.find_element.reset_mock()
+
+        # Test 2: NETWORK_ERROR should be retried
+        network_context = Mock()
+        network_context.failure_type = FailureType.NETWORK_ERROR
+        network_context.confidence = 0.8
+
+        with patch.object(executor.failure_classifier, 'classify_exception', return_value=network_context):
+            with patch.object(executor.adaptive_retry_strategy, 'get_adaptive_config') as mock_get_config:
+                with patch.object(executor.adaptive_retry_strategy, 'calculate_delay', return_value=0.1):
+                    mock_config = Mock()
+                    mock_config.max_retries = 1
+                    mock_get_config.return_value = mock_config
+
+                    # Make it fail once, then succeed
+                    mock_browser.driver.find_element.side_effect = [Exception("Network error"), Mock()]
+
+                    step = WorkflowStep(action="extract_single", params={"field": "product_name", "selector": "product_name"})
+
+                    # Should succeed after retry
+                    executor._execute_step(step)
+
+                    # Verify it was called twice (initial + 1 retry)
+                    assert mock_browser.driver.find_element.call_count == 2
+
+    def test_no_results_detection_integration(self, sample_config, mock_create_browser, mock_browser):
+        """Test integration with failure classifier for NO_RESULTS detection during extraction actions."""
+        from src.core.failure_classifier import FailureType
+
+        executor = WorkflowExecutor(sample_config, headless=True)
+
+        # Mock the failure classifier to detect NO_RESULTS from exception analysis
+        mock_failure_context = Mock()
+        mock_failure_context.failure_type = FailureType.NO_RESULTS
+        mock_failure_context.confidence = 0.85
+        mock_failure_context.details = {"exception_analysis": True, "no_results_indicated": True}
+
+        with patch.object(executor.failure_classifier, 'classify_exception', return_value=mock_failure_context):
+            with patch.object(executor.failure_analytics, 'record_failure') as mock_record_failure:
+                # Mock adaptive retry strategy to prevent retries
+                mock_config = Mock()
+                mock_config.max_retries = 0
+                with patch.object(executor.adaptive_retry_strategy, 'get_adaptive_config', return_value=mock_config):
+                    # Make extract_single fail with an exception that should be classified as NO_RESULTS
+                    mock_browser.driver.find_element.side_effect = Exception("No products found matching your search criteria")
+
+                    step = WorkflowStep(action="extract_single", params={"field": "product_name", "selector": "product_name"})
+
+                    with pytest.raises(WorkflowExecutionError):
+                        executor._execute_step(step)
+
+                    # Verify NO_RESULTS was detected and recorded
+                    mock_record_failure.assert_called_once()
+                    call_args = mock_record_failure.call_args
+                    assert call_args[1]["failure_type"] == FailureType.NO_RESULTS
+                    assert call_args[1]["context"]["failure_details"]["exception_analysis"] is True
+                    assert call_args[1]["context"]["failure_details"]["no_results_indicated"] is True

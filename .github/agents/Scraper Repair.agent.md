@@ -34,12 +34,20 @@ STEP 2: INSPECT THE TARGET PAGE USING CHROME DEVTOOLS
 - Analyze the HTML elements to identify selectors for product data.
 - Close the browser instance using the chrome_devtools tool to avoid cluttering the screen (e.g., call chrome_devtools.close_browser() or the appropriate method based on the MCP tool's API).
 
+STEP 2.5: TEST NO RESULTS SCENARIO
+- Use the chrome_devtools tool to navigate to the search URL with a fake SKU like "24811283904712894120798" that would result in no products found.
+- Inspect the page structure when no results are displayed.
+- Identify and verify the "no results" selectors in the YAML configuration.
+- Update the no results selectors if they don't match the current page structure.
+- Ensure the scraper can properly detect when no products are available.
+
 STEP 3: IDENTIFY AND UPDATE BROKEN SELECTORS
 For each failing field in the test:
 - Use chrome_devtools to locate the corresponding element.
 - Extract the new robust CSS selector.
 - Update the selector in the YAML.
 For new fields if needed, add them.
+- Check and update no results selectors if the scraper fails to detect when no products are found.
 
 STEP 4: UPDATE WORKFLOW STEPS IF NECESSARY
 - If the page behavior changed (e.g., new login, different navigation), modify the workflow actions.
@@ -47,6 +55,7 @@ STEP 4: UPDATE WORKFLOW STEPS IF NECESSARY
 
 STEP 5: ADJUST ANTI-DETECTION SETTINGS
 - Based on any new blocking or changes, update anti-detection features.
+- Validate that no results detection is properly configured, ensuring the scraper correctly identifies when no products are available.
 
 STEP 6: APPLY THE UPDATED YAML CONFIG
 - Use edit/editFiles to apply the changes to the YAML file in src/scrapers/configs/.

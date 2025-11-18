@@ -37,3 +37,17 @@ anti_detection:
   rate_limit_max_delay: 3.0
   session_rotation_interval: 100
   max_retries_on_detection: 3
+
+validation:
+  no_results_selectors:
+    - ".no-results"
+    - ".empty-search"
+    - "[data-testid*='no-results']"
+    - ".search-no-results"
+    - "#no-results-message"
+  no_results_text_patterns:
+    - "no results found"
+    - "no products found"
+    - "your search returned no results"
+    - "we couldn't find any results"
+    - "no items match your search"

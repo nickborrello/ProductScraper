@@ -15,7 +15,10 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
 from src.core.anti_detection_manager import (AntiDetectionConfig,
-                                             AntiDetectionManager)
+                                                AntiDetectionManager)
+from src.core.adaptive_retry_strategy import AdaptiveRetryStrategy
+from src.core.failure_analytics import FailureAnalytics
+from src.core.failure_classifier import FailureClassifier, FailureType, FailureContext
 from src.core.settings_manager import SettingsManager
 from src.scrapers.models.config import (ScraperConfig, SelectorConfig,
                                         WorkflowStep)
@@ -58,6 +61,11 @@ class WorkflowExecutor:
         self.results = {}
         self.selectors = {selector.name: selector for selector in config.selectors}
         self.anti_detection_manager: Optional[AntiDetectionManager] = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier()
+        self.failure_analytics = FailureAnalytics()
         self.settings = SettingsManager()
 
         # Log environment details for debugging
@@ -97,7 +105,7 @@ class WorkflowExecutor:
         if config.anti_detection:
             try:
                 self.anti_detection_manager = AntiDetectionManager(
-                    self.browser, config.anti_detection
+                    self.browser, config.anti_detection, config.name
                 )
                 logger.info(
                     f"Anti-detection manager initialized for scraper: {self.config.name}"
@@ -184,6 +192,8 @@ class WorkflowExecutor:
         """
         action = step.action.lower()
         params = step.params or {}
+        start_time = time.time()
+        params["start_time"] = start_time  # Track for analytics
 
         logger.debug(f"Executing step: {action} with params: {params}")
 
@@ -224,22 +234,187 @@ class WorkflowExecutor:
                 self._action_simulate_human(params)
             elif action == "rotate_session":
                 self._action_rotate_session(params)
+            elif action == "validate_http_status":
+                self._action_validate_http_status(params)
             else:
                 raise WorkflowExecutionError(f"Unknown action: {action}")
 
             success = True
 
+            # Record success for analytics
+            start_time = time.time()
+            duration = start_time - (params.get("start_time", start_time))
+            self.failure_analytics.record_success(
+                site_name=self.config.name,
+                duration=duration,
+                action=action,
+                session_id=getattr(self.browser, 'session_id', None)
+            )
+
+            # Record success for learning
+            retry_count = params.get("retry_count", 0)
+            if retry_count > 0:
+                # This was a successful retry
+                self.adaptive_retry_strategy.record_failure(
+                    failure_type=FailureType.NETWORK_ERROR,  # Default, will be updated with actual type
+                    site_name=self.config.name,
+                    action=action,
+                    retry_count=retry_count,
+                    context={"params": params},
+                    success_after_retry=True,
+                    final_success=True
+                )
+
         except Exception as e:
-            # Try anti-detection error handling
-            if self.anti_detection_manager:
-                retry_count = params.get("retry_count", 0)
-                if self.anti_detection_manager.handle_error(e, action, retry_count):
-                    logger.info(
-                        f"Anti-detection error handling succeeded for '{action}', retrying..."
-                    )
-                    # Increment retry count and retry
-                    params["retry_count"] = retry_count + 1
-                    return self._execute_step(step)
+            # Classify the failure to determine retry strategy
+            try:
+                failure_context = self.failure_classifier.classify_exception(e, {"action": action})
+                logger.debug(f"Failure classified: {failure_context.failure_type.value} "
+                            f"(confidence: {failure_context.confidence})")
+
+                # For wait_for timeouts, check if page indicates no results
+                if action == "wait_for" and isinstance(e, TimeoutException):
+                    try:
+                        page_context = {"action": action}
+                        if "http_status" in self.results:
+                            page_context["status_code"] = self.results["http_status"]
+                        page_failure_context = self.failure_classifier.classify_page_content(
+                            self.browser.driver, page_context
+                        )
+                        if (page_failure_context.failure_type == FailureType.NO_RESULTS and
+                            page_failure_context.confidence > failure_context.confidence):
+                            logger.debug(f"Reclassified failure from {failure_context.failure_type.value} "
+                                       f"to {page_failure_context.failure_type.value} based on page content")
+                            failure_context = page_failure_context
+                    except Exception as page_classify_e:
+                        logger.debug(f"Could not classify page content: {page_classify_e}")
+
+            except Exception as classify_e:
+                logger.debug(f"Could not classify failure: {classify_e}")
+                # Default to network error
+                failure_context = FailureContext(
+                    failure_type=FailureType.NETWORK_ERROR,
+                    confidence=0.5,
+                    details={"classification_error": str(classify_e)},
+                    recovery_strategy="retry"
+                )
+
+            # Get adaptive retry configuration
+            retry_count = params.get("retry_count", 0)
+            adaptive_config = self.adaptive_retry_strategy.get_adaptive_config(
+                failure_context.failure_type,
+                self.config.name,
+                retry_count
+            )
+
+            # Check if we should retry
+            should_retry = (
+                retry_count < adaptive_config.max_retries and
+                failure_context.failure_type != FailureType.PAGE_NOT_FOUND and
+                failure_context.failure_type != FailureType.NO_RESULTS
+            )
+
+            if should_retry:
+                # Calculate delay using adaptive strategy
+                delay = self.adaptive_retry_strategy.calculate_delay(adaptive_config, retry_count)
+                logger.info(
+                    f"Adaptive retry for '{action}' - failure: {failure_context.failure_type.value}, "
+                    f"retry {retry_count + 1}/{adaptive_config.max_retries}, delay: {delay:.1f}s"
+                )
+
+                # Apply the delay
+                time.sleep(delay)
+
+                # Try anti-detection error handling as fallback
+                if self.anti_detection_manager:
+                    if self.anti_detection_manager.handle_error(e, action, retry_count):
+                        logger.info(f"Anti-detection error handling succeeded for '{action}', retrying...")
+                    else:
+                        logger.debug(f"Anti-detection error handling failed for '{action}'")
+
+                # Record the failure for analytics
+                duration = time.time() - start_time
+                self.failure_analytics.record_failure(
+                    site_name=self.config.name,
+                    failure_type=failure_context.failure_type,
+                    duration=duration,
+                    action=action,
+                    retry_count=retry_count,
+                    context={
+                        "exception": str(e),
+                        "params": params,
+                        "failure_details": failure_context.details,
+                        "confidence": failure_context.confidence
+                    },
+                    success_after_retry=False,
+                    final_success=False,
+                    session_id=getattr(self.browser, 'session_id', None),
+                    user_agent=getattr(self.browser, 'user_agent', None)
+                )
+
+                # Record the failure for learning
+                self.adaptive_retry_strategy.record_failure(
+                    failure_type=failure_context.failure_type,
+                    site_name=self.config.name,
+                    action=action,
+                    retry_count=retry_count,
+                    context={
+                        "exception": str(e),
+                        "params": params,
+                        "failure_details": failure_context.details,
+                        "confidence": failure_context.confidence
+                    },
+                    success_after_retry=False,  # Will be updated if retry succeeds
+                    final_success=False
+                )
+
+                # Increment retry count and retry
+                params["retry_count"] = retry_count + 1
+                return self._execute_step(step)
+
+            # No more retries or not retryable - record final failure
+            duration = time.time() - start_time
+            self.failure_analytics.record_failure(
+                site_name=self.config.name,
+                failure_type=failure_context.failure_type,
+                duration=duration,
+                action=action,
+                retry_count=retry_count,
+                context={
+                    "exception": str(e),
+                    "params": params,
+                    "failure_details": failure_context.details,
+                    "confidence": failure_context.confidence
+                },
+                success_after_retry=False,
+                final_success=False,
+                session_id=getattr(self.browser, 'session_id', None),
+                user_agent=getattr(self.browser, 'user_agent', None)
+            )
+
+            self.adaptive_retry_strategy.record_failure(
+                failure_type=failure_context.failure_type,
+                site_name=self.config.name,
+                action=action,
+                retry_count=retry_count,
+                context={
+                    "exception": str(e),
+                    "params": params,
+                    "failure_details": failure_context.details,
+                    "confidence": failure_context.confidence
+                },
+                success_after_retry=False,
+                final_success=False
+            )
+
+            # Store failure context in results for debugging/analysis
+            self.results["failure_context"] = {
+                "type": failure_context.failure_type.value,
+                "confidence": failure_context.confidence,
+                "details": failure_context.details,
+                "recovery_strategy": failure_context.recovery_strategy,
+                "retries_attempted": retry_count
+            }
 
             raise WorkflowExecutionError(f"Failed to execute step '{action}': {e}")
         finally:
@@ -256,10 +431,47 @@ class WorkflowExecutor:
         logger.info(f"Navigating to: {url}")
         self.browser.get(url)
 
+        # Check HTTP status if monitoring is enabled
+        if self.config.http_status and self.config.http_status.enabled:
+            self._check_http_status_after_navigation(url, params)
+
         # Optional wait after navigation
         wait_time = params.get("wait_after", 0)
         if wait_time > 0:
             time.sleep(wait_time)
+
+    def _check_http_status_after_navigation(self, url: str, params: Dict[str, Any]):
+        """Check HTTP status after navigation and handle errors."""
+        if not self.config.http_status:
+            return
+
+        # Give the page a moment to load
+        time.sleep(0.5)
+
+        status_code = self.browser.check_http_status()
+        if status_code is None:
+            logger.debug(f"Could not determine HTTP status for {url}")
+            return
+
+        logger.debug(f"HTTP status for {url}: {status_code}")
+
+        # Store status in results for later use
+        self.results["http_status"] = status_code
+        self.results["http_status_url"] = url
+
+        # Check if status indicates an error
+        if self.config.http_status.fail_on_error_status:
+            error_codes = self.config.http_status.error_status_codes
+            if status_code in error_codes:
+                logger.error(f"HTTP error status {status_code} detected for {url}")
+                raise WorkflowExecutionError(
+                    f"HTTP {status_code} error encountered while navigating to {url}"
+                )
+
+        # Log warnings for redirect status codes
+        warning_codes = self.config.http_status.warning_status_codes
+        if status_code in warning_codes:
+            logger.warning(f"HTTP redirect status {status_code} detected for {url}")
 
     def _action_wait_for(self, params: Dict[str, Any]):
         """Wait for an element to be present."""
@@ -702,6 +914,27 @@ class WorkflowExecutor:
             time.sleep(3)
             logger.info("Login submitted (no success indicator configured)")
 
+        # Check for login failure indicators if configured
+        failure_indicators = params.get("failure_indicators")
+        if failure_indicators:
+            logger.debug("Checking for login failure indicators")
+            # Include HTTP status if available
+            context = {"action": "login"}
+            if "http_status" in self.results:
+                context["status_code"] = self.results["http_status"]
+            failure_context = self.failure_classifier.classify_page_content(
+                self.browser.driver, context
+            )
+
+            # Check if failure was detected with sufficient confidence
+            if failure_context.failure_type.value == "login_failed" and failure_context.confidence > 0.5:
+                logger.error(f"Login failure detected: {failure_context.details}")
+                raise WorkflowExecutionError(
+                    f"Login failed - detected failure indicators: {failure_context.details}"
+                )
+            elif failure_context.confidence > 0.3:
+                logger.warning(f"Potential login failure detected (confidence: {failure_context.confidence}): {failure_context.details}")
+
     def _action_detect_captcha(self, params: Dict[str, Any]):
         """Detect CAPTCHA presence on current page."""
         if (
@@ -811,6 +1044,48 @@ class WorkflowExecutor:
             logger.info("Session rotated successfully")
         else:
             logger.warning("Failed to rotate session")
+
+    def _action_validate_http_status(self, params: Dict[str, Any]):
+        """Validate HTTP status of current page."""
+        expected_status = params.get("expected_status")
+        fail_on_error = params.get("fail_on_error", True)
+        error_codes = params.get("error_codes", [400, 401, 403, 404, 500, 502, 503, 504])
+
+        status_code = self.browser.check_http_status()
+        current_url = self.browser.driver.current_url
+
+        if status_code is None:
+            if fail_on_error:
+                logger.error(f"Could not determine HTTP status for {current_url}")
+                raise WorkflowExecutionError(f"Failed to determine HTTP status for {current_url}")
+            else:
+                logger.warning(f"Could not determine HTTP status for {current_url}")
+                return
+
+        logger.debug(f"Validated HTTP status for {current_url}: {status_code}")
+
+        # Store status in results
+        self.results["validated_http_status"] = status_code
+        self.results["validated_http_url"] = current_url
+
+        # Check expected status if specified
+        if expected_status is not None:
+            if status_code != expected_status:
+                error_msg = f"HTTP status mismatch: expected {expected_status}, got {status_code} for {current_url}"
+                if fail_on_error:
+                    logger.error(error_msg)
+                    raise WorkflowExecutionError(error_msg)
+                else:
+                    logger.warning(error_msg)
+
+        # Check for error status codes
+        if status_code in error_codes:
+            error_msg = f"HTTP error status {status_code} detected for {current_url}"
+            if fail_on_error:
+                logger.error(error_msg)
+                raise WorkflowExecutionError(error_msg)
+            else:
+                logger.warning(error_msg)
 
     def _extract_value_from_element(
         self, element, attribute: Optional[str]

@@ -6,6 +6,7 @@ rate limiting, human behavior simulation, and session management.
 
 import logging
 import random
+import re
 import time
 from typing import Any, Callable, Dict, List, Optional
 
@@ -14,6 +15,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
+from src.core.adaptive_retry_strategy import AdaptiveRetryStrategy
+from src.core.captcha_solver import CaptchaSolver, CaptchaSolverConfig
+from src.core.failure_analytics import FailureAnalytics
 from src.utils.scraping.browser import ScraperBrowser
 
 logger = logging.getLogger(__name__)
@@ -31,11 +35,14 @@ class AntiDetectionConfig:
         enable_blocking_handling: bool = True,
         captcha_selectors: Optional[List[str]] = None,
         blocking_selectors: Optional[List[str]] = None,
+        rate_limiting_selectors: Optional[List[str]] = None,
+        rate_limiting_text_patterns: Optional[List[str]] = None,
         rate_limit_min_delay: float = 1.0,
         rate_limit_max_delay: float = 5.0,
         human_simulation_enabled: bool = True,
         session_rotation_interval: int = 100,
         max_retries_on_detection: int = 3,
+        captcha_solver_config: Optional[CaptchaSolverConfig] = None,
     ):
         self.enable_captcha_detection = enable_captcha_detection
         self.enable_rate_limiting = enable_rate_limiting
@@ -58,10 +65,27 @@ class AntiDetectionConfig:
             "[class*='access-denied']",
             "[id*='access-denied']",
         ]
+        self.rate_limiting_selectors = rate_limiting_selectors or [
+            "[class*='rate-limit']",
+            "[id*='rate-limit']",
+            "[class*='throttle']",
+            "[id*='throttle']",
+            "[class*='too-many-requests']",
+            "[id*='too-many-requests']",
+        ]
+        self.rate_limiting_text_patterns = rate_limiting_text_patterns or [
+            r"rate limit",
+            r"too many requests",
+            r"throttl",
+            r"please wait",
+            r"temporary.*block",
+            r"429",
+        ]
         self.rate_limit_min_delay = rate_limit_min_delay
         self.rate_limit_max_delay = rate_limit_max_delay
         self.session_rotation_interval = session_rotation_interval
         self.max_retries_on_detection = max_retries_on_detection
+        self.captcha_solver_config = captcha_solver_config or CaptchaSolverConfig()
 
 
 class AntiDetectionManager:
@@ -76,26 +100,49 @@ class AntiDetectionManager:
     - Blocking page detection
     """
 
-    def __init__(self, browser: ScraperBrowser, config: AntiDetectionConfig):
+    def __init__(self, browser: ScraperBrowser, config: AntiDetectionConfig, site_name: str = "unknown"):
         """
         Initialize the anti-detection manager.
 
         Args:
             browser: ScraperBrowser instance
             config: AntiDetectionConfig with module settings
+            site_name: Name of the site being scraped (for adaptive learning)
         """
         self.browser = browser
         self.config = config
+        self.site_name = site_name
         self.request_count = 0
         self.last_request_time = 0
         self.session_start_time = time.time()
 
-        # Initialize modules
-        self.captcha_detector = (
-            CaptchaDetector(self.config) if config.enable_captcha_detection else None
+        # Initialize adaptive retry strategy
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/adaptive_retry_{site_name}.json"
         )
+
+        # Initialize failure analytics
+        self.failure_analytics = FailureAnalytics()
+
+        # Initialize modules
+        self.captcha_solver = (
+            CaptchaSolver(self.config.captcha_solver_config)
+            if config.enable_captcha_detection and self.config.captcha_solver_config.enabled
+            else None
+        )
+        self.captcha_detector = (
+            CaptchaDetector(self.config, self.captcha_solver) if config.enable_captcha_detection else None
+        )
+        # Get adaptive config for rate limiting
+        rate_limit_adaptive_config = None
+        if hasattr(self, 'adaptive_retry_strategy'):
+            from src.core.failure_classifier import FailureType
+            rate_limit_adaptive_config = self.adaptive_retry_strategy.get_adaptive_config(
+                FailureType.RATE_LIMITED, self.site_name
+            )
+
         self.rate_limiter = (
-            RateLimiter(self.config) if config.enable_rate_limiting else None
+            RateLimiter(self.config, rate_limit_adaptive_config) if config.enable_rate_limiting else None
         )
         self.human_simulator = (
             HumanBehaviorSimulator(self.config)
@@ -109,41 +156,43 @@ class AntiDetectionManager:
             BlockingHandler(self.config) if config.enable_blocking_handling else None
         )
 
-        logger.info(
-            "AntiDetectionManager initialized with enabled modules: %s",
-            [
-                module
-                for module in [
-                    "captcha",
-                    "rate_limit",
-                    "human_sim",
-                    "session",
-                    "blocking",
-                ]
-                if getattr(
-                    self,
-                    (
-                        f"{module}_detector"
-                        if module == "captcha"
+        enabled_modules = [
+            module
+            for module in [
+                "captcha",
+                "rate_limit",
+                "human_sim",
+                "session",
+                "blocking",
+            ]
+            if getattr(
+                self,
+                (
+                    f"{module}_detector"
+                    if module == "captcha"
+                    else (
+                        f"{module}_handler"
+                        if module == "blocking"
                         else (
-                            f"{module}_handler"
-                            if module == "blocking"
+                            f"{module}_manager"
+                            if module == "session"
                             else (
-                                f"{module}_manager"
-                                if module == "session"
-                                else (
-                                    f"{module}_simulator"
-                                    if module == "human"
-                                    else f"{module}_limiter"
-                                )
+                                f"{module}_simulator"
+                                if module == "human"
+                                else f"{module}_limiter"
                             )
                         )
-                    ),
-                    None,
-                )
-                is not None
-            ],
-        )
+                    )
+                ),
+                None,
+            )
+            is not None
+        ]
+
+        if self.captcha_solver:
+            enabled_modules.append("captcha_solver")
+
+        logger.info("AntiDetectionManager initialized with enabled modules: %s", enabled_modules)
 
     def pre_action_hook(self, action: str, params: Dict[str, Any]) -> bool:
         """
@@ -165,7 +214,7 @@ class AntiDetectionManager:
             # Apply rate limiting
             if self.rate_limiter:
                 start_time = time.time()
-                self.rate_limiter.apply_delay()
+                self.rate_limiter.apply_delay(self.browser.driver)
                 delay_duration = time.time() - start_time
                 if delay_duration > 0.1:  # Only log significant delays
                     logger.debug(f"Rate limiter applied {delay_duration:.2f}s delay")
@@ -223,7 +272,7 @@ class AntiDetectionManager:
 
     def handle_error(self, error: Exception, action: str, retry_count: int = 0) -> bool:
         """
-        Handle errors with anti-detection recovery strategies.
+        Handle errors with adaptive anti-detection recovery strategies.
 
         Args:
             error: The exception that occurred
@@ -233,19 +282,65 @@ class AntiDetectionManager:
         Returns:
             True if error was handled and can retry, False otherwise
         """
-        if retry_count >= self.config.max_retries_on_detection:
-            logger.warning(
-                f"Max retries ({self.config.max_retries_on_detection}) exceeded for action: {action}"
-            )
-            return False
-
         try:
-            # Check if it's a detection-related error
+            # Classify the error to determine failure type
+            from src.core.failure_classifier import FailureClassifier
+            failure_classifier = FailureClassifier()
+            failure_context = failure_classifier.classify_exception(error, {"action": action})
+
+            # Get adaptive retry configuration
+            adaptive_config = self.adaptive_retry_strategy.get_adaptive_config(
+                failure_context.failure_type,
+                self.site_name,
+                retry_count
+            )
+
+            # Check if we should retry based on adaptive config
+            if retry_count >= adaptive_config.max_retries:
+                logger.warning(
+                    f"Adaptive max retries ({adaptive_config.max_retries}) exceeded for action: {action} "
+                    f"(failure: {failure_context.failure_type.value})"
+                )
+                return False
+
+            # Apply adaptive delay
+            delay = self.adaptive_retry_strategy.calculate_delay(adaptive_config, retry_count)
+            if delay > 0:
+                logger.info(
+                    f"Adaptive retry delay for '{action}' - failure: {failure_context.failure_type.value}, "
+                    f"retry {retry_count + 1}/{adaptive_config.max_retries}, delay: {delay:.1f}s"
+                )
+                time.sleep(delay)
+
+            # Check if it's a detection-related error and apply specific handling
             error_str = str(error).lower()
 
             if "captcha" in error_str and self.captcha_detector:
                 logger.info("CAPTCHA-related error detected, attempting recovery")
-                return self.captcha_detector.handle_captcha(self.browser.driver)
+                success = self.captcha_detector.handle_captcha(self.browser.driver)
+                if success:
+                    # Record successful recovery for analytics
+                    self.failure_analytics.record_failure(
+                        site_name=self.site_name,
+                        failure_type=failure_context.failure_type,
+                        action=action,
+                        retry_count=retry_count,
+                        context={"error": error_str, "recovery": "captcha_solve"},
+                        success_after_retry=True,
+                        final_success=True
+                    )
+    
+                    # Record successful recovery
+                    self.adaptive_retry_strategy.record_failure(
+                        failure_type=failure_context.failure_type,
+                        site_name=self.site_name,
+                        action=action,
+                        retry_count=retry_count,
+                        context={"error": error_str, "recovery": "captcha_solve"},
+                        success_after_retry=True,
+                        final_success=True
+                    )
+                return success
 
             elif (
                 any(
@@ -254,22 +349,112 @@ class AntiDetectionManager:
                 and self.blocking_handler
             ):
                 logger.info("Blocking-related error detected, attempting recovery")
-                return self.blocking_handler.handle_blocking(self.browser.driver)
+                success = self.blocking_handler.handle_blocking(self.browser.driver)
+                if success:
+                    # Record successful recovery for analytics
+                    self.failure_analytics.record_failure(
+                        site_name=self.site_name,
+                        failure_type=failure_context.failure_type,
+                        action=action,
+                        retry_count=retry_count,
+                        context={"error": error_str, "recovery": "blocking_handled"},
+                        success_after_retry=True,
+                        final_success=True
+                    )
+    
+                    # Record successful recovery
+                    self.adaptive_retry_strategy.record_failure(
+                        failure_type=failure_context.failure_type,
+                        site_name=self.site_name,
+                        action=action,
+                        retry_count=retry_count,
+                        context={"error": error_str, "recovery": "blocking_handled"},
+                        success_after_retry=True,
+                        final_success=True
+                    )
+                return success
 
             elif "timeout" in error_str and self.rate_limiter:
-                logger.info("Timeout error detected, applying rate limiting")
+                logger.info("Timeout error detected, applying adaptive rate limiting")
                 self.rate_limiter.apply_backoff_delay()
+                # Record the timeout handling for analytics
+                self.failure_analytics.record_failure(
+                    site_name=self.site_name,
+                    failure_type=failure_context.failure_type,
+                    action=action,
+                    retry_count=retry_count,
+                    context={"error": error_str, "recovery": "rate_limit_backoff"},
+                    success_after_retry=False,
+                    final_success=False
+                )
+
+                # Record the timeout handling
+                self.adaptive_retry_strategy.record_failure(
+                    failure_type=failure_context.failure_type,
+                    site_name=self.site_name,
+                    action=action,
+                    retry_count=retry_count,
+                    context={"error": error_str, "recovery": "rate_limit_backoff"},
+                    success_after_retry=False,  # Will retry
+                    final_success=False
+                )
                 return True
 
             # Default session rotation on persistent failures
-            if self.session_manager and retry_count > 1:
-                logger.info("Persistent failures detected, rotating session")
-                return self.session_manager.rotate_session(self)
+            if self.session_manager and retry_count >= adaptive_config.session_rotation_threshold:
+                logger.info(f"Persistent failures detected ({retry_count} retries), rotating session")
+                success = self.session_manager.rotate_session(self)
+                if success:
+                    # Record successful session rotation for analytics
+                    self.failure_analytics.record_failure(
+                        site_name=self.site_name,
+                        failure_type=failure_context.failure_type,
+                        action=action,
+                        retry_count=retry_count,
+                        context={"error": error_str, "recovery": "session_rotation"},
+                        success_after_retry=True,
+                        final_success=True
+                    )
+
+                    # Record successful session rotation
+                    self.adaptive_retry_strategy.record_failure(
+                        failure_type=failure_context.failure_type,
+                        site_name=self.site_name,
+                        action=action,
+                        retry_count=retry_count,
+                        context={"error": error_str, "recovery": "session_rotation"},
+                        success_after_retry=True,
+                        final_success=True
+                    )
+                return success
+
+            # Record that we're retrying with default strategy for analytics
+            self.failure_analytics.record_failure(
+                site_name=self.site_name,
+                failure_type=failure_context.failure_type,
+                action=action,
+                retry_count=retry_count,
+                context={"error": error_str, "recovery": "default_retry"},
+                success_after_retry=False,
+                final_success=False
+            )
+
+            # Record that we're retrying with default strategy
+            self.adaptive_retry_strategy.record_failure(
+                failure_type=failure_context.failure_type,
+                site_name=self.site_name,
+                action=action,
+                retry_count=retry_count,
+                context={"error": error_str, "recovery": "default_retry"},
+                success_after_retry=False,  # Will retry
+                final_success=False
+            )
+
+            return True  # Allow retry with adaptive delay already applied
 
         except Exception as e:
             logger.error(f"Error handling failed: {e}")
-
-        return False
+            return False
 
     def _should_check_captcha(self, action: str) -> bool:
         """Determine if CAPTCHA check should be performed for this action."""
@@ -283,8 +468,9 @@ class AntiDetectionManager:
 class CaptchaDetector:
     """Handles CAPTCHA detection and resolution."""
 
-    def __init__(self, config: AntiDetectionConfig):
+    def __init__(self, config: AntiDetectionConfig, captcha_solver: Optional[CaptchaSolver] = None):
         self.config = config
+        self.captcha_solver = captcha_solver
 
     def detect_captcha(self, driver) -> bool:
         """Detect if a CAPTCHA is present on the page."""
@@ -303,40 +489,116 @@ class CaptchaDetector:
             return False
 
     def handle_captcha(self, driver) -> bool:
-        """Attempt to handle CAPTCHA (basic implementation)."""
-        try:
-            # For now, just wait and retry - in production, integrate with CAPTCHA solving service
-            logger.info("Attempting CAPTCHA resolution (waiting strategy)")
-            time.sleep(random.uniform(5, 10))
-            return True  # Assume resolution successful for now
-        except Exception as e:
-            logger.error(f"CAPTCHA handling failed: {e}")
-            return False
+        """Attempt to handle CAPTCHA using solver or fallback strategy."""
+        max_retries = 2  # Retry up to 2 times
+
+        for attempt in range(max_retries + 1):
+            try:
+                # Try to solve CAPTCHA using external service if available
+                if self.captcha_solver:
+                    current_url = driver.current_url
+                    logger.info(f"Attempting CAPTCHA resolution using external service (attempt {attempt + 1}/{max_retries + 1})")
+                    if self.captcha_solver.solve_captcha(driver, current_url):
+                        logger.info("CAPTCHA solved successfully using external service")
+                        return True
+                    else:
+                        logger.warning(f"External CAPTCHA solving failed (attempt {attempt + 1}), trying fallback")
+
+                # Fallback: just wait and retry
+                logger.info(f"Attempting CAPTCHA resolution (waiting strategy, attempt {attempt + 1}/{max_retries + 1})")
+                wait_time = random.uniform(5, 10) * (attempt + 1)  # Increase wait time with each attempt
+                time.sleep(wait_time)
+
+                # Check if CAPTCHA is still present after waiting
+                if not self.detect_captcha(driver):
+                    logger.info("CAPTCHA appears to be resolved after waiting")
+                    return True
+
+                if attempt < max_retries:
+                    logger.info(f"CAPTCHA still present, retrying in {wait_time:.1f}s")
+                    time.sleep(wait_time)
+                else:
+                    logger.warning("CAPTCHA resolution failed after all attempts")
+                    return False
+
+            except Exception as e:
+                logger.error(f"CAPTCHA handling failed (attempt {attempt + 1}): {e}")
+                if attempt == max_retries:
+                    return False
+                time.sleep(random.uniform(2, 5))  # Brief pause before retry
+
+        return False
 
 
 class RateLimiter:
     """Manages rate limiting with intelligent delays."""
 
-    def __init__(self, config: AntiDetectionConfig):
+    def __init__(self, config: AntiDetectionConfig, adaptive_config=None):
         self.config = config
+        self.adaptive_config = adaptive_config
         self.last_request_time = 0
         self.consecutive_failures = 0
 
-    def apply_delay(self) -> None:
-        """Apply appropriate delay before next request."""
+    def detect_rate_limiting(self, driver) -> bool:
+        """Detect if current page indicates rate limiting."""
+        try:
+            # Check selectors
+            for selector in self.config.rate_limiting_selectors:
+                try:
+                    elements = driver.find_elements(By.CSS_SELECTOR, selector)
+                    if elements:
+                        logger.info(f"Rate limiting detected using selector: {selector}")
+                        return True
+                except:
+                    continue
+
+            # Check page content for text patterns
+            page_text = driver.page_source.lower()
+            page_title = driver.title.lower()
+
+            for pattern in self.config.rate_limiting_text_patterns:
+                if re.search(pattern, page_text, re.IGNORECASE) or re.search(pattern, page_title, re.IGNORECASE):
+                    logger.info(f"Rate limiting detected using text pattern: {pattern}")
+                    return True
+
+            return False
+        except Exception as e:
+            logger.error(f"Rate limiting detection failed: {e}")
+            return False
+
+    def apply_delay(self, driver=None) -> None:
+        """Apply appropriate delay before next request using adaptive strategies."""
         import os
         is_ci = os.getenv('CI') == 'true'
+
+        # Check for rate limiting indicators on the page before applying delay
+        if driver and self.detect_rate_limiting(driver):
+            logger.warning("Rate limiting detected on page, applying extended delay")
+            # Get adaptive config for rate limiting
+            if self.adaptive_config is not None:
+                extended_delay = self.adaptive_config.max_delay
+            else:
+                extended_delay = self.config.rate_limit_max_delay * 3  # 3x normal max delay
+            time.sleep(extended_delay)
+            self.consecutive_failures += 1  # Treat as failure to increase future delays
+            self.last_request_time = time.time()
+            return
 
         current_time = time.time()
         time_since_last = current_time - self.last_request_time
 
-        # Use reduced delays in CI environment to prevent timeouts
-        if is_ci:
-            min_delay = min(self.config.rate_limit_min_delay, 0.5)  # Cap at 0.5s
-            max_delay = min(self.config.rate_limit_max_delay, 2.0)  # Cap at 2.0s
+        # Get adaptive configuration if available
+        if self.adaptive_config is not None:
+            min_delay = self.adaptive_config.base_delay
+            max_delay = self.adaptive_config.max_delay
         else:
-            min_delay = self.config.rate_limit_min_delay
-            max_delay = self.config.rate_limit_max_delay
+            # Use reduced delays in CI environment to prevent timeouts
+            if is_ci:
+                min_delay = min(self.config.rate_limit_min_delay, 0.5)  # Cap at 0.5s
+                max_delay = min(self.config.rate_limit_max_delay, 2.0)  # Cap at 2.0s
+            else:
+                min_delay = self.config.rate_limit_min_delay
+                max_delay = self.config.rate_limit_max_delay
 
         # Increase delay based on consecutive failures
         if self.consecutive_failures > 0:

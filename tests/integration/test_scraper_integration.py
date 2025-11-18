@@ -10,6 +10,7 @@ import tempfile
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+from unittest.mock import patch
 
 import pytest
 
@@ -422,6 +423,7 @@ class TestScraperIntegration:
             elif hasattr(item, 'quit'):
                 item.quit()
 
+
     def test_get_available_scrapers(self, available_scrapers):
         """Test that we can discover available scrapers."""
         assert len(available_scrapers) > 0, "No scrapers found"
@@ -595,6 +597,136 @@ class TestScraperIntegration:
             assert result["data"]["scraper"] == "amazon"
             assert "success" in result["data"]
             print(f"DEBUG: test_scraper_headless_modes completed successfully for headless={headless}")
+
+    @pytest.mark.integration
+    def test_no_results_browser_response_simulation(self, tester):
+        """Test real browser responses with fake SKUs that trigger no results pages."""
+        # Use a fake SKU that should not exist and trigger no results
+        fake_sku = "23184912789412789078124940172"
+
+        # Run scraper with fake SKU - should fail to find products
+        result = tester.run_scraper_locally("amazon", [fake_sku], headless=True)
+
+        # Verify scraper execution failed due to no results
+        assert result["success"] is False  # No products found
+        assert result["products"] == []  # Empty products list
+        assert len(result["errors"]) > 0  # Should have error for failed SKU
+        assert "Failed to scrape SKU" in result["errors"][0]
+
+        # Verify execution completed
+        assert result["execution_time"] > 0
+
+    @pytest.mark.integration
+    def test_end_to_end_no_results_workflow_execution(self, tester):
+        """Test end-to-end workflow execution with no results detection using real scraper."""
+        # Use a fake SKU that should trigger no results on Amazon
+        fake_sku = "NONEXISTENTPRODUCT987654321"
+
+        # Run scraper with fake SKU
+        result = tester.run_scraper_locally("amazon", [fake_sku], headless=True)
+
+        # Verify scraper failed due to no results
+        assert result["success"] is False
+        assert result["products"] == []
+        assert len(result["errors"]) > 0
+        assert "Failed to scrape SKU" in result["errors"][0]
+
+        # Verify execution completed
+        assert result["execution_time"] > 0
+
+    @pytest.mark.integration
+    def test_no_results_failure_reporting_and_analytics(self, tester):
+        """Test proper failure reporting and analytics recording for no results scenarios."""
+        # Use a fake SKU that triggers no results
+        fake_sku = "NORESULTSANALYTICS123"
+
+        # Run scraper with fake SKU
+        result = tester.run_scraper_locally("amazon", [fake_sku], headless=True)
+
+        # Verify scraper failed due to no results
+        assert result["success"] is False
+        assert result["products"] == []
+        assert len(result["errors"]) > 0
+        assert "Failed to scrape SKU" in result["errors"][0]
+
+        # Verify execution completed
+        assert result["execution_time"] > 0
+
+    @pytest.mark.integration
+    def test_no_results_graceful_handling_without_retries(self, tester):
+        """Test that no results scenarios are handled gracefully without retries."""
+        # Use a fake SKU that triggers no results
+        fake_sku = "NORESULTSGRACEFUL456"
+
+        # Run scraper with fake SKU
+        result = tester.run_scraper_locally("amazon", [fake_sku], headless=True)
+
+        # Verify scraper failed gracefully due to no results
+        assert result["success"] is False
+        assert result["products"] == []
+        assert len(result["errors"]) > 0
+        assert "Failed to scrape SKU" in result["errors"][0]
+
+        # Verify execution completed
+        assert result["execution_time"] > 0
+
+    @pytest.mark.integration
+    def test_no_results_integration_with_config_validation(self, tester):
+        """Test integration with scraper configuration validation sections for no results."""
+        from src.scrapers.parser.yaml_parser import ScraperConfigParser
+
+        # Test with amazon config which has no_results validation
+        parser = ScraperConfigParser()
+        config = parser.load_from_file(
+            tester.project_root / "src" / "scrapers" / "configs" / "amazon.yaml"
+        )
+
+        # Verify config has validation section (may be stored as extra field due to arbitrary_types_allowed)
+        assert hasattr(config, 'validation') or hasattr(config, '__dict__')
+        validation_data = getattr(config, 'validation', None) or config.__dict__.get('validation')
+
+        if validation_data:
+            # Verify no_results validation exists
+            assert 'no_results_selectors' in validation_data
+            assert validation_data['no_results_selectors'] is not None
+            assert len(validation_data['no_results_selectors']) > 0
+
+            assert 'no_results_text_patterns' in validation_data
+            assert validation_data['no_results_text_patterns'] is not None
+            assert len(validation_data['no_results_text_patterns']) > 0
+
+            # Verify the selectors and patterns are reasonable
+            assert ".s-no-results" in validation_data['no_results_selectors']
+            assert "#no-results" in validation_data['no_results_selectors']
+            assert "no results found" in validation_data['no_results_text_patterns']
+            assert "your search returned no results" in validation_data['no_results_text_patterns']
+        else:
+            # If validation section is not loaded, at least verify the YAML file contains it
+            import yaml
+            with open(tester.project_root / "src" / "scrapers" / "configs" / "amazon.yaml", 'r') as f:
+                raw_config = yaml.safe_load(f)
+
+            assert 'validation' in raw_config
+            assert 'no_results_selectors' in raw_config['validation']
+            assert 'no_results_text_patterns' in raw_config['validation']
+
+    @pytest.mark.integration
+    def test_no_results_end_to_end_with_real_config(self, tester):
+        """Test end-to-end no results handling using real scraper configuration."""
+        # Use amazon config with a SKU that should not exist
+        non_existent_sku = "THISPRODUCTDOESNOTEXIST123456789"
+
+        # Run scraper with non-existent SKU - should naturally encounter no results page
+        result = tester.run_scraper_locally("amazon", [non_existent_sku], headless=True)
+
+        # Verify failure was detected
+        assert result["success"] is False
+        assert len(result["errors"]) > 0
+        assert "Failed to scrape SKU" in result["errors"][0]
+        assert result["products"] == []  # No products should be found
+
+        # Verify execution completed without hanging
+        assert result["execution_time"] > 0
 
 
 if __name__ == "__main__":

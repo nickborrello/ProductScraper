@@ -37,6 +37,24 @@ class LoginConfig(BaseModel):
     success_indicator: Optional[str] = Field(
         None, description="CSS selector indicating successful login"
     )
+    failure_indicators: Optional[Dict[str, Any]] = Field(
+        None, description="Indicators for detecting login failures"
+    )
+
+
+class HttpStatusConfig(BaseModel):
+    """Configuration for HTTP status code monitoring."""
+
+    enabled: bool = Field(False, description="Whether to enable HTTP status monitoring")
+    fail_on_error_status: bool = Field(True, description="Whether to fail workflow on 4xx/5xx status codes")
+    error_status_codes: List[int] = Field(
+        default_factory=lambda: [400, 401, 403, 404, 500, 502, 503, 504],
+        description="HTTP status codes that should be considered errors"
+    )
+    warning_status_codes: List[int] = Field(
+        default_factory=lambda: [301, 302, 307, 308],
+        description="HTTP status codes that should generate warnings"
+    )
 
 
 class ScraperConfig(BaseModel):
@@ -59,6 +77,9 @@ class ScraperConfig(BaseModel):
     retries: int = Field(3, description="Number of retries on failure")
     anti_detection: Optional[AntiDetectionConfig] = Field(
         None, description="Anti-detection configuration"
+    )
+    http_status: Optional[HttpStatusConfig] = Field(
+        None, description="HTTP status monitoring configuration"
     )
     test_skus: Optional[List[str]] = Field(
         None, description="List of SKUs to use for testing"

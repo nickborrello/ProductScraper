@@ -5,6 +5,7 @@ Scrapers can use this as a base and customize as needed.
 
 import os
 import time
+from typing import Optional
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -108,6 +109,80 @@ class ScraperBrowser:
     def get(self, url):
         """Navigate to URL."""
         self.driver.get(url)
+
+    def check_http_status(self) -> Optional[int]:
+        """
+        Check the HTTP status code of the current page using JavaScript.
+
+        Uses the Performance API to get the response status. Falls back to
+        attempting a fetch request if Performance API is not available.
+
+        Returns:
+            HTTP status code (int) or None if unable to determine
+        """
+        try:
+            # First try using Performance API (most reliable)
+            script = """
+            try {
+                var entries = performance.getEntriesByType('navigation');
+                if (entries.length > 0 && entries[0].responseStatus) {
+                    return entries[0].responseStatus;
+                }
+
+                // Fallback: try to get status from document properties
+                if (document.status) {
+                    return document.status;
+                }
+
+                // Another fallback: check for error indicators in the page
+                var bodyText = document.body ? document.body.textContent.toLowerCase() : '';
+                var titleText = document.title ? document.title.toLowerCase() : '';
+
+                if (bodyText.includes('404') || titleText.includes('404') ||
+                    bodyText.includes('not found') || titleText.includes('not found')) {
+                    return 404;
+                }
+                if (bodyText.includes('403') || titleText.includes('403') ||
+                    bodyText.includes('forbidden') || bodyText.includes('access denied')) {
+                    return 403;
+                }
+                if (bodyText.includes('500') || bodyText.includes('internal server error')) {
+                    return 500;
+                }
+
+                return null;
+            } catch (e) {
+                return null;
+            }
+            """
+
+            result = self.driver.execute_script(script)
+            if result is not None:
+                return int(result)
+
+            # Second fallback: try a fetch request (may fail due to CORS)
+            try:
+                fetch_script = """
+                try {
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('HEAD', window.location.href, false);
+                    xhr.send();
+                    return xhr.status;
+                } catch (e) {
+                    return null;
+                }
+                """
+                result = self.driver.execute_script(fetch_script)
+                if result is not None:
+                    return int(result)
+            except Exception:
+                pass
+
+            return None
+
+        except Exception as e:
+            print(f"[WEB] [{self.site_name}] Failed to check HTTP status: {e}")
+            return None
 
     def quit(self):
         """Close the browser."""
