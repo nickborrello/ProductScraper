@@ -14,6 +14,7 @@ Usage:
 
 import sys
 import json
+import yaml
 import time
 import logging
 import argparse
@@ -66,18 +67,17 @@ def parse_args():
     )
     return parser.parse_args()
 
-def load_test_data() -> Dict[str, Any]:
-    """Load test data from JSON file."""
-    test_data_path = PROJECT_ROOT / "tests" / "fixtures" / "scraper_test_data.json"
-    with open(test_data_path, 'r') as f:
-        return json.load(f)
-
-def get_test_sku(scraper_name: str, test_data: Dict[str, Any]) -> str:
-    """Get the first test SKU for a scraper."""
-    scraper_config = test_data.get(scraper_name, {})
-    test_skus = scraper_config.get("test_skus", [])
-    if test_skus:
-        return test_skus[0]
+def get_test_sku(scraper_name: str) -> str:
+    """Get the first test SKU for a scraper from its YAML config file."""
+    config_path = PROJECT_ROOT / "src" / "scrapers" / "configs" / f"{scraper_name}.yaml"
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config_dict = yaml.safe_load(f)
+        test_skus = config_dict.get("test_skus", [])
+        if test_skus:
+            return test_skus[0]
+    except (FileNotFoundError, yaml.YAMLError) as e:
+        logger.warning(f"Failed to load test_skus from {config_path}: {e}")
     # Fallback SKU
     return "035585499741"
 
@@ -87,13 +87,12 @@ def replace_sku_placeholders(config, sku: str):
         if step.action == "navigate" and "url" in step.params:
             step.params["url"] = step.params["url"].replace("{sku}", sku)
 
-def test_scraper_config(scraper_name: str, test_data: Dict[str, Any], headless: bool = True) -> Dict[str, Any]:
+def test_scraper_config(scraper_name: str, headless: bool = True) -> Dict[str, Any]:
     """
     Test a single scraper configuration.
 
     Args:
         scraper_name: Name of the scraper config
-        test_data: Test data dictionary
         headless: Whether to run browser in headless mode
 
     Returns:
@@ -113,7 +112,7 @@ def test_scraper_config(scraper_name: str, test_data: Dict[str, Any], headless: 
 
     try:
         # Get test SKU
-        sku = get_test_sku(scraper_name, test_data)
+        sku = get_test_sku(scraper_name)
         logger.info(f"Using test SKU: {sku}")
 
         # Load YAML config
@@ -170,21 +169,13 @@ def main():
     logger.info("Starting scraper tests")
     logger.info(f"Testing configs: {SCRAPER_CONFIGS}")
 
-    # Load test data
-    try:
-        test_data = load_test_data()
-        logger.info("Test data loaded successfully")
-    except Exception as e:
-        logger.error(f"Failed to load test data: {e}")
-        return
-
     # Test each scraper
     results = {}
     successful = 0
     failed = 0
 
     for scraper_name in SCRAPER_CONFIGS:
-        result = test_scraper_config(scraper_name, test_data, headless=args.headless)
+        result = test_scraper_config(scraper_name, headless=args.headless)
         results[scraper_name] = result
 
         if result["success"]:
