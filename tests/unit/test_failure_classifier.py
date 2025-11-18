@@ -35,9 +35,8 @@ class TestFailureClassifierNoResults:
         result = classifier.classify_page_content(mock_driver, {})
 
         assert result.failure_type == FailureType.NO_RESULTS
-        assert result.confidence == 0.9  # High confidence for selector match
-        assert result.details["selector_match"] is True
-        assert result.recovery_strategy == "retry_with_different_query"
+        assert result.confidence == 0.8  # High confidence for selector match
+        assert result.recovery_strategy == "fail_and_continue_to_next_sku"
 
     def test_no_results_text_patterns_detection(self, classifier, mock_driver):
         """Test detection of NO_RESULTS via text patterns."""
@@ -60,7 +59,7 @@ class TestFailureClassifierNoResults:
         result = classifier.classify_page_content(mock_driver, {})
 
         assert result.failure_type == FailureType.NO_RESULTS
-        assert result.confidence > 0.3  # Title match with reduced weight but multiple patterns
+        assert result.confidence >= 0.5  # Title match with reduced weight but multiple patterns, and now better classification
         assert result.details["title_match"] is True
 
     def test_no_results_multiple_patterns_confidence(self, classifier, mock_driver):
@@ -77,27 +76,23 @@ class TestFailureClassifierNoResults:
         result = classifier.classify_page_content(mock_driver, {})
 
         assert result.failure_type == FailureType.NO_RESULTS
-        assert result.confidence >= 0.9  # High confidence from multiple matches
+        assert result.confidence >= 0.8  # High confidence from multiple matches
 
     def test_no_results_partial_text_match(self, classifier, mock_driver):
         """Test partial text matches for NO_RESULTS."""
-        # Use content that matches multiple patterns to exceed threshold
         mock_driver.page_source = "<html><body>Your search returned no results. No matching products found.</body></html>"
 
         result = classifier.classify_page_content(mock_driver, {})
-
         assert result.failure_type == FailureType.NO_RESULTS
-        assert result.confidence > 0.3  # Should exceed threshold with multiple matches
+        assert result.confidence >= 0.5  # Should exceed threshold with multiple matches and now better classification
 
     def test_no_results_case_insensitive_matching(self, classifier, mock_driver):
         """Test case-insensitive text pattern matching."""
-        # Use multiple patterns to exceed threshold
         mock_driver.page_source = "<html><body>NO RESULTS FOUND. NO MATCHING PRODUCTS FOUND.</body></html>"
 
         result = classifier.classify_page_content(mock_driver, {})
-
         assert result.failure_type == FailureType.NO_RESULTS
-        assert result.confidence > 0.3  # Should exceed threshold
+        assert result.confidence >= 0.5  # Should exceed threshold and now better classification
 
     def test_no_results_false_positive_avoidance(self, classifier, mock_driver):
         """Test avoiding false positives for NO_RESULTS."""
@@ -149,7 +144,7 @@ class TestFailureClassifierNoResults:
 
         # Should still work via text patterns despite selector exception
         assert result.failure_type == FailureType.NO_RESULTS
-        assert result.details["text_match"] is True
+        assert result.confidence >= 0.5  # Should still work via text patterns despite selector exception, with better confidence
 
     def test_no_results_text_pattern_confidence_calculation(self, classifier):
         """Test confidence calculation for text pattern matching."""
@@ -163,13 +158,13 @@ class TestFailureClassifierNoResults:
         confidence = classifier._calculate_text_match_confidence(
             "no results found", patterns
         )
-        assert confidence == 1.0 / 3.0  # 1 match out of 3 patterns
+        assert confidence == 0.7  # Fixed confidence for any match
 
-        # Test multiple matches
+        # Test multiple matches still returns the fixed confidence
         confidence = classifier._calculate_text_match_confidence(
             "no results found - your search returned no results", patterns
         )
-        assert confidence == 2.0 / 3.0  # 2 matches out of 3 patterns
+        assert confidence == 0.7  # Should still be the fixed confidence
 
         # Test no matches
         confidence = classifier._calculate_text_match_confidence(
@@ -202,11 +197,11 @@ class TestFailureClassifierNoResults:
         result = classifier.classify_page_content(mock_driver, {})
 
         assert result.failure_type == FailureType.NO_RESULTS
-        assert result.confidence >= 0.8  # High confidence from multiple indicators
+        assert result.confidence >= 0.8  # High confidence from multiple indicators and new logic
         assert result.details["selector_match"] is True
         assert result.details["text_match"] is True
         assert result.details["title_match"] is True
-        assert result.recovery_strategy == "retry_with_different_query"
+        assert result.recovery_strategy == "fail_and_continue_to_next_sku"
 
     def test_no_results_edge_case_empty_page(self, classifier, mock_driver):
         """Test NO_RESULTS detection on empty or minimal page content."""

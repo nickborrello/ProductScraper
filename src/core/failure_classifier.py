@@ -10,7 +10,7 @@ import logging
 import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 
 from selenium.common.exceptions import (
     NoSuchElementException,
@@ -53,8 +53,18 @@ class FailureClassifier:
     anti-detection measures, and content availability problems.
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+        site_specific_no_results_selectors: Optional[List[str]] = None,
+        site_specific_no_results_text_patterns: Optional[List[str]] = None,
+    ):
         """Initialize the failure classifier with default detection patterns."""
+        self.site_specific_no_results_selectors = (
+            site_specific_no_results_selectors if site_specific_no_results_selectors else []
+        )
+        self.site_specific_no_results_text_patterns = (
+            site_specific_no_results_text_patterns if site_specific_no_results_text_patterns else []
+        )
         self.failure_patterns = {
             FailureType.NO_RESULTS: {
                 "selectors": [
@@ -64,14 +74,21 @@ class FailureClassifier:
                     "[id*='empty']",
                     ".no-products",
                     "#no-products",
+                    ".product-not-found",
+                    "div.message-error",
+                    "p.note:contains('no items')",
+                    "div[role='alert']:contains('not found')",
                 ],
                 "text_patterns": [
                     r"no (results?|products?|items?) found",
                     r"your search.*returned no results",
                     r"no matching products",
                     r"empty",
+                    r"product not found",
+                    r"item not available",
+                    r"page you requested cannot be found",
                 ],
-                "recovery_strategy": "retry_with_different_query",
+                "recovery_strategy": "fail_and_continue_to_next_sku",
             },
             FailureType.LOGIN_FAILED: {
                 "selectors": [
@@ -159,10 +176,12 @@ class FailureClassifier:
             FailureType.NETWORK_ERROR: {
                 "selectors": [],
                 "text_patterns": [
-                    r"connection.*(failed|error|timeout)",
+                    r"connection.*(failed|error|timeout|reset)",
                     r"network.*error",
                     r"server.*error",
                     r"timeout",
+                    r"err_connection_refused",
+                    r"dns_probe_finished_nxdomain",
                 ],
                 "recovery_strategy": "retry",
             },
@@ -191,6 +210,10 @@ class FailureClassifier:
 
         # Check for specific exception types
         if isinstance(exception, TimeoutException):
+            # Check if this timeout is due to waiting for an element (common in _action_wait_for)
+            # This information will be used by classify_page_content to prioritize NO_RESULTS
+            is_wait_for_timeout = context.get("action") == "wait_for"
+
             return FailureContext(
                 failure_type=FailureType.NETWORK_ERROR,
                 confidence=0.9,
@@ -198,6 +221,7 @@ class FailureClassifier:
                     "exception_type": exception_type,
                     "exception_message": str(exception),
                     "timeout_detected": True,
+                    "waited_for_element_timeout": is_wait_for_timeout,
                 },
                 recovery_strategy="retry_with_backoff",
             )
@@ -286,15 +310,27 @@ class FailureClassifier:
                 confidence = 0.0
                 details = {}
 
+                current_selectors = patterns["selectors"]
+                current_text_patterns = patterns["text_patterns"]
+
+                # Augment NO_RESULTS patterns with site-specific ones
+                if failure_type == FailureType.NO_RESULTS:
+                    current_selectors = list(
+                        set(current_selectors + self.site_specific_no_results_selectors)
+                    )
+                    current_text_patterns = list(
+                        set(current_text_patterns + self.site_specific_no_results_text_patterns)
+                    )
+
                 # Check selectors
-                selector_confidence = self._check_selectors(driver, patterns["selectors"])
+                selector_confidence = self._check_selectors(driver, current_selectors)
                 if selector_confidence > 0:
                     confidence = max(confidence, selector_confidence)
                     details["selector_match"] = True
 
                 # Check text patterns in page content
                 text_confidence = self._calculate_text_match_confidence(
-                    page_text, patterns["text_patterns"]
+                    page_text, current_text_patterns
                 )
                 if text_confidence > 0:
                     confidence = max(confidence, text_confidence)
@@ -302,7 +338,7 @@ class FailureClassifier:
 
                 # Check title patterns
                 title_confidence = self._calculate_text_match_confidence(
-                    page_title, patterns["text_patterns"]
+                    page_title, current_text_patterns
                 )
                 if title_confidence > 0:
                     confidence = max(confidence, title_confidence * 0.8)  # Title matches are strong indicators
@@ -317,16 +353,27 @@ class FailureClassifier:
                         confidence = max(confidence, status_confidence)
                         details["status_code_match"] = context["status_code"]
 
+                # Prioritize NO_RESULTS if it was a waited_for_element_timeout
+                if failure_type == FailureType.NO_RESULTS and context.get("waited_for_element_timeout"):
+                    if confidence > 0: # If any NO_RESULTS pattern matched
+                        confidence = max(confidence, 0.9) # Give high confidence
+                        details["triggered_by_wait_for_timeout"] = True
+                    elif best_match is None: # If no other failure type matched yet
+                         # If it was a wait_for timeout and no patterns matched, still give a decent NO_RESULTS confidence
+                        confidence = max(confidence, 0.6)
+                        details["triggered_by_wait_for_timeout"] = True
+                        details["no_explicit_pattern_match"] = True
+
                 if confidence > best_confidence:
                     best_confidence = confidence
                     best_match = failure_type
                     details.update({
-                        "matched_selectors": patterns["selectors"],
-                        "matched_patterns": patterns["text_patterns"],
+                        "matched_selectors": current_selectors,
+                        "matched_patterns": current_text_patterns,
                     })
                     best_details = details
 
-            if best_match and best_confidence > 0.3:
+            if best_match and best_confidence > 0.3: # Lower threshold to catch more potential failures
                 return FailureContext(
                     failure_type=best_match,
                     confidence=best_confidence,
@@ -334,12 +381,22 @@ class FailureClassifier:
                     recovery_strategy=self.failure_patterns[best_match]["recovery_strategy"],
                 )
 
-            # No clear failure detected
+            # If a wait_for_element_timeout occurred but no patterns matched above threshold,
+            # still classify as NO_RESULTS with moderate confidence
+            if context.get("waited_for_element_timeout"):
+                return FailureContext(
+                    failure_type=FailureType.NO_RESULTS,
+                    confidence=0.5, # Moderate confidence since it timed out but no explicit pattern
+                    details={"no_explicit_failure_detected": True, "triggered_by_wait_for_timeout": True},
+                    recovery_strategy=self.failure_patterns[FailureType.NO_RESULTS]["recovery_strategy"],
+                )
+
+            # No clear failure detected, return a very low confidence generic NETWORK_ERROR
             return FailureContext(
-                failure_type=FailureType.NO_RESULTS,  # Default assumption
+                failure_type=FailureType.NETWORK_ERROR,
                 confidence=0.1,
-                details={"no_failure_detected": True},
-                recovery_strategy="continue",
+                details={"no_clear_failure_detected": True},
+                recovery_strategy="retry",
             )
 
         except Exception as e:
@@ -358,7 +415,7 @@ class FailureClassifier:
                 try:
                     elements = driver.find_elements(By.CSS_SELECTOR, selector)
                     if elements:
-                        return 0.9  # High confidence for selector match
+                        return 0.8  # High confidence for *any* selector match (adjusted from 0.9)
                 except:
                     continue
             return 0.0
@@ -370,12 +427,10 @@ class FailureClassifier:
         if not patterns:
             return 0.0
 
-        matches = 0
         for pattern in patterns:
             if re.search(pattern, text, re.IGNORECASE):
-                matches += 1
-
-        return min(matches / len(patterns), 1.0) if patterns else 0.0
+                return 0.7 # High confidence for *any* text pattern match
+        return 0.0
 
     def _check_status_code(self, status_code: int, failure_type: FailureType) -> float:
         """Check if status code matches expected failure type."""

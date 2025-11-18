@@ -23,6 +23,10 @@ workflows:
   - action: "navigate"
     params:
       url: "https://www.amazon.com/s?k={sku}"
+  - action: "check_no_results" # Explicitly check for no results page
+  - action: "conditional_skip"
+    params:
+      if_flag: "no_results_found"
   - action: "wait_for"
     params:
       selector: ".s-result-item, .s-no-results, #no-results, .s-search-no-results"
@@ -70,9 +74,20 @@ validation:
     - "[data-testid*='no-results']"
     - ".s-no-results"
     - "#no-results"
+    - "#noResultsTitle"
+    - ".no-results-message"
+    - ".a-size-medium-plus.a-color-base"
+    - "div.s-search-results > div[data-component-type='s-search-result']:first-child:not([data-component-id])"
+    - ".s-search-results .s-result-item .s-title-instructions-style h2:contains('No results for')"
   no_results_text_patterns:
     - "no results found"
     - "no products found"
     - "your search returned no results"
     - "we couldn't find any results"
     - "no items match your search"
+    - "no results for"
+    - "your search did not yield any results"
+    - "we cannot find any results for"
+    - "try checking your spelling or use more general terms"
+    - "didn't find any results"
+    - "zero results"

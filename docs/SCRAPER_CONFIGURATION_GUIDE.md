@@ -63,6 +63,14 @@ anti_detection:
   max_retries_on_detection: integer     # Optional: Max retries on detection (default: 3)
 ```
 
+### Validation Configuration
+
+```yaml
+validation:
+  no_results_selectors: list            # Optional: Selectors to detect 'no results' pages
+  no_results_text_patterns: list        # Optional: Text patterns to detect 'no results' pages
+```
+
 ## Workflow Actions
 
 ### Navigation Actions
@@ -119,6 +127,25 @@ Simple wait/delay.
 - action: "wait"
   params:
     seconds: 2                   # Wait time in seconds
+```
+
+### Control Flow Actions
+
+#### check_no_results
+Explicitly check if the current page is a "no results" page. This action uses the selectors and patterns defined in the `validation` section. It sets a `no_results_found` flag in the results.
+
+```yaml
+- action: "check_no_results"
+  params: {}
+```
+
+#### conditional_skip
+Conditionally skip the rest of the workflow based on a flag from a previous step.
+
+```yaml
+- action: "conditional_skip"
+  params:
+    if_flag: "no_results_found"  # Skip if the 'no_results_found' flag is true
 ```
 
 ### Data Extraction Actions
@@ -306,13 +333,21 @@ anti_detection:
   rate_limit_max_delay: 4.0
 ```
 
-### Example 2: Search and Extract Workflow
+### Example 2: Search and Extract Workflow with No-Results Handling
 
 ```yaml
 name: "search_scraper"
 base_url: "https://www.example.com"
 timeout: 45
 retries: 5
+
+validation:
+  no_results_selectors:
+    - ".no-results"
+    - "div.search-empty"
+  no_results_text_patterns:
+    - "no results found"
+    - "your search returned no matches"
 
 selectors:
   - name: "search_result_title"
@@ -343,6 +378,10 @@ workflows:
   - action: "click"
     params:
       selector: "#search-button, .search-submit"
+  - action: "check_no_results"
+  - action: "conditional_skip"
+    params:
+      if_flag: "no_results_found"
   - action: "wait_for"
     params:
       selector: ".search-results"

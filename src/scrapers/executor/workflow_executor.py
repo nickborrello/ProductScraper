@@ -64,7 +64,10 @@ class WorkflowExecutor:
         self.adaptive_retry_strategy = AdaptiveRetryStrategy(
             history_file=f"data/retry_history_{config.name}.json"
         )
-        self.failure_classifier = FailureClassifier()
+        self.failure_classifier = FailureClassifier(
+            site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
         self.failure_analytics = FailureAnalytics()
         self.settings = SettingsManager()
 
@@ -116,6 +119,7 @@ class WorkflowExecutor:
 
         # Track if we've performed the first navigation to avoid rate limiting false positives
         self.first_navigation_done = False
+        self.workflow_stopped = False
 
     def execute_workflow(self, test_skus: Optional[List[str]] = None, quit_browser: bool = True) -> Dict[str, Any]:
         """
@@ -135,6 +139,9 @@ class WorkflowExecutor:
             logger.info(f"Starting workflow execution for: {self.config.name}")
 
             for step in self.config.workflows:
+                if self.workflow_stopped:
+                    logger.info(f"Workflow stopped due to condition, skipping remaining steps.")
+                    break
                 self._execute_step(step)
 
             logger.info(f"Workflow execution completed for: {self.config.name}")
@@ -169,6 +176,9 @@ class WorkflowExecutor:
             logger.info(f"Starting step execution for: {self.config.name}")
 
             for step in steps:
+                if self.workflow_stopped:
+                    logger.info(f"Workflow stopped due to condition, skipping remaining steps.")
+                    break
                 self._execute_step(step)
 
             logger.info(f"Step execution completed for: {self.config.name}")
@@ -241,6 +251,10 @@ class WorkflowExecutor:
                 self._action_rotate_session(params)
             elif action == "validate_http_status":
                 self._action_validate_http_status(params)
+            elif action == "check_no_results":
+                self._action_check_no_results(params)
+            elif action == "conditional_skip":
+                self._action_conditional_skip(params)
             else:
                 raise WorkflowExecutionError(f"Unknown action: {action}")
 
@@ -1094,6 +1108,60 @@ class WorkflowExecutor:
                 raise WorkflowExecutionError(error_msg)
             else:
                 logger.warning(error_msg)
+
+    def _action_check_no_results(self, params: Dict[str, Any]):
+        """
+        Explicitly check if the current page indicates a 'no results' scenario.
+        Sets 'no_results_found' in self.results to True if detected.
+        """
+        logger.info("Performing explicit 'check_no_results' action.")
+        # Use a high confidence threshold for explicit check
+        min_confidence = params.get("min_confidence", 0.7)
+
+        # Pass a context that can be used by the classifier
+        # We indicate it's an explicit check, not triggered by a timeout
+        classification_context = {"action": "check_no_results"}
+        if "http_status" in self.results:
+            classification_context["status_code"] = self.results["http_status"]
+
+        failure_context = self.failure_classifier.classify_page_content(
+            self.browser.driver, classification_context
+        )
+
+        if (
+            failure_context.failure_type == FailureType.NO_RESULTS
+            and failure_context.confidence >= min_confidence
+        ):
+            self.results["no_results_found"] = True
+            logger.info(
+                f"✅ 'No results' explicitly detected with confidence "
+                f"{failure_context.confidence:.2f}."
+            )
+            # Optionally, raise an error or stop execution if configured
+            if params.get("fail_on_no_results", False):
+                raise WorkflowExecutionError("Explicitly detected 'no results' page.")
+        else:
+            self.results["no_results_found"] = False
+            logger.debug(
+                f"No explicit 'no results' detected (Type: {failure_context.failure_type.value}, "
+                f"Confidence: {failure_context.confidence:.2f})."
+            )
+
+    def _action_conditional_skip(self, params: Dict[str, Any]):
+        """
+        Conditionally skip the rest of the workflow based on a flag in self.results.
+        """
+        if_flag = params.get("if_flag")
+        if not if_flag:
+            raise WorkflowExecutionError(
+                "conditional_skip action requires 'if_flag' parameter"
+            )
+
+        if self.results.get(if_flag):
+            logger.info(
+                f"Condition '{if_flag}' is true, stopping workflow execution."
+            )
+            self.workflow_stopped = True
 
     def _extract_value_from_element(
         self, element, attribute: Optional[str]

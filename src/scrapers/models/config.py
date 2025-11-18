@@ -57,6 +57,17 @@ class HttpStatusConfig(BaseModel):
     )
 
 
+class ValidationConfig(BaseModel):
+    """Configuration for data validation and no-results detection."""
+
+    no_results_selectors: Optional[List[str]] = Field(
+        None, description="Selectors to detect 'no results' pages"
+    )
+    no_results_text_patterns: Optional[List[str]] = Field(
+        None, description="Text patterns to detect 'no results' pages"
+    )
+
+
 class ScraperConfig(BaseModel):
     """Main configuration for a scraper."""
 
@@ -80,6 +91,9 @@ class ScraperConfig(BaseModel):
     )
     http_status: Optional[HttpStatusConfig] = Field(
         None, description="HTTP status monitoring configuration"
+    )
+    validation: Optional[ValidationConfig] = Field(
+        None, description="Data validation and no-results configuration"
     )
     test_skus: Optional[List[str]] = Field(
         None, description="List of SKUs to use for testing"
