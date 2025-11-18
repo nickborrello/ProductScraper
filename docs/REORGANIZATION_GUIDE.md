@@ -17,8 +17,8 @@ ProductScraper/
 │   │   ├── anti_detection_manager.py
 │   │   ├── data_quality_scorer.py
 │   │   ├── field_mapping.py
-│   │   ├── platform_testing_client.py
-│   │   ├── platform_testing_integration.py
+│   │   ├── scraper_testing_client.py
+│   │   ├── scraper_testing_integration.py
 │   │   ├── settings_manager.py
 │   │   ├── classification/       # Product classification
 │   │   │   ├── __init__.py

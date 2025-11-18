@@ -9,11 +9,11 @@ This script provides an easy way to:
 - Validate data format and quality
 
 Usage:
-    python platform_test_scrapers.py --all --local                    # Test all scrapers (local mode)
-    python platform_test_scrapers.py --scraper amazon --local         # Test specific scraper (local mode)
-    python platform_test_scrapers.py --scraper amazon --skus B07G5J5FYP B08N5WRWNW
-    python platform_test_scrapers.py --list                           # List available scrapers
-    python platform_test_scrapers.py --validate amazon                # Validate scraper structure only
+    python scraper_testing.py --all                    # Test all scrapers
+    python scraper_testing.py --scraper amazon         # Test specific scraper
+    python scraper_testing.py --scraper amazon --skus B07G5J5FYP B08N5WRWNW
+    python scraper_testing.py --list                   # List available scrapers
+    python scraper_testing.py --validate amazon        # Validate scraper structure only
 """
 import argparse
 import json
@@ -27,15 +27,15 @@ PROJECT_ROOT = Path(__file__).parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.core.platform_testing_integration import \
-    PlatformScraperIntegrationTester
-from src.core.platform_testing_client import TestingMode
+from src.core.scraper_testing_integration import \
+    ScraperIntegrationTester
+from src.core.scraper_testing_client import TestingMode
 from tests.fixtures.scraper_validator import ScraperValidator
 
 
 def list_available_scrapers():
     """List all available scrapers."""
-    tester = PlatformScraperIntegrationTester()
+    tester = ScraperIntegrationTester()
     scrapers = tester.get_available_scrapers()
 
     print("Available Scrapers:")
@@ -96,7 +96,7 @@ async def test_single_scraper(
     scraper_name: str, skus: Optional[List[str]] = None, verbose: bool = False, mode: TestingMode = TestingMode.LOCAL
 ):
     """Test a single scraper."""
-    tester = PlatformScraperIntegrationTester(mode=mode)
+    tester = ScraperIntegrationTester(mode=mode)
 
     # First validate structure
     if not validate_scraper_structure(scraper_name):
@@ -133,7 +133,7 @@ async def test_single_scraper(
 
 async def test_all_scrapers(verbose: bool = False, mode: TestingMode = TestingMode.LOCAL):
     """Test all available scrapers."""
-    tester = PlatformScraperIntegrationTester(mode=mode)
+    tester = ScraperIntegrationTester(mode=mode)
     scrapers = tester.get_available_scrapers()
 
     # Filter out login-requiring scrapers if in CI environment
@@ -162,8 +162,8 @@ async def test_all_scrapers(verbose: bool = False, mode: TestingMode = TestingMo
     print(f"\n{'='*80}")
     print("FINAL REPORT")
     print(f"{'='*80}")
-    print(f"Total Scrapers Tested: {results['total_scrapers']}")
-    print(f"Passed: {results['successful_scrapers']}")
+    print(f"Total Scrapers: {results['total_scrapers']}")
+    print(f"Successful: {results['successful_scrapers']}")
     print(f"Failed: {results['failed_scrapers']}")
     print(f"Success Rate: {results['summary']['success_rate']:.1f}%")
     print(f"Testing Mode: LOCAL")
@@ -204,14 +204,14 @@ def show_help():
 async def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(
-        description="Test and debug ProductScraper scrapers in local or platform mode",
+        description="Test and debug ProductScraper scrapers locally",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""Examples:
-    python platform_test_scrapers.py --all --local                    # Test all scrapers (local)
-    python platform_test_scrapers.py --scraper amazon --local         # Test amazon scraper (local)
-    python platform_test_scrapers.py --scraper amazon --skus B07G5J5FYP B08N5WRWNW
-    python platform_test_scrapers.py --list                           # List available scrapers
-    python platform_test_scrapers.py --validate amazon                # Validate structure only
+    python scraper_testing.py --all                    # Test all scrapers
+    python scraper_testing.py --scraper amazon         # Test amazon scraper
+    python scraper_testing.py --scraper amazon --skus B07G5J5FYP B08N5WRWNW
+    python scraper_testing.py --list                   # List available scrapers
+    python scraper_testing.py --validate amazon        # Validate structure only
           """,
     )
 
@@ -232,11 +232,6 @@ async def main():
         "--verbose",
         action="store_true",
         help="Show detailed output and debug information",
-    )
-    parser.add_argument(
-        "--local",
-        action="store_true",
-        help="Run tests in local mode (default)",
     )
 
     args = parser.parse_args()

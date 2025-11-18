@@ -1,4 +1,4 @@
-name: Scraper Platform Testing and Quality Assurance
+name: Scraper Testing and Quality Assurance
 
 # This workflow automates testing of scraper functionality in a local environment
 # and performs data quality checks to ensure scraper reliability and data integrity.
@@ -20,7 +20,7 @@ on:
       - 'tests/fixtures/scraper_validator.py'
       - 'tests/integration/test_scraper_integration.py'
       - 'tests/integration/test_data_quality.py'
-      - 'src/core/platform_testing_integration.py'
+      - 'src/core/scraper_testing_integration.py'
       - '.github/workflows/platform-testing.yml'
     # Triggers on changes to scraper-related files in main/develop branches
   schedule:
@@ -99,7 +99,7 @@ jobs:
     - name: Run local tests
       if: steps.scrapers.outputs.scrapers == 'all'
       run: |
-        uv run python tests/platform_test_scrapers.py --all --local --verbose
+        uv run python tests/scraper_testing.py --all --verbose
       env:
         PYTHONPATH: ${{ github.workspace }}
 
@@ -108,7 +108,7 @@ jobs:
       run: |
         for scraper in $(echo "${{ github.event.inputs.scrapers }}" | tr ',' '\n'); do
           echo "Testing scraper: $scraper"
-          uv run python tests/platform_test_scrapers.py --scraper "$scraper" --local --verbose
+          uv run python tests/scraper_testing.py --scraper "$scraper" --verbose
         done
       env:
         PYTHONPATH: ${{ github.workspace }}

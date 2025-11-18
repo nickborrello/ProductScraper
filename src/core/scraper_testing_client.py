@@ -1,6 +1,6 @@
 """
-Local Testing Client
-Provides interface for local testing only.
+Scraper Testing Client
+Provides interface for local scraper testing only.
 """
 
 import asyncio
@@ -17,34 +17,34 @@ class TestingMode(Enum):
     LOCAL = "local"
 
 
-class PlatformTestingError(Exception):
-    """Base exception for platform testing errors."""
+class ScraperTestingError(Exception):
+    """Base exception for scraper testing errors."""
 
     pass
 
 
-class PlatformTestingAuthError(PlatformTestingError):
+class ScraperTestingAuthError(ScraperTestingError):
     """Authentication error."""
 
     pass
 
 
-class PlatformTestingTimeoutError(PlatformTestingError):
+class ScraperTestingTimeoutError(ScraperTestingError):
     """Timeout error."""
 
     pass
 
 
-class PlatformTestingJobError(PlatformTestingError):
+class ScraperTestingJobError(ScraperTestingError):
     """Job execution error."""
 
     pass
 
 
-class PlatformTestingClient:
+class ScraperTestingClient:
     """
-    Local testing client.
-    Provides interface for local testing only.
+    Local scraper testing client.
+    Provides interface for local scraper testing only.
     """
 
     def __init__(self, mode: TestingMode = TestingMode.LOCAL, headless: bool = True, **kwargs):
@@ -126,10 +126,6 @@ class PlatformTestingClient:
     def testing_mode(self) -> TestingMode:
         """Get current testing mode."""
         return self.mode
-
-    def is_platform_mode(self) -> bool:
-        """Check if running in platform mode."""
-        return False
 
     def is_local_mode(self) -> bool:
         """Check if running in local mode."""

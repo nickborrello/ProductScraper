@@ -3,7 +3,7 @@ ProductScraper Core Module
 Provides core functionality for scraping, data processing, and platform integration.
 """
 
-from .platform_testing_client import PlatformTestingClient, TestingMode
-from .platform_testing_integration import PlatformScraperIntegrationTester
+from .scraper_testing_client import ScraperTestingClient, TestingMode
+from .scraper_testing_integration import ScraperIntegrationTester
 
-__all__ = ["PlatformTestingClient", "TestingMode", "PlatformScraperIntegrationTester"]
+__all__ = ["ScraperTestingClient", "TestingMode", "ScraperIntegrationTester"]

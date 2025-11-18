@@ -30,7 +30,7 @@ A comprehensive product data management and scraping platform built with Python.
 ### 🖥️ Enhanced User Interfaces
 
 - **Modern GUI**: Real-time progress updates, cancellation support, and async threading
-- **Command Line Interface**: Full-featured CLI with unified local/platform testing
+- **Command Line Interface**: Full-featured CLI with comprehensive local testing
 - **Batch Processing**: Handle large datasets efficiently with progress tracking
 - **Status Monitoring**: Live execution metrics (elapsed time, processed count, ETA)
 
@@ -134,7 +134,7 @@ ProductScraper/
 │   ├── main.py            # Main entry point
 │   ├── core/              # Business logic and APIs
 │   │   ├── data_quality_scorer.py      # Quality scoring algorithms
-│   │   ├── platform_testing_client.py  # Local testing interface
+│   │   ├── scraper_testing_client.py  # Local testing interface
 │   │   └── classification/             # Product classification
 │   ├── scrapers/          # YAML-based scrapers
 │   │   ├── configs/       # Scraper configurations

@@ -1,6 +1,6 @@
 """
-Platform Testing Integration
-Extends local testing with platform testing capabilities.
+Scraper Testing Integration
+Extends local testing with scraper testing capabilities.
 """
 
 import asyncio
@@ -10,18 +10,18 @@ from typing import Any, Dict, List, Optional
 
 from tests.fixtures.scraper_validator import ScraperValidator
 
-from .platform_testing_client import (PlatformTestingAuthError,
-                                      PlatformTestingClient,
-                                      PlatformTestingError,
-                                      PlatformTestingJobError,
-                                      PlatformTestingTimeoutError, TestingMode)
+from .scraper_testing_client import (ScraperTestingAuthError,
+                                     ScraperTestingClient,
+                                     ScraperTestingError,
+                                     ScraperTestingJobError,
+                                     ScraperTestingTimeoutError, TestingMode)
 
 logger = logging.getLogger(__name__)
 
 
-class PlatformScraperIntegrationTester:
+class ScraperIntegrationTester:
     """
-    Extended integration tester that supports both local and platform testing modes.
+    Extended integration tester that supports scraper testing modes.
     """
 
     def __init__(
@@ -30,11 +30,11 @@ class PlatformScraperIntegrationTester:
         mode: TestingMode = TestingMode.LOCAL,
     ):
         """
-        Initialize the platform integration tester.
+        Initialize the scraper integration tester.
 
         Args:
             test_data_path: Path to test data JSON file
-            mode: Testing mode (LOCAL or PLATFORM)
+            mode: Testing mode (LOCAL supported)
         """
         self.project_root = Path(__file__).parent.parent.parent
         self.test_data_path = test_data_path or "tests/fixtures/scraper_test_data.json"
@@ -48,7 +48,7 @@ class PlatformScraperIntegrationTester:
         import os
         is_ci = os.getenv('CI') == 'true'
         headless = True if is_ci else False
-        self.testing_client = PlatformTestingClient(mode=mode, headless=headless)
+        self.testing_client = ScraperTestingClient(mode=mode, headless=headless)
 
     def get_test_skus(self, scraper_name: str) -> List[str]:
         """Get test SKUs for a scraper from its YAML config."""

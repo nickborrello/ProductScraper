@@ -57,7 +57,7 @@ These instructions guide GitHub Copilot's behavior when working in this reposito
    # Local testing (recommended for development)
    python test_scrapers.py --scraper {scraper_name}
 
-   # Platform testing (requires Apify API token)
+   # Local testing (no API keys required)
    python platform_test_scrapers.py --platform --scraper {scraper_name}
    ```
 
