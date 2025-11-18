@@ -36,6 +36,11 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
+
+# Suppress noisy third-party logs
+logging.getLogger('selenium').setLevel(logging.WARNING)
+logging.getLogger('urllib3').setLevel(logging.WARNING)
+logging.getLogger('selenium.webdriver').setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 # Scraper configs to test

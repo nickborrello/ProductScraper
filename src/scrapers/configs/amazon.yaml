@@ -1,15 +1,15 @@
 name: "amazon"
 test_skus: ["035585499741"]
 base_url: "https://www.amazon.com"
-timeout: 30
-retries: 3
+timeout: 120
+retries: 10
 
 selectors:
   - name: "Name"
     selector: "#productTitle"
     attribute: "text"
   - name: "Brand"
-    selector: "a[href*='/stores/']"
+    selector: "#bylineInfo"
     attribute: "text"
   - name: "Image URLs"
     selector: "#altImages li.imageThumbnail img"
@@ -23,28 +23,30 @@ workflows:
   - action: "navigate"
     params:
       url: "https://www.amazon.com/s?k={sku}"
-  - action: "check_no_results" # Explicitly check for no results page
-  - action: "conditional_skip"
-    params:
-      if_flag: "no_results_found"
   - action: "wait_for"
     params:
       selector: ".s-result-item, .s-no-results, #no-results, .s-search-no-results"
-      timeout: 15
+      timeout: 30
+  - action: "check_no_results" # Check for no results after page load
+    params:
+      min_confidence: 0.8
+  - action: "conditional_skip"
+    params:
+      if_flag: "no_results_found"
   - action: "click"
     params:
       selector: ".s-result-item a[href*='/dp/'], .s-search-result a[href*='/dp/']"
   - action: "wait_for"
     params:
-      selector: "#productTitle, #title"
-      timeout: 15
+      selector: "#productTitle, #title, h1"
+      timeout: 30
   - action: "extract"
     params:
       fields: ["Name", "Brand", "Image URLs", "Weight"]
 
 anti_detection:
   enable_captcha_detection: true
-  enable_rate_limiting: true
+  enable_rate_limiting: false
   enable_human_simulation: true
   enable_session_rotation: false
   enable_blocking_handling: true
@@ -62,10 +64,10 @@ anti_detection:
     - "[id*='banned']"
     - "[class*='access-denied']"
     - "[id*='access-denied']"
-  rate_limit_min_delay: 1.0
-  rate_limit_max_delay: 5.0
+  rate_limit_min_delay: 20.0
+  rate_limit_max_delay: 60.0
   session_rotation_interval: 100
-  max_retries_on_detection: 3
+  max_retries_on_detection: 5
 
 validation:
   no_results_selectors:
@@ -76,9 +78,9 @@ validation:
     - "#no-results"
     - "#noResultsTitle"
     - ".no-results-message"
-    - ".a-size-medium-plus.a-color-base"
     - "div.s-search-results > div[data-component-type='s-search-result']:first-child:not([data-component-id])"
     - ".s-search-results .s-result-item .s-title-instructions-style h2:contains('No results for')"
+    - "//h2[contains(text(), 'No results for')]"
   no_results_text_patterns:
     - "no results found"
     - "no products found"
@@ -91,3 +93,4 @@ validation:
     - "try checking your spelling or use more general terms"
     - "didn't find any results"
     - "zero results"
+    - "More results"

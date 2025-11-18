@@ -138,11 +138,13 @@ class WorkflowExecutor:
         try:
             logger.info(f"Starting workflow execution for: {self.config.name}")
 
-            for step in self.config.workflows:
+            for i, step in enumerate(self.config.workflows, 1):
                 if self.workflow_stopped:
                     logger.info(f"Workflow stopped due to condition, skipping remaining steps.")
                     break
+                logger.info(f"Step {i}/{len(self.config.workflows)}: Executing {step.action}")
                 self._execute_step(step)
+                logger.info(f"Step {i}/{len(self.config.workflows)}: Completed {step.action}")
 
             logger.info(f"Workflow execution completed for: {self.config.name}")
             return {
@@ -520,13 +522,6 @@ class WorkflowExecutor:
             logger.debug(f"Current page URL: {self.browser.driver.current_url}")
             logger.debug(f"Page title: {self.browser.driver.title}")
 
-            # Try to log some page content for debugging
-            try:
-                body_text = self.browser.driver.find_element(By.TAG_NAME, "body").text[:500]
-                logger.debug(f"Page body preview: {body_text}...")
-            except Exception as e:
-                logger.debug(f"Could not get page body: {e}")
-
             # Log available elements for debugging
             try:
                 all_elements = self.browser.driver.find_elements(By.CSS_SELECTOR, "*")
@@ -716,7 +711,7 @@ class WorkflowExecutor:
             except NoSuchElementException:
                 logger.warning(f"Element not found for field: {field_name}")
                 self.results[field_name] = [] if selector_config.multiple else None
-        logger.debug(f"Extract action completed. Results: {self.results}")
+        logger.info(f"Extract action completed. Results: {self.results}")
 
     def _action_input_text(self, params: Dict[str, Any]):
         """Input text into a form field."""
@@ -755,9 +750,9 @@ class WorkflowExecutor:
             WebDriverWait(self.browser.driver, self.timeout).until(
                 EC.element_to_be_clickable((locator_type, selector))
             )
-            logger.debug("Element is clickable, proceeding to click")
+            logger.info("Element is clickable, proceeding to click")
         except TimeoutException:
-            logger.debug("Initial wait for clickable element failed, entering retry loop")
+            logger.info("Initial wait for clickable element failed, entering retry loop")
             # Retry logic with proper waiting
             for attempt in range(max_retries):
                 try:
@@ -774,13 +769,6 @@ class WorkflowExecutor:
                         logger.error(f"Click element not clickable after {max_retries} retries: {selector}")
                         logger.debug(f"Current page URL: {self.browser.driver.current_url}")
                         logger.debug(f"Page title: {self.browser.driver.title}")
-
-                        # Try to log some page content for debugging
-                        try:
-                            body_text = self.browser.driver.find_element(By.TAG_NAME, "body").text[:500]
-                            logger.debug(f"Page body preview: {body_text}...")
-                        except Exception as debug_e:
-                            logger.debug(f"Could not get page body: {debug_e}")
 
                         # Log available elements for debugging
                         try:
@@ -823,7 +811,7 @@ class WorkflowExecutor:
 
             # Attempt click
             element.click()
-            logger.debug(f"Successfully clicked element: {selector}")
+            logger.info(f"Successfully clicked element: {selector}")
 
             # Optional wait after click
             wait_time = params.get("wait_after", 0)
@@ -1119,8 +1107,12 @@ class WorkflowExecutor:
         min_confidence = params.get("min_confidence", 0.5)  # Lower threshold for explicit check
 
         # First, check using config validation patterns if available
-        config_no_results = getattr(self.config, 'validation', {}).get('no_results_selectors', [])
-        config_text_patterns = getattr(self.config, 'validation', {}).get('no_results_text_patterns', [])
+        if self.config.validation:
+            config_no_results = self.config.validation.no_results_selectors or []
+            config_text_patterns = self.config.validation.no_results_text_patterns or []
+        else:
+            config_no_results = []
+            config_text_patterns = []
 
         try:
             page_source = self.browser.driver.page_source.lower()
