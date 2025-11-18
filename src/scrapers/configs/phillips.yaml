@@ -23,7 +23,7 @@ workflows:
   - action: "navigate"
     params:
       url: "https://shop.phillipspet.com/ccrz__ProductList?cartID=&operation=quickSearch&searchText={sku}&portalUser=&store=DefaultStore&cclcl=en_US"
-  - action: "wait"
+  - action: "wait_for"
     params:
       selector: "div.cc_product_item, div.plp-empty-state-message-container"
       timeout: 10

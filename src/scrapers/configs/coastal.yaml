@@ -19,9 +19,9 @@ workflows:
   - action: "navigate"
     params:
       url: "https://www.coastalpet.com/products/search/?q={sku}"
-  - action: "wait"
+  - action: "wait_for"
     params:
-      selector: "div.product-listing"
+      selector: ".product-listing, .no-results, .empty-search, .search-no-results"
       timeout: 10
   - action: "extract"
     params:

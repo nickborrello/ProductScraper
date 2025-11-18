@@ -114,6 +114,9 @@ class WorkflowExecutor:
                 logger.warning(f"Failed to initialize anti-detection manager: {e}")
                 self.anti_detection_manager = None
 
+        # Track if we've performed the first navigation to avoid rate limiting false positives
+        self.first_navigation_done = False
+
     def execute_workflow(self, test_skus: Optional[List[str]] = None, quit_browser: bool = True) -> Dict[str, Any]:
         """
         Execute the complete workflow defined in the configuration.
@@ -199,7 +202,9 @@ class WorkflowExecutor:
 
         # Pre-action anti-detection hook
         if self.anti_detection_manager:
-            if not self.anti_detection_manager.pre_action_hook(action, params):
+            # Skip rate limiting detection for the first navigation to avoid false positives
+            skip_rate_limit_check = (action == "navigate" and not self.first_navigation_done)
+            if not self.anti_detection_manager.pre_action_hook(action, params, skip_rate_limit_check=skip_rate_limit_check):
                 raise WorkflowExecutionError(
                     f"Pre-action anti-detection check failed for '{action}'"
                 )
@@ -440,6 +445,9 @@ class WorkflowExecutor:
         if wait_time > 0:
             time.sleep(wait_time)
 
+        # Mark that first navigation is done
+        self.first_navigation_done = True
+
     def _check_http_status_after_navigation(self, url: str, params: Dict[str, Any]):
         """Check HTTP status after navigation and handle errors."""
         if not self.config.http_status:
@@ -491,10 +499,10 @@ class WorkflowExecutor:
                 EC.presence_of_element_located((By.CSS_SELECTOR, selector))
             )
             wait_duration = time.time() - start_time
-            logger.debug(f"Element found after {wait_duration:.2f}s: {selector}")
+            logger.info(f"✅ Element found after {wait_duration:.2f}s: {selector}")
         except TimeoutException:
             wait_duration = time.time() - start_time
-            logger.error(f"Wait_for element not found within {timeout}s (waited {wait_duration:.2f}s): {selector}")
+            logger.warning(f"⏰ TIMEOUT: Element not found within {timeout}s (waited {wait_duration:.2f}s): {selector}")
             logger.debug(f"Current page URL: {self.browser.driver.current_url}")
             logger.debug(f"Page title: {self.browser.driver.title}")
 

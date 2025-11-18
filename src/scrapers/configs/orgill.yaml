@@ -27,14 +27,14 @@ workflows:
   - action: "navigate"
     params:
       url: "https://www.orgill.com/SearchResultN.aspx?ddlhQ={sku}"
-  - action: "wait"
+  - action: "wait_for"
     params:
       selector: "#cphMainContent_ctl00_lblDescription, #cphMainContent_ctl00_lblErrorMessage"
       timeout: 10
   - action: "click"
     params:
       selector: "//a[div[contains(text(), 'Ordering Specifications')]]"
-  - action: "wait"
+  - action: "wait_for"
     params:
       selector: "#orderSpecificationDiv"
       timeout: 5

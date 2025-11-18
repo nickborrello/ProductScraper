@@ -23,7 +23,7 @@ workflows:
   - action: "navigate"
     params:
       url: "https://www.centralpet.com/Search?criteria={sku}"
-  - action: "wait"
+  - action: "wait_for"
     params:
       selector: "#tst_productDetail_erpDescription, span.no-results-found"
       timeout: 10

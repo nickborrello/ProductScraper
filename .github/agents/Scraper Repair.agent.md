@@ -28,6 +28,12 @@ STEP 1: LOAD AND TEST THE EXISTING CONFIG
 - Note any errors, such as selectors not found, workflow failures, or missing data.
 - If the scraper passes without errors, report that no changes are needed and end the process.
 
+STEP 1.5: TEST NO-RESULTS SCENARIO
+- Run the scraper with a no-results test: python scripts/test_scrapers.py --no-results <scraper_name>
+- Verify that the scraper properly handles the no-results case (should timeout or find no-results elements)
+- Check that the scraper completes within reasonable time and returns empty/null values for product fields
+- Note any issues with no-results detection or timeouts
+
 STEP 2: INSPECT THE TARGET PAGE USING CHROME DEVTOOLS
 - Use the chrome_devtools tool to navigate to the target URL and inspect the page structure.
 - Set the browser window size to 1920x1080 resolution to match scraper settings.
@@ -63,7 +69,8 @@ STEP 6: APPLY THE UPDATED YAML CONFIG
 
 STEP 7: TEST THE UPDATED CONFIG
 - Use runCommands to run: python scripts/test_scrapers.py --scrapers <scraper_name>
-- Verify that the fixes work and no errors occur.
+- Also test the no-results scenario: python scripts/test_scrapers.py --no-results <scraper_name>
+- Verify that both regular scraping and no-results handling work correctly
 - If errors persist, return to STEP 2 for further inspection.
 
 Only perform the work outlined in these instructions and not deviate. Signal completion by using the attempt_completion tool with a concise yet thorough summary of the outcome in the result parameter. These specific instructions supersede any conflicting general instructions the mode might have.

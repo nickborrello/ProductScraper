@@ -21,7 +21,7 @@ workflows:
   - action: "navigate"
     params:
       url: "https://orders.petfoodexperts.com/Search?query={sku}"
-  - action: "wait"
+  - action: "wait_for"
     params:
       selector: "div.pf-detail-wrap, .pf-no-results"
       timeout: 15

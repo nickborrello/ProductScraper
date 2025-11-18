@@ -9,6 +9,7 @@ for each test run.
 Usage:
     python test_scrapers.py --all                    # Test all scrapers
     python test_scrapers.py --scrapers amazon orgill # Test specific scrapers
+    python test_scrapers.py --no-results amazon      # Test no results scenario for amazon
     python test_scrapers.py                          # Default: test all scrapers
 """
 
@@ -65,6 +66,12 @@ def parse_args():
         action="store_true",
         help="Run browser in headless mode (default: True)"
     )
+    parser.add_argument(
+        "--no-results",
+        nargs='?',
+        const=True,
+        help="Test no results scenario using a fake SKU that produces no products. Optionally specify scraper name directly."
+    )
     return parser.parse_args()
 
 def get_test_sku(scraper_name: str) -> str:
@@ -87,7 +94,7 @@ def replace_sku_placeholders(config, sku: str):
         if step.action == "navigate" and "url" in step.params:
             step.params["url"] = step.params["url"].replace("{sku}", sku)
 
-def test_scraper_config(scraper_name: str, headless: bool = True) -> Dict[str, Any]:
+def test_scraper_config(scraper_name: str, headless: bool = True, test_no_results: bool = False) -> Dict[str, Any]:
     """
     Test a single scraper configuration.
 
@@ -111,9 +118,13 @@ def test_scraper_config(scraper_name: str, headless: bool = True) -> Dict[str, A
     start_time = time.time()
 
     try:
-        # Get test SKU
-        sku = get_test_sku(scraper_name)
-        logger.info(f"Using test SKU: {sku}")
+        # Get test SKU - use fake SKU for no results testing
+        if test_no_results:
+            sku = "24811283904712894120798"  # Fake SKU that should produce no results
+            logger.info(f"Testing NO RESULTS scenario with fake SKU: {sku}")
+        else:
+            sku = get_test_sku(scraper_name)
+            logger.info(f"Using test SKU: {sku}")
 
         # Load YAML config
         config_path = PROJECT_ROOT / "src" / "scrapers" / "configs" / f"{scraper_name}.yaml"
@@ -123,6 +134,12 @@ def test_scraper_config(scraper_name: str, headless: bool = True) -> Dict[str, A
         # Clone config and replace SKU placeholders
         sku_config = copy.deepcopy(config)
         replace_sku_placeholders(sku_config, sku)
+
+        # For no-results testing, disable rate limiting detection to avoid false positives
+        if test_no_results:
+            if hasattr(sku_config, 'anti_detection'):
+                sku_config.anti_detection.enable_rate_limiting = False
+                logger.info("Disabled rate limiting detection for no-results test")
 
         # Execute workflow
         executor = WorkflowExecutor(sku_config, headless=headless)
@@ -157,25 +174,58 @@ def main():
     """Main function to run all scraper tests."""
     args = parse_args()
 
-    if args.all or not args.scrapers:
-        SCRAPER_CONFIGS = ALL_SCRAPER_CONFIGS
-    else:
-        SCRAPER_CONFIGS = args.scrapers
-        invalid = [s for s in SCRAPER_CONFIGS if s not in ALL_SCRAPER_CONFIGS]
-        if invalid:
-            logger.error(f"Invalid scraper names: {invalid}. Available scrapers: {ALL_SCRAPER_CONFIGS}")
-            return
+    # Determine which scrapers to test and whether to use no-results mode
+    test_no_results_mode = False
+    scrapers_to_test = []
 
-    logger.info("Starting scraper tests")
-    logger.info(f"Testing configs: {SCRAPER_CONFIGS}")
+    if args.no_results:
+        # No results testing - can specify scraper directly with --no-results or use --scrapers
+        if args.no_results is True:
+            # --no-results used without argument, check --scrapers or --all
+            if args.all:
+                # --all --no-results: test all scrapers with no-results
+                logger.info("Testing NO RESULTS scenario for ALL scrapers")
+                scrapers_to_test = ALL_SCRAPER_CONFIGS
+                test_no_results_mode = True
+            elif args.scrapers:
+                # --scrapers with --no-results: test specified scrapers with no-results
+                invalid = [s for s in args.scrapers if s not in ALL_SCRAPER_CONFIGS]
+                if invalid:
+                    logger.error(f"Invalid scraper names: {invalid}. Available scrapers: {ALL_SCRAPER_CONFIGS}")
+                    return
+                scrapers_to_test = args.scrapers
+                test_no_results_mode = True
+            else:
+                logger.error("--no-results requires --all or --scrapers scraper_name(s)")
+                return
+        else:
+            # --no-results used with scraper name directly
+            if args.scrapers or args.all:
+                logger.error("Cannot use both --no-results scraper_name and --scrapers/--all together")
+                return
+            scrapers_to_test = [args.no_results]
+            test_no_results_mode = True
+    else:
+        # Regular testing mode
+        if args.all or not args.scrapers:
+            scrapers_to_test = ALL_SCRAPER_CONFIGS
+        else:
+            scrapers_to_test = args.scrapers
+            invalid = [s for s in scrapers_to_test if s not in ALL_SCRAPER_CONFIGS]
+            if invalid:
+                logger.error(f"Invalid scraper names: {invalid}. Available scrapers: {ALL_SCRAPER_CONFIGS}")
+                return
+
+    logger.info(f"Starting {'NO RESULTS ' if test_no_results_mode else ''}scraper tests")
+    logger.info(f"Testing configs: {scrapers_to_test}")
 
     # Test each scraper
     results = {}
     successful = 0
     failed = 0
 
-    for scraper_name in SCRAPER_CONFIGS:
-        result = test_scraper_config(scraper_name, headless=args.headless)
+    for scraper_name in scrapers_to_test:
+        result = test_scraper_config(scraper_name, headless=args.headless, test_no_results=test_no_results_mode)
         results[scraper_name] = result
 
         if result["success"]:
@@ -185,12 +235,13 @@ def main():
 
         # Log summary for this scraper
         exec_time = result["execution_time"]
-        logger.info(f"{scraper_name}: {'PASS' if result['success'] else 'FAIL'} ({exec_time:.2f}s)")
+        test_type = "NO RESULTS" if test_no_results_mode else "REGULAR"
+        logger.info(f"{scraper_name}: {'PASS' if result['success'] else 'FAIL'} ({exec_time:.2f}s) - {test_type}")
     # Final summary
     logger.info("\n" + "="*60)
-    logger.info("TEST SUMMARY")
+    logger.info(f"{'NO RESULTS ' if test_no_results_mode else ''}TEST SUMMARY")
     logger.info("="*60)
-    logger.info(f"Total scrapers tested: {len(SCRAPER_CONFIGS)}")
+    logger.info(f"Total scrapers tested: {len(scrapers_to_test)}")
     logger.info(f"Successful: {successful}")
     logger.info(f"Failed: {failed}")
 
@@ -210,7 +261,7 @@ def main():
     for name, result in results.items():
         status = "✅ PASS" if result["success"] else "❌ FAIL"
         exec_time = result["execution_time"]
-        logger.info(f"{name}: {'PASS' if result['success'] else 'FAIL'} ({exec_time:.2f}s)")
+        logger.info(f"{name}: {status} ({exec_time:.2f}s)")
 
 if __name__ == "__main__":
     main()

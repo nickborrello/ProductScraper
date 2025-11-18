@@ -194,13 +194,14 @@ class AntiDetectionManager:
 
         logger.info("AntiDetectionManager initialized with enabled modules: %s", enabled_modules)
 
-    def pre_action_hook(self, action: str, params: Dict[str, Any]) -> bool:
+    def pre_action_hook(self, action: str, params: Dict[str, Any], skip_rate_limit_check: bool = False) -> bool:
         """
         Execute pre-action anti-detection measures.
 
         Args:
             action: The workflow action being executed
             params: Action parameters
+            skip_rate_limit_check: Whether to skip rate limiting detection for this action
 
         Returns:
             True if action should proceed, False if blocked
@@ -212,7 +213,7 @@ class AntiDetectionManager:
             logger.debug(f"Pre-action hook for '{action}' (CI: {is_ci})")
 
             # Apply rate limiting
-            if self.rate_limiter:
+            if self.rate_limiter and not skip_rate_limit_check:
                 start_time = time.time()
                 self.rate_limiter.apply_delay(self.browser.driver)
                 delay_duration = time.time() - start_time
