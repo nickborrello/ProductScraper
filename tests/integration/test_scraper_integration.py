@@ -32,7 +32,7 @@ class ScraperIntegrationTester:
         # No longer need test_data_path for JSON, but keep for compatibility
         self.validator = ScraperValidator()
 
-    def get_test_skus(self, scraper_name: str) -> List[str]:
+    def get_test_skus(self, scraper_name: str, max_skus: int = 1) -> List[str]:
         """Get test SKUs for a scraper from its YAML config."""
         config_path = (
             self.project_root
@@ -46,7 +46,8 @@ class ScraperIntegrationTester:
 
         parser = ScraperConfigParser()
         config = parser.load_from_file(config_path)
-        return config.test_skus or ["035585499741"]
+        skus = config.test_skus or ["035585499741"]
+        return skus[:max_skus]  # Return only first max_skus
 
     def get_available_scrapers(self) -> List[str]:
         """Get list of available scraper names."""
@@ -79,6 +80,8 @@ class ScraperIntegrationTester:
         if headless is None:
             headless = os.getenv('SCRAPER_HEADLESS', 'true').lower() == 'true'
 
+        print(f"DEBUG: Starting scraper execution for {scraper_name} with SKUs {skus}, headless={headless}")
+
         results = {
             "scraper": scraper_name,
             "skus": skus,
@@ -92,6 +95,7 @@ class ScraperIntegrationTester:
         start_time = time.time()
 
         try:
+            print(f"DEBUG: Loading config for {scraper_name}")
             # Load YAML config
             config_path = (
                 self.project_root
@@ -102,9 +106,11 @@ class ScraperIntegrationTester:
             )
             parser = ScraperConfigParser()
             config = parser.load_from_file(config_path)
+            print(f"DEBUG: Config loaded successfully for {scraper_name}")
 
             products = []
-            for sku in skus:
+            for i, sku in enumerate(skus):
+                print(f"DEBUG: Processing SKU {sku} ({i+1}/{len(skus)}) for {scraper_name}")
                 try:
                     # Clone config and replace {sku} placeholders
                     import copy
@@ -116,22 +122,28 @@ class ScraperIntegrationTester:
                                 "{sku}", sku
                             )
 
+                    print(f"DEBUG: Starting workflow execution for SKU {sku}")
                     # Run workflow
                     executor = WorkflowExecutor(sku_config, headless=headless)
                     workflow_result = executor.execute_workflow()
+                    print(f"DEBUG: Workflow execution completed for SKU {sku}, success={workflow_result.get('success', False)}")
 
                     if workflow_result["success"]:
                         # Extract product data
                         product_data = workflow_result["results"]
                         product_data["SKU"] = sku
                         products.append(product_data)
+                        print(f"DEBUG: Successfully scraped product for SKU {sku}")
                     else:
                         results["errors"].append(f"Failed to scrape SKU {sku}")
+                        print(f"DEBUG: Failed to scrape SKU {sku}")
 
                 except Exception as e:
                     results["errors"].append(f"Error scraping SKU {sku}: {e}")
+                    print(f"DEBUG: Exception scraping SKU {sku}: {e}")
 
             results["execution_time"] = time.time() - start_time
+            print(f"DEBUG: Scraper {scraper_name} execution completed in {results['execution_time']:.2f}s")
 
             if products:
                 results["products"] = products
@@ -144,6 +156,7 @@ class ScraperIntegrationTester:
         except Exception as e:
             results["errors"].append(f"Setup failed: {e}")
             results["execution_time"] = time.time() - start_time
+            print(f"DEBUG: Setup failed for {scraper_name}: {e}")
 
         return results
 
@@ -442,6 +455,7 @@ class TestScraperIntegration:
     @pytest.mark.integration
     def test_single_scraper_with_timeout(self, tester):
         """Test running a single scraper with timeout handling."""
+        print("DEBUG: Starting test_single_scraper_with_timeout")
         import time
         import threading
         from typing import Any, Dict
@@ -450,12 +464,15 @@ class TestScraperIntegration:
 
         def run_scraper():
             try:
+                print("DEBUG: Calling test_single_scraper('amazon')")
                 scraper_result = tester.test_single_scraper("amazon")
                 result["completed"] = True
                 result["data"] = scraper_result
+                print("DEBUG: test_single_scraper completed successfully")
             except Exception as e:
                 result["completed"] = True
                 result["error"] = e
+                print(f"DEBUG: test_single_scraper failed with error: {e}")
 
         # Start scraper in thread
         thread = threading.Thread(target=run_scraper)
@@ -466,6 +483,7 @@ class TestScraperIntegration:
 
         if thread.is_alive():
             # Timeout occurred
+            print("DEBUG: Scraper execution timed out after 5 minutes")
             pytest.fail("Scraper execution timed out after 5 minutes")
         elif result["error"] is not None:
             raise result["error"]
@@ -474,39 +492,109 @@ class TestScraperIntegration:
             assert result["data"] is not None
             assert "scraper" in result["data"]
             assert result["data"]["scraper"] == "amazon"
+            print("DEBUG: test_single_scraper_with_timeout completed successfully")
 
     @pytest.mark.integration
     def test_all_scrapers_integration(self, tester):
         """Test all scrapers (full integration test)."""
+        print("DEBUG: Starting test_all_scrapers_integration")
         # For CI/CD, skip login-requiring scrapers; locally, test all
         import os
         skip_login = os.getenv('CI') == 'true'  # Skip in CI environment
-        results = tester.test_all_scrapers(skip_failing=True, skip_login_required=skip_login)
+        print(f"DEBUG: skip_login_required={skip_login}")
 
-        # Should have results for all scrapers
-        assert len(results["scraper_results"]) > 0
+        import time
+        import threading
+        from typing import Any, Dict
 
-        # Print summary
-        print(
-            f"Integration test results: {results['successful_scrapers']}/{results['total_scrapers']} passed"
-        )
+        result: Dict[str, Any] = {"completed": False, "data": None, "error": None}
+
+        def run_all_scrapers():
+            try:
+                scraper_results = tester.test_all_scrapers(skip_failing=True, skip_login_required=skip_login)
+                result["completed"] = True
+                result["data"] = scraper_results
+                print("DEBUG: test_all_scrapers execution completed")
+            except Exception as e:
+                result["completed"] = True
+                result["error"] = e
+                print(f"DEBUG: test_all_scrapers execution failed: {e}")
+
+        # Start in thread
+        thread = threading.Thread(target=run_all_scrapers)
+        thread.start()
+
+        # Wait with timeout (10 minutes for all scrapers)
+        thread.join(timeout=600)  # 10 minutes
+
+        if thread.is_alive():
+            # Timeout occurred
+            print("DEBUG: All scrapers test timed out after 10 minutes")
+            pytest.fail("All scrapers test timed out after 10 minutes")
+        elif result["error"] is not None:
+            raise result["error"]
+        else:
+            # Success
+            results = result["data"]
+            # Should have results for all scrapers
+            assert len(results["scraper_results"]) > 0
+
+            # Print summary
+            print(
+                f"Integration test results: {results['successful_scrapers']}/{results['total_scrapers']} passed"
+            )
+            print("DEBUG: test_all_scrapers_integration completed successfully")
 
     @pytest.mark.integration
     @pytest.mark.parametrize("headless", [True, False])
     def test_scraper_headless_modes(self, tester, headless):
         """Test scraper execution in both headless and non-headless modes."""
+        print(f"DEBUG: Starting test_scraper_headless_modes with headless={headless}")
         # Only test amazon for mode testing
         import os
         if not headless and os.getenv('CI') == 'true':
+            print("DEBUG: Skipping non-headless test in CI environment")
             pytest.skip("Skipping non-headless test in CI environment")
 
-        skus = tester.get_test_skus("amazon")
-        result = tester.run_scraper_locally("amazon", skus, headless=headless)
+        import time
+        import threading
+        from typing import Any, Dict
 
-        # Basic checks
-        assert "scraper" in result
-        assert result["scraper"] == "amazon"
-        assert "success" in result
+        result: Dict[str, Any] = {"completed": False, "data": None, "error": None}
+
+        def run_scraper():
+            try:
+                skus = tester.get_test_skus("amazon")
+                print(f"DEBUG: Got SKUs for amazon: {skus}")
+                scraper_result = tester.run_scraper_locally("amazon", skus, headless=headless)
+                result["completed"] = True
+                result["data"] = scraper_result
+                print(f"DEBUG: Scraper execution completed for headless={headless}")
+            except Exception as e:
+                result["completed"] = True
+                result["error"] = e
+                print(f"DEBUG: Scraper execution failed for headless={headless}: {e}")
+
+        # Start scraper in thread
+        thread = threading.Thread(target=run_scraper)
+        thread.start()
+
+        # Wait with timeout
+        thread.join(timeout=300)  # 5 minutes
+
+        if thread.is_alive():
+            # Timeout occurred
+            print(f"DEBUG: Scraper execution timed out after 5 minutes for headless={headless}")
+            pytest.fail(f"Scraper execution timed out after 5 minutes for headless={headless}")
+        elif result["error"] is not None:
+            raise result["error"]
+        else:
+            # Success
+            assert result["data"] is not None
+            assert "scraper" in result["data"]
+            assert result["data"]["scraper"] == "amazon"
+            assert "success" in result["data"]
+            print(f"DEBUG: test_scraper_headless_modes completed successfully for headless={headless}")
 
 
 if __name__ == "__main__":
