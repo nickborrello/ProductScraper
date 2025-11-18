@@ -7,14 +7,10 @@ and executes the scraper using WorkflowExecutor. Results and errors are logged
 for each test run.
 """
 
-import os
-import sys
-import json
-import time
-import logging
+import argparse
 import copy
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
 # Add project root to path
 PROJECT_ROOT = Path(__file__).parent.parent
@@ -32,15 +28,30 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Scraper configs to test
-SCRAPER_CONFIGS = [
-    # 'amazon',
-    # 'central_pet',
-    # 'coastal',
-    # 'mazuri',
+ALL_SCRAPER_CONFIGS = [
+    'amazon',
+    'central_pet',
+    'coastal',
+    'mazuri',
     'orgill',
     'petfoodex',
     'phillips'
 ]
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Run individual scraper tests.")
+    parser.add_argument(
+        "scrapers",
+        nargs="*",
+        default=[],
+        help="List of scraper names to test (e.g., amazon orgill). If none specified, runs all enabled scrapers."
+    )
+    parser.add_argument(
+        "--headless",
+        action="store_true",
+        help="Run browser in headless mode (default: True)"
+    )
+    return parser.parse_args()
 
 def load_test_data() -> Dict[str, Any]:
     """Load test data from JSON file."""
@@ -132,6 +143,16 @@ def test_scraper_config(scraper_name: str, test_data: Dict[str, Any], headless: 
 
 def main():
     """Main function to run all scraper tests."""
+    args = parse_args()
+
+    if args.scrapers:
+        SCRAPER_CONFIGS = [s for s in args.scrapers if s in ALL_SCRAPER_CONFIGS]
+        if not SCRAPER_CONFIGS:
+            logger.error("No valid scrapers specified. Exiting.")
+            return
+    else:
+        SCRAPER_CONFIGS = ALL_SCRAPER_CONFIGS
+
     logger.info("Starting individual scraper tests")
     logger.info(f"Testing configs: {SCRAPER_CONFIGS}")
 
@@ -149,7 +170,7 @@ def main():
     failed = 0
 
     for scraper_name in SCRAPER_CONFIGS:
-        result = test_scraper_config(scraper_name, test_data, headless=True)
+        result = test_scraper_config(scraper_name, test_data, headless=args.headless)
         results[scraper_name] = result
 
         if result["success"]:
@@ -184,7 +205,10 @@ def main():
     for name, result in results.items():
         status = "✅ PASS" if result["success"] else "❌ FAIL"
         exec_time = result["execution_time"]
-        logger.info(f"{name}: {status} ({exec_time:.2f}s)")
+        logger.info(f"{name}: {'PASS' if result['success'] else 'FAIL'} ({exec_time:.2f}s)")
+
+if __name__ == "__main__":
+    main()
 
 if __name__ == "__main__":
     main()
