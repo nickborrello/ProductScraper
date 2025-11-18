@@ -504,7 +504,7 @@ class WorkflowExecutor:
             raise WorkflowExecutionError(f"Input element not found: {selector}")
 
     def _action_click(self, params: Dict[str, Any]):
-        """Click on an element with retry logic and readiness checks."""
+        """Click on an element with proper WebDriverWait and retry logic."""
         selector = params.get("selector")
 
         if not selector:
@@ -515,123 +515,89 @@ class WorkflowExecutor:
 
         logger.debug(f"Attempting to click element: {selector} (locator: {locator_type}, CI: {self.is_ci}, max_retries: {max_retries})")
 
-        last_exception = None
+        # Initial wait for element to be clickable
+        try:
+            WebDriverWait(self.browser.driver, self.timeout).until(
+                EC.element_to_be_clickable((locator_type, selector))
+            )
+            logger.debug("Element is clickable, proceeding to click")
+        except TimeoutException:
+            logger.debug("Initial wait for clickable element failed, entering retry loop")
+            # Retry logic with proper waiting
+            for attempt in range(max_retries):
+                try:
+                    # Use progressively shorter timeout for retries
+                    retry_timeout = max(self.timeout // (2 ** (attempt + 1)), 1)
+                    WebDriverWait(self.browser.driver, retry_timeout).until(
+                        EC.element_to_be_clickable((locator_type, selector))
+                    )
+                    logger.debug(f"Element became clickable on retry {attempt + 1}")
+                    break
+                except TimeoutException:
+                    if attempt == max_retries - 1:
+                        # Debug logging for failed clicks
+                        logger.error(f"Click element not clickable after {max_retries} retries: {selector}")
+                        logger.debug(f"Current page URL: {self.browser.driver.current_url}")
+                        logger.debug(f"Page title: {self.browser.driver.title}")
 
-        for attempt in range(max_retries + 1):
+                        # Try to log some page content for debugging
+                        try:
+                            body_text = self.browser.driver.find_element(By.TAG_NAME, "body").text[:500]
+                            logger.debug(f"Page body preview: {body_text}...")
+                        except Exception as debug_e:
+                            logger.debug(f"Could not get page body: {debug_e}")
+
+                        # Log available elements for debugging
+                        try:
+                            all_elements = self.browser.driver.find_elements(By.CSS_SELECTOR, "*")
+                            logger.debug(f"Total elements on page: {len(all_elements)}")
+
+                            # Try to find similar selectors
+                            if "." in selector or "#" in selector:
+                                similar_selectors = []
+                                for el in all_elements[:100]:  # Check first 100 elements
+                                    try:
+                                        el_classes = el.get_attribute("class") or ""
+                                        el_id = el.get_attribute("id") or ""
+                                        if selector.startswith(".") and selector[1:] in el_classes.split():
+                                            similar_selectors.append(f".{selector[1:]}")
+                                        elif selector.startswith("#") and selector[1:] == el_id:
+                                            similar_selectors.append(selector)
+                                    except:
+                                        pass
+                                if similar_selectors:
+                                    logger.debug(f"Found similar elements: {similar_selectors[:10]}")
+                                else:
+                                    logger.debug("No similar elements found on page")
+                        except Exception as debug_e:
+                            logger.debug(f"Could not analyze page elements: {debug_e}")
+
+                        raise WorkflowExecutionError(f"Element not clickable after {max_retries} retries: {selector}")
+                    logger.debug(f"Retry {attempt + 1} failed, trying again")
+
+        # Now perform the click
+        try:
+            element = self.browser.driver.find_element(locator_type, selector)
+
+            # Scroll element into view if needed
             try:
-                element = self.browser.driver.find_element(locator_type, selector)
+                self.browser.driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'center'});", element)
+                time.sleep(0.5)  # Brief pause after scrolling
+            except Exception as scroll_e:
+                logger.debug(f"Could not scroll element into view: {scroll_e}")
 
-                # Enhanced element readiness checks
-                try:
-                    is_displayed = element.is_displayed()
-                    is_enabled = element.is_enabled()
+            # Attempt click
+            element.click()
+            logger.debug(f"Successfully clicked element: {selector}")
 
-                    # Additional checks for clickability
-                    location = element.location
-                    size = element.size
-                    is_clickable = (is_displayed and is_enabled and
-                                  size['width'] > 0 and size['height'] > 0 and
-                                  location['x'] >= 0 and location['y'] >= 0)
+            # Optional wait after click
+            wait_time = params.get("wait_after", 0)
+            if wait_time > 0:
+                logger.debug(f"Waiting {wait_time}s after click")
+                time.sleep(wait_time)
 
-                    logger.debug(f"Element readiness - displayed: {is_displayed}, enabled: {is_enabled}, clickable: {is_clickable}, size: {size}, location: {location}")
-
-                    if not is_clickable:
-                        if attempt < max_retries:
-                            wait_time = min(2 ** attempt, 5)  # Exponential backoff, max 5s
-                            logger.debug(f"Element not ready for click, waiting {wait_time}s before retry {attempt + 1}/{max_retries}")
-                            time.sleep(wait_time)
-                            continue
-                        else:
-                            logger.warning(f"Element not clickable after {max_retries} attempts: {selector}")
-
-                except Exception as vis_e:
-                    logger.debug(f"Could not check element readiness: {vis_e}")
-
-                # Scroll element into view if needed
-                try:
-                    self.browser.driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'center'});", element)
-                    time.sleep(0.5)  # Brief pause after scrolling
-                except Exception as scroll_e:
-                    logger.debug(f"Could not scroll element into view: {scroll_e}")
-
-                # Attempt click
-                element.click()
-                logger.debug(f"Successfully clicked element: {selector} (attempt {attempt + 1})")
-
-                # Optional wait after click
-                wait_time = params.get("wait_after", 0)
-                if wait_time > 0:
-                    logger.debug(f"Waiting {wait_time}s after click")
-                    time.sleep(wait_time)
-
-                return  # Success, exit the retry loop
-
-            except NoSuchElementException as e:
-                last_exception = e
-                if attempt < max_retries:
-                    wait_time = min(2 ** attempt, 5)
-                    logger.debug(f"Element not found, waiting {wait_time}s before retry {attempt + 1}/{max_retries}: {selector}")
-                    time.sleep(wait_time)
-                    continue
-                else:
-                    # Debug logging for failed clicks
-                    logger.error(f"Click element not found after {max_retries} attempts: {selector}")
-                    logger.debug(f"Current page URL: {self.browser.driver.current_url}")
-                    logger.debug(f"Page title: {self.browser.driver.title}")
-
-                    # Try to log some page content for debugging
-                    try:
-                        body_text = self.browser.driver.find_element(By.TAG_NAME, "body").text[:500]
-                        logger.debug(f"Page body preview: {body_text}...")
-                    except Exception as debug_e:
-                        logger.debug(f"Could not get page body: {debug_e}")
-
-                    # Log available elements for debugging
-                    try:
-                        all_elements = self.browser.driver.find_elements(By.CSS_SELECTOR, "*")
-                        logger.debug(f"Total elements on page: {len(all_elements)}")
-
-                        # Try to find similar selectors
-                        if "." in selector or "#" in selector:
-                            similar_selectors = []
-                            for el in all_elements[:100]:  # Check first 100 elements
-                                try:
-                                    el_classes = el.get_attribute("class") or ""
-                                    el_id = el.get_attribute("id") or ""
-                                    if selector.startswith(".") and selector[1:] in el_classes.split():
-                                        similar_selectors.append(f".{selector[1:]}")
-                                    elif selector.startswith("#") and selector[1:] == el_id:
-                                        similar_selectors.append(selector)
-                                except:
-                                    pass
-                            if similar_selectors:
-                                logger.debug(f"Found similar elements: {similar_selectors[:10]}")
-                            else:
-                                logger.debug("No similar elements found on page")
-                    except Exception as debug_e:
-                        logger.debug(f"Could not analyze page elements: {debug_e}")
-
-                    raise WorkflowExecutionError(f"Click element not found after {max_retries} attempts: {selector}")
-
-            except Exception as click_e:
-                last_exception = click_e
-                if attempt < max_retries:
-                    wait_time = min(2 ** attempt, 5)
-                    logger.debug(f"Click failed, waiting {wait_time}s before retry {attempt + 1}/{max_retries}: {click_e}")
-                    time.sleep(wait_time)
-                    continue
-                else:
-                    logger.error(f"Click failed after {max_retries} attempts: {click_e}")
-                    # Log element details if possible
-                    try:
-                        element = self.browser.driver.find_element(locator_type, selector)
-                        logger.debug(f"Element details - tag: {element.tag_name}, text: {element.text[:100]}...")
-                    except:
-                        pass
-                    raise WorkflowExecutionError(f"Click failed after {max_retries} attempts: {click_e}")
-
-        # This should never be reached, but just in case
-        raise WorkflowExecutionError(f"Click failed: {last_exception}")
+        except Exception as e:
+            raise WorkflowExecutionError(f"Failed to click element after waiting: {e}")
 
     def _action_login(self, params: Dict[str, Any]):
         """Execute login workflow with credentials."""

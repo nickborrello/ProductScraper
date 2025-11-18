@@ -6,44 +6,48 @@ retries: 3
 
 selectors:
   - name: "product_name"
-    selector: "h1"
+    selector: "h2"
     attribute: "text"
   - name: "brand"
-    selector: "a[class*='product-brand']"
+    selector: "h2"
     attribute: "text"
   - name: "weight"
-    selector: "label"
+    selector: "p"
+    attribute: "text"
+  - name: "price"
+    selector: ".price, span.price-item--regular"
     attribute: "text"
   - name: "images"
-    selector: ".carousel-item img, img[id*='product-featured-image'], img[id*='main-product-image'], img[id*='product-image']"
+    selector: "img[src*='cdn.shopify.com']"
     attribute: "src"
     multiple: true
 
 workflows:
-  - action: "navigate"
-    params:
-      url: "https://mazuri.com/pages/search-results-page?q={sku}"
-  - action: "wait"
-    params:
-      selector: "li.snize-product, li.snize-no-products-found, body"
-      timeout: 15
-  - action: "wait"
-    params:
-      seconds: 2
-  - action: "click"
-    params:
-      selector: "//button[contains(text(),'Close') or contains(text(),'Accept') or contains(text(),'Agree') or contains(text(),'OK')]"
-      wait_after: 2
-  - action: "click"
-    params:
-      selector: ".snize-view-link, a[href*='/products/']"
-  - action: "wait"
-    params:
-      selector: "img, h1"
-      timeout: 15
-  - action: "extract"
-    params:
-      fields: ["product_name", "brand", "weight", "images"]
+   - action: "navigate"
+     params:
+       url: "https://mazuri.com/pages/search-results-page?q={sku}"
+   - action: "wait"
+     params:
+       selector: "a[href*='/products/'], body"
+       timeout: 15
+   - action: "wait"
+     params:
+       seconds: 2
+  # Cookie banner doesn't exist on this page, skip this step
+  # - action: "click"
+  #   params:
+  #     selector: "//button[contains(text(),'Close') or contains(text(),'Accept') or contains(text(),'Agree') or contains(text(),'OK')]"
+  #     wait_after: 2
+   - action: "click"
+     params:
+       selector: "a.snize-view-link[href*='/products/']"
+   - action: "wait"
+     params:
+       selector: "img, h2"
+       timeout: 15
+   - action: "extract"
+     params:
+       fields: ["product_name", "brand", "weight", "price", "images"]
 
 anti_detection:
   enable_captcha_detection: false
