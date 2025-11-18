@@ -10,10 +10,12 @@ PROJECT_ROOT = os.path.dirname(
 )
 sys.path.insert(0, PROJECT_ROOT)
 
+from selenium.webdriver.common.by import By
+
 from src.scrapers.executor.workflow_executor import (WorkflowExecutionError,
-                                                     WorkflowExecutor)
-from src.scrapers.models.config import (ScraperConfig, SelectorConfig,
-                                        WorkflowStep)
+                                                      WorkflowExecutor)
+from src.scrapers.models.config import (LoginConfig, ScraperConfig,
+                                         SelectorConfig, WorkflowStep)
 
 
 @pytest.fixture
@@ -371,3 +373,327 @@ class TestWorkflowExecutor:
         results = executor.get_results()
         assert results == {"test": "value"}
         assert results is not executor.results  # Should return a copy
+
+    def test_execute_steps_success(self, sample_config, mock_create_browser, mock_browser):
+        """Test executing specific workflow steps."""
+        mock_element = Mock()
+        mock_element.text = "Test Product"
+        mock_browser.driver.find_element.return_value = mock_element
+
+        executor = WorkflowExecutor(sample_config, headless=True)
+
+        steps = [
+            WorkflowStep(action="navigate", params={"url": "https://example.com"}),
+            WorkflowStep(action="extract_single", params={"field": "product_name", "selector": "product_name"})
+        ]
+
+        result = executor.execute_steps(steps)
+
+        assert result["success"] is True
+        assert result["steps_executed"] == 2
+        assert "product_name" in executor.results
+
+    def test_execute_steps_failure(self, sample_config, mock_create_browser, mock_browser):
+        """Test executing steps with failure."""
+        mock_browser.get.side_effect = Exception("Navigation failed")
+
+        executor = WorkflowExecutor(sample_config, headless=True)
+
+        steps = [WorkflowStep(action="navigate", params={"url": "https://example.com"})]
+
+        with pytest.raises(WorkflowExecutionError, match="Failed to execute step 'navigate'"):
+            executor.execute_steps(steps)
+
+    def test_action_wait_success(self, sample_config, mock_create_browser):
+        """Test wait action."""
+        executor = WorkflowExecutor(sample_config, headless=True)
+
+        with patch("time.sleep") as mock_sleep:
+            executor._action_wait({"seconds": 2})
+            mock_sleep.assert_called_once_with(2)
+
+    def test_action_wait_default(self, sample_config, mock_create_browser):
+        """Test wait action with default timeout."""
+        executor = WorkflowExecutor(sample_config, headless=True)
+
+        with patch("time.sleep") as mock_sleep:
+            executor._action_wait({})
+            mock_sleep.assert_called_once_with(1)
+
+    def test_action_extract_brand_processing(self, sample_config, mock_create_browser, mock_browser):
+        """Test extract_single with brand field processing."""
+        executor = WorkflowExecutor(sample_config, headless=True)
+
+        mock_element = Mock()
+        mock_element.text = "Visit Premium Foods Store"
+        mock_browser.driver.find_element.return_value = mock_element
+
+        params = {"field": "Brand", "selector": "product_name"}
+        executor._action_extract_single(params)
+
+        assert executor.results["Brand"] == "Premium Foods"
+
+    def test_action_extract_weight_processing(self, sample_config, mock_create_browser, mock_browser):
+        """Test extract_single with weight field processing."""
+        executor = WorkflowExecutor(sample_config, headless=True)
+
+        mock_element = Mock()
+        mock_element.text = "25 pounds"
+        mock_browser.driver.find_element.return_value = mock_element
+
+        params = {"field": "Weight", "selector": "product_name"}
+        executor._action_extract_single(params)
+
+        assert executor.results["Weight"] == "25.00 lbs"
+
+    def test_action_extract_weight_ounces_conversion(self, sample_config, mock_create_browser, mock_browser):
+        """Test extract_single with weight ounces to pounds conversion."""
+        executor = WorkflowExecutor(sample_config, headless=True)
+
+        mock_element = Mock()
+        mock_element.text = "32 ounces"
+        mock_browser.driver.find_element.return_value = mock_element
+
+        params = {"field": "Weight", "selector": "product_name"}
+        executor._action_extract_single(params)
+
+        assert executor.results["Weight"] == "2.00 lbs"
+
+    def test_action_extract_multiple_brand_processing(self, sample_config, mock_create_browser, mock_browser):
+        """Test extract_multiple with brand field processing."""
+        executor = WorkflowExecutor(sample_config, headless=True)
+
+        mock_elements = [Mock(), Mock()]
+        mock_elements[0].get_attribute.return_value = "Visit Store A Store"
+        mock_elements[1].get_attribute.return_value = "Visit Store B Store"
+        mock_browser.driver.find_elements.return_value = mock_elements
+
+        params = {"field": "Brand", "selector": "image_urls"}
+        executor._action_extract_multiple(params)
+
+        assert executor.results["Brand"] == ["Store A", "Store B"]
+
+    def test_action_extract_multiple_weight_processing(self, sample_config, mock_create_browser, mock_browser):
+        """Test extract_multiple with weight field processing."""
+        executor = WorkflowExecutor(sample_config, headless=True)
+
+        mock_elements = [Mock(), Mock()]
+        mock_elements[0].get_attribute.return_value = "10 pounds"
+        mock_elements[1].get_attribute.return_value = "20 ounces"
+        mock_browser.driver.find_elements.return_value = mock_elements
+
+        params = {"field": "Weight", "selector": "image_urls"}
+        executor._action_extract_multiple(params)
+
+        assert executor.results["Weight"] == ["10.00 lbs", "1.25 lbs"]
+
+    def test_action_extract_legacy(self, sample_config, mock_create_browser, mock_browser):
+        """Test legacy extract action."""
+        executor = WorkflowExecutor(sample_config, headless=True)
+
+        mock_element = Mock()
+        mock_element.text = "Test Product"
+        mock_browser.driver.find_element.return_value = mock_element
+
+        params = {"fields": ["product_name"]}
+        executor._action_extract(params)
+
+        assert executor.results["product_name"] == "Test Product"
+
+    def test_action_extract_multiple_legacy(self, sample_config, mock_create_browser, mock_browser):
+        """Test legacy extract action with multiple elements."""
+        executor = WorkflowExecutor(sample_config, headless=True)
+
+        mock_elements = [Mock(), Mock()]
+        mock_elements[0].get_attribute.return_value = "url1.jpg"
+        mock_elements[1].get_attribute.return_value = "url2.jpg"
+        mock_browser.driver.find_elements.return_value = mock_elements
+
+        # Update selector config to be multiple
+        executor.selectors["image_urls"].multiple = True
+        params = {"fields": ["image_urls"]}
+        executor._action_extract(params)
+
+        assert executor.results["image_urls"] == ["url1.jpg", "url2.jpg"]
+
+    def test_action_login_success(self, sample_config, mock_create_browser, mock_browser):
+        """Test successful login action."""
+        login_config = ScraperConfig(
+            name="phillips",
+            base_url="https://example.com",
+            timeout=30,
+            retries=3,
+            login=LoginConfig(
+                url="https://example.com/login",
+                username_field="#username",
+                password_field="#password",
+                submit_button="#submit",
+                success_indicator=".dashboard"
+            ),
+            anti_detection=None,
+            test_skus=None
+        )
+
+        with patch("src.scrapers.executor.workflow_executor.WebDriverWait") as mock_wait:
+            mock_wait.return_value.until.return_value = None  # Success indicator found
+
+            executor = WorkflowExecutor(login_config, headless=True)
+
+            # Mock settings manager get method for credentials
+            with patch.object(executor.settings, 'get', side_effect=lambda key, default="": {
+                "phillips_username": "testuser",
+                "phillips_password": "testpass"
+            }.get(key, default)):
+                params = {"scraper_name": "phillips"}
+                executor._action_login(params)
+
+    def test_action_login_missing_credentials(self, sample_config, mock_create_browser):
+        """Test login action with missing credentials."""
+        executor = WorkflowExecutor(sample_config, headless=True)
+
+        params = {"username": "", "password": "", "url": "https://example.com/login",
+                 "username_field": "#user", "password_field": "#pass", "submit_button": "#submit"}
+
+        with pytest.raises(WorkflowExecutionError, match="Login action requires username, password"):
+            executor._action_login(params)
+
+    def test_action_detect_captcha_no_manager(self, sample_config, mock_create_browser):
+        """Test detect_captcha action without anti-detection manager."""
+        executor = WorkflowExecutor(sample_config, headless=True)
+
+        executor._action_detect_captcha({})
+
+        assert executor.results.get("captcha_detected") is None
+
+    def test_action_handle_blocking_no_manager(self, sample_config, mock_create_browser):
+        """Test handle_blocking action without anti-detection manager."""
+        executor = WorkflowExecutor(sample_config, headless=True)
+
+        executor._action_handle_blocking({})
+
+        assert executor.results.get("blocking_handled") is None
+
+    def test_action_rate_limit_no_manager(self, sample_config, mock_create_browser):
+        """Test rate_limit action without anti-detection manager."""
+        executor = WorkflowExecutor(sample_config, headless=True)
+
+        executor._action_rate_limit({})
+
+        assert executor.results.get("session_rotated") is None
+
+    def test_action_simulate_human_no_manager(self, sample_config, mock_create_browser):
+        """Test simulate_human action without anti-detection manager."""
+        executor = WorkflowExecutor(sample_config, headless=True)
+
+        executor._action_simulate_human({})
+
+        assert executor.results.get("session_rotated") is None
+
+    def test_action_rotate_session_no_manager(self, sample_config, mock_create_browser):
+        """Test rotate_session action without anti-detection manager."""
+        executor = WorkflowExecutor(sample_config, headless=True)
+
+        executor._action_rotate_session({})
+
+        assert executor.results.get("session_rotated") is None
+
+    def test_unknown_action(self, sample_config, mock_create_browser):
+        """Test unknown action raises error."""
+        executor = WorkflowExecutor(sample_config, headless=True)
+
+        step = WorkflowStep(action="unknown_action", params={})
+
+        with pytest.raises(WorkflowExecutionError, match="Unknown action: unknown_action"):
+            executor._execute_step(step)
+
+    def test_anti_detection_pre_action_hook_failure(self, sample_config, mock_create_browser):
+        """Test pre-action anti-detection hook failure."""
+        from unittest.mock import Mock
+        mock_anti_detection = Mock()
+        mock_anti_detection.pre_action_hook.return_value = False
+
+        executor = WorkflowExecutor(sample_config, headless=True)
+        executor.anti_detection_manager = mock_anti_detection
+
+        step = WorkflowStep(action="navigate", params={"url": "https://example.com"})
+
+        with pytest.raises(WorkflowExecutionError, match="Pre-action anti-detection check failed"):
+            executor._execute_step(step)
+
+    def test_anti_detection_error_handling_retry(self, sample_config, mock_create_browser, mock_browser):
+        """Test anti-detection error handling with retry."""
+        mock_anti_detection = Mock()
+        mock_anti_detection.handle_error.return_value = True  # Retry
+        mock_anti_detection.pre_action_hook.return_value = True
+        mock_anti_detection.post_action_hook.return_value = None
+
+        executor = WorkflowExecutor(sample_config, headless=True)
+        executor.anti_detection_manager = mock_anti_detection
+
+        # Make navigate fail initially
+        mock_browser.get.side_effect = [Exception("Network error"), None]
+
+        step = WorkflowStep(action="navigate", params={"url": "https://example.com"})
+
+        executor._execute_step(step)
+
+        # Should have called handle_error and retried
+        mock_anti_detection.handle_error.assert_called_once()
+        assert mock_browser.get.call_count == 2
+
+    def test_get_locator_type_xpath(self, sample_config, mock_create_browser):
+        """Test locator type detection for XPath."""
+        executor = WorkflowExecutor(sample_config, headless=True)
+
+        assert executor._get_locator_type("//div[@class='test']") == By.XPATH
+        assert executor._get_locator_type(".//div") == By.XPATH
+
+    def test_get_locator_type_css(self, sample_config, mock_create_browser):
+        """Test locator type detection for CSS."""
+        executor = WorkflowExecutor(sample_config, headless=True)
+
+        assert executor._get_locator_type(".test") == By.CSS_SELECTOR
+        assert executor._get_locator_type("#test") == By.CSS_SELECTOR
+        assert executor._get_locator_type("div.test") == By.CSS_SELECTOR
+
+    def test_extract_value_from_element_href(self, sample_config, mock_create_browser):
+        """Test extracting href attribute."""
+        executor = WorkflowExecutor(sample_config, headless=True)
+
+        mock_element = Mock()
+        mock_element.get_attribute.return_value = "https://example.com"
+
+        result = executor._extract_value_from_element(mock_element, "href")
+        assert result == "https://example.com"
+        mock_element.get_attribute.assert_called_once_with("href")
+
+    def test_extract_value_from_element_src(self, sample_config, mock_create_browser):
+        """Test extracting src attribute."""
+        executor = WorkflowExecutor(sample_config, headless=True)
+
+        mock_element = Mock()
+        mock_element.get_attribute.return_value = "image.jpg"
+
+        result = executor._extract_value_from_element(mock_element, "src")
+        assert result == "image.jpg"
+
+    def test_extract_value_from_element_custom_attribute(self, sample_config, mock_create_browser):
+        """Test extracting custom attribute."""
+        executor = WorkflowExecutor(sample_config, headless=True)
+
+        mock_element = Mock()
+        mock_element.get_attribute.return_value = "custom-value"
+
+        result = executor._extract_value_from_element(mock_element, "data-custom")
+        assert result == "custom-value"
+
+    def test_extract_value_from_element_exception(self, sample_config, mock_create_browser):
+        """Test extracting value when element throws exception."""
+        executor = WorkflowExecutor(sample_config, headless=True)
+
+        mock_element = Mock()
+        mock_element.text = "test"
+        mock_element.get_attribute.side_effect = Exception("Attribute error")
+
+        result = executor._extract_value_from_element(mock_element, "href")
+        assert result is None

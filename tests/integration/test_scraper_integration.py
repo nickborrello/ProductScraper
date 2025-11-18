@@ -63,7 +63,7 @@ class ScraperIntegrationTester:
         return sorted(scrapers)
 
     def run_scraper_locally(
-        self, scraper_name: str, skus: List[str], headless: bool = True
+        self, scraper_name: str, skus: List[str], headless: Optional[bool] = None
     ) -> Dict[str, Any]:
         """
         Run a scraper locally with given SKUs.
@@ -71,11 +71,14 @@ class ScraperIntegrationTester:
         Args:
             scraper_name: Name of the scraper to run
             skus: List of SKUs to scrape
-            headless: Whether to run browser in headless mode
+            headless: Whether to run browser in headless mode (None = use env var)
 
         Returns:
             Dict with results and any errors
         """
+        if headless is None:
+            headless = os.getenv('SCRAPER_HEADLESS', 'true').lower() == 'true'
+
         results = {
             "scraper": scraper_name,
             "skus": skus,
@@ -385,26 +388,92 @@ class TestScraperIntegration:
         """Create a ScraperIntegrationTester instance."""
         return ScraperIntegrationTester()
 
-    def test_get_available_scrapers(self, tester):
-        """Test that we can discover available scrapers."""
-        scrapers = tester.get_available_scrapers()
-        assert len(scrapers) > 0, "No scrapers found"
-        assert "amazon" in scrapers, "Amazon scraper should be available"
+    @pytest.fixture
+    def available_scrapers(self, tester):
+        """Get list of available scrapers."""
+        return tester.get_available_scrapers()
 
-        print(f"Found scrapers: {scrapers}")
+    @pytest.fixture
+    def scraper_cleanup(self):
+        """Fixture for scraper cleanup after tests."""
+        cleanup_items = []
+
+        yield cleanup_items
+
+        # Cleanup after test
+        for item in cleanup_items:
+            if hasattr(item, 'cleanup'):
+                item.cleanup()
+            elif hasattr(item, 'close'):
+                item.close()
+            elif hasattr(item, 'quit'):
+                item.quit()
+
+    def test_get_available_scrapers(self, available_scrapers):
+        """Test that we can discover available scrapers."""
+        assert len(available_scrapers) > 0, "No scrapers found"
+        assert "amazon" in available_scrapers, "Amazon scraper should be available"
+
+        print(f"Found scrapers: {available_scrapers}")
 
     @pytest.mark.integration
-    def test_single_scraper_execution(self, tester):
-        """Test running a single scraper (integration test)."""
-        # Use amazon as it's most likely to work
-        result = tester.test_single_scraper("amazon")
+    @pytest.mark.parametrize("scraper_name", [
+        "amazon",  # Most reliable for testing
+        "central_pet",
+        "coastal",
+        "mazuri",
+    ])
+    def test_scraper_execution_parametrized(self, tester, scraper_name):
+        """Test running individual scrapers with parametrization."""
+        # Skip login-requiring scrapers in CI
+        import os
+        if os.getenv('CI') == 'true' and scraper_name in {"orgill", "petfoodex", "phillips"}:
+            pytest.skip(f"Skipping {scraper_name} in CI (requires login)")
+
+        result = tester.test_single_scraper(scraper_name)
 
         # Basic checks
         assert "scraper" in result
-        assert result["scraper"] == "amazon"
+        assert result["scraper"] == scraper_name
 
         # Print results for debugging
-        print(f"Test result: {result['overall_success']}")
+        print(f"Test result for {scraper_name}: {result['overall_success']}")
+
+    @pytest.mark.integration
+    def test_single_scraper_with_timeout(self, tester):
+        """Test running a single scraper with timeout handling."""
+        import time
+        import threading
+        from typing import Any, Dict
+
+        result: Dict[str, Any] = {"completed": False, "data": None, "error": None}
+
+        def run_scraper():
+            try:
+                scraper_result = tester.test_single_scraper("amazon")
+                result["completed"] = True
+                result["data"] = scraper_result
+            except Exception as e:
+                result["completed"] = True
+                result["error"] = e
+
+        # Start scraper in thread
+        thread = threading.Thread(target=run_scraper)
+        thread.start()
+
+        # Wait with timeout
+        thread.join(timeout=300)  # 5 minutes
+
+        if thread.is_alive():
+            # Timeout occurred
+            pytest.fail("Scraper execution timed out after 5 minutes")
+        elif result["error"] is not None:
+            raise result["error"]
+        else:
+            # Success
+            assert result["data"] is not None
+            assert "scraper" in result["data"]
+            assert result["data"]["scraper"] == "amazon"
 
     @pytest.mark.integration
     def test_all_scrapers_integration(self, tester):
@@ -421,6 +490,23 @@ class TestScraperIntegration:
         print(
             f"Integration test results: {results['successful_scrapers']}/{results['total_scrapers']} passed"
         )
+
+    @pytest.mark.integration
+    @pytest.mark.parametrize("headless", [True, False])
+    def test_scraper_headless_modes(self, tester, headless):
+        """Test scraper execution in both headless and non-headless modes."""
+        # Only test amazon for mode testing
+        import os
+        if not headless and os.getenv('CI') == 'true':
+            pytest.skip("Skipping non-headless test in CI environment")
+
+        skus = tester.get_test_skus("amazon")
+        result = tester.run_scraper_locally("amazon", skus, headless=headless)
+
+        # Basic checks
+        assert "scraper" in result
+        assert result["scraper"] == "amazon"
+        assert "success" in result
 
 
 if __name__ == "__main__":

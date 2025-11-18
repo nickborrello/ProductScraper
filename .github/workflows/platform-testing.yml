@@ -1,9 +1,9 @@
-name: Scraper Testing and Quality Assurance
+name: Scraper Integration Testing and Quality Assurance
 
-# This workflow automates testing of scraper functionality in a local environment
+# This workflow automates pytest-based testing of scraper functionality in a local environment
 # and performs data quality checks to ensure scraper reliability and data integrity.
 # It runs on pushes to scraper-related code, daily schedules, and manual triggers.
-# 
+#
 # For push events, it intelligently tests only the scrapers whose configurations
 # have been modified, improving CI/CD efficiency for incremental changes.
 
@@ -96,22 +96,26 @@ jobs:
           fi
         fi
 
-    - name: Run local tests
+    - name: Run all scraper integration tests
       if: steps.scrapers.outputs.scrapers == 'all'
       run: |
-        uv run python tests/scraper_testing.py --all --verbose
+        uv run pytest tests/integration/test_scraper_integration.py::TestScraperIntegration::test_all_scrapers_integration -v --tb=short
       env:
         PYTHONPATH: ${{ github.workspace }}
+        SCRAPER_HEADLESS: true
+        CI: true
 
-    - name: Run specific scraper tests
+    - name: Run specific scraper integration tests
       if: steps.scrapers.outputs.scrapers != 'all'
       run: |
-        for scraper in $(echo "${{ github.event.inputs.scrapers }}" | tr ',' '\n'); do
+        for scraper in $(echo "${{ steps.scrapers.outputs.scrapers }}" | tr ',' '\n'); do
           echo "Testing scraper: $scraper"
-          uv run python tests/scraper_testing.py --scraper "$scraper" --verbose
+          uv run pytest tests/integration/test_scraper_integration.py::TestScraperIntegration::test_scraper_execution_parametrized -k "$scraper" -v --tb=short
         done
       env:
         PYTHONPATH: ${{ github.workspace }}
+        SCRAPER_HEADLESS: true
+        CI: true
 
     - name: Generate test report
       if: always()
@@ -177,42 +181,7 @@ jobs:
 
     - name: Run data quality analysis
       run: |
-        uv run python -c "
-        import sys
-        from pathlib import Path
-        
-        # Add project root to path
-        PROJECT_ROOT = Path('.')
-        sys.path.insert(0, str(PROJECT_ROOT))
-        
-        from tests.fixtures.scraper_validator import ScraperValidator
-        from src.scrapers.parser.yaml_parser import ScraperConfigParser
-        
-        validator = ScraperValidator()
-        
-        print('🔍 Data Quality Analysis')
-        print('=' * 50)
-        
-        # Get all scraper configs
-        configs_dir = PROJECT_ROOT / 'src' / 'scrapers' / 'configs'
-        parser = ScraperConfigParser()
-        
-        for config_file in configs_dir.glob('*.yaml'):
-            scraper_name = config_file.stem
-            print(f'\\n📊 {scraper_name.upper()}')
-            print('-' * 30)
-            
-            try:
-                config = parser.load_from_file(config_file)
-                test_skus = config.test_skus or []
-                print(f'Test SKUs: {len(test_skus)} configured')
-                print(f'Base URL: {config.base_url}')
-                print(f'Timeout: {config.timeout}s')
-            except Exception as e:
-                print(f'Error loading config: {e}')
-        
-        print('\\n✅ Data quality check completed')
-        "
+        uv run pytest tests/integration/test_data_quality.py -v --tb=short
 
     - name: Archive test results
       run: |

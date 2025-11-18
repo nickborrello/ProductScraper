@@ -34,6 +34,9 @@ def get_test_skus(scraper_name: str):
     return config.test_skus or ["035585499741"]
 
 
+import pytest
+
+
 def test_data_quality_gate():
     """
     Tests that the data quality scorer meets a minimum quality threshold.
@@ -72,3 +75,28 @@ def test_data_quality_gate():
     assert (
         quality_rate >= 0.6
     ), f"Quality gate failed: only {quality_rate:.1%} records pass validation"
+
+
+def test_scraper_config_validation():
+    """
+    Test that all scraper configurations can be loaded and have required fields.
+    """
+    parser = ScraperConfigParser()
+    configs_dir = PROJECT_ROOT / "src" / "scrapers" / "configs"
+
+    for config_file in configs_dir.glob("*.yaml"):
+        scraper_name = config_file.stem
+        print(f"\n📊 {scraper_name.upper()}")
+        print("-" * 30)
+
+        # Should not raise exception
+        config = parser.load_from_file(config_file)
+
+        # Basic validation
+        assert config.base_url, f"Scraper {scraper_name} missing base_url"
+        assert config.workflows, f"Scraper {scraper_name} missing workflows"
+        assert isinstance(config.test_skus, list), f"Scraper {scraper_name} test_skus should be list"
+
+        print(f"Test SKUs: {len(config.test_skus or [])} configured")
+        print(f"Base URL: {config.base_url}")
+        print(f"Timeout: {config.timeout}s")

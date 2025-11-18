@@ -49,9 +49,26 @@ def sample_low_quality_record():
 
 
 @pytest.fixture
-def sample_mixed_quality_records(sample_high_quality_record, sample_low_quality_record):
+def sample_medium_quality_record():
+    """Sample medium-quality product record for testing."""
+    return {
+        "SKU": "MEDIUM001",
+        "Name": "Dog Food - Beef Flavor",
+        "Price": "29.99",
+        "Images": "https://example.com/image1.jpg,invalid-url",
+        "Weight": "15 lb",
+        "Product_Field_16": "Generic Pet Foods",
+        "Product_Field_24": "Dog Food",
+        "Product_Field_25": "",  # Missing some fields
+        "Product_Field_32": "RELATED001",
+        "last_updated": "2025-11-15 12:00:00",
+    }
+
+
+@pytest.fixture
+def sample_mixed_quality_records(sample_high_quality_record, sample_medium_quality_record, sample_low_quality_record):
     """List of mixed quality records."""
-    return [sample_high_quality_record, sample_low_quality_record]
+    return [sample_high_quality_record, sample_medium_quality_record, sample_low_quality_record]
 
 
 @pytest.fixture

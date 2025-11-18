@@ -14,6 +14,30 @@ from src.core.data_quality_scorer import (DataQualityScorer,
 class TestScraperValidation:
     """Integration tests for validating scraper outputs with quality scoring."""
 
+    @pytest.mark.parametrize("quality_level,expected_score_min,expected_high_quality", [
+        ("high", 85.0, True),
+        ("medium", 70.0, False),
+        ("low", 0.0, False),
+    ])
+    def test_record_quality_validation_parametrized(
+        self, data_quality_scorer, quality_level, expected_score_min, expected_high_quality,
+        sample_high_quality_record, sample_medium_quality_record, sample_low_quality_record
+    ):
+        """Test record validation across different quality levels."""
+        # Select the appropriate sample record
+        if quality_level == "high":
+            record = sample_high_quality_record
+        elif quality_level == "medium":
+            record = sample_medium_quality_record
+        else:  # low
+            record = sample_low_quality_record
+
+        score, details = data_quality_scorer.score_record(record)
+
+        assert score >= expected_score_min, f"{quality_level}-quality record scored too low: {score}"
+        assert is_product_high_quality(record) == expected_high_quality, \
+            f"{quality_level}-quality record high-quality detection incorrect"
+
     def test_high_quality_record_validation(
         self, data_quality_scorer, sample_high_quality_record
     ):

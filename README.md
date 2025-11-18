@@ -83,8 +83,7 @@ python src/main.py --run gui
 
 - **Scraping Operations**: Start scraping with progress monitoring
 - **Database Management**: Refresh from XML, download XML, view/edit products
-- **Testing Framework**: Run comprehensive tests with quality validation
-- **Testing Framework**: Comprehensive local testing with quality validation
+- **Testing Framework**: Run comprehensive tests with quality validation and performance monitoring
 
 ### Command-Line Interface
 
@@ -95,36 +94,57 @@ For automation and advanced usage:
 python src/main.py --run scraper --file path/to/your/excel_file.xlsx
 
 # Run comprehensive tests
-python tests/test_scrapers.py --all
+pytest
 
-# Run comprehensive testing
-python tests/platform_test_scrapers.py --all
+# Run scraper integration tests
+python scripts/run_scraper_tests.py --all
 ```
 
 ### Testing Framework
 
-The enhanced testing framework provides multiple testing modes:
+The project uses a comprehensive pytest-based testing framework with unit, integration, and performance tests:
 
 ```bash
-# Local testing (default, no API required)
-python tests/test_scrapers.py --scraper amazon
+# Run all tests
+pytest
 
-# Run comprehensive testing
-python tests/platform_test_scrapers.py --all
+# Run unit tests only
+pytest tests/unit/
 
-# Quality validation
-python -m pytest tests/unit/test_data_quality_scorer.py
+# Run integration tests only
+pytest tests/integration/
 
-# Performance testing
-python -m pytest tests/unit/test_performance.py
+# Run specific test file
+pytest tests/unit/test_data_quality_scorer.py
+
+# Run tests with coverage
+pytest --cov=src
+
+# Run tests with verbose output
+pytest -v
+```
+
+**Scraper Testing:**
+
+```bash
+# Test specific scraper using CLI script
+python scripts/run_scraper_tests.py --scraper amazon
+
+# Test all scrapers
+python scripts/run_scraper_tests.py --all
+
+# List available scrapers
+python scripts/run_scraper_tests.py --list
 ```
 
 **Testing Features:**
 
-- **Local Testing**: Comprehensive scraper validation with quality scoring
-- **Quality Scoring**: >85% threshold validation for data completeness and accuracy
+- **Unit Tests**: Individual component testing with comprehensive coverage
+- **Integration Tests**: End-to-end scraper validation with real browser execution
+- **Data Quality Scoring**: >85% threshold validation for data completeness and accuracy
 - **Performance Monitoring**: Ensures <5 min execution with <500MB memory usage
 - **CI/CD Integration**: Automated testing in GitHub Actions workflows
+- **Headless/Local Modes**: Flexible testing environments for development and CI
 
 ## Project Structure
 

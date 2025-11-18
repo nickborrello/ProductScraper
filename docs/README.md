@@ -127,22 +127,70 @@ anti_detection:
 
 ## Testing and Validation
 
-### Modular System Testing
-```bash
-# Run modular scraper tests
-python -m pytest tests/unit/test_workflow_executor.py
-python -m pytest tests/integration/test_scraper_integration.py
+### Comprehensive Testing Framework
 
-# Test specific scraper
-python test_migrated_scrapers.py --scraper amazon
+The project uses pytest for comprehensive testing across multiple levels:
+
+#### Unit Testing
+```bash
+# Run all unit tests
+pytest tests/unit/
+
+# Run specific unit test modules
+pytest tests/unit/test_workflow_executor.py
+pytest tests/unit/test_data_quality_scorer.py
+pytest tests/unit/test_classification.py
 ```
 
+#### Integration Testing
+```bash
+# Run all integration tests
+pytest tests/integration/
+
+# Run scraper integration tests
+pytest tests/integration/test_scraper_integration.py
+
+# Run data quality validation
+pytest tests/integration/test_data_quality.py
+```
+
+#### Scraper-Specific Testing
+```bash
+# Test specific scraper using CLI script
+python scripts/run_scraper_tests.py --scraper amazon
+
+# Test all scrapers
+python scripts/run_scraper_tests.py --all
+
+# List available scrapers
+python scripts/run_scraper_tests.py --list
+```
+
+#### Advanced Testing Options
+```bash
+# Run tests with coverage reporting
+pytest --cov=src --cov-report=html
+
+# Run performance tests (marked with @pytest.mark.slow)
+pytest -m slow --durations=10
+
+# Run tests in headless mode (CI default)
+SCRAPER_HEADLESS=true pytest tests/integration/
+
+# Run tests with verbose output
+pytest -v --tb=long
+```
 
 ### Data Quality Validation
-- Field coverage analysis
-- Data format validation
-- Cross-reference verification
-- Anti-detection effectiveness monitoring
+
+The testing framework includes comprehensive data quality validation:
+
+- **Field Coverage Analysis**: Ensures all expected fields are extracted
+- **Data Format Validation**: Validates data types and formats
+- **Quality Scoring**: >85% threshold for data completeness and accuracy
+- **Cross-Reference Verification**: Validates data consistency across sources
+- **Anti-Detection Effectiveness**: Monitors scraper reliability and blocking detection
+- **Performance Monitoring**: <5 min execution time with <500MB memory usage
 
 ## CI/CD Integration
 
