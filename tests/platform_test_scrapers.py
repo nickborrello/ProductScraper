@@ -9,11 +9,11 @@ This script provides an easy way to:
 - Validate data format and quality
 
 Usage:
-    python platform_test_scrapers.py --all                    # Test all scrapers (local mode)
-    python platform_test_scrapers.py --scraper amazon         # Test specific scraper (local mode)
+    python platform_test_scrapers.py --all --local                    # Test all scrapers (local mode)
+    python platform_test_scrapers.py --scraper amazon --local         # Test specific scraper (local mode)
     python platform_test_scrapers.py --scraper amazon --skus B07G5J5FYP B08N5WRWNW
-    python platform_test_scrapers.py --list                   # List available scrapers
-    python platform_test_scrapers.py --validate amazon        # Validate scraper structure only
+    python platform_test_scrapers.py --list                           # List available scrapers
+    python platform_test_scrapers.py --validate amazon                # Validate scraper structure only
 """
 import argparse
 import json
@@ -29,6 +29,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from src.core.platform_testing_integration import \
     PlatformScraperIntegrationTester
+from src.core.platform_testing_client import TestingMode
 from tests.fixtures.scraper_validator import ScraperValidator
 
 
@@ -92,10 +93,10 @@ def validate_scraper_structure(scraper_name: str):
 
 
 async def test_single_scraper(
-    scraper_name: str, skus: Optional[List[str]] = None, verbose: bool = False
+    scraper_name: str, skus: Optional[List[str]] = None, verbose: bool = False, mode: TestingMode = TestingMode.LOCAL
 ):
     """Test a single scraper."""
-    tester = PlatformScraperIntegrationTester()
+    tester = PlatformScraperIntegrationTester(mode=mode)
 
     # First validate structure
     if not validate_scraper_structure(scraper_name):
@@ -130,9 +131,9 @@ async def test_single_scraper(
         return False
 
 
-async def test_all_scrapers(verbose: bool = False):
+async def test_all_scrapers(verbose: bool = False, mode: TestingMode = TestingMode.LOCAL):
     """Test all available scrapers."""
-    tester = PlatformScraperIntegrationTester()
+    tester = PlatformScraperIntegrationTester(mode=mode)
     scrapers = tester.get_available_scrapers()
 
     # Filter out login-requiring scrapers if in CI environment
@@ -206,12 +207,12 @@ async def main():
         description="Test and debug ProductScraper scrapers in local or platform mode",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""Examples:
-   python platform_test_scrapers.py --all                    # Test all scrapers (local)
-   python platform_test_scrapers.py --scraper amazon         # Test amazon scraper (local)
-   python platform_test_scrapers.py --scraper amazon --skus B07G5J5FYP B08N5WRWNW
-   python platform_test_scrapers.py --list                   # List available scrapers
-   python platform_test_scrapers.py --validate amazon        # Validate structure only
-         """,
+    python platform_test_scrapers.py --all --local                    # Test all scrapers (local)
+    python platform_test_scrapers.py --scraper amazon --local         # Test amazon scraper (local)
+    python platform_test_scrapers.py --scraper amazon --skus B07G5J5FYP B08N5WRWNW
+    python platform_test_scrapers.py --list                           # List available scrapers
+    python platform_test_scrapers.py --validate amazon                # Validate structure only
+          """,
     )
 
     parser.add_argument(
@@ -232,8 +233,16 @@ async def main():
         action="store_true",
         help="Show detailed output and debug information",
     )
+    parser.add_argument(
+        "--local",
+        action="store_true",
+        help="Run tests in local mode (default)",
+    )
 
     args = parser.parse_args()
+
+    # Determine testing mode
+    mode = TestingMode.LOCAL  # Default to local mode
 
     # Handle different modes
     if args.list:
@@ -245,11 +254,11 @@ async def main():
         return 0 if success else 1
 
     if args.scraper:
-        success = await test_single_scraper(args.scraper, args.skus, args.verbose)
+        success = await test_single_scraper(args.scraper, args.skus, args.verbose, mode)
         return 0 if success else 1
 
     if args.all:
-        success = await test_all_scrapers(args.verbose)
+        success = await test_all_scrapers(args.verbose, mode)
         return 0 if success else 1
 
     # No arguments provided
