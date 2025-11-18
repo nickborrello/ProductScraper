@@ -1,0 +1,76 @@
+{
+  "name": "petfoodex-scraper",
+  "version": "0.1.0",
+  "buildTag": "latest",
+  "env": null,
+  "template": {
+    "name": "python-start",
+    "version": "0.1.0"
+  },
+  "configuration": {
+    "input": {
+      "title": "Pet Food Experts Scraper Input",
+      "type": "object",
+      "schema": {
+        "title": "Pet Food Experts Scraper Input",
+        "type": "object",
+        "description": "Input for Pet Food Experts product scraper",
+        "properties": {
+          "skus": {
+            "title": "SKUs",
+            "type": "array",
+            "description": "List of SKUs to scrape from Pet Food Experts",
+            "items": {
+              "type": "string"
+            },
+            "editor": "stringList"
+          }
+        },
+        "required": ["skus"]
+      },
+      "default": {
+        "skus": []
+      }
+    },
+    "output": {
+      "title": "Pet Food Experts Scraper Output",
+      "type": "object",
+      "schema": {
+        "title": "Pet Food Experts Scraper Output",
+        "type": "object",
+        "description": "Output from Pet Food Experts product scraper",
+        "properties": {
+          "SKU": {
+            "title": "SKU",
+            "type": "string",
+            "description": "Product SKU"
+          },
+          "Name": {
+            "title": "Name",
+            "type": "string",
+            "description": "Product name"
+          },
+          "Brand": {
+            "title": "Brand",
+            "type": "string",
+            "description": "Product brand"
+          },
+          "Weight": {
+            "title": "Weight",
+            "type": "string",
+            "description": "Product weight in pounds"
+          },
+          "Image URLs": {
+            "title": "Image URLs",
+            "type": "array",
+            "description": "List of product image URLs",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["SKU", "Name", "Brand", "Weight", "Image URLs"]
+      }
+    }
+  }
+}

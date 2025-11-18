@@ -1,0 +1,18 @@
+{
+  "actorSpecification": 1,
+  "name": "petfoodex-scraper",
+  "title": "Pet Food Experts Product Scraper",
+  "description": "Scrape product data from Pet Food Experts for given SKUs.",
+  "version": "0.0",
+  "buildTag": "latest",
+  "meta": {
+    "templateId": "python-start",
+    "model": "<FILL-IN-MODEL>"
+  },
+  "input": "./input_schema.json",
+  "output": "./output_schema.json",
+  "storages": {
+    "dataset": "./dataset_schema.json"
+  },
+  "dockerfile": "../Dockerfile"
+}
