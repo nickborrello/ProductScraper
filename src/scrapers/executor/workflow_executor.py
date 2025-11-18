@@ -1113,13 +1113,41 @@ class WorkflowExecutor:
         """
         Explicitly check if the current page indicates a 'no results' scenario.
         Sets 'no_results_found' in self.results to True if detected.
+        Uses both config validation patterns and failure classifier.
         """
         logger.info("Performing explicit 'check_no_results' action.")
-        # Use a high confidence threshold for explicit check
-        min_confidence = params.get("min_confidence", 0.7)
+        min_confidence = params.get("min_confidence", 0.5)  # Lower threshold for explicit check
 
-        # Pass a context that can be used by the classifier
-        # We indicate it's an explicit check, not triggered by a timeout
+        # First, check using config validation patterns if available
+        config_no_results = getattr(self.config, 'validation', {}).get('no_results_selectors', [])
+        config_text_patterns = getattr(self.config, 'validation', {}).get('no_results_text_patterns', [])
+
+        try:
+            page_source = self.browser.driver.page_source.lower()
+            page_title = self.browser.driver.title.lower()
+
+            # Check config selectors
+            for selector in config_no_results:
+                try:
+                    elements = self.browser.driver.find_elements(By.CSS_SELECTOR, selector)
+                    if elements:
+                        logger.info(f"✅ No results detected via config selector: {selector}")
+                        self.results["no_results_found"] = True
+                        return
+                except Exception as e:
+                    logger.debug(f"Error checking selector {selector}: {e}")
+
+            # Check config text patterns
+            for pattern in config_text_patterns:
+                if pattern.lower() in page_source or pattern.lower() in page_title:
+                    logger.info(f"✅ No results detected via config text pattern: {pattern}")
+                    self.results["no_results_found"] = True
+                    return
+
+        except Exception as e:
+            logger.debug(f"Error during config-based no-results check: {e}")
+
+        # Fallback to failure classifier
         classification_context = {"action": "check_no_results"}
         if "http_status" in self.results:
             classification_context["status_code"] = self.results["http_status"]
@@ -1134,16 +1162,13 @@ class WorkflowExecutor:
         ):
             self.results["no_results_found"] = True
             logger.info(
-                f"✅ 'No results' explicitly detected with confidence "
+                f"✅ 'No results' detected via classifier with confidence "
                 f"{failure_context.confidence:.2f}."
             )
-            # Optionally, raise an error or stop execution if configured
-            if params.get("fail_on_no_results", False):
-                raise WorkflowExecutionError("Explicitly detected 'no results' page.")
         else:
             self.results["no_results_found"] = False
             logger.debug(
-                f"No explicit 'no results' detected (Type: {failure_context.failure_type.value}, "
+                f"No 'no results' detected (Type: {failure_context.failure_type.value}, "
                 f"Confidence: {failure_context.confidence:.2f})."
             )
 
