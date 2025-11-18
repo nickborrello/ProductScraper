@@ -34,7 +34,6 @@ login:
   username_field: "#userName"
   password_field: "#password"
   submit_button: "button[data-test-selector='signIn_submit']"
-  success_indicator: "a[href*='logout']"
 
 anti_detection:
   enable_captcha_detection: false

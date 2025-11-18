@@ -185,7 +185,7 @@ class SettingsManager:
     @property
     def petfoodex_credentials(self) -> tuple[str, str]:
         """Get Petfoodex credentials as (username, password)."""
-        return self.get("petfoodex_username"), self.get("petfoodex_password")
+        return self.get("petfood_username"), self.get("petfood_password")
 
 
     @property

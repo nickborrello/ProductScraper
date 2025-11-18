@@ -1,5 +1,5 @@
 name: "orgill"
-test_skus: ["placeholder_sku"]
+test_skus: ["037193347322"]
 base_url: "https://www.orgill.com"
 timeout: 30
 retries: 3
@@ -18,7 +18,7 @@ selectors:
     selector: "//strong[contains(text(),'Weight(lb):')]/following-sibling::*[1]"
     attribute: "text"
   - name: "images"
-    selector: "img[contains(@src, 'images.orgill.com/websmall/')]"
+    selector: "img[src*='images.orgill.com/websmall/']"
     attribute: "src"
     multiple: true
 

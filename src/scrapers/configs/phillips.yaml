@@ -1,5 +1,5 @@
 name: "phillips"
-test_skus: ["placeholder_sku"]
+test_skus: ["072705115310"]
 base_url: "https://shop.phillipspet.com"
 timeout: 30
 retries: 3
