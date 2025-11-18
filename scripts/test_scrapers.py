@@ -1,12 +1,21 @@
 #!/usr/bin/env python3
 """
-Test script to run each scraper config individually using WorkflowExecutor.
+Test script to run scraper configs using WorkflowExecutor.
 
 This script loads each scraper configuration, gets the test SKU from test data,
 and executes the scraper using WorkflowExecutor. Results and errors are logged
 for each test run.
+
+Usage:
+    python test_scrapers.py --all                    # Test all scrapers
+    python test_scrapers.py --scrapers amazon orgill # Test specific scrapers
+    python test_scrapers.py                          # Default: test all scrapers
 """
 
+import sys
+import json
+import time
+import logging
 import argparse
 import copy
 from pathlib import Path
@@ -39,12 +48,16 @@ ALL_SCRAPER_CONFIGS = [
 ]
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Run individual scraper tests.")
+    parser = argparse.ArgumentParser(description="Run scraper tests.")
     parser.add_argument(
-        "scrapers",
-        nargs="*",
-        default=[],
-        help="List of scraper names to test (e.g., amazon orgill). If none specified, runs all enabled scrapers."
+        "--scrapers",
+        nargs='+',
+        help="List of scraper names to test (space-separated, e.g., --scrapers amazon orgill)"
+    )
+    parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Test all scrapers"
     )
     parser.add_argument(
         "--headless",
@@ -145,15 +158,16 @@ def main():
     """Main function to run all scraper tests."""
     args = parse_args()
 
-    if args.scrapers:
-        SCRAPER_CONFIGS = [s for s in args.scrapers if s in ALL_SCRAPER_CONFIGS]
-        if not SCRAPER_CONFIGS:
-            logger.error("No valid scrapers specified. Exiting.")
-            return
-    else:
+    if args.all or not args.scrapers:
         SCRAPER_CONFIGS = ALL_SCRAPER_CONFIGS
+    else:
+        SCRAPER_CONFIGS = args.scrapers
+        invalid = [s for s in SCRAPER_CONFIGS if s not in ALL_SCRAPER_CONFIGS]
+        if invalid:
+            logger.error(f"Invalid scraper names: {invalid}. Available scrapers: {ALL_SCRAPER_CONFIGS}")
+            return
 
-    logger.info("Starting individual scraper tests")
+    logger.info("Starting scraper tests")
     logger.info(f"Testing configs: {SCRAPER_CONFIGS}")
 
     # Load test data
@@ -206,9 +220,6 @@ def main():
         status = "✅ PASS" if result["success"] else "❌ FAIL"
         exec_time = result["execution_time"]
         logger.info(f"{name}: {'PASS' if result['success'] else 'FAIL'} ({exec_time:.2f}s)")
-
-if __name__ == "__main__":
-    main()
 
 if __name__ == "__main__":
     main()
