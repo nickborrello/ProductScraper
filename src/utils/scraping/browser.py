@@ -50,6 +50,21 @@ class ScraperBrowser:
             devtools_port=devtools_port,
         )
 
+        # Set Chrome binary location for CI environments
+        import os
+        is_ci = os.getenv('CI') == 'true'
+        if is_ci:
+            # Try common Chrome binary locations
+            chrome_paths = [
+                "/usr/bin/google-chrome-stable",
+                "/usr/bin/google-chrome",
+                "/opt/google/chrome/chrome"
+            ]
+            for path in chrome_paths:
+                if os.path.exists(path):
+                    options.binary_location = path
+                    break
+
         # Add custom options if provided
         if custom_options:
             for option in custom_options:

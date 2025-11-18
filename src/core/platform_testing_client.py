@@ -47,18 +47,20 @@ class PlatformTestingClient:
     Provides interface for local testing only.
     """
 
-    def __init__(self, mode: TestingMode = TestingMode.LOCAL, **kwargs):
+    def __init__(self, mode: TestingMode = TestingMode.LOCAL, headless: bool = True, **kwargs):
         """
         Initialize the testing client.
 
         Args:
             mode: Testing mode (only LOCAL supported)
+            headless: Whether to run browser in headless mode
             **kwargs: Additional arguments (ignored)
         """
         if mode != TestingMode.LOCAL:
             raise ValueError("Only LOCAL testing mode is supported")
 
         self.mode = mode
+        self.headless = headless
 
     async def __aenter__(self):
         """Enter async context."""
@@ -103,7 +105,7 @@ class PlatformTestingClient:
             ScraperIntegrationTester
 
         tester = ScraperIntegrationTester()
-        local_results = tester.run_scraper_locally(scraper_name, skus)
+        local_results = tester.run_scraper_locally(scraper_name, skus, headless=self.headless)
 
         # Convert to unified format
         results = {

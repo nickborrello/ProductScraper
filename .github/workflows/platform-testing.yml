@@ -3,17 +3,24 @@ name: Scraper Platform Testing and Quality Assurance
 # This workflow automates testing of scraper functionality in a local environment
 # and performs data quality checks to ensure scraper reliability and data integrity.
 # It runs on pushes to scraper-related code, daily schedules, and manual triggers.
+# 
+# For push events, it intelligently tests only the scrapers whose configurations
+# have been modified, improving CI/CD efficiency for incremental changes.
 
 on:
   push:
     branches: [ main, develop ]
     paths:
       - 'src/scrapers/**'
-      - 'src/scrapers/config/**'
+      - 'src/scrapers/configs/**'
       - 'src/scrapers/executor/**'
       - 'src/scrapers/models/**'
       - 'src/scrapers/parser/**'
       - 'src/scrapers/schemas/**'
+      - 'tests/fixtures/scraper_validator.py'
+      - 'tests/integration/test_scraper_integration.py'
+      - 'tests/integration/test_data_quality.py'
+      - 'src/core/platform_testing_integration.py'
       - '.github/workflows/platform-testing.yml'
     # Triggers on changes to scraper-related files in main/develop branches
   schedule:
@@ -22,7 +29,7 @@ on:
   workflow_dispatch:
     inputs:
       scrapers:
-        description: 'Comma-separated list of scrapers to test (leave empty to test all scrapers)'
+        description: 'Comma-separated list of scrapers to test (leave empty for automatic detection of changed configs)'
         required: false
         default: ''
 
@@ -38,6 +45,15 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
+
+    - name: Install Chrome
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y wget gnupg ca-certificates fonts-liberation libappindicator3-1 libasound2 libatk-bridge2.0-0 libatk1.0-0 libatspi2.0-0 libcups2 libdbus-1-3 libdrm2 libgdk-pixbuf2.0-0 libgtk-3-0 libnspr4 libnss3 libx11-xcb1 libxcomposite1 libxdamage1 libxrandr2 xdg-utils
+        wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+        sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list'
+        sudo apt-get update
+        sudo apt-get install -y google-chrome-stable
 
     - name: Install uv
       run: |
@@ -66,7 +82,18 @@ jobs:
         if [ -n "${{ github.event.inputs.scrapers }}" ]; then
           echo "scrapers=${{ github.event.inputs.scrapers }}" >> $GITHUB_OUTPUT
         else
-          echo "scrapers=all" >> $GITHUB_OUTPUT
+          # Check for changed scraper config files
+          CHANGED_CONFIGS=$(git diff --name-only HEAD~1 HEAD -- "src/scrapers/configs/*.yaml" | sed 's|src/scrapers/configs/||' | sed 's|\.yaml||' | tr '\n' ',')
+          
+          if [ -n "$CHANGED_CONFIGS" ]; then
+            # Remove trailing comma
+            CHANGED_CONFIGS=$(echo "$CHANGED_CONFIGS" | sed 's/,$//')
+            echo "scrapers=$CHANGED_CONFIGS" >> $GITHUB_OUTPUT
+            echo "Testing changed scrapers: $CHANGED_CONFIGS"
+          else
+            echo "scrapers=all" >> $GITHUB_OUTPUT
+            echo "No scraper configs changed, testing all scrapers"
+          fi
         fi
 
     - name: Run local tests
@@ -126,6 +153,15 @@ jobs:
       with:
         python-version: '3.11'
 
+    - name: Install Chrome
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y wget gnupg ca-certificates fonts-liberation libappindicator3-1 libasound2 libatk-bridge2.0-0 libatk1.0-0 libatspi2.0-0 libcups2 libdbus-1-3 libdrm2 libgdk-pixbuf2.0-0 libgtk-3-0 libnspr4 libnss3 libx11-xcb1 libxcomposite1 libxdamage1 libxrandr2 xdg-utils
+        wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+        sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list'
+        sudo apt-get update
+        sudo apt-get install -y google-chrome-stable
+
     - name: Install uv
       run: |
         curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -142,32 +178,39 @@ jobs:
     - name: Run data quality analysis
       run: |
         uv run python -c "
+        import sys
+        from pathlib import Path
+        
+        # Add project root to path
+        PROJECT_ROOT = Path('.')
+        sys.path.insert(0, str(PROJECT_ROOT))
+        
         from tests.fixtures.scraper_validator import ScraperValidator
-        import json
-
-        # Load test data
-        with open('tests/fixtures/scraper_test_data.json', 'r') as f:
-            test_data = json.load(f)
-
-        validator = ScraperValidator('tests/fixtures/scraper_test_data.json')
-
+        from src.scrapers.parser.yaml_parser import ScraperConfigParser
+        
+        validator = ScraperValidator()
+        
         print('🔍 Data Quality Analysis')
         print('=' * 50)
-
-        for scraper_name in test_data.keys():
-            if scraper_name == '_metadata':
-                continue
-
+        
+        # Get all scraper configs
+        configs_dir = PROJECT_ROOT / 'src' / 'scrapers' / 'configs'
+        parser = ScraperConfigParser()
+        
+        for config_file in configs_dir.glob('*.yaml'):
+            scraper_name = config_file.stem
             print(f'\\n📊 {scraper_name.upper()}')
             print('-' * 30)
-
-            # This would analyze recent test results
-            # For now, just show configuration
-            config = test_data[scraper_name]
-            skus = config.get('test_skus', [])
-            print(f'Test SKUs: {len(skus)} configured')
-            print(f'Expected Fields: {len(config.get(\"expected_fields\", []))}')
-
+            
+            try:
+                config = parser.load_from_file(config_file)
+                test_skus = config.test_skus or []
+                print(f'Test SKUs: {len(test_skus)} configured')
+                print(f'Base URL: {config.base_url}')
+                print(f'Timeout: {config.timeout}s')
+            except Exception as e:
+                print(f'Error loading config: {e}')
+        
         print('\\n✅ Data quality check completed')
         "
 

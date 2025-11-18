@@ -44,7 +44,11 @@ class PlatformScraperIntegrationTester:
         self.validator = ScraperValidator()
 
         # Initialize testing client
-        self.testing_client = PlatformTestingClient(mode=mode)
+        # In CI environments, always use headless mode
+        import os
+        is_ci = os.getenv('CI') == 'true'
+        headless = True if is_ci else False
+        self.testing_client = PlatformTestingClient(mode=mode, headless=headless)
 
     def get_test_skus(self, scraper_name: str) -> List[str]:
         """Get test SKUs for a scraper from its YAML config."""
