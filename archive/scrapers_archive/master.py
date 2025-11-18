@@ -15,7 +15,7 @@ from src.scrapers.models.config import ScraperConfig
 
 # DEPRECATION WARNING: This archived scraper system is deprecated
 warnings.warn(
-    "The archived scraper system (src/scrapers_archive/) is deprecated and will be removed in a future version. "
+    "The archived scraper system (archive/scrapers_archive/) is deprecated and will be removed in a future version. "
     "Please migrate to the new modular scraper system using YAML configurations. "
     "See docs/SCRAPER_MIGRATION_GUIDE.md for migration instructions.",
     DeprecationWarning,

@@ -60,13 +60,3 @@ markers = [
     "performance",
     "integration",
 ]
-
-[tool.flake8]
-exclude = [
-    "src/scrapers_archive/",
-    ".git",
-    "__pycache__",
-    "build",
-    "dist",
-    "*.egg-info",
-]
