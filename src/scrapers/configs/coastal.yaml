@@ -1,4 +1,5 @@
 name: "coastal"
+test_skus: ["076484513046", "076484648618", "076484073410"]
 base_url: "https://www.coastalpet.com"
 timeout: 30
 retries: 3

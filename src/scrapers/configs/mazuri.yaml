@@ -1,4 +1,5 @@
 name: "mazuri"
+test_skus: ["0048601", "3005450", "0048134"]
 base_url: "https://mazuri.com"
 timeout: 30
 retries: 3

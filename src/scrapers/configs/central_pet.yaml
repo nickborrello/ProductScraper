@@ -1,4 +1,5 @@
 name: "central_pet"
+test_skus: ["035585499741", "762177840208", "097612840087"]
 base_url: "https://www.centralpet.com"
 timeout: 30
 retries: 3

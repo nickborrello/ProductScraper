@@ -1,4 +1,5 @@
 name: "amazon"
+test_skus: ["035585499741"]
 base_url: "https://www.amazon.com"
 timeout: 30
 retries: 3
