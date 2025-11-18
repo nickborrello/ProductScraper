@@ -1,5 +1,5 @@
 name: "petfoodex"
-test_skus: ["placeholder_sku"]
+test_skus: ["10852301008912"]
 base_url: "https://orders.petfoodexperts.com"
 timeout: 30
 retries: 3

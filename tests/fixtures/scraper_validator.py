@@ -14,13 +14,26 @@ class ScraperValidator:
 
     def __init__(self, test_data_path: str = None):
         """Initialize validator with test data configuration."""
-        if test_data_path is None:
-            test_data_path = "tests/fixtures/scraper_test_data.json"
+        # Define common validation rules internally
+        self.common_rules = {
+            "required_fields": ["SKU", "Name"],
+            "weight_unit": "LB",
+            "image_format": "list_of_urls",
+            "price_format": "string",
+            "invalid_values": ["N/A", "n/a", "NA", "null", "NULL", ""],
+        }
 
-        with open(test_data_path, "r") as f:
-            self.test_config = json.load(f)
-
-        self.common_rules = self.test_config.get("common_validation_rules", {})
+        # Define expected fields for each scraper
+        self.expected_fields = {
+            "amazon": ["SKU", "Name", "Brand", "Weight", "Image URLs"],
+            "bradley": ["SKU", "Name", "Brand", "Weight", "Image URLs"],
+            "central_pet": ["SKU", "Name", "Brand", "Weight", "Image URLs"],
+            "coastal": ["SKU", "Name", "Brand", "Weight", "Image URLs"],
+            "mazuri": ["SKU", "Name", "Brand", "Weight", "Image URLs"],
+            "petfoodex": ["SKU", "Name", "Brand", "Weight", "Image URLs"],
+            "phillips": ["SKU", "Name", "Brand", "Weight", "Image URLs"],
+            "orgill": ["SKU", "Name", "Brand", "Weight", "Image URLs"],
+        }
 
     def validate_product_data(
         self, products: List[Dict], scraper_name: str
@@ -50,8 +63,7 @@ class ScraperValidator:
             results["errors"].append("No products returned")
             return results
 
-        scraper_config = self.test_config.get(scraper_name, {})
-        expected_fields = scraper_config.get("expected_fields", [])
+        expected_fields = self.expected_fields.get(scraper_name, [])
 
         # Track field coverage
         field_counts = {field: 0 for field in expected_fields}
@@ -174,8 +186,7 @@ class ScraperValidator:
             results["errors"].append("DataFrame is empty")
             return results
 
-        scraper_config = self.test_config.get(scraper_name, {})
-        expected_fields = scraper_config.get("expected_fields", [])
+        expected_fields = self.expected_fields.get(scraper_name, [])
 
         # Check for expected columns
         missing_columns = set(expected_fields) - set(df.columns)

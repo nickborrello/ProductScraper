@@ -29,12 +29,24 @@ class ScraperIntegrationTester:
     def __init__(self, test_data_path: Optional[str] = None):
         """Initialize the integration tester."""
         self.project_root = PROJECT_ROOT
-        self.test_data_path = test_data_path or "tests/fixtures/scraper_test_data.json"
+        # No longer need test_data_path for JSON, but keep for compatibility
+        self.validator = ScraperValidator()
 
-        with open(self.test_data_path, "r") as f:
-            self.test_config = json.load(f)
+    def get_test_skus(self, scraper_name: str) -> List[str]:
+        """Get test SKUs for a scraper from its YAML config."""
+        config_path = (
+            self.project_root
+            / "src"
+            / "scrapers"
+            / "configs"
+            / f"{scraper_name}.yaml"
+        )
+        if not config_path.exists():
+            return ["035585499741"]  # Default fallback
 
-        self.validator = ScraperValidator(self.test_data_path)
+        parser = ScraperConfigParser()
+        config = parser.load_from_file(config_path)
+        return config.test_skus or ["035585499741"]
 
     def get_available_scrapers(self) -> List[str]:
         """Get list of available scraper names."""
@@ -146,8 +158,7 @@ class ScraperIntegrationTester:
             Dict with test results
         """
         if skus is None:
-            scraper_config = self.test_config.get(scraper_name, {})
-            skus = scraper_config.get("test_skus", ["035585499741"])
+            skus = self.get_test_skus(scraper_name)
 
         # Ensure skus is a list
         if not isinstance(skus, list):

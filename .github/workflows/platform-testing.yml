@@ -1,4 +1,8 @@
-name: Local Testing
+name: Scraper Platform Testing and Quality Assurance
+
+# This workflow automates testing of scraper functionality in a local environment
+# and performs data quality checks to ensure scraper reliability and data integrity.
+# It runs on pushes to scraper-related code, daily schedules, and manual triggers.
 
 on:
   push:
@@ -11,17 +15,19 @@ on:
       - 'src/scrapers/parser/**'
       - 'src/scrapers/schemas/**'
       - '.github/workflows/platform-testing.yml'
+    # Triggers on changes to scraper-related files in main/develop branches
   schedule:
-    # Run daily at 2 AM UTC
+    # Run daily at 2 AM UTC to ensure ongoing scraper health
     - cron: '0 2 * * *'
   workflow_dispatch:
     inputs:
       scrapers:
-        description: 'Comma-separated list of scrapers to test (empty for all)'
+        description: 'Comma-separated list of scrapers to test (leave empty to test all scrapers)'
         required: false
         default: ''
 
 jobs:
+  # Job to run automated tests on scrapers in a local environment
   local-test:
     runs-on: ubuntu-latest
 
@@ -107,6 +113,7 @@ jobs:
         echo "❌ Local testing failed!"
         # Add notification logic here (Slack, email, etc.)
 
+  # Job to analyze data quality of scraper outputs and archive results
   data-quality-check:
     needs: local-test
     runs-on: ubuntu-latest

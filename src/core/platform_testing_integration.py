@@ -40,18 +40,29 @@ class PlatformScraperIntegrationTester:
         self.test_data_path = test_data_path or "tests/fixtures/scraper_test_data.json"
         self.mode = mode
 
-        with open(self.test_data_path, "r") as f:
-            self.test_config = f.read()
-
         # Initialize validator
-        import json
-
-        with open(self.test_data_path, "r") as f:
-            test_config_dict = json.load(f)
-        self.validator = ScraperValidator(self.test_data_path)
+        self.validator = ScraperValidator()
 
         # Initialize testing client
         self.testing_client = PlatformTestingClient(mode=mode)
+
+    def get_test_skus(self, scraper_name: str) -> List[str]:
+        """Get test SKUs for a scraper from its YAML config."""
+        from src.scrapers.parser.yaml_parser import ScraperConfigParser
+
+        config_path = (
+            self.project_root
+            / "src"
+            / "scrapers"
+            / "configs"
+            / f"{scraper_name}.yaml"
+        )
+        if not config_path.exists():
+            return ["035585499741"]  # Default fallback
+
+        parser = ScraperConfigParser()
+        config = parser.load_from_file(config_path)
+        return config.test_skus or ["035585499741"]
 
     def get_available_scrapers(self) -> List[str]:
         """Get list of available scraper names."""
@@ -79,13 +90,8 @@ class PlatformScraperIntegrationTester:
         Returns:
             Dict with test results
         """
-        import json
-
-        test_config_dict = json.loads(self.test_config)
-
         if skus is None:
-            scraper_config = test_config_dict.get(scraper_name, {})
-            skus = scraper_config.get("test_skus", ["035585499741"])
+            skus = self.get_test_skus(scraper_name)
 
         # Ensure skus is a list
         if not isinstance(skus, list):
