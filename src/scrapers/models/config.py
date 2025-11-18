@@ -60,3 +60,6 @@ class ScraperConfig(BaseModel):
     anti_detection: Optional[AntiDetectionConfig] = Field(
         None, description="Anti-detection configuration"
     )
+    test_skus: Optional[List[str]] = Field(
+        None, description="List of SKUs to use for testing"
+    )

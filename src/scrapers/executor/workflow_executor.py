@@ -106,11 +106,12 @@ class WorkflowExecutor:
                 logger.warning(f"Failed to initialize anti-detection manager: {e}")
                 self.anti_detection_manager = None
 
-    def execute_workflow(self, quit_browser: bool = True) -> Dict[str, Any]:
+    def execute_workflow(self, test_skus: Optional[List[str]] = None, quit_browser: bool = True) -> Dict[str, Any]:
         """
         Execute the complete workflow defined in the configuration.
 
         Args:
+            test_skus: List of SKUs to test with (optional)
             quit_browser: Whether to quit the browser after execution
 
         Returns:

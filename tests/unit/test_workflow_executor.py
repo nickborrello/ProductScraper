@@ -55,6 +55,7 @@ def sample_config():
         ],
         login=None,
         anti_detection=None,
+        test_skus=["035585499741"],
     )
 
 
@@ -73,6 +74,12 @@ def mock_create_browser(mock_browser):
     with patch("src.scrapers.executor.workflow_executor.create_browser") as mock:
         mock.return_value = mock_browser
         yield mock
+
+
+@pytest.fixture
+def test_skus():
+    """Test SKUs for testing."""
+    return ["035585499741"]
 
 
 class TestWorkflowExecutor:
@@ -112,7 +119,7 @@ class TestWorkflowExecutor:
                 WorkflowExecutor(sample_config)
 
     def test_execute_workflow_success(
-        self, sample_config, mock_create_browser, mock_browser
+        self, sample_config, mock_create_browser, mock_browser, test_skus
     ):
         """Test successful workflow execution."""
         # Setup mock elements
@@ -127,7 +134,7 @@ class TestWorkflowExecutor:
 
         executor = WorkflowExecutor(sample_config, headless=True)
 
-        result = executor.execute_workflow()
+        result = executor.execute_workflow(test_skus=test_skus)
 
         assert result["success"] is True
         assert result["config_name"] == "Test Scraper"
@@ -306,10 +313,18 @@ class TestWorkflowExecutor:
         executor = WorkflowExecutor(sample_config, headless=True)
 
         mock_element = Mock()
+        mock_element.is_displayed.return_value = True
+        mock_element.is_enabled.return_value = True
         mock_browser.driver.find_element.return_value = mock_element
 
         params = {"selector": ".button", "wait_after": 1}
-        executor._action_click(params)
+
+        with patch("src.scrapers.executor.workflow_executor.WebDriverWait") as mock_wait, \
+             patch.object(executor.browser.driver, "execute_script") as mock_script:
+            mock_wait.return_value.until.return_value = mock_element
+            mock_script.return_value = None
+
+            executor._action_click(params)
 
         mock_element.click.assert_called_once()
 
