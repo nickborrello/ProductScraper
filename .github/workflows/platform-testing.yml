@@ -10,7 +10,7 @@ on:
       - 'src/scrapers/models/**'
       - 'src/scrapers/parser/**'
       - 'src/scrapers/schemas/**'
-      - '.github/workflows/local-testing.yml'
+      - '.github/workflows/platform-testing.yml'
   schedule:
     # Run daily at 2 AM UTC
     - cron: '0 2 * * *'
