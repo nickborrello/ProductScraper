@@ -43,16 +43,17 @@ logging.getLogger('urllib3').setLevel(logging.WARNING)
 logging.getLogger('selenium.webdriver').setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
-# Scraper configs to test
-ALL_SCRAPER_CONFIGS = [
-    'amazon',
-    'central_pet',
-    'coastal',
-    'mazuri',
-    'orgill',
-    'petfoodex',
-    'phillips'
-]
+def get_all_scrapers() -> List[str]:
+    """Dynamically find all scraper config files."""
+    configs_path = PROJECT_ROOT / "src" / "scrapers" / "configs"
+    scraper_files = [f for f in configs_path.glob("*.yaml")]
+    # Exclude sample_config.yaml and get the base name
+    all_scrapers = [f.stem for f in scraper_files if f.name != "sample_config.yaml"]
+    return sorted(all_scrapers)
+
+# Dynamically discover scraper configs to test
+ALL_SCRAPER_CONFIGS = get_all_scrapers()
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Run scraper tests.")
