@@ -656,7 +656,14 @@ class WorkflowExecutor:
                         )
                         if value:
                             values.append(value)
-                    self.results[field_name] = values
+                    # Deduplicate values while preserving order
+                    seen = set()
+                    deduplicated_values = []
+                    for value in values:
+                        if value not in seen:
+                            seen.add(value)
+                            deduplicated_values.append(value)
+                    self.results[field_name] = deduplicated_values
                 else:
                     element = self.browser.driver.find_element(
                         locator_type, selector_config.selector
