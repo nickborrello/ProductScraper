@@ -27,7 +27,10 @@ workflows:
   - action: "wait_for"
     params:
       selector:
-        ["//h1[contains(text(), 'Search results for')]", "//h3[contains(text(), 'Sorry, no results for')]"]
+        [
+          "//h1[contains(text(), 'Search results for')]",
+          "//h3[contains(text(), 'Sorry, no results for')]",
+        ]
       timeout: 20
 
   - action: "check_no_results"
