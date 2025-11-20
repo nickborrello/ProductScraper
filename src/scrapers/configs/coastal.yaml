@@ -6,14 +6,15 @@ retries: 3
 
 selectors:
   - name: "Name"
-    selector: "p.product-listing__title--text a"
+    selector: ".product-title h1"
     attribute: "text"
   - name: "Brand"
-    selector: "body"
+    selector: ".product-brand"
     attribute: "text"
   - name: "Image URLs"
-    selector: "img.product-listing__product-image--image"
+    selector: ".product-gallery img"
     attribute: "src"
+    multiple: true
 
 workflows:
   - action: "navigate"
@@ -22,6 +23,17 @@ workflows:
   - action: "wait_for"
     params:
       selector: ".product-listing, .no-results, .empty-search, .search-no-results"
+      timeout: 10
+  - action: "check_no_results"
+  - action: "conditional_skip"
+    params:
+      if_flag: "no_results_found"
+  - action: "click"
+    params:
+      selector: "p.product-listing__title--text a"
+  - action: "wait_for"
+    params:
+      selector: ".product-detail"
       timeout: 10
   - action: "extract"
     params:

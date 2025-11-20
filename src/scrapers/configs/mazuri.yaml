@@ -5,22 +5,8 @@ timeout: 30
 retries: 3
 
 selectors:
-  - name: "product_name"
-    selector: "h2"
-    attribute: "text"
-  - name: "brand"
-    selector: "h2"
-    attribute: "text"
-  - name: "weight"
-    selector: "p"
-    attribute: "text"
-  - name: "price"
-    selector: ".price, span.price-item--regular"
-    attribute: "text"
-  - name: "images"
-    selector: "img[src*='cdn.shopify.com']"
-    attribute: "src"
-    multiple: true
+  - name: "product_json"
+    selector: "script[type='application/json'][id*='ProductJson']"
 
 workflows:
   - action: "navigate"
@@ -30,21 +16,37 @@ workflows:
     params:
       selector: "a[href*='/products/'], .no-results, .empty-search, .snize-no-results, #search-no-results"
       timeout: 15
-  # Cookie banner doesn't exist on this page, skip this step
-  # - action: "click"
-  #   params:
-  #     selector: "//button[contains(text(),'Close') or contains(text(),'Accept') or contains(text(),'Agree') or contains(text(),'OK')]"
-  #     wait_after: 2
+  - action: "check_no_results"
+  - action: "conditional_skip"
+    params:
+      if_flag: "no_results_found"
   - action: "click"
     params:
       selector: "a.snize-view-link[href*='/products/']"
   - action: "wait_for"
     params:
-      selector: "img, h2"
+      selector: "script[type='application/json'][id*='ProductJson']"
       timeout: 15
-  - action: "extract"
+  - action: "extract_from_json"
     params:
-      fields: ["product_name", "brand", "weight", "price", "images"]
+      selector: "script[type='application/json'][id*='ProductJson']"
+      field: "Name"
+      json_path: "title"
+  - action: "extract_from_json"
+    params:
+      selector: "script[type='application/json'][id*='ProductJson']"
+      field: "Brand"
+      json_path: "vendor"
+  - action: "extract_from_json"
+    params:
+      selector: "script[type='application/json'][id*='ProductJson']"
+      field: "Weight"
+      json_path: "variants.0.option1"
+  - action: "extract_from_json"
+    params:
+      selector: "script[type='application/json'][id*='ProductJson']"
+      field: "Image URLs"
+      json_path: "images"
 
 anti_detection:
   enable_captcha_detection: false

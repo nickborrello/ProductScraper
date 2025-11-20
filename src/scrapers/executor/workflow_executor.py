@@ -6,6 +6,7 @@ import logging
 import random
 import re
 import time
+import json
 from typing import Any, Dict, List, Optional, Union, cast
 
 from selenium.common.exceptions import (NoSuchElementException,
@@ -257,6 +258,14 @@ class WorkflowExecutor:
                 self._action_check_no_results(params)
             elif action == "conditional_skip":
                 self._action_conditional_skip(params)
+            elif action == "scroll":
+                self._action_scroll(params)
+            elif action == "extract_from_json":
+                self._action_extract_from_json(params)
+            elif action == "conditional_click":
+                self._action_conditional_click(params)
+            elif action == "verify":
+                self._action_verify(params)
             else:
                 raise WorkflowExecutionError(f"Unknown action: {action}")
 
@@ -499,26 +508,27 @@ class WorkflowExecutor:
 
     def _action_wait_for(self, params: Dict[str, Any]):
         """Wait for an element to be present."""
-        selector = params.get("selector")
+        selector_param = params.get("selector")
         timeout = params.get("timeout", self.timeout)
 
-        if not selector:
+        if not selector_param:
             raise WorkflowExecutionError(
                 "Wait_for action requires 'selector' parameter"
             )
 
-        logger.debug(f"Waiting for element: {selector} (timeout: {timeout}s, CI: {self.is_ci})")
+        selectors = selector_param if isinstance(selector_param, list) else [selector_param]
+        
+        logger.debug(f"Waiting for any of elements: {selectors} (timeout: {timeout}s, CI: {self.is_ci})")
 
         start_time = time.time()
         try:
-            WebDriverWait(self.browser.driver, timeout).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, selector))
-            )
+            conditions = [EC.presence_of_element_located((self._get_locator_type(s), s)) for s in selectors]
+            WebDriverWait(self.browser.driver, timeout).until(EC.any_of(*conditions))
             wait_duration = time.time() - start_time
-            logger.info(f"✅ Element found after {wait_duration:.2f}s: {selector}")
+            logger.info(f"✅ Element found after {wait_duration:.2f}s from selectors: {selectors}")
         except TimeoutException:
             wait_duration = time.time() - start_time
-            logger.warning(f"⏰ TIMEOUT: Element not found within {timeout}s (waited {wait_duration:.2f}s): {selector}")
+            logger.warning(f"⏰ TIMEOUT: Element not found within {timeout}s (waited {wait_duration:.2f}s): {selectors}")
             logger.debug(f"Current page URL: {self.browser.driver.current_url}")
             logger.debug(f"Page title: {self.browser.driver.title}")
 
@@ -528,25 +538,26 @@ class WorkflowExecutor:
                 logger.debug(f"Total elements on page: {len(all_elements)}")
 
                 # Try to find similar selectors
-                if "." in selector or "#" in selector:
-                    similar_selectors = []
-                    for el in all_elements[:50]:  # Check first 50 elements
-                        try:
-                            el_classes = el.get_attribute("class") or ""
-                            el_id = el.get_attribute("id") or ""
-                            if selector.startswith(".") and selector[1:] in el_classes.split():
-                                similar_selectors.append(f".{selector[1:]}")
-                            elif selector.startswith("#") and selector[1:] == el_id:
-                                similar_selectors.append(selector)
-                        except:
-                            pass
-                    if similar_selectors:
-                        logger.debug(f"Found similar elements: {similar_selectors[:5]}")
+                for selector in selectors:
+                    if "." in selector or "#" in selector:
+                        similar_selectors = []
+                        for el in all_elements[:50]:  # Check first 50 elements
+                            try:
+                                el_classes = el.get_attribute("class") or ""
+                                el_id = el.get_attribute("id") or ""
+                                if selector.startswith(".") and selector[1:] in el_classes.split():
+                                    similar_selectors.append(f".{selector[1:]}")
+                                elif selector.startswith("#") and selector[1:] == el_id:
+                                    similar_selectors.append(selector)
+                            except:
+                                pass
+                        if similar_selectors:
+                            logger.debug(f"Found similar elements for {selector}: {similar_selectors[:5]}")
             except Exception as debug_e:
                 logger.debug(f"Could not analyze page elements: {debug_e}")
 
             raise WorkflowExecutionError(
-                f"Element not found within {timeout}s: {selector}"
+                f"Element not found within {timeout}s: {selectors}"
             )
 
     def _action_wait(self, params: Dict[str, Any]):
@@ -736,6 +747,9 @@ class WorkflowExecutor:
     def _action_click(self, params: Dict[str, Any]):
         """Click on an element with proper WebDriverWait and retry logic."""
         selector = params.get("selector")
+        filter_text = params.get("filter_text")
+        filter_text_exclude = params.get("filter_text_exclude")
+        index = params.get("index", 0)
 
         if not selector:
             raise WorkflowExecutionError("Click action requires 'selector' parameter")
@@ -745,73 +759,48 @@ class WorkflowExecutor:
 
         logger.debug(f"Attempting to click element: {selector} (locator: {locator_type}, CI: {self.is_ci}, max_retries: {max_retries})")
 
-        # Initial wait for element to be clickable
+        # Initial wait for at least one element to be present
         try:
             WebDriverWait(self.browser.driver, self.timeout).until(
-                EC.element_to_be_clickable((locator_type, selector))
+                EC.presence_of_element_located((locator_type, selector))
             )
-            logger.info("Element is clickable, proceeding to click")
+            logger.info("At least one element is present, proceeding to filter and click")
         except TimeoutException:
-            logger.info("Initial wait for clickable element failed, entering retry loop")
-            # Retry logic with proper waiting
-            for attempt in range(max_retries):
-                try:
-                    # Use progressively shorter timeout for retries
-                    retry_timeout = max(self.timeout // (2 ** (attempt + 1)), 1)
-                    WebDriverWait(self.browser.driver, retry_timeout).until(
-                        EC.element_to_be_clickable((locator_type, selector))
-                    )
-                    logger.debug(f"Element became clickable on retry {attempt + 1}")
-                    break
-                except TimeoutException:
-                    if attempt == max_retries - 1:
-                        # Debug logging for failed clicks
-                        logger.error(f"Click element not clickable after {max_retries} retries: {selector}")
-                        logger.debug(f"Current page URL: {self.browser.driver.current_url}")
-                        logger.debug(f"Page title: {self.browser.driver.title}")
+            logger.warning(f"No elements found for selector '{selector}' within timeout period.")
+            raise WorkflowExecutionError(f"No elements found for selector: {selector}")
 
-                        # Log available elements for debugging
-                        try:
-                            all_elements = self.browser.driver.find_elements(By.CSS_SELECTOR, "*")
-                            logger.debug(f"Total elements on page: {len(all_elements)}")
-
-                            # Try to find similar selectors
-                            if "." in selector or "#" in selector:
-                                similar_selectors = []
-                                for el in all_elements[:100]:  # Check first 100 elements
-                                    try:
-                                        el_classes = el.get_attribute("class") or ""
-                                        el_id = el.get_attribute("id") or ""
-                                        if selector.startswith(".") and selector[1:] in el_classes.split():
-                                            similar_selectors.append(f".{selector[1:]}")
-                                        elif selector.startswith("#") and selector[1:] == el_id:
-                                            similar_selectors.append(selector)
-                                    except:
-                                        pass
-                                if similar_selectors:
-                                    logger.debug(f"Found similar elements: {similar_selectors[:10]}")
-                                else:
-                                    logger.debug("No similar elements found on page")
-                        except Exception as debug_e:
-                            logger.debug(f"Could not analyze page elements: {debug_e}")
-
-                        raise WorkflowExecutionError(f"Element not clickable after {max_retries} retries: {selector}")
-                    logger.debug(f"Retry {attempt + 1} failed, trying again")
-
-        # Now perform the click
+        # Now find elements and perform filtering and click
         try:
-            element = self.browser.driver.find_element(locator_type, selector)
+            elements = self.browser.driver.find_elements(locator_type, selector)
+            
+            if not elements:
+                raise NoSuchElementException(f"No elements found for selector: {selector}")
+
+            filtered_elements = elements
+            if filter_text:
+                filtered_elements = [el for el in filtered_elements if re.search(filter_text, el.text, re.IGNORECASE)]
+            
+            if filter_text_exclude:
+                filtered_elements = [el for el in filtered_elements if not re.search(filter_text_exclude, el.text, re.IGNORECASE)]
+
+            if not filtered_elements:
+                raise NoSuchElementException(f"No elements remaining after filtering for selector: {selector}")
+
+            if index >= len(filtered_elements):
+                raise WorkflowExecutionError(f"Index {index} out of bounds for filtered elements (count: {len(filtered_elements)}) for selector: {selector}")
+
+            element_to_click = filtered_elements[index]
 
             # Scroll element into view if needed
             try:
-                self.browser.driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'center'});", element)
+                self.browser.driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'center'});", element_to_click)
                 time.sleep(0.5)  # Brief pause after scrolling
             except Exception as scroll_e:
                 logger.debug(f"Could not scroll element into view: {scroll_e}")
 
             # Attempt click
-            element.click()
-            logger.info(f"Successfully clicked element: {selector}")
+            element_to_click.click()
+            logger.info(f"Successfully clicked element: {selector} at index {index}")
 
             # Optional wait after click
             wait_time = params.get("wait_after", 0)
@@ -1179,6 +1168,142 @@ class WorkflowExecutor:
                 f"Condition '{if_flag}' is true, stopping workflow execution."
             )
             self.workflow_stopped = True
+
+    def _action_scroll(self, params: Dict[str, Any]):
+        """Scroll the page."""
+        direction = params.get("direction", "down")
+        amount = params.get("amount")
+        selector = params.get("selector")
+
+        if selector:
+            try:
+                element = self.browser.driver.find_element(self._get_locator_type(selector), selector)
+                self.browser.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
+                logger.debug(f"Scrolled to element: {selector}")
+            except NoSuchElementException:
+                raise WorkflowExecutionError(f"Scroll target element not found: {selector}")
+        elif direction == "to_bottom":
+            self.browser.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            logger.debug("Scrolled to bottom of page")
+        elif direction == "to_top":
+            self.browser.driver.execute_script("window.scrollTo(0, 0);")
+            logger.debug("Scrolled to top of page")
+        else:
+            scroll_amount = amount if amount is not None else "window.innerHeight"
+            if direction == "down":
+                self.browser.driver.execute_script(f"window.scrollBy(0, {scroll_amount});")
+                logger.debug(f"Scrolled down by {scroll_amount} pixels")
+            elif direction == "up":
+                self.browser.driver.execute_script(f"window.scrollBy(0, -{scroll_amount});")
+                logger.debug(f"Scrolled up by {scroll_amount} pixels")
+
+    def _action_extract_from_json(self, params: Dict[str, Any]):
+        """Extract data from a JSON object within a <script> tag."""
+        selector = params.get("selector")
+        json_path = params.get("json_path")
+        field_name = params.get("field")
+
+        if not all([selector, json_path, field_name]):
+            raise WorkflowExecutionError("extract_from_json requires 'selector', 'json_path', and 'field' parameters")
+
+        try:
+            script_element = self.browser.driver.find_element(By.CSS_SELECTOR, selector)
+            json_string = script_element.get_attribute('textContent')
+            
+            data = json.loads(json_string)
+            
+            # Simple dot-notation path extraction
+            path_parts = json_path.split('.')
+            current_data = data
+            for part in path_parts:
+                if isinstance(current_data, dict) and part in current_data:
+                    current_data = current_data[part]
+                elif isinstance(current_data, list) and part.isdigit():
+                    current_data = current_data[int(part)]
+                else:
+                    raise KeyError(f"Path part '{part}' not found in JSON")
+            
+            self.results[field_name] = current_data
+            logger.debug(f"Extracted from JSON for {field_name}: {current_data}")
+
+        except NoSuchElementException:
+            logger.warning(f"Script element not found for JSON extraction: {selector}")
+            self.results[field_name] = None
+        except (json.JSONDecodeError, KeyError) as e:
+            logger.warning(f"Failed to extract from JSON: {e}")
+            self.results[field_name] = None
+
+    def _action_conditional_click(self, params: Dict[str, Any]):
+        """Click on an element only if it exists, without failing the workflow."""
+        selector = params.get("selector")
+        if not selector:
+            raise WorkflowExecutionError("conditional_click requires 'selector' parameter")
+
+        locator_type = self._get_locator_type(selector)
+        
+        try:
+            # Check for element presence with a very short timeout
+            WebDriverWait(self.browser.driver, 2).until(
+                EC.presence_of_element_located((locator_type, selector))
+            )
+            
+            # If present, attempt the click using the main click action
+            logger.info(f"Conditional element '{selector}' found. Attempting to click.")
+            self._action_click(params)
+
+        except TimeoutException:
+            logger.info(f"Conditional element '{selector}' not found. Skipping click.")
+        except Exception as e:
+            # Catch other exceptions from _action_click but log as warning
+            logger.warning(f"Conditional click on '{selector}' failed with an unexpected error: {e}")
+
+    def _action_verify(self, params: Dict[str, Any]):
+        """Verify a value on the page against an expected value."""
+        selector = params.get("selector")
+        attribute = params.get("attribute", "text")
+        expected_value = params.get("expected_value")
+        match_mode = params.get("match_mode", "exact")
+        on_failure = params.get("on_failure", "fail_workflow")
+
+        if not all([selector, expected_value]):
+            raise WorkflowExecutionError("Verify action requires 'selector' and 'expected_value' parameters")
+
+        try:
+            locator_type = self._get_locator_type(selector)
+            element = self.browser.driver.find_element(locator_type, selector)
+            actual_value = self._extract_value_from_element(element, attribute)
+
+            if actual_value is None:
+                raise ValueError("Could not extract actual value from element")
+
+            match = False
+            if match_mode == "exact":
+                match = str(actual_value) == str(expected_value)
+            elif match_mode == "contains":
+                match = str(expected_value) in str(actual_value)
+            elif match_mode == "fuzzy_number":
+                expected_digits = re.sub(r'\D', '', str(expected_value))
+                actual_digits = re.sub(r'\D', '', str(actual_value))
+                if expected_digits and actual_digits:
+                    match = int(expected_digits) == int(actual_digits)
+            else:
+                raise WorkflowExecutionError(f"Unknown match_mode: {match_mode}")
+
+            if match:
+                logger.info(f"✅ Verification successful for selector '{selector}'. Found '{actual_value}', expected '{expected_value}' (mode: {match_mode}).")
+            else:
+                error_msg = f"Verification failed for selector '{selector}'. Found '{actual_value}', expected '{expected_value}' (mode: {match_mode})."
+                if on_failure == "fail_workflow":
+                    raise WorkflowExecutionError(error_msg)
+                else:
+                    logger.warning(error_msg)
+
+        except (NoSuchElementException, ValueError) as e:
+            error_msg = f"Verification failed: could not find or extract value from selector '{selector}'. Reason: {e}"
+            if on_failure == "fail_workflow":
+                raise WorkflowExecutionError(error_msg)
+            else:
+                logger.warning(error_msg)
 
     def _extract_value_from_element(
         self, element, attribute: Optional[str]

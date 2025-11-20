@@ -86,24 +86,26 @@ Navigate to a URL.
 ```
 
 #### wait_for
-Wait for an element to be present.
+Wait for one or more elements to be present.
 
 ```yaml
 - action: "wait_for"
   params:
-    selector: ".search-results"  # CSS selector to wait for
+    selector: [".product-details", ".no-results-message"] # Can be a single selector string or a list of selectors
     timeout: 10                  # Optional: Timeout in seconds
 ```
 
 ### Interaction Actions
 
 #### click
-Click on an element.
+Click on an element, with optional filtering. This is useful for clicking the first non-sponsored link in a list of search results.
 
 ```yaml
 - action: "click"
   params:
-    selector: ".submit-button"   # CSS selector for element to click
+    selector: ".search-result a"
+    filter_text_exclude: "sponsored" # Optional: regex to exclude elements by text
+    index: 0 # Optional: index of the element to click in the filtered list
     wait_after: 1                # Optional: Wait time after click
 ```
 
@@ -148,7 +150,52 @@ Conditionally skip the rest of the workflow based on a flag from a previous step
     if_flag: "no_results_found"  # Skip if the 'no_results_found' flag is true
 ```
 
+#### verify
+Verify a value on the page against an expected value. Can be used to ensure the correct product page is being scraped.
+
+```yaml
+- action: "verify"
+  params:
+    selector: ".product-upc"
+    attribute: "text"
+    expected_value: "{sku}"
+    match_mode: "fuzzy_number"  # "exact", "contains", or "fuzzy_number"
+    on_failure: "fail_workflow" # "fail_workflow" or "log_warning"
+```
+
+#### scroll
+Scroll the page to load lazy-loaded content or bring elements into view.
+
+```yaml
+- action: "scroll"
+  params:
+    direction: "down"  # "up", "down", "to_top", or "to_bottom"
+    amount: 500      # Optional: pixels to scroll for "up" or "down"
+    selector: "#load_more_button" # Optional: scroll a specific element into view
+```
+
+#### conditional_click
+Click on an element only if it exists. Useful for optional elements like cookie banners.
+
+```yaml
+- action: "conditional_click"
+  params:
+    selector: "#cookie-consent-button"
+    timeout: 5 # Optional: how long to wait for the element before skipping
+```
+
 ### Data Extraction Actions
+
+#### extract_from_json
+Extract data from a JSON object embedded in a `<script>` tag.
+
+```yaml
+- action: "extract_from_json"
+  params:
+    selector: "script[type='application/ld+json']"
+    field: "product_name"
+    json_path: "name" # dot-notation path to the desired value (e.g., 'details.price')
+```
 
 #### extract_single
 Extract a single value using a named selector.

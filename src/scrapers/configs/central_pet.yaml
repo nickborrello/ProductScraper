@@ -23,6 +23,9 @@ workflows:
   - action: "navigate"
     params:
       url: "https://www.centralpet.com/Search?criteria={sku}"
+  - action: "conditional_click"
+    params:
+      selector: "//button[contains(text(), 'Accept')]"
   - action: "check_no_results" # Explicitly check for no results page
   - action: "conditional_skip"
     params:

@@ -20,6 +20,9 @@ selectors:
     attribute: "text"
 
 workflows:
+  - action: "conditional_click"
+    params:
+      selector: "#sp-cc-accept"
   - action: "navigate"
     params:
       url: "https://www.amazon.com/s?k={sku}"
@@ -36,6 +39,8 @@ workflows:
   - action: "click"
     params:
       selector: ".s-result-item a[href*='/dp/'], .s-search-result a[href*='/dp/']"
+      filter_text_exclude: "sponsored"
+      index: 0
   - action: "wait_for"
     params:
       selector: "#productTitle, #title, h1"
