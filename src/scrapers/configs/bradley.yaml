@@ -1,6 +1,6 @@
 name: "bradley"
 base_url: "https://www.bradleycaldwell.com"
-test_skus: ["791611038437"]
+test_skus: ["035585499741"]
 timeout: 30
 retries: 3
 
@@ -9,26 +9,25 @@ selectors:
     selector: "h1"
     attribute: "text"
   - name: "Brand"
-    selector: "//p[contains(text(), 'By:')]/a"
+    selector: "//h1/preceding-sibling::a[1]"
     attribute: "text"
   - name: "Weight"
-    selector: "//li[contains(text(), 'Weight:')]"
+    selector: "//*[contains(text(), 'Weight:')]"
     attribute: "text"
   - name: "Image URLs"
-    selector: "img[src*='/products/']"
+    selector: "img"
     attribute: "src"
     multiple: true
 
 workflows:
   - action: "navigate"
     params:
-      # This URL from the legacy python script assumes the {sku} variable will be surrounded by asterisks.
       url: "https://www.bradleycaldwell.com/search?term={sku}"
 
   - action: "wait_for"
     params:
-      # Wait for either the product results (success) or the "no results" message (failure)
-      selector: ["article", "//h3[contains(text(), 'Sorry, no results')]"]
+      selector:
+        ["//h1[contains(text(), 'Search results for')]", "//h3[contains(text(), 'Sorry, no results for')]"]
       timeout: 20
 
   - action: "check_no_results"
@@ -39,23 +38,22 @@ workflows:
     params:
       if_flag: "no_results_found"
 
-  # If we are here, results were found. Click on the first product link.
   - action: "click"
     params:
-      selector: "article a[href]"
+      selector: "main a[href*='bradleycaldwell.com']"
 
   - action: "wait_for"
     params:
-      selector: "//p[contains(text(), 'By:')]"
+      selector: "h1"
       timeout: 20
 
-  # Extract product details
+  # Extract product details directly from the page
   - action: "extract"
     params:
       fields: ["Name", "Brand", "Weight", "Image URLs"]
 
 validation:
   no_results_selectors:
-    - "//h3[contains(text(), 'Sorry, no results')]"
+    - "//*[contains(text(), '0 items')]"
   no_results_text_patterns:
-    - "Sorry, no results for"
+    - "0 items"

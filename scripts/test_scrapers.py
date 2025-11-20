@@ -154,93 +154,113 @@ def test_scraper_config(scraper_name: str, headless: bool = True, test_no_result
     """
     logger.info(f"Testing scraper: {scraper_name}")
 
-        result = {
+    result = {
 
-            "scraper": scraper_name,
+        "scraper": scraper_name,
 
-            "success": False,
+        "success": False,
 
-            "execution_time": 0,
+        "execution_time": 0,
 
-            "results": None,
+        "results": None,
 
-            "error": None,
+        "error": None,
 
-            "data_quality_issues": []
+        "data_quality_issues": []
 
-        }
-
-    
-
-        start_time = time.time()
+    }
 
     
 
-        try:
+    start_time = time.time()
 
-            # Get test SKU - use fake SKU for no results testing
+    
+
+    try:
+
+        # Get test SKU - use fake SKU for no results testing
+
+        if test_no_results:
+
+            sku = "24811283904712894120798"  # Fake SKU that should produce no results
+
+            logger.info(f"Testing NO RESULTS scenario with fake SKU: {sku}")
+
+        else:
+
+            sku = get_test_sku(scraper_name)
+
+            logger.info(f"Using test SKU: {sku}")
+
+    
+
+        # Load YAML config
+
+        config_path = PROJECT_ROOT / "src" / "scrapers" / "configs" / f"{scraper_name}.yaml"
+
+        parser = ScraperConfigParser()
+
+        config = parser.load_from_file(config_path)
+
+    
+
+        # Clone config and replace SKU placeholders
+
+        sku_config = copy.deepcopy(config)
+
+        replace_sku_placeholders(sku_config, sku)
+
+    
+
+        # For no-results testing, disable rate limiting detection to avoid false positives
+
+        if test_no_results:
+
+            if hasattr(sku_config, 'anti_detection'):
+
+                sku_config.anti_detection.enable_rate_limiting = False
+
+                logger.info("Disabled rate limiting detection for no-results test")
+
+    
+
+        # Execute workflow
+
+        executor = WorkflowExecutor(sku_config, headless=headless)
+
+        workflow_result = executor.execute_workflow()
+
+    
+
+        result["execution_time"] = time.time() - start_time
+
+        result["results"] = workflow_result
+
+    
+
+        if workflow_result.get("success", False):
+
+            extracted_data = workflow_result.get("results", {})
 
             if test_no_results:
 
-                sku = "24811283904712894120798"  # Fake SKU that should produce no results
+                if extracted_data.get("no_results_found"):
 
-                logger.info(f"Testing NO RESULTS scenario with fake SKU: {sku}")
+                    result["success"] = True
+
+                    result["data_quality_issues"] = []
+
+                    logger.info(f"✅ {scraper_name}: SUCCESS - No results detected correctly.")
+
+                else:
+
+                    result["success"] = False
+
+                    result["error"] = "No results test failed: no_results_found flag not set"
+
+                    logger.error(f"❌ {scraper_name}: FAILED - No results test failed: no_results_found flag not set")
 
             else:
-
-                sku = get_test_sku(scraper_name)
-
-                logger.info(f"Using test SKU: {sku}")
-
-    
-
-            # Load YAML config
-
-            config_path = PROJECT_ROOT / "src" / "scrapers" / "configs" / f"{scraper_name}.yaml"
-
-            parser = ScraperConfigParser()
-
-            config = parser.load_from_file(config_path)
-
-    
-
-            # Clone config and replace SKU placeholders
-
-            sku_config = copy.deepcopy(config)
-
-            replace_sku_placeholders(sku_config, sku)
-
-    
-
-            # For no-results testing, disable rate limiting detection to avoid false positives
-
-            if test_no_results:
-
-                if hasattr(sku_config, 'anti_detection'):
-
-                    sku_config.anti_detection.enable_rate_limiting = False
-
-                    logger.info("Disabled rate limiting detection for no-results test")
-
-    
-
-            # Execute workflow
-
-            executor = WorkflowExecutor(sku_config, headless=headless)
-
-            workflow_result = executor.execute_workflow()
-
-    
-
-            result["execution_time"] = time.time() - start_time
-
-            result["results"] = workflow_result
-
-    
-
-            if workflow_result.get("success", False):
-
-                extracted_data = workflow_result.get("results", {})
 
                 result["data_quality_issues"] = perform_data_quality_check(extracted_data)
 
@@ -274,25 +294,25 @@ def test_scraper_config(scraper_name: str, headless: bool = True, test_no_result
 
     
 
-            else:
+        else:
 
-                result["success"] = False
+            result["success"] = False
 
-                logger.error(f"❌ {scraper_name}: FAILED - Workflow execution failed")
-
-    
-
-        except Exception as e:
-
-            result["execution_time"] = time.time() - start_time
-
-            result["error"] = str(e)
-
-            logger.error(f"❌ {scraper_name}: ERROR - {e}")
+            logger.error(f"❌ {scraper_name}: FAILED - Workflow execution failed")
 
     
 
-        return result
+    except Exception as e:
+
+        result["execution_time"] = time.time() - start_time
+
+        result["error"] = str(e)
+
+        logger.error(f"❌ {scraper_name}: ERROR - {e}")
+
+    
+
+    return result
 
 def main():
     """Main function to run all scraper tests."""
