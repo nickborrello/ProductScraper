@@ -108,6 +108,19 @@ def get_available_scrapers() -> List[str]:
                 )
                 scrapers.append(site_name)
 
+    # Filter to only passing scrapers if the file exists
+    passing_file = os.path.join(project_root, "data", "passing_scrapers.json")
+    if os.path.exists(passing_file):
+        try:
+            import json
+            with open(passing_file, 'r') as f:
+                passing_scrapers = json.load(f)
+            # Normalize names for comparison
+            passing_normalized = [s.lower().replace(" ", "") for s in passing_scrapers]
+            scrapers = [s for s in scrapers if s.lower().replace(" ", "") in passing_normalized]
+        except Exception as e:
+            print(f"Warning: Could not load passing scrapers file: {e}")
+
     return scrapers
 
 
