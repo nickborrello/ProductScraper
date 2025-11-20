@@ -37,7 +37,7 @@ login:
 
 anti_detection:
   enable_captcha_detection: false
-  enable_rate_limiting: true
+  enable_rate_limiting: false
   enable_human_simulation: true
   enable_session_rotation: false
   enable_blocking_handling: false

@@ -23,32 +23,32 @@ selectors:
     multiple: true
 
 workflows:
-   - action: "navigate"
-     params:
-       url: "https://mazuri.com/pages/search-results-page?q={sku}"
-   - action: "wait_for"
-     params:
-       selector: "a[href*='/products/'], .no-results, .empty-search, .snize-no-results, #search-no-results"
-       timeout: 15
+  - action: "navigate"
+    params:
+      url: "https://mazuri.com/pages/search-results-page?q={sku}"
+  - action: "wait_for"
+    params:
+      selector: "a[href*='/products/'], .no-results, .empty-search, .snize-no-results, #search-no-results"
+      timeout: 15
   # Cookie banner doesn't exist on this page, skip this step
   # - action: "click"
   #   params:
   #     selector: "//button[contains(text(),'Close') or contains(text(),'Accept') or contains(text(),'Agree') or contains(text(),'OK')]"
   #     wait_after: 2
-   - action: "click"
-     params:
-       selector: "a.snize-view-link[href*='/products/']"
-   - action: "wait_for"
-     params:
-       selector: "img, h2"
-       timeout: 15
-   - action: "extract"
-     params:
-       fields: ["product_name", "brand", "weight", "price", "images"]
+  - action: "click"
+    params:
+      selector: "a.snize-view-link[href*='/products/']"
+  - action: "wait_for"
+    params:
+      selector: "img, h2"
+      timeout: 15
+  - action: "extract"
+    params:
+      fields: ["product_name", "brand", "weight", "price", "images"]
 
 anti_detection:
   enable_captcha_detection: false
-  enable_rate_limiting: true
+  enable_rate_limiting: false
   enable_human_simulation: true
   enable_session_rotation: false
   enable_blocking_handling: false
