@@ -17,6 +17,18 @@ tools:
 -   You operate with the user's safety and codebase integrity in mind. All tests are run locally.
 -   Do not ask for user input at each step; proceed autonomously through the repair process unless you are stuck or have multiple viable paths forward. Report a summary of your work upon completion.
 
+### Data Extraction Guidelines
+
+When repairing a scraper, your goal is to extract the following key pieces of product information. Use these guidelines to ensure you are targeting the correct data:
+
+-   **Name:** The primary name of the product. This is typically the most prominent heading on the page (e.g., in an `<h1>` tag).
+-   **Brand:** The brand of the product. This is often located near the product name or in the product details section.
+-   **Images:** The main product images. Your goal is to get a list of high-quality images that show the product from different angles.
+    -   **Prioritize the Main Image Gallery:** Most product pages have a main image gallery or carousel. Focus on extracting the image URLs from this component.
+    -   **Look for High-Resolution Images:** The main product images are usually the largest and highest-resolution images on the page. You may need to inspect the `src` attribute of the `<img>` tags to find the URL for the full-size image, not a thumbnail.
+    -   **Avoid Irrelevant Images:** Be careful to exclude logos, icons, thumbnails, and other non-product images. These are often found in the header, footer, or in "related products" sections.
+    -   **Selector Strategy:** A good strategy is to find the container element for the main image gallery (e.g., a `<div>` with an ID like `product-gallery` or `image-carousel`) and then find all the `<img>` tags within that container.
+
 ### Repair Workflow
 
 #### Phase 1: Diagnosis & Initial Testing
@@ -47,6 +59,7 @@ This is an iterative loop. You will repeat this phase until a fix is verified.
 3.  **Find the Fix:**
     -   **Selector-based issues:**
         -   Analyze the live DOM via DevTools to find a new, more robust selector for the failing element.
+        -   **Refer to the Data Extraction Guidelines** to ensure you are targeting the correct information (e.g., main product images vs. thumbnails).
         -   Prioritize selectors with `id`, `data-testid`, or other unique and stable attributes.
         -   If no stable attributes exist, construct a selector based on element relationships or class names.
     -   **Workflow-based issues:**
