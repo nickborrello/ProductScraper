@@ -18,6 +18,9 @@ selectors:
     selector: "img"
     attribute: "src"
     multiple: true
+  - name: "Product URL"
+    selector: "main a[href*='-']"
+    attribute: "href"
 
 workflows:
   - action: "navigate"
@@ -35,19 +38,23 @@ workflows:
 
   - action: "check_no_results"
     params:
-      min_confidence: 0.5
+      min_confidence: 0.8
 
   - action: "conditional_skip"
     params:
       if_flag: "no_results_found"
 
-  - action: "click"
+  - action: "extract"
     params:
-      selector: "main a[href*='bradleycaldwell.com']"
+      fields: ["Product URL"]
+
+  - action: "navigate"
+    params:
+      url: "{Product URL}"
 
   - action: "wait_for"
     params:
-      selector: "h1"
+      selector: "//a[contains(@href, 'manufacturer')]"
       timeout: 20
 
   # Extract product details directly from the page
