@@ -6,14 +6,14 @@ retries: 3
 
 selectors:
   - name: "Name"
-    selector: "h1.product-name"
+    selector: "h1"
     attribute: "text"
   - name: "Brand"
-    selector: "div.product-brand > a, a[href*='/brand/']"
+    selector: "//p[contains(text(), 'By:')]/a"
     attribute: "text"
   - name: "Weight"
-    selector: "//table[contains(@class, 'table')]//tr[td/strong[text()='Weight']]/td[2]"
-    attribute: "innerHTML"
+    selector: "//li[contains(text(), 'Weight:')]"
+    attribute: "text"
   - name: "Image URLs"
     selector: "#main-slider-desktop a[href*='/ccstore/v1/images'], #main-slider-mobile a[href*='/ccstore/v1/images']"
     attribute: "href"
@@ -27,23 +27,31 @@ workflows:
 
   - action: "wait_for"
     params:
-      # Wait for either the product name (success) or the "no results" message (failure)
-      selector: ["h1.product-name", "//h2[contains(text(), 'No products were found.')]"]
+      # Wait for either the product results (success) or the "no results" message (failure)
+      selector: ["article", "//h3[contains(text(), 'Sorry, no results')]"]
       timeout: 20
-
-  - action: "check_no_results"
 
   - action: "conditional_skip"
     params:
       if_flag: "no_results_found"
 
-  # If we are here, it means the product page loaded directly.
+  # If we are here, results were found. Click on the first product link.
+  - action: "click"
+    params:
+      selector: "article a[href]"
+
+  - action: "wait_for"
+    params:
+      selector: "//p[contains(text(), 'By:')]"
+      timeout: 20
+
+  # Extract product details
   - action: "extract"
     params:
       fields: ["Name", "Brand", "Weight", "Image URLs"]
 
 validation:
   no_results_selectors:
-    - "//h2[contains(text(), 'No products were found.')]"
+    - "//h3[contains(text(), 'Sorry, no results')]"
   no_results_text_patterns:
-    - "No products were found."
+    - "Sorry, no results for"

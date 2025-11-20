@@ -13,6 +13,7 @@ Usage:
     python test_scrapers.py                          # Default: test all scrapers
 """
 
+import os
 import sys
 import json
 import yaml
@@ -100,7 +101,7 @@ def replace_sku_placeholders(config, sku: str):
         if step.action == "navigate" and "url" in step.params:
             step.params["url"] = step.params["url"].replace("{sku}", sku)
 
-def test_scraper_config(scraper_name: str, headless: bool = True, test_no_results: bool = False) -> Dict[str, Any]:
+def test_scraper_config(scraper_name: str, headless: bool = True, test_no_results: bool = False, temp_dir: str = None) -> Dict[str, Any]:
     """
     Test a single scraper configuration.
 
@@ -166,6 +167,14 @@ def test_scraper_config(scraper_name: str, headless: bool = True, test_no_result
                         logger.info(f"   {field}: {value[:50]}...")
                     else:
                         logger.info(f"   {field}: {value}")
+                
+                # Save extracted data to a temporary JSON file
+                if temp_dir:
+                    results_file = Path(temp_dir) / f"scraper_results_{scraper_name}.json"
+                    with open(results_file, 'w', encoding='utf-8') as f:
+                        json.dump(extracted_data, f, indent=4)
+                    logger.info(f"   Saved extracted data to {results_file}")
+
         else:
             logger.error(f"❌ {scraper_name}: FAILED - Workflow execution failed")
 
@@ -230,8 +239,11 @@ def main():
     successful = 0
     failed = 0
 
+    # Get the project's temporary directory from environment variable or default
+    temp_dir = os.environ.get("GEMINI_TEMP_DIR", "/tmp/gemini")
+    
     for scraper_name in scrapers_to_test:
-        result = test_scraper_config(scraper_name, headless=args.headless, test_no_results=test_no_results_mode)
+        result = test_scraper_config(scraper_name, headless=args.headless, test_no_results=test_no_results_mode, temp_dir=temp_dir)
         results[scraper_name] = result
 
         if result["success"]:

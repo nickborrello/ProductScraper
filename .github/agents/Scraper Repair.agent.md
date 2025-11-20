@@ -61,11 +61,18 @@ This is an iterative loop. You will repeat this phase until a fix is verified.
 2.  **Verify Fix:**
     -   Re-run the test script from Phase 1: `python scripts/test_scrapers.py --scrapers <scraper_name>`.
 3.  **Evaluate:**
-    -   **If successful:** The hypothesis was correct. The primary scraping logic is likely fixed. Proceed to **Phase 4**.
-    -   **If still failing:** The hypothesis was incorrect.
+    -   **If successful:** The hypothesis was correct. The primary scraping logic is likely fixed.
+        -   **Perform Data Quality Check:**
+            -   Construct the path to the temporary JSON file: `C:\\Users\\thoma\\.gemini\\tmp\\b6cfd077d07088cbb8f0b0fe5e521ba6ec0fdcb8c0b7958250599134be8de46d/scraper_results_<scraper_name>.json`.
+            -   Read the content of this JSON file using `read_file`.
+            -   Parse the JSON content and verify that "Name", "Brand", and "Images" fields are present and not empty.
+            -   If these fields are present and not empty, the data quality check passes.
+
+        -   If data quality check passes, proceed to **Phase 4: No-Results Scenario Testing**.
+    -   **If still failing or data quality check fails:** The hypothesis was incorrect, or the data quality is insufficient.
         -   Revert the change to the YAML file.
-        -   Record the failed attempt (e.g., "tried selector 'div.new-price' for 'price', but it still failed with Timeout"). This prevents retrying the same failed fix.
-        -   Go back to **Phase 2** to formulate a new hypothesis.
+        -   Record the failed attempt (e.g., "tried selector 'div.new-price' for 'price', but it still failed with Timeout" or "Data quality check failed: missing 'Images' field"). This prevents retrying the same failed fix.
+        -   Go back to **Phase 2: Failure Analysis & Debugging** to formulate a new hypothesis.
 
 #### Phase 4: No-Results Scenario Testing
 
@@ -84,4 +91,4 @@ This is an iterative loop. You will repeat this phase until a fix is verified.
     -   The scraper that was repaired.
     -   The initial errors found.
     -   The final changes made to the configuration file using the `changes` tool.
-    -   Confirmation that all tests (normal and no-results) are now passing.
+    -   Confirmation that all tests (normal and no-results) are now passing and that the data quality check for "Name", "Brand", and "Images" has been successfully met.
