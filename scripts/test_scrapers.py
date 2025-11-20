@@ -101,6 +101,46 @@ def replace_sku_placeholders(config, sku: str):
         if step.action == "navigate" and "url" in step.params:
             step.params["url"] = step.params["url"].replace("{sku}", sku)
 
+def perform_data_quality_check(extracted_data: Dict[str, Any]) -> List[str]:
+    """
+    Performs a data quality check on the extracted data.
+    Returns a list of issues found.
+    """
+    issues = []
+    required_fields = ["Name", "Brand", "Images"]
+
+    for field in required_fields:
+        if field not in extracted_data:
+            issues.append(f"Missing field: {field}")
+        elif not extracted_data[field]:
+            issues.append(f"Empty field: {field}")
+        elif field == "Images" and not isinstance(extracted_data[field], list):
+            issues.append(f"Invalid format for Images: expected a list, got {type(extracted_data[field])}")
+        elif field == "Images" and isinstance(extracted_data[field], list) and not all(isinstance(item, str) and item.startswith("http") for item in extracted_data[field]):
+            issues.append(f"Invalid image URLs in Images field: expected list of http(s) URLs")
+    
+    return issues
+
+def perform_data_quality_check(extracted_data: Dict[str, Any]) -> List[str]:
+    """
+    Performs a data quality check on the extracted data.
+    Returns a list of issues found.
+    """
+    issues = []
+    required_fields = ["Name", "Brand", "Images"]
+
+    for field in required_fields:
+        if field not in extracted_data:
+            issues.append(f"Missing field: {field}")
+        elif not extracted_data[field]:
+            issues.append(f"Empty field: {field}")
+        elif field == "Images" and not isinstance(extracted_data[field], list):
+            issues.append(f"Invalid format for Images: expected a list, got {type(extracted_data[field])}")
+        elif field == "Images" and isinstance(extracted_data[field], list) and not all(isinstance(item, str) and item.startswith("http") for item in extracted_data[field]):
+            issues.append(f"Invalid image URLs in Images field: expected list of http(s) URLs")
+    
+    return issues
+
 def test_scraper_config(scraper_name: str, headless: bool = True, test_no_results: bool = False, temp_dir: str = None) -> Dict[str, Any]:
     """
     Test a single scraper configuration.
@@ -114,76 +154,145 @@ def test_scraper_config(scraper_name: str, headless: bool = True, test_no_result
     """
     logger.info(f"Testing scraper: {scraper_name}")
 
-    result = {
-        "scraper": scraper_name,
-        "success": False,
-        "execution_time": 0,
-        "results": None,
-        "error": None
-    }
+        result = {
 
-    start_time = time.time()
+            "scraper": scraper_name,
 
-    try:
-        # Get test SKU - use fake SKU for no results testing
-        if test_no_results:
-            sku = "24811283904712894120798"  # Fake SKU that should produce no results
-            logger.info(f"Testing NO RESULTS scenario with fake SKU: {sku}")
-        else:
-            sku = get_test_sku(scraper_name)
-            logger.info(f"Using test SKU: {sku}")
+            "success": False,
 
-        # Load YAML config
-        config_path = PROJECT_ROOT / "src" / "scrapers" / "configs" / f"{scraper_name}.yaml"
-        parser = ScraperConfigParser()
-        config = parser.load_from_file(config_path)
+            "execution_time": 0,
 
-        # Clone config and replace SKU placeholders
-        sku_config = copy.deepcopy(config)
-        replace_sku_placeholders(sku_config, sku)
+            "results": None,
 
-        # For no-results testing, disable rate limiting detection to avoid false positives
-        if test_no_results:
-            if hasattr(sku_config, 'anti_detection'):
-                sku_config.anti_detection.enable_rate_limiting = False
-                logger.info("Disabled rate limiting detection for no-results test")
+            "error": None,
 
-        # Execute workflow
-        executor = WorkflowExecutor(sku_config, headless=headless)
-        workflow_result = executor.execute_workflow()
+            "data_quality_issues": []
 
-        result["execution_time"] = time.time() - start_time
-        result["results"] = workflow_result
-        result["success"] = workflow_result.get("success", False)
+        }
 
-        if result["success"]:
-            logger.info(f"✅ {scraper_name}: SUCCESS - {workflow_result.get('steps_executed', 0)} steps executed")
-            # Log extracted data
-            extracted_data = workflow_result.get("results", {})
-            if extracted_data:
-                logger.info(f"   Extracted fields: {list(extracted_data.keys())}")
-                for field, value in extracted_data.items():
-                    if isinstance(value, str) and len(value) > 50:
-                        logger.info(f"   {field}: {value[:50]}...")
-                    else:
-                        logger.info(f"   {field}: {value}")
+    
+
+        start_time = time.time()
+
+    
+
+        try:
+
+            # Get test SKU - use fake SKU for no results testing
+
+            if test_no_results:
+
+                sku = "24811283904712894120798"  # Fake SKU that should produce no results
+
+                logger.info(f"Testing NO RESULTS scenario with fake SKU: {sku}")
+
+            else:
+
+                sku = get_test_sku(scraper_name)
+
+                logger.info(f"Using test SKU: {sku}")
+
+    
+
+            # Load YAML config
+
+            config_path = PROJECT_ROOT / "src" / "scrapers" / "configs" / f"{scraper_name}.yaml"
+
+            parser = ScraperConfigParser()
+
+            config = parser.load_from_file(config_path)
+
+    
+
+            # Clone config and replace SKU placeholders
+
+            sku_config = copy.deepcopy(config)
+
+            replace_sku_placeholders(sku_config, sku)
+
+    
+
+            # For no-results testing, disable rate limiting detection to avoid false positives
+
+            if test_no_results:
+
+                if hasattr(sku_config, 'anti_detection'):
+
+                    sku_config.anti_detection.enable_rate_limiting = False
+
+                    logger.info("Disabled rate limiting detection for no-results test")
+
+    
+
+            # Execute workflow
+
+            executor = WorkflowExecutor(sku_config, headless=headless)
+
+            workflow_result = executor.execute_workflow()
+
+    
+
+            result["execution_time"] = time.time() - start_time
+
+            result["results"] = workflow_result
+
+    
+
+            if workflow_result.get("success", False):
+
+                extracted_data = workflow_result.get("results", {})
+
+                result["data_quality_issues"] = perform_data_quality_check(extracted_data)
+
                 
-                # Save extracted data to a temporary JSON file
-                if temp_dir:
-                    results_file = Path(temp_dir) / f"scraper_results_{scraper_name}.json"
-                    with open(results_file, 'w', encoding='utf-8') as f:
-                        json.dump(extracted_data, f, indent=4)
-                    logger.info(f"   Saved extracted data to {results_file}")
 
-        else:
-            logger.error(f"❌ {scraper_name}: FAILED - Workflow execution failed")
+                if not result["data_quality_issues"]:
 
-    except Exception as e:
-        result["execution_time"] = time.time() - start_time
-        result["error"] = str(e)
-        logger.error(f"❌ {scraper_name}: ERROR - {e}")
+                    result["success"] = True
 
-    return result
+                    logger.info(f"✅ {scraper_name}: SUCCESS - {workflow_result.get('steps_executed', 0)} steps executed. Data quality check passed.")
+
+                    if extracted_data:
+
+                        logger.info(f"   Extracted fields: {list(extracted_data.keys())}")
+
+                        for field, value in extracted_data.items():
+
+                            if isinstance(value, str) and len(value) > 50:
+
+                                logger.info(f"   {field}: {value[:50]}...")
+
+                            else:
+
+                                logger.info(f"   {field}: {value}")
+
+                else:
+
+                    result["success"] = False
+
+                    logger.error(f"❌ {scraper_name}: FAILED - Data quality issues found: {', '.join(result['data_quality_issues'])}")
+
+    
+
+            else:
+
+                result["success"] = False
+
+                logger.error(f"❌ {scraper_name}: FAILED - Workflow execution failed")
+
+    
+
+        except Exception as e:
+
+            result["execution_time"] = time.time() - start_time
+
+            result["error"] = str(e)
+
+            logger.error(f"❌ {scraper_name}: ERROR - {e}")
+
+    
+
+        return result
 
 def main():
     """Main function to run all scraper tests."""
@@ -239,11 +348,8 @@ def main():
     successful = 0
     failed = 0
 
-    # Get the project's temporary directory from environment variable or default
-    temp_dir = os.environ.get("GEMINI_TEMP_DIR", "/tmp/gemini")
-    
     for scraper_name in scrapers_to_test:
-        result = test_scraper_config(scraper_name, headless=args.headless, test_no_results=test_no_results_mode, temp_dir=temp_dir)
+        result = test_scraper_config(scraper_name, headless=args.headless, test_no_results=test_no_results_mode)
         results[scraper_name] = result
 
         if result["success"]:
@@ -268,7 +374,11 @@ def main():
         for name, result in results.items():
             if not result["success"]:
                 error = result.get("error", "Unknown error")
-                logger.info(f"  • {name}: {error}")
+                data_quality_issues = result.get("data_quality_issues", [])
+                if data_quality_issues:
+                    logger.info(f"  • {name}: Data quality issues: {', '.join(data_quality_issues)}")
+                else:
+                    logger.info(f"  • {name}: {error}")
     else:
         logger.info("\n✅ ALL SCRAPERS PASSED")
 

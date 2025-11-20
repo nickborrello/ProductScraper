@@ -15,8 +15,8 @@ selectors:
     selector: "//li[contains(text(), 'Weight:')]"
     attribute: "text"
   - name: "Image URLs"
-    selector: "#main-slider-desktop a[href*='/ccstore/v1/images'], #main-slider-mobile a[href*='/ccstore/v1/images']"
-    attribute: "href"
+    selector: "img[src*='/products/']"
+    attribute: "src"
     multiple: true
 
 workflows:
@@ -30,6 +30,10 @@ workflows:
       # Wait for either the product results (success) or the "no results" message (failure)
       selector: ["article", "//h3[contains(text(), 'Sorry, no results')]"]
       timeout: 20
+
+  - action: "check_no_results"
+    params:
+      min_confidence: 0.5
 
   - action: "conditional_skip"
     params:

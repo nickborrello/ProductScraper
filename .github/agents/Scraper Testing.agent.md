@@ -22,20 +22,26 @@ You are a SCRAPER TESTING AGENT. You orchestrate the testing of all scraper conf
 For each scraper config:
 
 ### 2A. Test Scraper
-1. Run the regular test: python scripts/test_scrapers.py --scraper <scraper_name>
+1. Run the regular test: `python scripts/test_scrapers.py --scraper <scraper_name>`
 
-2. Run the no-results test: python scripts/test_scrapers.py --no-results <scraper_name>
+2. Run the no-results test: `python scripts/test_scrapers.py --no-results <scraper_name>`
 
-3. Check output for failures (errors, missing data, etc.) in both tests. For the no-results test, timeout or failure to properly detect no results on the search page is considered a failure.
+3. **Analyze Test Output**:
+   - Parse the output from both tests to check for failures.
+   - A failure can be a script error, a workflow execution failure, or a data quality failure (indicated by `data_quality_issues` in the output).
+   - For the no-results test, a timeout or failure to properly detect "no results" is also considered a failure.
 
-4. If both pass: Mark as successful, proceed to next.
+4. If both tests pass (i.e., no errors and no data quality issues):
+   - Mark the scraper as "successful" and proceed to the next one.
 
-5. If either fails: Proceed to repair.
+5. If either test fails:
+   - **Extract Failure Details**: From the test output, identify the specific reason for failure (e.g., "error: TimeoutException", "data_quality_issues: ['Missing field: Images']").
+   - Proceed to **Phase 2B: Repair Failed Scraper**.
 
 ### 2B. Repair Failed Scraper
-1. Use #runSubagent to invoke the Scraper Repair agent with the failing config content.
+1. Use `#runSubagent` to invoke the Scraper Repair agent with the failing config content and the detailed failure reason.
 
-2. Provide the YAML content and instruct to repair autonomously.
+2. Provide the YAML content and instruct the agent to repair autonomously, using the failure details to guide its work.
 
 3. Wait for repair completion.
 
@@ -61,7 +67,8 @@ For each scraper config:
 When invoking the Scraper Repair agent:
 
 - Provide the failing scraper name and YAML content.
-- Instruct to repair the config autonomously and return the updated YAML.
+- **Provide the detailed failure reason** extracted from the test output (e.g., "error: TimeoutException on selector 'price'", "data_quality_issues: ['Missing field: Images']").
+- Instruct the agent to use this information to guide its repair process.
 - Tell them to work without pausing for user input.
 </subagent_instructions>
 
