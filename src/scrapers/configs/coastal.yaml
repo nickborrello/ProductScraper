@@ -6,16 +6,16 @@ retries: 3
 
 selectors:
   - name: "Name"
-    selector: ".product-title h1"
+    selector: "h4.product-details__product-name"
     attribute: "text"
   - name: "Brand"
-    selector: ".product-brand"
+    selector: ".product-details__breadcrumbs a[href*='brand=']"
     attribute: "text"
   - name: "Weight"
-    selector: ".product-weight, .weight, [data-weight], .product-details li:contains('Weight')"
+    selector: ".product-weight"
     attribute: "text"
   - name: "Images"
-    selector: ".product-gallery img"
+    selector: ".product-details__preview-images img"
     attribute: "src"
     multiple: true
 
@@ -23,20 +23,19 @@ workflows:
   - action: "navigate"
     params:
       url: "https://www.coastalpet.com/products/search/?q={sku}"
+  - action: "wait"
+    params:
+      seconds: 3
   - action: "wait_for"
     params:
       selector: ".product-listing, .no-results, .empty-search, .search-no-results"
       timeout: 10
-  - action: "check_no_results"
-  - action: "conditional_skip"
-    params:
-      if_flag: "no_results_found"
   - action: "click"
     params:
       selector: "p.product-listing__title--text a"
   - action: "wait_for"
     params:
-      selector: ".product-detail"
+      selector: ".product-details"
       timeout: 10
   - action: "extract"
     params:
