@@ -587,21 +587,6 @@ class WorkflowExecutor:
                 By.CSS_SELECTOR, selector_config.selector
             )
             value = self._extract_value_from_element(element, selector_config.attribute)
-            if field_name == "Brand" and value:
-                match = re.match(r"Visit (?:the )?(.+?) Store", value)
-                if match:
-                    value = match.group(1)
-            elif field_name == "Weight" and value:
-                # Process weight: extract number and convert ounces to pounds
-                weight_match = re.search(r"(\d+(?:\.\d+)?)", value)
-                if weight_match:
-                    weight_num = float(weight_match.group(1))
-                    if "ounce" in value.lower():
-                        # Convert ounces to pounds (1 oz = 0.0625 lbs)
-                        weight_num = weight_num / 16
-                    value = f"{weight_num:.2f} lbs"
-                else:
-                    value = None
             self.results[field_name] = value
             logger.debug(f"Extracted {field_name}: {value}")
         except NoSuchElementException:
@@ -635,30 +620,6 @@ class WorkflowExecutor:
                 )
                 if value:
                     values.append(value)
-
-            if field_name == "Brand":
-                cleaned_values = []
-                for v in values:
-                    if v:
-                        match = re.match(r"Visit (?:the )?(.+?) Store", v)
-                        if match:
-                            cleaned_values.append(match.group(1))
-                        else:
-                            cleaned_values.append(v)
-                values = cleaned_values
-            elif field_name == "Weight":
-                # Process weight values: extract number and convert ounces to pounds
-                processed_values = []
-                for v in values:
-                    if v:
-                        weight_match = re.search(r"(\d+(?:\.\d+)?)", v)
-                        if weight_match:
-                            weight_num = float(weight_match.group(1))
-                            if "ounce" in v.lower():
-                                # Convert ounces to pounds (1 oz = 0.0625 lbs)
-                                weight_num = weight_num / 16
-                            processed_values.append(f"{weight_num:.2f} lbs")
-                values = processed_values
             self.results[field_name] = values
             logger.debug(f"Extracted {len(values)} items for {field_name}")
         except Exception as e:
@@ -695,16 +656,6 @@ class WorkflowExecutor:
                         )
                         if value:
                             values.append(value)
-                    if field_name == "Brand":
-                        cleaned_values = []
-                        for v in values:
-                            if v:
-                                match = re.match(r"Visit (?:the )?(.+?) Store", v)
-                                if match:
-                                    cleaned_values.append(match.group(1))
-                                else:
-                                    cleaned_values.append(v)
-                        values = cleaned_values
                     self.results[field_name] = values
                 else:
                     element = self.browser.driver.find_element(
@@ -713,10 +664,6 @@ class WorkflowExecutor:
                     value = self._extract_value_from_element(
                         element, selector_config.attribute
                     )
-                    if field_name == "Brand" and value:
-                        match = re.match(r"Visit (?:the )?(.+?) Store", value)
-                        if match:
-                            value = match.group(1)
                     self.results[field_name] = value
                 logger.debug(f"Extracted {field_name}: {self.results[field_name]}")
             except NoSuchElementException:
