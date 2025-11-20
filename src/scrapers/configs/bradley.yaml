@@ -18,9 +18,6 @@ selectors:
     selector: ".product-gallery img"
     attribute: "src"
     multiple: true
-  - name: "Product URL"
-    selector: "main a[href*='-']"
-    attribute: "href"
 
 workflows:
   - action: "navigate"
@@ -44,23 +41,20 @@ workflows:
     params:
       if_flag: "no_results_found"
 
-  - action: "extract"
+  - action: "click"
     params:
-      fields: ["Product URL"]
-
-  - action: "navigate"
-    params:
-      url: "{Product URL}"
+      selector: "main a[href*='/product/']"
+      index: 0
 
   - action: "wait_for"
     params:
-      selector: "//a[contains(@href, 'manufacturer')]"
+      selector: "h1"
       timeout: 20
 
   # Extract product details directly from the page
   - action: "extract"
     params:
-      fields: ["Name", "Brand", "Weight", "Image URLs"]
+      fields: ["Name", "Brand", "Weight", "Images"]
 
 validation:
   no_results_selectors:
