@@ -1177,6 +1177,11 @@ class WorkflowExecutor:
                 else:
                     raise KeyError(f"Path part '{part}' not found in JSON")
             
+            # Convert protocol-relative URLs to full URLs for Images field
+            if field_name == "Images" and isinstance(current_data, list):
+                current_data = [url if url.startswith(('http://', 'https://')) else f'https:{url}' 
+                              for url in current_data if isinstance(url, str)]
+            
             self.results[field_name] = current_data
             logger.debug(f"Extracted from JSON for {field_name}: {current_data}")
 

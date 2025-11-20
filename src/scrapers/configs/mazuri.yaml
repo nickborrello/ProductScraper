@@ -5,8 +5,19 @@ timeout: 30
 retries: 3
 
 selectors:
-  - name: "product_json"
-    selector: "script[type='application/json'][id*='ProductJson']"
+  - name: "Name"
+    selector: "h1.product-title, .product-title h1, [data-product-title]"
+    attribute: "text"
+  - name: "Brand"
+    selector: ".product-vendor, .vendor, [data-product-vendor]"
+    attribute: "text"
+  - name: "Weight"
+    selector: ".product-weight, .weight, [data-weight], .variant-option"
+    attribute: "text"
+  - name: "Images"
+    selector: ".product-gallery img, .product-images img, [data-product-image]"
+    attribute: "src"
+    multiple: true
 
 workflows:
   - action: "navigate"
@@ -25,28 +36,11 @@ workflows:
       selector: "a.snize-view-link[href*='/products/']"
   - action: "wait_for"
     params:
-      selector: "script[type='application/json'][id*='ProductJson']"
+      selector: "h1.product-title, .product-title h1, [data-product-title]"
       timeout: 15
-  - action: "extract_from_json"
+  - action: "extract"
     params:
-      selector: "script[type='application/json'][id*='ProductJson']"
-      field: "Name"
-      json_path: "title"
-  - action: "extract_from_json"
-    params:
-      selector: "script[type='application/json'][id*='ProductJson']"
-      field: "Brand"
-      json_path: "vendor"
-  - action: "extract_from_json"
-    params:
-      selector: "script[type='application/json'][id*='ProductJson']"
-      field: "Weight"
-      json_path: "variants.0.option1"
-  - action: "extract_from_json"
-    params:
-      selector: "script[type='application/json'][id*='ProductJson']"
-      field: "Image URLs"
-      json_path: "images"
+      fields: ["Name", "Brand", "Weight", "Images"]
 
 anti_detection:
   enable_captcha_detection: false

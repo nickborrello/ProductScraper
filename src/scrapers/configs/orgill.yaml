@@ -5,19 +5,19 @@ timeout: 30
 retries: 3
 
 selectors:
-  - name: "product_name"
+  - name: "Name"
     selector: "#cphMainContent_ctl00_lblDescription"
     attribute: "text"
-  - name: "brand"
+  - name: "Brand"
     selector: "#cphMainContent_ctl00_lblVendorName"
     attribute: "text"
   - name: "model_number"
     selector: "#cphMainContent_ctl00_lblModelNumber"
     attribute: "text"
-  - name: "weight"
+  - name: "Weight"
     selector: "//strong[contains(text(),'Weight(lb):')]/following-sibling::*[1]"
     attribute: "text"
-  - name: "images"
+  - name: "Images"
     selector: "img[src*='images.orgill.com/websmall/']"
     attribute: "src"
     multiple: true
@@ -44,7 +44,7 @@ workflows:
       timeout: 5
   - action: "extract"
     params:
-      fields: ["product_name", "brand", "model_number", "weight", "images"]
+      fields: ["Name", "Brand", "model_number", "Weight", "Images"]
 
 login:
   url: "https://www.orgill.com/index.aspx?tab=8"

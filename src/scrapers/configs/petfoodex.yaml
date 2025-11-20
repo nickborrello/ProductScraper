@@ -5,13 +5,16 @@ timeout: 30
 retries: 3
 
 selectors:
-  - name: "product_name"
+  - name: "Name"
     selector: "div.pf-detail-heading h1"
     attribute: "text"
-  - name: "brand"
+  - name: "Brand"
     selector: "a.pf-detail-title span"
     attribute: "text"
-  - name: "images"
+  - name: "Weight"
+    selector: ".pf-detail-weight, .weight, [data-weight], .pf-detail-info li:contains('Weight')"
+    attribute: "text"
+  - name: "Images"
     selector: "img[data-test-selector='productDetails_mainImage'], .pf-detail-nav .pf-slide img"
     attribute: "src"
     multiple: true
@@ -31,7 +34,7 @@ workflows:
       if_flag: "no_results_found"
   - action: "extract"
     params:
-      fields: ["product_name", "brand", "images"]
+      fields: ["Name", "Brand", "Weight", "Images"]
 
 login:
   url: "https://orders.petfoodexperts.com/SignIn"

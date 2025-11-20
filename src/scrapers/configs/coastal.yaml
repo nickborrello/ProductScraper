@@ -11,7 +11,10 @@ selectors:
   - name: "Brand"
     selector: ".product-brand"
     attribute: "text"
-  - name: "Image URLs"
+  - name: "Weight"
+    selector: ".product-weight, .weight, [data-weight], .product-details li:contains('Weight')"
+    attribute: "text"
+  - name: "Images"
     selector: ".product-gallery img"
     attribute: "src"
     multiple: true
@@ -37,7 +40,7 @@ workflows:
       timeout: 10
   - action: "extract"
     params:
-      fields: ["Name", "Brand", "Image URLs"]
+      fields: ["Name", "Brand", "Weight", "Images"]
 
 anti_detection:
   enable_captcha_detection: false

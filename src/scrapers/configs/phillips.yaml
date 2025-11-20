@@ -5,16 +5,19 @@ timeout: 30
 retries: 3
 
 selectors:
-  - name: "product_name"
+  - name: "Name"
     selector: "a.cc_product_name"
     attribute: "text"
-  - name: "brand"
+  - name: "Brand"
     selector: "div.product-brand span"
+    attribute: "text"
+  - name: "Weight"
+    selector: ".product-weight, .weight, [data-weight], .cc_product_specs li:contains('Weight')"
     attribute: "text"
   - name: "upc"
     selector: ".//div[contains(@class,'product-upc')]//span[contains(@class,'cc_value')]"
     attribute: "text"
-  - name: "images"
+  - name: "Images"
     selector: "div.cc_product_image img"
     attribute: "src"
 
@@ -38,7 +41,7 @@ workflows:
       match_mode: "fuzzy_number"
   - action: "extract"
     params:
-      fields: ["product_name", "brand", "images"]
+      fields: ["Name", "Brand", "Weight", "Images"]
 
 login:
   url: "https://shop.phillipspet.com/ccrz__CCSiteLogin"
