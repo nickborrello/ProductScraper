@@ -619,11 +619,14 @@ class TestScraperIntegration:
         # Run scraper with fake SKU
         result = tester.run_scraper_locally("amazon", [fake_sku], headless=True)
 
-        # Verify scraper failed due to no results
-        assert result["success"] is False
-        assert result["products"] == []
-        assert len(result["errors"]) > 0
-        assert "Failed to scrape SKU" in result["errors"][0]
+        # Verify scraper successfully handled the no results scenario
+        assert result["success"] is True, "Expected success=True for handled no results"
+
+        # Verify products list contains the result with no_results_found flag
+        assert len(result["products"]) == 1
+        product = result["products"][0]
+        assert product.get("no_results_found") is True, "Expected no_results_found=True"
+        assert product["SKU"] == fake_sku
 
         # Verify execution completed
         assert result["execution_time"] > 0
@@ -632,16 +635,15 @@ class TestScraperIntegration:
     def test_no_results_failure_reporting_and_analytics(self, tester):
         """Test proper failure reporting and analytics recording for no results scenarios."""
         # Use a fake SKU that triggers no results
-        fake_sku = "NORESULTSANALYTICS123"
+        fake_sku = "XQJ7-NORESULTS-ANALYTICS-TEST-999"
 
         # Run scraper with fake SKU
         result = tester.run_scraper_locally("amazon", [fake_sku], headless=True)
 
-        # Verify scraper failed due to no results
-        assert result["success"] is False
-        assert result["products"] == []
-        assert len(result["errors"]) > 0
-        assert "Failed to scrape SKU" in result["errors"][0]
+        # Verify scraper successfully handled no results
+        assert result["success"] is True
+        assert len(result["products"]) == 1
+        assert result["products"][0].get("no_results_found") is True
 
         # Verify execution completed
         assert result["execution_time"] > 0
@@ -655,11 +657,10 @@ class TestScraperIntegration:
         # Run scraper with fake SKU
         result = tester.run_scraper_locally("amazon", [fake_sku], headless=True)
 
-        # Verify scraper failed gracefully due to no results
-        assert result["success"] is False
-        assert result["products"] == []
-        assert len(result["errors"]) > 0
-        assert "Failed to scrape SKU" in result["errors"][0]
+        # Verify scraper handled gracefully due to no results
+        assert result["success"] is True
+        assert len(result["products"]) == 1
+        assert result["products"][0].get("no_results_found") is True
 
         # Verify execution completed
         assert result["execution_time"] > 0
@@ -679,19 +680,29 @@ class TestScraperIntegration:
 
         if validation_data:
             # Verify no_results validation exists
-            assert "no_results_selectors" in validation_data
-            assert validation_data["no_results_selectors"] is not None
-            assert len(validation_data["no_results_selectors"]) > 0
+            # Handle both dictionary and Pydantic model
+            if hasattr(validation_data, "no_results_selectors"):
+                selectors = validation_data.no_results_selectors
+                patterns = validation_data.no_results_text_patterns
+            elif isinstance(validation_data, dict):
+                selectors = validation_data.get("no_results_selectors")
+                patterns = validation_data.get("no_results_text_patterns")
+            else:
+                # Fallback or failure
+                selectors = None
+                patterns = None
 
-            assert "no_results_text_patterns" in validation_data
-            assert validation_data["no_results_text_patterns"] is not None
-            assert len(validation_data["no_results_text_patterns"]) > 0
+            assert selectors is not None
+            assert len(selectors) > 0
+
+            assert patterns is not None
+            assert len(patterns) > 0
 
             # Verify the selectors and patterns are reasonable
-            assert ".s-no-results" in validation_data["no_results_selectors"]
-            assert "#no-results" in validation_data["no_results_selectors"]
-            assert "no results found" in validation_data["no_results_text_patterns"]
-            assert "your search returned no results" in validation_data["no_results_text_patterns"]
+            assert ".s-no-results" in selectors
+            assert "#no-results" in selectors
+            assert "no results found" in patterns
+            assert "your search returned no results" in patterns
         else:
             # If validation section is not loaded, at least verify the YAML file contains it
             with open(tester.project_root / "src" / "scrapers" / "configs" / "amazon.yaml") as f:
@@ -710,11 +721,10 @@ class TestScraperIntegration:
         # Run scraper with non-existent SKU - should naturally encounter no results page
         result = tester.run_scraper_locally("amazon", [non_existent_sku], headless=True)
 
-        # Verify failure was detected
-        assert result["success"] is False
-        assert len(result["errors"]) > 0
-        assert "Failed to scrape SKU" in result["errors"][0]
-        assert result["products"] == []  # No products should be found
+        # Verify success with no_results_found flag
+        assert result["success"] is True
+        assert len(result["products"]) == 1
+        assert result["products"][0].get("no_results_found") is True
 
         # Verify execution completed without hanging
         assert result["execution_time"] > 0
