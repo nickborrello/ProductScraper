@@ -4,7 +4,7 @@ import threading
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import Any, Callable
 
 # Add project root to path
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -79,7 +79,7 @@ class GranularScraperTester:
 
         return modules
 
-    def get_scraper_function(self, module) -> callable | None:
+    def get_scraper_function(self, module) -> Callable | None:
         """Find the scrape function in a module."""
         for attr_name in dir(module):
             if attr_name.startswith("scrape_"):

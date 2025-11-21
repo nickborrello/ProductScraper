@@ -1,0 +1,3096 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.7, pytest-9.0.1, pluggy-1.6.0 -- C:\Users\Nick\OneDrive\Desktop\Projectos\ProductScraper\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\Nick\OneDrive\Desktop\Projectos\ProductScraper
+configfile: pytest.ini (WARNING: ignoring pytest config in pyproject.toml!)
+plugins: anyio-4.11.0, asyncio-1.3.0, cov-7.0.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 301 items
+
+tests/unit/test_classification.py::TestClassification::test_get_facet_options_from_db_basic PASSED [  0%]
+tests/unit/test_classification.py::TestClassification::test_assign_classification_single PASSED [  0%]
+tests/unit/test_classification.py::TestClassification::test_assign_classification_batch PASSED [  0%]
+tests/unit/test_classification.py::TestClassification::test_edit_classification_in_batch_basic PASSED [  1%]
+tests/unit/test_classification.py::TestClassification::test_normalize_selections PASSED [  1%]
+tests/unit/test_classification.py::TestClassification::test_preselection_data_parsing PASSED [  1%]
+tests/unit/test_classification.py::TestClassification::test_batch_processing_with_mixed_data PASSED [  2%]
+tests/unit/test_classification.py::TestClassification::test_facet_cache_functionality PASSED [  2%]
+tests/unit/test_config_models.py::TestSelectorConfig::test_init_minimal PASSED [  2%]
+tests/unit/test_config_models.py::TestSelectorConfig::test_init_full PASSED [  3%]
+tests/unit/test_config_models.py::TestSelectorConfig::test_init_with_attribute PASSED [  3%]
+tests/unit/test_config_models.py::TestSelectorConfig::test_equality PASSED [  3%]
+tests/unit/test_config_models.py::TestSelectorConfig::test_to_dict PASSED [  4%]
+tests/unit/test_config_models.py::TestSelectorConfig::test_from_dict PASSED [  4%]
+tests/unit/test_config_models.py::TestWorkflowStep::test_init_minimal PASSED [  4%]
+tests/unit/test_config_models.py::TestWorkflowStep::test_init_with_params PASSED [  5%]
+tests/unit/test_config_models.py::TestWorkflowStep::test_init_different_actions PASSED [  5%]
+tests/unit/test_config_models.py::TestWorkflowStep::test_equality PASSED [  5%]
+tests/unit/test_config_models.py::TestWorkflowStep::test_to_dict PASSED  [  6%]
+tests/unit/test_config_models.py::TestWorkflowStep::test_from_dict PASSED [  6%]
+tests/unit/test_config_models.py::TestLoginConfig::test_init_minimal_required PASSED [  6%]
+tests/unit/test_config_models.py::TestLoginConfig::test_init_with_success_indicator PASSED [  7%]
+tests/unit/test_config_models.py::TestLoginConfig::test_equality PASSED  [  7%]
+tests/unit/test_config_models.py::TestLoginConfig::test_to_dict FAILED   [  7%]
+tests/unit/test_config_models.py::TestLoginConfig::test_from_dict PASSED [  8%]
+tests/unit/test_config_models.py::TestScraperConfig::test_init_minimal PASSED [  8%]
+tests/unit/test_config_models.py::TestScraperConfig::test_init_full PASSED [  8%]
+tests/unit/test_config_models.py::TestScraperConfig::test_init_with_selectors_and_workflows PASSED [  9%]
+tests/unit/test_config_models.py::TestScraperConfig::test_equality PASSED [  9%]
+tests/unit/test_config_models.py::TestScraperConfig::test_to_dict PASSED [  9%]
+tests/unit/test_config_models.py::TestScraperConfig::test_from_dict PASSED [ 10%]
+tests/unit/test_config_models.py::TestScraperConfig::test_validation_required_fields PASSED [ 10%]
+tests/unit/test_config_models.py::TestScraperConfig::test_validation_field_types PASSED [ 10%]
+tests/unit/test_config_models.py::TestScraperConfig::test_selectors_validation PASSED [ 11%]
+tests/unit/test_config_models.py::TestScraperConfig::test_workflows_validation PASSED [ 11%]
+tests/unit/test_config_models.py::TestScraperConfig::test_login_config_validation PASSED [ 11%]
+tests/unit/test_config_models.py::TestScraperConfig::test_test_skus_validation PASSED [ 12%]
+tests/unit/test_config_models.py::TestScraperConfig::test_empty_lists_defaults PASSED [ 12%]
+tests/unit/test_config_models.py::TestScraperConfig::test_none_values_handled PASSED [ 12%]
+tests/unit/test_core_logic.py::test_run_scraping_success SKIPPED (ru...) [ 13%]
+tests/unit/test_core_logic.py::test_run_scraping_scraper_not_available SKIPPED [ 13%]
+tests/unit/test_core_logic.py::test_run_scraping_invalid_excel SKIPPED   [ 13%]
+tests/unit/test_core_logic.py::test_run_scraping_empty_excel SKIPPED     [ 14%]
+tests/unit/test_core_logic.py::test_run_db_refresh_success PASSED        [ 14%]
+tests/unit/test_core_logic.py::test_run_db_refresh_failure PASSED        [ 14%]
+tests/unit/test_core_logic.py::test_run_db_refresh_exception PASSED      [ 15%]
+tests/unit/test_data_quality_scorer.py::TestDataQualityScorer::test_score_record_valid PASSED [ 15%]
+tests/unit/test_data_quality_scorer.py::TestDataQualityScorer::test_score_record_invalid PASSED [ 15%]
+tests/unit/test_data_quality_scorer.py::TestDataQualityScorer::test_completeness_scoring PASSED [ 16%]
+tests/unit/test_data_quality_scorer.py::TestDataQualityScorer::test_accuracy_scoring PASSED [ 16%]
+tests/unit/test_data_quality_scorer.py::TestDataQualityScorer::test_consistency_scoring PASSED [ 16%]
+tests/unit/test_data_quality_scorer.py::TestDataQualityScorer::test_is_high_quality PASSED [ 17%]
+tests/unit/test_data_quality_scorer.py::TestDataQualityScorer::test_weight_normalization PASSED [ 17%]
+tests/unit/test_data_quality_scorer.py::TestDataQualityScorer::test_url_validation PASSED [ 17%]
+tests/unit/test_data_quality_scorer.py::TestDataQualityScorer::test_price_accuracy PASSED [ 18%]
+tests/unit/test_data_quality_scorer.py::TestConvenienceFunctions::test_score_product_data PASSED [ 18%]
+tests/unit/test_data_quality_scorer.py::TestConvenienceFunctions::test_is_product_high_quality PASSED [ 18%]
+tests/unit/test_failure_classifier.py::TestFailureClassifierNoResults::test_no_results_selectors_detection PASSED [ 19%]
+tests/unit/test_failure_classifier.py::TestFailureClassifierNoResults::test_no_results_text_patterns_detection PASSED [ 19%]
+tests/unit/test_failure_classifier.py::TestFailureClassifierNoResults::test_no_results_title_patterns_detection PASSED [ 19%]
+tests/unit/test_failure_classifier.py::TestFailureClassifierNoResults::test_no_results_multiple_patterns_confidence PASSED [ 20%]
+tests/unit/test_failure_classifier.py::TestFailureClassifierNoResults::test_no_results_partial_text_match PASSED [ 20%]
+tests/unit/test_failure_classifier.py::TestFailureClassifierNoResults::test_no_results_case_insensitive_matching PASSED [ 20%]
+tests/unit/test_failure_classifier.py::TestFailureClassifierNoResults::test_no_results_false_positive_avoidance PASSED [ 21%]
+tests/unit/test_failure_classifier.py::TestFailureClassifierNoResults::test_no_results_vs_other_failure_types PASSED [ 21%]
+tests/unit/test_failure_classifier.py::TestFailureClassifierNoResults::test_no_results_with_login_failure_content PASSED [ 21%]
+tests/unit/test_failure_classifier.py::TestFailureClassifierNoResults::test_no_results_empty_selectors_list PASSED [ 22%]
+tests/unit/test_failure_classifier.py::TestFailureClassifierNoResults::test_no_results_selector_exception_handling PASSED [ 22%]
+tests/unit/test_failure_classifier.py::TestFailureClassifierNoResults::test_no_results_text_pattern_confidence_calculation PASSED [ 22%]
+tests/unit/test_failure_classifier.py::TestFailureClassifierNoResults::test_no_results_integration_with_page_content PASSED [ 23%]
+tests/unit/test_failure_classifier.py::TestFailureClassifierNoResults::test_no_results_edge_case_empty_page PASSED [ 23%]
+tests/unit/test_failure_classifier.py::TestFailureClassifierNoResults::test_no_results_edge_case_similar_text PASSED [ 23%]
+tests/unit/test_failure_classifier.py::TestFailureClassifierNoResults::test_no_results_with_status_code_context PASSED [ 24%]
+tests/unit/test_failure_classifier.py::TestFailureClassifierNoResults::test_no_results_confidence_threshold PASSED [ 24%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_taxonomy_structure PASSED [ 24%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_product_pages_structure PASSED [ 25%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_initialization_success PASSED [ 25%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_initialization_ollama_unavailable PASSED [ 25%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_model_name_from_settings PASSED [ 26%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_model_name_from_env_var PASSED [ 26%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_model_name_parameter_override PASSED [ 26%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_classify_product_success PASSED [ 27%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_classify_product_with_caching PASSED [ 27%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_classify_product_ollama_error PASSED [ 27%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_classify_products_batch PASSED [ 28%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_batch_processing_filters_empty_names PASSED [ 28%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_conversation_initialization PASSED [ 28%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_cache_operations PASSED [ 29%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_cache_key_generation PASSED [ 29%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_json_parsing_error_handling PASSED [ 29%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_json_parsing_with_extra_text PASSED [ 30%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_reset_conversation PASSED [ 30%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_global_classifier_instance PASSED [ 30%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_global_classifier_initialization_failure PASSED [ 31%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_classify_product_local_llm_integration PASSED [ 31%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_classify_product_local_llm_no_classifier PASSED [ 31%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_classify_product_local_llm_empty_name PASSED [ 32%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_classify_product_local_llm_exception_handling PASSED [ 32%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Purina Pro Plan Adult Dog Food Chicken & Rice-Dog Food-expected_types0] PASSED [ 32%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Royal Canin Labrador Retriever Adult Dog Food-Dog Food-expected_types1] PASSED [ 33%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Blue Buffalo Wilderness High Protein Grain Free Dog Food-Dog Food-expected_types2] PASSED [ 33%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Pedigree Puppy Growth Dog Food-Dog Food-expected_types3] PASSED [ 33%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Hill's Science Diet Senior Dog Food-Dog Food-expected_types4] PASSED [ 34%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Iams Proactive Health Adult MiniChunks Dog Food-Dog Food-expected_types5] PASSED [ 34%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Royal Canin Indoor Adult Cat Food-Cat Food-expected_types6] PASSED [ 34%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Purina Fancy Feast Gravy Lovers Wet Cat Food-Cat Food-expected_types7] PASSED [ 35%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Blue Buffalo Healthy Gourmet Wet Cat Food-Cat Food-expected_types8] PASSED [ 35%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Hill's Science Diet Kitten Food-Cat Food-expected_types9] PASSED [ 35%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Iams Hairball Care Adult Cat Food-Cat Food-expected_types10] PASSED [ 36%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Kaytee Forti-Diet Pro Health Cockatiel Food-Bird Supplies-expected_types11] PASSED [ 36%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[ZuPreem FruitBlend Flavor Small Bird Food-Bird Supplies-expected_types12] PASSED [ 36%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Lafeber's Classic Avi-Cakes Bird Treats-Bird Supplies-expected_types13] PASSED [ 37%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Volkman Avian Science Super African Grey Food-Bird Supplies-expected_types14] PASSED [ 37%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[TetraMin Tropical Flakes Fish Food-Fish Supplies-expected_types15] PASSED [ 37%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[API Goldfish Food Pellets-Fish Supplies-expected_types16] PASSED [ 38%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Hikari Betta Bio-Gold Fish Food-Fish Supplies-expected_types17] PASSED [ 38%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Omega One Freshwater Flakes-Fish Supplies-expected_types18] PASSED [ 38%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Kaytee Timothy Hay Small Animal Food-Small Pet Food-expected_types19] PASSED [ 39%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Oxbow Essentials Adult Guinea Pig Food-Small Pet Food-expected_types20] PASSED [ 39%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Supreme Petfoods Science Selective Hamster Food-Small Pet Food-expected_types21] PASSED [ 39%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Hagen Vision Rat Food-Small Pet Food-expected_types22] PASSED [ 40%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Vitakraft Chinchilla Food-Small Pet Food-expected_types23] PASSED [ 40%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Kong Classic Dog Toy-Pet Toys-expected_types24] PASSED [ 40%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Feather Wand Cat Toy-Pet Toys-expected_types25] PASSED [ 41%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Prevue Pet Products Bird Cage-Bird Supplies-expected_types26] PASSED [ 41%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[MidWest Quiet Time Dog Crate-Pet Beds & Carriers-expected_types27] PASSED [ 41%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Armarkat Cat Tree-Pet Beds & Carriers-expected_types28] PASSED [ 42%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Frontline Plus Flea & Tick Treatment for Dogs-Pet Healthcare-expected_types29] PASSED [ 42%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Heartgard Plus Chewables for Dogs-Pet Healthcare-expected_types30] PASSED [ 42%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[NexGard Chewables for Dogs-Pet Healthcare-expected_types31] PASSED [ 43%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Zymox Otic Pet Ear Treatment-Pet Healthcare-expected_types32] PASSED [ 43%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Nutri-Vet Hip & Joint Chews for Dogs-Pet Healthcare-expected_types33] PASSED [ 43%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Oster Clipmaster Variable Speed Clipper-Pet Grooming-expected_types34] PASSED [ 44%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Bio-Groom Flea & Tick Shampoo-Pet Grooming-expected_types35] PASSED [ 44%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Furminator Undercoat Removal Tool-Pet Grooming-expected_types36] PASSED [ 44%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Sentry Pet Care Nail Clippers-Pet Grooming-expected_types37] PASSED [ 45%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Stanley 24oz Stainless Steel Hammer-Hardware-expected_types38] PASSED [ 45%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Ridgid 12 Gallon Wet/Dry Vac-Hardware-expected_types39] PASSED [ 45%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Milwaukee M18 Cordless Drill-Hardware-expected_types40] PASSED [ 46%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Klein Tools Lineman Pliers-Hardware-expected_types41] PASSED [ 46%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[3M Super 77 Spray Adhesive-Hardware-expected_types42] PASSED [ 46%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Scotts Turf Builder Lawn Fertilizer-Lawn & Garden-expected_types43] PASSED [ 47%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Ortho Weed B Gon Weed Killer-Lawn & Garden-expected_types44] PASSED [ 47%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Milorganite Organic Nitrogen Fertilizer-Lawn & Garden-expected_types45] PASSED [ 47%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Bonide Systemic Houseplant Insect Control-Lawn & Garden-expected_types46] PASSED [ 48%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Espoma Organic Garden Soil-Lawn & Garden-expected_types47] PASSED [ 48%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Stanley Classic Vacuum Bottle-Home & Kitchen-expected_types48] PASSED [ 48%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Glad Tall Kitchen Trash Bags-Home & Kitchen-expected_types49] PASSED [ 49%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Swiffer Sweeper Mop-Home & Kitchen-expected_types50] PASSED [ 49%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Reynolds Wrap Aluminum Foil-Home & Kitchen-expected_types51] PASSED [ 49%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Clorox Disinfecting Wipes-Home & Kitchen-expected_types52] PASSED [ 50%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Pennzoil Platinum Full Synthetic Motor Oil-Automotive-expected_types53] PASSED [ 50%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[ACDelco Professional Brake Pads-Automotive-expected_types54] PASSED [ 50%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Rain-X Latitude Water Repellent-Automotive-expected_types55] PASSED [ 51%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[Armor All Car Wash-Automotive-expected_types56] PASSED [ 51%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_comprehensive_product_classification[STP Oil Filter-Automotive-expected_types57] PASSED [ 51%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_invalid_product_names[-True] PASSED [ 52%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_invalid_product_names[   -True] PASSED [ 52%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_invalid_product_names[?!@#$%-True] PASSED [ 52%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_invalid_product_names[a-True] PASSED [ 53%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_invalid_product_names[the quick brown fox-True] PASSED [ 53%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_invalid_product_names[product-True] PASSED [ 53%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_invalid_product_names[123456789-True] PASSED [ 54%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_brand_influence_on_classification PASSED [ 54%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_batch_classification_consistency PASSED [ 54%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_malformed_json_recovery PASSED [ 55%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_retry_logic_on_api_failure PASSED [ 55%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_large_batch_processing PASSED [ 55%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_taxonomy_validation PASSED [ 56%]
+tests/unit/test_local_llm_classifier.py::TestLocalLLMClassifier::test_cache_persistence_across_sessions PASSED [ 56%]
+tests/unit/test_local_storage.py::TestLocalDataset::test_push_data_single_item PASSED [ 56%]
+tests/unit/test_local_storage.py::TestLocalDataset::test_push_data_multiple_items PASSED [ 57%]
+tests/unit/test_local_storage.py::TestLocalDataset::test_get_data PASSED [ 57%]
+tests/unit/test_local_storage.py::TestLocalDataset::test_get_info PASSED [ 57%]
+tests/unit/test_local_storage.py::TestLocalDataset::test_drop PASSED     [ 58%]
+tests/unit/test_local_storage.py::TestLocalKeyValueStore::test_set_get_value PASSED [ 58%]
+tests/unit/test_local_storage.py::TestLocalKeyValueStore::test_delete_value PASSED [ 58%]
+tests/unit/test_local_storage.py::TestLocalKeyValueStore::test_list_keys PASSED [ 59%]
+tests/unit/test_local_storage.py::TestLocalKeyValueStore::test_get_info PASSED [ 59%]
+tests/unit/test_local_storage.py::TestLocalKeyValueStore::test_drop PASSED [ 59%]
+tests/unit/test_local_storage.py::TestLocalRequestQueue::test_add_request PASSED [ 60%]
+tests/unit/test_local_storage.py::TestLocalRequestQueue::test_fetch_next_request PASSED [ 60%]
+tests/unit/test_local_storage.py::TestLocalRequestQueue::test_mark_request_handled PASSED [ 60%]
+tests/unit/test_local_storage.py::TestLocalRequestQueue::test_reclaim_request PASSED [ 61%]
+tests/unit/test_local_storage.py::TestLocalRequestQueue::test_get_info PASSED [ 61%]
+tests/unit/test_local_storage.py::TestLocalRequestQueue::test_drop PASSED [ 61%]
+tests/unit/test_performance.py::TestValidationPerformance::test_large_scale_scoring_performance PASSED [ 62%]
+tests/unit/test_performance.py::TestValidationPerformance::test_memory_efficiency_under_load PASSED [ 62%]
+tests/unit/test_performance.py::TestValidationPerformance::test_concurrent_performance_simulation PASSED [ 62%]
+tests/unit/test_performance.py::test_individual_scoring_speed PASSED     [ 63%]
+tests/unit/test_selector_storage.py::TestSelectorData::test_init_default_values PASSED [ 63%]
+tests/unit/test_selector_storage.py::TestSelectorData::test_init_custom_values PASSED [ 63%]
+tests/unit/test_selector_storage.py::TestSelectorData::test_to_dict PASSED [ 64%]
+tests/unit/test_selector_storage.py::TestSelectorData::test_from_dict PASSED [ 64%]
+tests/unit/test_selector_storage.py::TestSelectorData::test_from_dict_defaults PASSED [ 64%]
+tests/unit/test_selector_storage.py::TestSelectorData::test_update_confidence_success PASSED [ 65%]
+tests/unit/test_selector_storage.py::TestSelectorData::test_update_confidence_failure PASSED [ 65%]
+tests/unit/test_selector_storage.py::TestSelectorData::test_update_confidence_max_min_bounds PASSED [ 65%]
+tests/unit/test_selector_storage.py::TestSelectorData::test_update_confidence_custom_learning_rate PASSED [ 66%]
+tests/unit/test_selector_storage.py::TestSelectorStorage::test_init_creates_storage_directory PASSED [ 66%]
+tests/unit/test_selector_storage.py::TestSelectorStorage::test_load_empty_file PASSED [ 66%]
+tests/unit/test_selector_storage.py::TestSelectorStorage::test_load_valid_data PASSED [ 67%]
+tests/unit/test_selector_storage.py::TestSelectorStorage::test_load_corrupted_file PASSED [ 67%]
+tests/unit/test_selector_storage.py::TestSelectorStorage::test_save_and_load_roundtrip PASSED [ 67%]
+tests/unit/test_selector_storage.py::TestSelectorStorage::test_get_selector_exists PASSED [ 68%]
+tests/unit/test_selector_storage.py::TestSelectorStorage::test_get_selector_not_exists PASSED [ 68%]
+tests/unit/test_selector_storage.py::TestSelectorStorage::test_set_selector_new PASSED [ 68%]
+tests/unit/test_selector_storage.py::TestSelectorStorage::test_set_selector_update PASSED [ 69%]
+tests/unit/test_selector_storage.py::TestSelectorStorage::test_update_selector_confidence PASSED [ 69%]
+tests/unit/test_selector_storage.py::TestSelectorStorage::test_get_fallback_chain PASSED [ 69%]
+tests/unit/test_selector_storage.py::TestSelectorStorage::test_get_fallback_chain_no_selector PASSED [ 70%]
+tests/unit/test_selector_storage.py::TestSelectorStorage::test_add_fallback PASSED [ 70%]
+tests/unit/test_selector_storage.py::TestSelectorStorage::test_add_fallback_duplicate PASSED [ 70%]
+tests/unit/test_selector_storage.py::TestSelectorStorage::test_get_all_domains PASSED [ 71%]
+tests/unit/test_selector_storage.py::TestSelectorStorage::test_get_domain_fields PASSED [ 71%]
+tests/unit/test_selector_storage.py::TestSelectorStorage::test_remove_selector PASSED [ 71%]
+tests/unit/test_selector_storage.py::TestSelectorStorage::test_clear_domain PASSED [ 72%]
+tests/unit/test_selector_storage.py::TestSelectorManager::test_init PASSED [ 72%]
+tests/unit/test_selector_storage.py::TestSelectorManager::test_learn_selector_new PASSED [ 72%]
+tests/unit/test_selector_storage.py::TestSelectorManager::test_learn_selector_existing_same PASSED [ 73%]
+tests/unit/test_selector_storage.py::TestSelectorManager::test_learn_selector_promote_new PASSED [ 73%]
+tests/unit/test_selector_storage.py::TestSelectorManager::test_get_best_selector PASSED [ 73%]
+tests/unit/test_selector_storage.py::TestSelectorManager::test_get_best_selector_none PASSED [ 74%]
+tests/unit/test_selector_storage.py::TestSelectorManager::test_get_selector_with_fallbacks PASSED [ 74%]
+tests/unit/test_selector_storage.py::TestSelectorManager::test_validate_selector_exists PASSED [ 74%]
+tests/unit/test_selector_storage.py::TestSelectorManager::test_get_selector_stats PASSED [ 75%]
+tests/unit/test_selector_storage.py::TestSelectorManager::test_get_selector_stats_none PASSED [ 75%]
+tests/unit/test_selector_storage.py::TestSelectorManager::test_cleanup_low_confidence_selectors PASSED [ 75%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_init_success FAILED [ 76%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_init_custom_timeout FAILED [ 76%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_init_browser_failure FAILED [ 76%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_execute_workflow_success FAILED [ 77%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_execute_workflow_step_failure FAILED [ 77%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_navigate FAILED [ 77%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_navigate_no_url FAILED [ 78%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_wait_for_success FAILED [ 78%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_wait_for_timeout FAILED [ 78%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_wait_for_no_selector FAILED [ 79%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_extract_single_success FAILED [ 79%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_extract_single_element_not_found FAILED [ 79%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_extract_multiple_success FAILED [ 80%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_input_text_success FAILED [ 80%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_input_text_no_clear FAILED [ 80%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_click_success FAILED [ 81%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_extract_value_from_element_text FAILED [ 81%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_extract_value_from_element_attribute FAILED [ 81%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_extract_value_from_element_none_attribute FAILED [ 82%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_get_results FAILED [ 82%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_execute_steps_success FAILED [ 82%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_execute_steps_failure FAILED [ 83%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_wait_success FAILED [ 83%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_wait_default FAILED [ 83%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_extract_brand_processing FAILED [ 84%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_extract_weight_processing FAILED [ 84%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_extract_weight_ounces_conversion FAILED [ 84%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_extract_multiple_brand_processing FAILED [ 85%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_extract_multiple_weight_processing FAILED [ 85%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_extract_legacy FAILED [ 85%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_extract_multiple_legacy FAILED [ 86%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_login_success FAILED [ 86%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_login_missing_credentials FAILED [ 86%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_detect_captcha_no_manager FAILED [ 87%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_handle_blocking_no_manager FAILED [ 87%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_rate_limit_no_manager FAILED [ 87%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_simulate_human_no_manager FAILED [ 88%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_rotate_session_no_manager FAILED [ 88%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_unknown_action FAILED [ 88%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_anti_detection_pre_action_hook_failure FAILED [ 89%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_anti_detection_error_handling_retry FAILED [ 89%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_get_locator_type_xpath FAILED [ 89%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_get_locator_type_css FAILED [ 90%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_extract_value_from_element_href FAILED [ 90%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_extract_value_from_element_src FAILED [ 90%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_extract_value_from_element_custom_attribute FAILED [ 91%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_extract_value_from_element_exception FAILED [ 91%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_no_results_failure_no_retry FAILED [ 91%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_no_results_failure_context_storage FAILED [ 92%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_no_results_analytics_recording FAILED [ 92%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_no_results_vs_other_failures_retry_logic FAILED [ 92%]
+tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_no_results_detection_integration FAILED [ 93%]
+tests/unit/test_yaml_parser.py::TestScraperConfigParser::test_init PASSED [ 93%]
+tests/unit/test_yaml_parser.py::TestScraperConfigParser::test_preprocess_config_dict_no_anti_detection PASSED [ 93%]
+tests/unit/test_yaml_parser.py::TestScraperConfigParser::test_preprocess_config_dict_with_anti_detection PASSED [ 94%]
+tests/unit/test_yaml_parser.py::TestScraperConfigParser::test_load_from_file_success PASSED [ 94%]
+tests/unit/test_yaml_parser.py::TestScraperConfigParser::test_load_from_file_not_found PASSED [ 94%]
+tests/unit/test_yaml_parser.py::TestScraperConfigParser::test_load_from_file_invalid_yaml PASSED [ 95%]
+tests/unit/test_yaml_parser.py::TestScraperConfigParser::test_load_from_file_invalid_config PASSED [ 95%]
+tests/unit/test_yaml_parser.py::TestScraperConfigParser::test_load_from_string_success PASSED [ 95%]
+tests/unit/test_yaml_parser.py::TestScraperConfigParser::test_load_from_string_invalid_yaml PASSED [ 96%]
+tests/unit/test_yaml_parser.py::TestScraperConfigParser::test_load_from_string_invalid_config PASSED [ 96%]
+tests/unit/test_yaml_parser.py::TestScraperConfigParser::test_load_from_string_empty PASSED [ 96%]
+tests/unit/test_yaml_parser.py::TestScraperConfigParser::test_save_to_file_success PASSED [ 97%]
+tests/unit/test_yaml_parser.py::TestScraperConfigParser::test_save_to_file_creates_directory PASSED [ 97%]
+tests/unit/test_yaml_parser.py::TestScraperConfigParser::test_save_to_file_overwrites_existing PASSED [ 97%]
+tests/unit/test_yaml_parser.py::TestScraperConfigParser::test_roundtrip_file_save_load PASSED [ 98%]
+tests/unit/test_yaml_parser.py::TestScraperConfigParser::test_config_with_login PASSED [ 98%]
+tests/unit/test_yaml_parser.py::TestScraperConfigParser::test_config_minimal PASSED [ 98%]
+tests/unit/test_yaml_parser.py::TestScraperConfigParser::test_config_with_test_skus PASSED [ 99%]
+tests/unit/test_yaml_parser.py::TestScraperConfigParser::test_preprocess_config_dict_preserves_other_fields PASSED [ 99%]
+tests/unit/test_yaml_parser.py::TestScraperConfigParser::test_load_from_file_pathlib_path PASSED [ 99%]
+tests/unit/test_yaml_parser.py::TestScraperConfigParser::test_save_to_file_pathlib_path PASSED [100%]
+
+================================== FAILURES ===================================
+________________________ TestLoginConfig.test_to_dict _________________________
+
+self = <tests.unit.test_config_models.TestLoginConfig object at 0x000001F7782C49D0>
+
+    def test_to_dict(self):
+        """Test converting LoginConfig to dictionary."""
+        config = LoginConfig(
+            url="https://example.com/login",
+            username_field="#username",
+            password_field="#password",
+            submit_button="#submit",
+            success_indicator=".welcome",
+        )
+    
+        data = config.model_dump()
+    
+        expected = {
+            "url": "https://example.com/login",
+            "username_field": "#username",
+            "password_field": "#password",
+            "submit_button": "#submit",
+            "success_indicator": ".welcome",
+        }
+>       assert data == expected
+E       AssertionError: assert {'failure_ind...welcome', ...} == {'password_fi...m/login', ...}
+E         
+E         Omitting 5 identical items, use -vv to show
+E         Left contains 1 more item:
+E         {'failure_indicators': None}
+E         
+E         Full diff:
+E           {...
+E         
+E         ...Full output truncated (7 lines hidden), use '-vv' to show
+
+tests\unit\test_config_models.py:222: AssertionError
+___________________ TestWorkflowExecutor.test_init_success ____________________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F778D91A90>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162413386256'>
+
+    def test_init_success(self, sample_config, mock_create_browser):
+        """Test successful initialization of WorkflowExecutor."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:81: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F779E1BE00>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+________________ TestWorkflowExecutor.test_init_custom_timeout ________________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F778D91BD0>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162414079680'>
+
+    def test_init_custom_timeout(self, sample_config, mock_create_browser):
+        """Test initialization with custom timeout."""
+        custom_timeout = 60
+>       executor = WorkflowExecutor(sample_config, headless=True, timeout=custom_timeout)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:99: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F779F14910>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = 60
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+_______________ TestWorkflowExecutor.test_init_browser_failure ________________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F778D06650>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+
+    def test_init_browser_failure(self, sample_config):
+        """Test initialization failure when browser creation fails."""
+        with patch(
+            "src.scrapers.executor.workflow_executor.create_browser",
+            side_effect=Exception("Browser failed"),
+        ):
+            with pytest.raises(WorkflowExecutionError, match="Failed to initialize browser"):
+>               WorkflowExecutor(sample_config)
+
+tests\unit\test_workflow_executor.py:110: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F779F15810>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+_____________ TestWorkflowExecutor.test_execute_workflow_success ______________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F778D06C40>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162413385920'>
+mock_browser = <Mock name='create_browser()' id='2162413387264'>
+test_skus = ['035585499741']
+
+    def test_execute_workflow_success(
+        self, sample_config, mock_create_browser, mock_browser, test_skus
+    ):
+        """Test successful workflow execution."""
+        # Setup mock elements
+        mock_element = Mock()
+        mock_element.text = "Test Product"
+        mock_browser.driver.find_element.return_value = mock_element
+        expected_steps_executed = 3
+    
+        mock_elements = [Mock(), Mock()]
+        mock_elements[0].get_attribute.return_value = "image1.jpg"
+        mock_elements[1].get_attribute.return_value = "image2.jpg"
+        mock_browser.driver.find_elements.return_value = mock_elements
+    
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:127: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F779E590F0>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+___________ TestWorkflowExecutor.test_execute_workflow_step_failure ___________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F778DCCEF0>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162414080688'>
+mock_browser = <Mock name='create_browser()' id='2162414080016'>
+
+    def test_execute_workflow_step_failure(self, sample_config, mock_create_browser, mock_browser):
+        """Test workflow execution failure on a step."""
+        # Make navigate action fail
+        mock_browser.get.side_effect = Exception("Navigation failed")
+    
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:144: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F779E59F30>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+__________________ TestWorkflowExecutor.test_action_navigate __________________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F778D359D0>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162414084384'>
+mock_browser = <Mock name='create_browser()' id='2162414085728'>
+
+    def test_action_navigate(self, sample_config, mock_create_browser, mock_browser):
+        """Test navigate action."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:154: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F779F2D910>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+______________ TestWorkflowExecutor.test_action_navigate_no_url _______________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F778D35AE0>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162414084048'>
+
+    def test_action_navigate_no_url(self, sample_config, mock_create_browser):
+        """Test navigate action without URL parameter."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:163: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F779EDDAE0>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+______________ TestWorkflowExecutor.test_action_wait_for_success ______________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F778DC8450>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162414078000'>
+mock_browser = <Mock name='create_browser()' id='2162414083040'>
+
+    def test_action_wait_for_success(self, sample_config, mock_create_browser, mock_browser):
+        """Test successful wait_for action."""
+        timeout = 5
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:173: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F779EDE690>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+______________ TestWorkflowExecutor.test_action_wait_for_timeout ______________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F778DC8E50>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162413385248'>
+mock_browser = <Mock name='create_browser()' id='2162413386592'>
+
+    def test_action_wait_for_timeout(self, sample_config, mock_create_browser, mock_browser):
+        """Test wait_for action that times out."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:183: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F778DCAF50>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+____________ TestWorkflowExecutor.test_action_wait_for_no_selector ____________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F778D55310>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162413382560'>
+
+    def test_action_wait_for_no_selector(self, sample_config, mock_create_browser):
+        """Test wait_for action without selector parameter."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:198: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F77A04CB50>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+___________ TestWorkflowExecutor.test_action_extract_single_success ___________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F778D55400>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162414084048'>
+mock_browser = <Mock name='create_browser()' id='2162413386928'>
+
+    def test_action_extract_single_success(self, sample_config, mock_create_browser, mock_browser):
+        """Test successful extract_single action."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:208: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F779E2B020>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+______ TestWorkflowExecutor.test_action_extract_single_element_not_found ______
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F778DACD70>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162414085728'>
+mock_browser = <Mock name='create_browser()' id='2162414083712'>
+
+    def test_action_extract_single_element_not_found(
+        self, sample_config, mock_create_browser, mock_browser
+    ):
+        """Test extract_single when element is not found."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:224: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F779E2B2F0>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+__________ TestWorkflowExecutor.test_action_extract_multiple_success __________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F778DAC830>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162414080016'>
+mock_browser = <Mock name='create_browser()' id='2162414079344'>
+
+    def test_action_extract_multiple_success(
+        self, sample_config, mock_create_browser, mock_browser
+    ):
+        """Test successful extract_multiple action."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:237: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F779F649F0>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+_____________ TestWorkflowExecutor.test_action_input_text_success _____________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F778D5BAD0>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162414081024'>
+mock_browser = <Mock name='create_browser()' id='2162414082032'>
+
+    def test_action_input_text_success(self, sample_config, mock_create_browser, mock_browser):
+        """Test successful input_text action."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:254: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F77A1044B0>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+____________ TestWorkflowExecutor.test_action_input_text_no_clear _____________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DD4050>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162413385920'>
+mock_browser = <Mock name='create_browser()' id='2162413386928'>
+
+    def test_action_input_text_no_clear(self, sample_config, mock_create_browser, mock_browser):
+        """Test input_text action without clearing first."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:267: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F779ECB860>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+_______________ TestWorkflowExecutor.test_action_click_success ________________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DD4110>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162413385248'>
+mock_browser = <Mock name='create_browser()' id='2162413387264'>
+
+    def test_action_click_success(self, sample_config, mock_create_browser, mock_browser):
+        """Test successful click action."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:280: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F779F7A390>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+__________ TestWorkflowExecutor.test_extract_value_from_element_text __________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DB85D0>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162414079344'>
+
+    def test_extract_value_from_element_text(self, sample_config, mock_create_browser):
+        """Test extracting text from element."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:302: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F779F7B050>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+_______ TestWorkflowExecutor.test_extract_value_from_element_attribute ________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DB8680>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162414083712'>
+
+    def test_extract_value_from_element_attribute(self, sample_config, mock_create_browser):
+        """Test extracting attribute from element."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:312: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F77A0255A0>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+_____ TestWorkflowExecutor.test_extract_value_from_element_none_attribute _____
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DC9950>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162414084048'>
+
+    def test_extract_value_from_element_none_attribute(self, sample_config, mock_create_browser):
+        """Test extracting text when attribute is None."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:323: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F77A025C80>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+____________________ TestWorkflowExecutor.test_get_results ____________________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DC9A90>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162414076656'>
+
+    def test_get_results(self, sample_config, mock_create_browser):
+        """Test getting execution results."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:333: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F779EFE670>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+_______________ TestWorkflowExecutor.test_execute_steps_success _______________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DC1250>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162413385248'>
+mock_browser = <Mock name='create_browser()' id='2162413382224'>
+
+    def test_execute_steps_success(self, sample_config, mock_create_browser, mock_browser):
+        """Test executing specific workflow steps."""
+        mock_element = Mock()
+        mock_element.text = "Test Product"
+        mock_browser.driver.find_element.return_value = mock_element
+        steps_executed = 2
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:346: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F779EFDBD0>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+_______________ TestWorkflowExecutor.test_execute_steps_failure _______________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DD1550>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162413386256'>
+mock_browser = <Mock name='create_browser()' id='2162413385920'>
+
+    def test_execute_steps_failure(self, sample_config, mock_create_browser, mock_browser):
+        """Test executing steps with failure."""
+        mock_browser.get.side_effect = Exception("Navigation failed")
+    
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:366: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F779F35D90>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+________________ TestWorkflowExecutor.test_action_wait_success ________________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DD18D0>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162414085728'>
+
+    def test_action_wait_success(self, sample_config, mock_create_browser):
+        """Test wait action."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:375: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F77A2D5550>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+________________ TestWorkflowExecutor.test_action_wait_default ________________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DAF540>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162414080016'>
+
+    def test_action_wait_default(self, sample_config, mock_create_browser):
+        """Test wait action with default timeout."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:383: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F779F32550>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+__________ TestWorkflowExecutor.test_action_extract_brand_processing __________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DAF770>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162414086064'>
+mock_browser = <Mock name='create_browser()' id='2162414077664'>
+
+    def test_action_extract_brand_processing(
+        self, sample_config, mock_create_browser, mock_browser
+    ):
+        """Test extract_single with brand field processing."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:393: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F77A12A050>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+_________ TestWorkflowExecutor.test_action_extract_weight_processing __________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DB5EB0>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162414087408'>
+mock_browser = <Mock name='create_browser()' id='2162414086736'>
+
+    def test_action_extract_weight_processing(
+        self, sample_config, mock_create_browser, mock_browser
+    ):
+        """Test extract_single with weight field processing."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:408: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F77A128C50>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+______ TestWorkflowExecutor.test_action_extract_weight_ounces_conversion ______
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DB5F70>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162413386928'>
+mock_browser = <Mock name='create_browser()' id='2162413385920'>
+
+    def test_action_extract_weight_ounces_conversion(
+        self, sample_config, mock_create_browser, mock_browser
+    ):
+        """Test extract_single with weight ounces to pounds conversion."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:423: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F77A29FC50>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+_____ TestWorkflowExecutor.test_action_extract_multiple_brand_processing ______
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DC48C0>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162413384240'>
+mock_browser = <Mock name='create_browser()' id='2162413385248'>
+
+    def test_action_extract_multiple_brand_processing(
+        self, sample_config, mock_create_browser, mock_browser
+    ):
+        """Test extract_multiple with brand field processing."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:438: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F77A2D6850>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+_____ TestWorkflowExecutor.test_action_extract_multiple_weight_processing _____
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DC4960>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162414077664'>
+mock_browser = <Mock name='create_browser()' id='2162413387264'>
+
+    def test_action_extract_multiple_weight_processing(
+        self, sample_config, mock_create_browser, mock_browser
+    ):
+        """Test extract_multiple with weight field processing."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:454: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F77A0A9350>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+_______________ TestWorkflowExecutor.test_action_extract_legacy _______________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DC4A00>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162414080016'>
+mock_browser = <Mock name='create_browser()' id='2162414077328'>
+
+    def test_action_extract_legacy(self, sample_config, mock_create_browser, mock_browser):
+        """Test legacy extract action."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:468: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F779F4C350>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+__________ TestWorkflowExecutor.test_action_extract_multiple_legacy ___________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DC4AA0>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162414085728'>
+mock_browser = <Mock name='create_browser()' id='2162414084384'>
+
+    def test_action_extract_multiple_legacy(self, sample_config, mock_create_browser, mock_browser):
+        """Test legacy extract action with multiple elements."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:481: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F779F30150>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+_______________ TestWorkflowExecutor.test_action_login_success ________________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DC4B40>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162414076992'>
+mock_browser = <Mock name='create_browser()' id='2162414085056'>
+
+    def test_action_login_success(self, sample_config, mock_create_browser, mock_browser):
+        """Test successful login action."""
+        timeout = 30
+        retries = 3
+        login_config = ScraperConfig(
+            name="phillips",
+            base_url="https://example.com",
+            timeout=timeout,
+            retries=retries,
+            login=LoginConfig(
+                url="https://example.com/login",
+                username_field="#username",
+                password_field="#password",
+                submit_button="#submit",
+                success_indicator=".dashboard",
+                failure_indicators=None,
+            ),
+            anti_detection=None,
+            http_status=None,
+            test_skus=None,
+        )
+    
+        with patch("src.scrapers.executor.workflow_executor.WebDriverWait") as mock_wait:
+            mock_wait.return_value.until.return_value = None  # Success indicator found
+    
+>           executor = WorkflowExecutor(login_config, headless=True)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:520: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F77A2D79D0>
+config = ScraperConfig(name='phillips', base_url='https://example.com', selectors=[], workflows=[], login=LoginConfig(url='http...ailure_indicators=None), timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=None)
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+_________ TestWorkflowExecutor.test_action_login_missing_credentials __________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DC4B90>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162413384240'>
+
+    def test_action_login_missing_credentials(self, sample_config, mock_create_browser):
+        """Test login action with missing credentials."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:536: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F77A12B750>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+_________ TestWorkflowExecutor.test_action_detect_captcha_no_manager __________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DC4C30>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162413386928'>
+
+    def test_action_detect_captcha_no_manager(self, sample_config, mock_create_browser):
+        """Test detect_captcha action without anti-detection manager."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:554: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F77A29C950>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+_________ TestWorkflowExecutor.test_action_handle_blocking_no_manager _________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DC4C80>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162414084384'>
+
+    def test_action_handle_blocking_no_manager(self, sample_config, mock_create_browser):
+        """Test handle_blocking action without anti-detection manager."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:562: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F77A0A8B50>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+___________ TestWorkflowExecutor.test_action_rate_limit_no_manager ____________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DC4CD0>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162414077328'>
+
+    def test_action_rate_limit_no_manager(self, sample_config, mock_create_browser):
+        """Test rate_limit action without anti-detection manager."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:570: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F779F3A050>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+_________ TestWorkflowExecutor.test_action_simulate_human_no_manager __________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DC4D20>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162414077664'>
+
+    def test_action_simulate_human_no_manager(self, sample_config, mock_create_browser):
+        """Test simulate_human action without anti-detection manager."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:578: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F77A29FE50>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+_________ TestWorkflowExecutor.test_action_rotate_session_no_manager __________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DC4D70>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162414090096'>
+
+    def test_action_rotate_session_no_manager(self, sample_config, mock_create_browser):
+        """Test rotate_session action without anti-detection manager."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:586: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F77A2D8450>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+__________________ TestWorkflowExecutor.test_unknown_action ___________________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DC4DC0>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162413382224'>
+
+    def test_unknown_action(self, sample_config, mock_create_browser):
+        """Test unknown action raises error."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:594: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F77A2F20D0>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+______ TestWorkflowExecutor.test_anti_detection_pre_action_hook_failure _______
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DC4E60>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162413387264'>
+
+    def test_anti_detection_pre_action_hook_failure(self, sample_config, mock_create_browser):
+        """Test pre-action anti-detection hook failure."""
+        mock_anti_detection = Mock()
+        mock_anti_detection.pre_action_hook.return_value = False
+    
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:606: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F779F39250>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+________ TestWorkflowExecutor.test_anti_detection_error_handling_retry ________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DC4F00>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162414086064'>
+mock_browser = <Mock name='create_browser()' id='2162414077664'>
+
+    def test_anti_detection_error_handling_retry(
+        self, sample_config, mock_create_browser, mock_browser
+    ):
+        """Test anti-detection error handling with retry."""
+        mock_anti_detection = Mock()
+        mock_anti_detection.handle_error.return_value = True  # Retry
+        mock_anti_detection.pre_action_hook.return_value = True
+        mock_anti_detection.post_action_hook.return_value = None
+        call_count = 2
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:623: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F77A2DAE50>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+______________ TestWorkflowExecutor.test_get_locator_type_xpath _______________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DC4F50>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162414090432'>
+
+    def test_get_locator_type_xpath(self, sample_config, mock_create_browser):
+        """Test locator type detection for XPath."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:639: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F77A2F2FD0>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+_______________ TestWorkflowExecutor.test_get_locator_type_css ________________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DC4FA0>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162416451664'>
+
+    def test_get_locator_type_css(self, sample_config, mock_create_browser):
+        """Test locator type detection for CSS."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:646: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F77A2D64D0>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+__________ TestWorkflowExecutor.test_extract_value_from_element_href __________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DC4FF0>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162416453008'>
+
+    def test_extract_value_from_element_href(self, sample_config, mock_create_browser):
+        """Test extracting href attribute."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:654: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F77A2DA7D0>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+__________ TestWorkflowExecutor.test_extract_value_from_element_src ___________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DC5040>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162414090432'>
+
+    def test_extract_value_from_element_src(self, sample_config, mock_create_browser):
+        """Test extracting src attribute."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:665: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F77A0AB4D0>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+____ TestWorkflowExecutor.test_extract_value_from_element_custom_attribute ____
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DC5090>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162414080016'>
+
+    def test_extract_value_from_element_custom_attribute(self, sample_config, mock_create_browser):
+        """Test extracting custom attribute."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:675: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F77A0A8050>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+_______ TestWorkflowExecutor.test_extract_value_from_element_exception ________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DC50E0>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162414077664'>
+
+    def test_extract_value_from_element_exception(self, sample_config, mock_create_browser):
+        """Test extracting value when element throws exception."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:685: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F77A29FC50>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+____________ TestWorkflowExecutor.test_no_results_failure_no_retry ____________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DC5180>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162413385248'>
+mock_browser = <Mock name='create_browser()' id='2162414079344'>
+
+    def test_no_results_failure_no_retry(self, sample_config, mock_create_browser, mock_browser):
+        """Test that NO_RESULTS failures are properly classified and handled without retries."""
+        # Mock the failure classifier to return NO_RESULTS
+        mock_failure_context = Mock()
+        mock_failure_context.failure_type = FailureType.NO_RESULTS
+        mock_failure_context.confidence = 0.8
+        mock_failure_context.details = {"no_results_detected": True}
+        mock_failure_context.recovery_strategy = "retry_with_different_query"
+        max_retries = 3
+        delay = 1.0
+        call_count = 1
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:705: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F779DD22D0>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+________ TestWorkflowExecutor.test_no_results_failure_context_storage _________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DC5220>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162413385920'>
+mock_browser = <Mock name='create_browser()' id='2162413386592'>
+
+    def test_no_results_failure_context_storage(
+        self, sample_config, mock_create_browser, mock_browser
+    ):
+        """Test that failure context is correctly stored in workflow results for NO_RESULTS."""
+        # Mock the failure classifier to return NO_RESULTS
+        mock_failure_context = Mock()
+        mock_failure_context.failure_type = FailureType.NO_RESULTS
+        confidence = 0.9
+        mock_failure_context.confidence = confidence
+        mock_failure_context.details = {"selector_match": True, "text_match": True}
+        mock_failure_context.recovery_strategy = "retry_with_different_query"
+        retries = 0
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:747: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F77A29FAD0>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+__________ TestWorkflowExecutor.test_no_results_analytics_recording ___________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DC52C0>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162416453680'>
+mock_browser = <Mock name='create_browser()' id='2162413386928'>
+
+    def test_no_results_analytics_recording(self, sample_config, mock_create_browser, mock_browser):
+        """Test that NO_RESULTS failures trigger appropriate analytics recording."""
+        # Mock the failure classifier to return NO_RESULTS
+        mock_failure_context = Mock()
+        mock_failure_context.failure_type = FailureType.NO_RESULTS
+        mock_failure_context.confidence = 0.7
+        mock_failure_context.details = {"no_results_detected": True}
+        retries = 0
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:787: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F77A2DA150>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+_____ TestWorkflowExecutor.test_no_results_vs_other_failures_retry_logic ______
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DC5360>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162413384240'>
+mock_browser = <Mock name='create_browser()' id='2162413386592'>
+
+    def test_no_results_vs_other_failures_retry_logic(
+        self, sample_config, mock_create_browser, mock_browser
+    ):
+        """Test differentiation between NO_RESULTS and other failure types in retry logic."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:828: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F77A12BB50>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+_________ TestWorkflowExecutor.test_no_results_detection_integration __________
+
+self = <tests.unit.test_workflow_executor.TestWorkflowExecutor object at 0x000001F779DC5400>
+sample_config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+mock_create_browser = <MagicMock name='create_browser' id='2162414079344'>
+mock_browser = <Mock name='create_browser()' id='2162413385248'>
+
+    def test_no_results_detection_integration(
+        self, sample_config, mock_create_browser, mock_browser
+    ):
+        """Test integration with failure classifier for NO_RESULTS detection during extraction actions."""
+>       executor = WorkflowExecutor(sample_config, headless=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_workflow_executor.py:903: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.scrapers.executor.workflow_executor.WorkflowExecutor object at 0x000001F779DD3B50>
+config = ScraperConfig(name='Test Scraper', base_url='https://example.com', selectors=[SelectorConfig(name='product_name', sele... login=None, timeout=30, retries=3, anti_detection=None, http_status=None, validation=None, test_skus=['035585499741'])
+headless = True, timeout = None
+
+    def __init__(
+        self,
+        config: ScraperConfig,
+        headless: bool = True,
+        timeout: int | None = None,
+    ):
+        """
+        Initialize the workflow executor.
+    
+        Args:
+            config: ScraperConfig instance with workflow definition
+            headless: Whether to run browser in headless mode
+            timeout: Default timeout in seconds (overrides config timeout)
+        """
+        self.config = config
+        self.timeout = timeout or config.timeout
+        self.browser: ScraperBrowser
+        self.results = {}
+        self.selectors = {selector.name: selector for selector in config.selectors}
+        self.anti_detection_manager: AntiDetectionManager | None = None
+        self.adaptive_retry_strategy = AdaptiveRetryStrategy(
+            history_file=f"data/retry_history_{config.name}.json"
+        )
+        self.failure_classifier = FailureClassifier(
+>           site_specific_no_results_selectors=self.config.validation.no_results_selectors,
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+        )
+E       AttributeError: 'NoneType' object has no attribute 'no_results_selectors'
+
+src\scrapers\executor\workflow_executor.py:72: AttributeError
+============================== warnings summary ===============================
+tests\unit\test_performance.py:15
+  C:\Users\Nick\OneDrive\Desktop\Projectos\ProductScraper\tests\unit\test_performance.py:15: PytestUnknownMarkWarning: Unknown pytest.mark.performance - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.performance
+
+tests\unit\test_performance.py:16
+  C:\Users\Nick\OneDrive\Desktop\Projectos\ProductScraper\tests\unit\test_performance.py:16: PytestUnknownMarkWarning: Unknown pytest.mark.slow - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.slow
+
+tests\unit\test_performance.py:205
+  C:\Users\Nick\OneDrive\Desktop\Projectos\ProductScraper\tests\unit\test_performance.py:205: PytestUnknownMarkWarning: Unknown pytest.mark.performance - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.performance
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/unit/test_config_models.py::TestLoginConfig::test_to_dict - Asse...
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_init_success
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_init_custom_timeout
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_init_browser_failure
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_execute_workflow_success
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_execute_workflow_step_failure
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_navigate
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_navigate_no_url
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_wait_for_success
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_wait_for_timeout
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_wait_for_no_selector
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_extract_single_success
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_extract_single_element_not_found
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_extract_multiple_success
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_input_text_success
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_input_text_no_clear
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_click_success
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_extract_value_from_element_text
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_extract_value_from_element_attribute
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_extract_value_from_element_none_attribute
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_get_results
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_execute_steps_success
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_execute_steps_failure
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_wait_success
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_wait_default
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_extract_brand_processing
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_extract_weight_processing
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_extract_weight_ounces_conversion
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_extract_multiple_brand_processing
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_extract_multiple_weight_processing
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_extract_legacy
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_extract_multiple_legacy
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_login_success
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_login_missing_credentials
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_detect_captcha_no_manager
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_handle_blocking_no_manager
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_rate_limit_no_manager
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_simulate_human_no_manager
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_action_rotate_session_no_manager
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_unknown_action
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_anti_detection_pre_action_hook_failure
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_anti_detection_error_handling_retry
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_get_locator_type_xpath
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_get_locator_type_css
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_extract_value_from_element_href
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_extract_value_from_element_src
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_extract_value_from_element_custom_attribute
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_extract_value_from_element_exception
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_no_results_failure_no_retry
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_no_results_failure_context_storage
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_no_results_analytics_recording
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_no_results_vs_other_failures_retry_logic
+FAILED tests/unit/test_workflow_executor.py::TestWorkflowExecutor::test_no_results_detection_integration
+============ 53 failed, 244 passed, 4 skipped, 3 warnings in 8.67s ============

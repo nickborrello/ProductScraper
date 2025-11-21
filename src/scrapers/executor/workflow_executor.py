@@ -68,9 +68,11 @@ class WorkflowExecutor:
         self.adaptive_retry_strategy = AdaptiveRetryStrategy(
             history_file=f"data/retry_history_{config.name}.json"
         )
+        no_results_selectors = self.config.validation.no_results_selectors if self.config.validation else []
+        no_results_text_patterns = self.config.validation.no_results_text_patterns if self.config.validation else []
         self.failure_classifier = FailureClassifier(
-            site_specific_no_results_selectors=self.config.validation.no_results_selectors,
-            site_specific_no_results_text_patterns=self.config.validation.no_results_text_patterns,
+            site_specific_no_results_selectors=no_results_selectors,
+            site_specific_no_results_text_patterns=no_results_text_patterns,
         )
         self.failure_analytics = FailureAnalytics()
         self.settings = SettingsManager()
@@ -299,6 +301,10 @@ class WorkflowExecutor:
                 )
 
         except Exception as e:
+            # Don't retry WorkflowExecutionErrors - these are logical errors not transient failures
+            if isinstance(e, WorkflowExecutionError):
+                raise
+
             # Classify the failure to determine retry strategy
             try:
                 failure_context = self.failure_classifier.classify_exception(e, {"action": action})
@@ -583,6 +589,37 @@ class WorkflowExecutor:
         logger.debug(f"Waiting for {seconds} seconds")
         time.sleep(seconds)
 
+    def _process_field_value(self, field_name: str, value: str | None) -> str | None:
+        """Process extracted field values based on field name."""
+        if not value:
+            return value
+
+        # Brand field processing (Amazon-specific)
+        if field_name == "Brand":
+            # Remove "Visit" prefix and "Store" suffix
+            processed = value.strip()
+            if processed.startswith("Visit "):
+                processed = processed[6:]  # Remove "Visit "
+            if processed.endswith(" Store"):
+                processed = processed[:-6]  # Remove " Store"
+            return processed.strip()
+
+        # Weight field processing
+        elif field_name == "Weight":
+            # Standardize weight format: "X.XX lbs"
+            match = re.search(r"([\d.]+)\s*(pound|pounds|lb|lbs|ounce|ounces|oz)", value, re.IGNORECASE)
+            if match:
+                amount = float(match.group(1))
+                unit = match.group(2).lower()
+
+                # Convert to pounds
+                if unit in ["ounce", "ounces", "oz"]:
+                    amount = amount / 16.0
+
+                return f"{amount:.2f} lbs"
+
+        return value
+
     def _action_extract_single(self, params: dict[str, Any]):
         """Extract a single value using a selector."""
         field_name = params.get("field")
@@ -600,8 +637,10 @@ class WorkflowExecutor:
         try:
             element = self.browser.driver.find_element(By.CSS_SELECTOR, selector_config.selector)
             value = self._extract_value_from_element(element, selector_config.attribute)
-            self.results[field_name] = value
-            logger.debug(f"Extracted {field_name}: {value}")
+            # Process field value based on field name
+            processed_value = self._process_field_value(field_name, value)
+            self.results[field_name] = processed_value
+            logger.debug(f"Extracted {field_name}: {processed_value}")
         except NoSuchElementException:
             logger.warning(f"Element not found for field: {field_name}")
             self.results[field_name] = None
@@ -626,7 +665,10 @@ class WorkflowExecutor:
             for element in elements:
                 value = self._extract_value_from_element(element, selector_config.attribute)
                 if value:
-                    values.append(value)
+                    # Process each value based on field name
+                    processed_value = self._process_field_value(field_name, value)
+                    if processed_value:
+                        values.append(processed_value)
             self.results[field_name] = values
             logger.debug(f"Extracted {len(values)} items for {field_name}")
         except Exception as e:

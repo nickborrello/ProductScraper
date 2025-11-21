@@ -218,6 +218,7 @@ class TestLoginConfig:
             "password_field": "#password",
             "submit_button": "#submit",
             "success_indicator": ".welcome",
+            "failure_indicators": None,
         }
         assert data == expected
 

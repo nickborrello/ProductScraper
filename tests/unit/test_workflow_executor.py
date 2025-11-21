@@ -282,7 +282,9 @@ class TestWorkflowExecutor:
         mock_element = Mock()
         mock_element.is_displayed.return_value = True
         mock_element.is_enabled.return_value = True
+        mock_element.text = "Button Text"
         mock_browser.driver.find_element.return_value = mock_element
+        mock_browser.driver.find_elements.return_value = [mock_element]
 
         params = {"selector": ".button", "wait_after": wait_after}
 
@@ -296,6 +298,7 @@ class TestWorkflowExecutor:
             executor._action_click(params)
 
         mock_element.click.assert_called_once()
+
 
     def test_extract_value_from_element_text(self, sample_config, mock_create_browser):
         """Test extracting text from element."""

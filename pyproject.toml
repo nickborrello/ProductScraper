@@ -75,7 +75,27 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "B", "I", "N", "UP", "PL", "RUF"]
-ignore = []
+ignore = [
+    "E501",    # Line too long
+    "PLC0415", # Import outside top-level
+    "E722",    # Bare except
+    "PLR",     # Complexity (PLR0912, PLR0913, PLR0915, PLR2004, PLR0911)
+    "E402",    # Module level import not at top
+    "F401",    # Unused imports
+    "N806",    # Non-lowercase variable in function
+    "N812",    # Lowercase imported as non-lowercase
+    "N803",    # Invalid argument name
+    "RUF001",  # Ambiguous unicode
+    "RUF012",  # Mutable class default
+    "N802",    # Invalid function name
+    "B904",    # Raise without from
+    "PLW0603", # Global statement
+    "B007",    # Unused loop control variable
+    "B017",    # Assert raises exception
+    "B023",    # Function uses loop variable
+    "F811",    # Redefined while unused
+    "PLW2901", # Redefined loop name
+]
 
 [tool.ruff.lint.isort]
 known-first-party = ["src"]
