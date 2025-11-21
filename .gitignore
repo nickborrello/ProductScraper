@@ -68,7 +68,6 @@ src/scrapers/**/large_scale_test_results_*.json
 
 # AI assistant prompt files
 .github/prompts/
-.gemini/
 
 # Scrape results (large generated data)
 results/
