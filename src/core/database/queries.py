@@ -119,9 +119,10 @@ def main():
 
         fields = db.get_sample_fields()
         print(f"📋 Available fields: {len(fields)} total")
-        print("Common fields:", ", ".join(fields[:10]))
-        if len(fields) > 10:
-            print(f"... and {len(fields) - 10} more")
+        DISPLAY_LIMIT = 10
+        print("Common fields:", ", ".join(fields[:DISPLAY_LIMIT]))
+        if len(fields) > DISPLAY_LIMIT:
+            print(f"... and {len(fields) - DISPLAY_LIMIT} more")
 
         print("\n" + "=" * 50)
         print("Query Examples:")
@@ -151,8 +152,9 @@ def main():
                         sku = product.get("sku", "No SKU")
                         name = product.get("extra_data", {}).get("Name", "No Name")
                         print(f"  {i}. {sku}: {name}")
-                    if len(results) > 5:
-                        print(f"     ... and {len(results) - 5} more")
+                    RESULT_DISPLAY_LIMIT = 5
+                    if len(results) > RESULT_DISPLAY_LIMIT:
+                        print(f"     ... and {len(results) - RESULT_DISPLAY_LIMIT} more")
                 except Exception as e:
                     print(f"❌ Error: {e}")
 
@@ -165,10 +167,11 @@ def main():
                     try:
                         results = db.query_products(query)
                         print(f"\n📊 Query returned {len(results)} results:")
-                        for i, product in enumerate(results[:10], 1):  # Show first 10
+                        QUERY_DISPLAY_LIMIT = 10
+                        for i, product in enumerate(results[:QUERY_DISPLAY_LIMIT], 1):  # Show first 10
                             print(f"  {i}. {product}")
-                        if len(results) > 10:
-                            print(f"     ... and {len(results) - 10} more")
+                        if len(results) > QUERY_DISPLAY_LIMIT:
+                            print(f"     ... and {len(results) - QUERY_DISPLAY_LIMIT} more")
                     except Exception as e:
                         print(f"❌ Error: {e}")
 

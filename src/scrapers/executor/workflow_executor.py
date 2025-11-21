@@ -3,6 +3,7 @@ Workflow executor for scraper automation using Selenium WebDriver.
 """
 
 import json
+import logging
 import random
 import re
 import time
@@ -13,7 +14,10 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-from src.core.adaptive_retry_strategy import AdaptiveRetryStrategy
+from src.core.adaptive_retry_strategy import (
+    AdaptiveRetryStrategy,
+    FailureContext as AdaptiveFailureContext,
+)
 from src.core.anti_detection_manager import AntiDetectionManager
 from src.core.failure_analytics import FailureAnalytics
 from src.core.failure_classifier import FailureClassifier, FailureContext, FailureType
@@ -21,6 +25,13 @@ from src.core.settings_manager import SettingsManager
 from src.scrapers.actions.registry import ActionRegistry
 from src.scrapers.models.config import ScraperConfig, WorkflowStep
 from src.utils.scraping.browser import ScraperBrowser, create_browser
+
+logger = logging.getLogger(__name__)
+
+
+class WorkflowExecutionError(Exception):
+    """Exception raised for workflow execution errors."""
+    pass
 
 
 class WorkflowExecutor:
@@ -72,7 +83,8 @@ class WorkflowExecutor:
             logger.info(f"Adjusted timeout for CI environment: {self.timeout}s")
 
         logger.info(
-            f"Initializing workflow executor - CI: {self.is_ci}, Headless: {headless}, Timeout: {self.timeout}"
+            f"Initializing workflow executor - CI: {self.is_ci}, "
+            f"Headless: {headless}, Timeout: {self.timeout}"
         )
 
         # Initialize browser
@@ -272,11 +284,13 @@ class WorkflowExecutor:
             if retry_count > 0:
                 # This was a successful retry
                 self.adaptive_retry_strategy.record_failure(
-                    failure_type=FailureType.NETWORK_ERROR,  # Default, will be updated with actual type
-                    site_name=self.config.name,
-                    action=action,
-                    retry_count=retry_count,
-                    context={"params": params},
+                    AdaptiveFailureContext(
+                        site_name=self.config.name,
+                        action=action,
+                        retry_count=retry_count,
+                        context={"params": params},
+                        failure_type=FailureType.NETWORK_ERROR,
+                    ),
                     success_after_retry=True,
                     final_success=True,
                 )
@@ -376,16 +390,18 @@ class WorkflowExecutor:
 
                 # Record the failure for learning
                 self.adaptive_retry_strategy.record_failure(
-                    failure_type=failure_context.failure_type,
-                    site_name=self.config.name,
-                    action=action,
-                    retry_count=retry_count,
-                    context={
-                        "exception": str(e),
-                        "params": params,
-                        "failure_details": failure_context.details,
-                        "confidence": failure_context.confidence,
-                    },
+                    AdaptiveFailureContext(
+                        site_name=self.config.name,
+                        action=action,
+                        retry_count=retry_count,
+                        context={
+                            "exception": str(e),
+                            "params": params,
+                            "failure_details": failure_context.details,
+                            "confidence": failure_context.confidence,
+                        },
+                        failure_type=failure_context.failure_type,
+                    ),
                     success_after_retry=False,  # Will be updated if retry succeeds
                     final_success=False,
                 )
@@ -415,16 +431,18 @@ class WorkflowExecutor:
             )
 
             self.adaptive_retry_strategy.record_failure(
-                failure_type=failure_context.failure_type,
-                site_name=self.config.name,
-                action=action,
-                retry_count=retry_count,
-                context={
-                    "exception": str(e),
-                    "params": params,
-                    "failure_details": failure_context.details,
-                    "confidence": failure_context.confidence,
-                },
+                AdaptiveFailureContext(
+                    site_name=self.config.name,
+                    action=action,
+                    retry_count=retry_count,
+                    context={
+                        "exception": str(e),
+                        "params": params,
+                        "failure_details": failure_context.details,
+                        "confidence": failure_context.confidence,
+                    },
+                    failure_type=failure_context.failure_type,
+                ),
                 success_after_retry=False,
                 final_success=False,
             )

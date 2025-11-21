@@ -71,9 +71,11 @@ UNIFIED_SYSTEM_PROMPT = """You are an expert e-commerce product classifier for a
 {pages_text}
 
 CLASSIFICATION RULES:
-1. **Prioritize the existing taxonomy.** If a product fits well into an existing category or product type, you must use it.
+1. **Prioritize the existing taxonomy.** If a product fits well into an existing
+category or product type, you must use it.
 2. If no suitable option exists, you may suggest a new one.
-3. If you are uncertain, it is better to choose the closest existing match rather than creating a new one.
+3. If you are uncertain, it is better to choose the closest existing match rather
+than creating a new one.
 
 CRITICAL: You must respond with valid JSON only. No explanations, no markdown, no additional text.
 """

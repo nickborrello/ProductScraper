@@ -292,13 +292,15 @@ class DataQualityScorer:
         # Not just numbers, reasonable length
         if re.match(r"^\d+$", name):
             return False
-        return 1 <= len(name) <= 200
+        MAX_NAME_LENGTH = 200
+        return 1 <= len(name) <= MAX_NAME_LENGTH
 
     def _is_text_field_consistent(self, value: str) -> bool:
         """Check text field consistency."""
         if not value or value in self.INVALID_VALUES:
             return False
-        return 1 <= len(value.strip()) <= 100
+        MAX_TEXT_LENGTH = 100
+        return 1 <= len(value.strip()) <= MAX_TEXT_LENGTH
 
 
 # Convenience functions

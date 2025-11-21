@@ -533,7 +533,8 @@ class CaptchaDetector:
                         return True
                     else:
                         logger.warning(
-                            f"External CAPTCHA solving failed (attempt {attempt + 1}), trying fallback"
+                            f"External CAPTCHA solving failed (attempt {attempt + 1}), "
+                            "trying fallback"
                         )
 
                 # Fallback: just wait and retry
@@ -593,7 +594,8 @@ class RateLimiter:
             page_title = driver.title.lower()
 
             for pattern in self.config.rate_limiting_text_patterns:
-                if re.search(pattern, page_text, re.IGNORECASE) or re.search(pattern, page_title, re.IGNORECASE):
+                if (re.search(pattern, page_text, re.IGNORECASE) or
+                    re.search(pattern, page_title, re.IGNORECASE)):
                     logger.info(f"Rate limiting detected using text pattern: {pattern}")
                     return True
 
@@ -642,10 +644,18 @@ class RateLimiter:
 
         if time_since_last < required_delay:
             delay = required_delay - time_since_last
-            logger.debug(f"Rate limiter - CI: {is_ci}, time_since_last: {time_since_last:.2f}s, required_delay: {required_delay:.2f}s, applying delay: {delay:.2f}s, failures: {self.consecutive_failures}")
+            logger.debug(
+                f"Rate limiter - CI: {is_ci}, time_since_last: {time_since_last:.2f}s, "
+                f"required_delay: {required_delay:.2f}s, applying delay: {delay:.2f}s, "
+                f"failures: {self.consecutive_failures}"
+            )
             time.sleep(delay)
         else:
-            logger.debug(f"Rate limiter - CI: {is_ci}, no delay needed (time_since_last: {time_since_last:.2f}s >= required_delay: {required_delay:.2f}s)")
+            logger.debug(
+                f"Rate limiter - CI: {is_ci}, no delay needed "
+                f"(time_since_last: {time_since_last:.2f}s >= "
+                f"required_delay: {required_delay:.2f}s)"
+            )
 
         self.last_request_time = time.time()
 

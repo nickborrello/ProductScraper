@@ -383,7 +383,8 @@ if GUI_AVAILABLE:
                 self.checkboxes[option] = checkbox
 
         def on_available_changed(self, option, state):
-            if state == 2:  # Checked
+            QT_CHECKED_STATE = 2
+            if state == QT_CHECKED_STATE:  # Checked
                 self.selected_items.add(option)
                 self.selection_changed.emit()
             self.update_display()

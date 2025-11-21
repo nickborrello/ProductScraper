@@ -179,7 +179,8 @@ class LLMProductClassifier:
                     timeout=30,
                 )
 
-                if response.status_code == 200:
+                HTTP_OK = 200
+                if response.status_code == HTTP_OK:
                     result = response.json()
                     return result["choices"][0]["message"]["content"]
                 else:

@@ -39,7 +39,8 @@ except ImportError:
 
 
 class LocalLLMProductClassifier:
-    """Local LLM-based product classifier using Ollama for running models locally without API keys."""
+    """Local LLM-based product classifier using Ollama for running models
+    locally without API keys."""
 
     def __init__(
         self,
@@ -300,7 +301,10 @@ class LocalLLMProductClassifier:
             from .manager import UNIFIED_BATCH_JSON_FORMAT
 
         # Create batch prompt with essential product information
-        batch_prompt = "Classify these products. For each product, use the name and brand to determine the category and type.\n\n"
+        batch_prompt = (
+            "Classify these products. For each product, use the name and brand to "
+            "determine the category and type.\n\n"
+        )
 
         for i, product in enumerate(products, 1):
             batch_prompt += f"PRODUCT {i}:\n"

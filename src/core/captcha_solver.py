@@ -140,7 +140,8 @@ class CaptchaSolver:
                     elements = driver.find_elements(By.CSS_SELECTOR, selector)
                     if elements:
                         element = elements[0]
-                        site_key = element.get_attribute("data-sitekey") or driver.execute_script("""
+                        site_key = element.get_attribute("data-sitekey") or driver.execute_script(
+                            """
                                 var recaptcha = document.querySelector('.g-recaptcha');
                                 if (recaptcha) {
                                     return recaptcha.getAttribute('data-sitekey');
