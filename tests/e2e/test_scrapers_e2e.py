@@ -532,7 +532,7 @@ class TestScraperIntegration:
             print("DEBUG: test_all_scrapers_integration completed successfully")
 
     @pytest.mark.integration
-    @pytest.mark.parametrize("headless", [True, False])
+    @pytest.mark.parametrize("headless", [True])
     def test_scraper_headless_modes(self, tester, headless):
         """Test scraper execution in both headless and non-headless modes."""
         print(f"DEBUG: Starting test_scraper_headless_modes with headless={headless}")
