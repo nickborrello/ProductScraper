@@ -125,7 +125,7 @@ class LocalLLMProductClassifier:
         except Exception as e:
             raise ValueError(
                 f"Ollama not available. Please install Ollama and ensure it's running: {e}"
-            )
+            ) from e
 
     def _initialize_conversation(self):
         """Initialize conversation with taxonomy and instructions."""

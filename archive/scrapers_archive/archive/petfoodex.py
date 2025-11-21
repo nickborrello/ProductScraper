@@ -1,22 +1,23 @@
 import os
 import sys
 import time
+
 from dotenv import load_dotenv
 from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
-from src.utils.scraping.scraping import get_standard_chrome_options
-from src.utils.scraping.browser import create_browser
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+
+from src.core.settings_manager import settings
 from src.utils.general.display import (
+    display_error,
     display_product_result,
     display_scraping_progress,
     display_scraping_summary,
-    display_error,
 )
-from src.core.settings_manager import settings
+from src.utils.scraping.browser import create_browser
+from src.utils.scraping.scraping import get_standard_chrome_options
 
 # Ensure project root is on sys.path
 PROJECT_ROOT = os.path.dirname(
@@ -37,7 +38,6 @@ HOME_URL = "https://orders.petfoodexperts.com/"
 
 def init_browser(profile_suffix="default", headless=True):
     # Use standard Chrome options
-    from src.utils.scraping.scraping import get_standard_chrome_options
 
     chrome_options = get_standard_chrome_options(
         headless=headless, profile_suffix=profile_suffix
@@ -77,8 +77,8 @@ def load_cookies(driver):
 
 def save_cookies(driver, log_callback=None):
     try:
-        import pickle
         import os
+        import pickle
 
         cookie_dir = os.path.join(PROJECT_ROOT, "data", "cookies")
         os.makedirs(cookie_dir, exist_ok=True)
@@ -457,7 +457,7 @@ def scrape_single_product(sku, driver, log_callback=None):
                         elif "_sm.jpg" in img_src:
                             img_src = img_src.replace("_sm.jpg", "_md.jpg")
                         image_urls.append(img_src)
-            except Exception as e:
+            except Exception:
                 pass
 
             brand = brand_elem.text.strip() if brand_elem else ""

@@ -1,14 +1,9 @@
 import json
 import os
+import shutil
 import tempfile
 
 import pytest
-
-# Add project root to sys.path
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import sys
-
-sys.path.insert(0, PROJECT_ROOT)
 
 from src.scrapers.selector_storage import SelectorData, SelectorManager, SelectorStorage
 
@@ -27,9 +22,10 @@ def temp_storage_path():
 @pytest.fixture
 def sample_selector_data():
     """Create sample selector data for testing."""
+    confidence = 0.8
     return SelectorData(
         selector=".product-title",
-        confidence=0.8,
+        confidence=confidence,
         last_updated="2023-01-01T00:00:00Z",
         fallbacks=[".title", ".name"],
     )
@@ -43,31 +39,34 @@ class TestSelectorData:
         data = SelectorData(selector=".test")
 
         assert data.selector == ".test"
-        assert data.confidence == 0.5
+        initial_confidence = 0.5
+        assert data.confidence == initial_confidence
         assert data.fallbacks == []
         assert data.last_updated is not None
 
     def test_init_custom_values(self):
         """Test SelectorData initialization with custom values."""
+        high_confidence = 0.9
         data = SelectorData(
             selector=".custom",
-            confidence=0.9,
+            confidence=high_confidence,
             last_updated="2023-01-01T00:00:00Z",
             fallbacks=[".alt1", ".alt2"],
         )
 
         assert data.selector == ".custom"
-        assert data.confidence == 0.9
+        assert data.confidence == high_confidence
         assert data.last_updated == "2023-01-01T00:00:00Z"
         assert data.fallbacks == [".alt1", ".alt2"]
 
     def test_to_dict(self, sample_selector_data):
         """Test converting SelectorData to dictionary."""
+        confidence = 0.8
         data_dict = sample_selector_data.to_dict()
 
         expected = {
             "selector": ".product-title",
-            "confidence": 0.8,
+            "confidence": confidence,
             "last_updated": "2023-01-01T00:00:00Z",
             "fallbacks": [".title", ".name"],
         }
@@ -75,9 +74,10 @@ class TestSelectorData:
 
     def test_from_dict(self):
         """Test creating SelectorData from dictionary."""
+        confidence = 0.8
         data_dict = {
             "selector": ".product-title",
-            "confidence": 0.8,
+            "confidence": confidence,
             "last_updated": "2023-01-01T00:00:00Z",
             "fallbacks": [".title", ".name"],
         }
@@ -85,7 +85,8 @@ class TestSelectorData:
         data = SelectorData.from_dict(data_dict)
 
         assert data.selector == ".product-title"
-        assert data.confidence == 0.8
+        good_confidence = 0.8
+        assert data.confidence == good_confidence
         assert data.last_updated == "2023-01-01T00:00:00Z"
         assert data.fallbacks == [".title", ".name"]
 
@@ -96,44 +97,56 @@ class TestSelectorData:
         data = SelectorData.from_dict(data_dict)
 
         assert data.selector == ".test"
-        assert data.confidence == 0.5
+        default_confidence = 0.5
+        assert data.confidence == default_confidence
         assert data.fallbacks == []
 
     def test_update_confidence_success(self):
         """Test confidence update on successful extraction."""
-        data = SelectorData(selector=".test", confidence=0.5)
+        initial_confidence = 0.5
+        expected_confidence = 0.6  # 0.5 + 0.1
+        data = SelectorData(selector=".test", confidence=initial_confidence)
 
         data.update_confidence(success=True)
 
-        assert data.confidence == 0.6  # 0.5 + 0.1
+        assert data.confidence == expected_confidence
 
     def test_update_confidence_failure(self):
         """Test confidence update on failed extraction."""
-        data = SelectorData(selector=".test", confidence=0.5)
+        initial_confidence = 0.5
+        expected_confidence_after_failure = 0.4  # 0.5 - 0.1
+        data = SelectorData(selector=".test", confidence=initial_confidence)
 
         data.update_confidence(success=False)
 
-        assert data.confidence == 0.4  # 0.5 - 0.1
+        assert data.confidence == expected_confidence_after_failure
 
     def test_update_confidence_max_min_bounds(self):
         """Test confidence stays within 0.0-1.0 bounds."""
         # Test upper bound
-        data = SelectorData(selector=".test", confidence=0.95)
+        initial_confidence = 0.95
+        max_confidence = 1.0
+        data = SelectorData(selector=".test", confidence=initial_confidence)
         data.update_confidence(success=True)
-        assert data.confidence == 1.0
+        assert data.confidence == max_confidence
 
         # Test lower bound
-        data = SelectorData(selector=".test", confidence=0.05)
+        initial_confidence = 0.05
+        min_confidence = 0.0
+        data = SelectorData(selector=".test", confidence=initial_confidence)
         data.update_confidence(success=False)
-        assert data.confidence == 0.0
+        assert data.confidence == min_confidence
 
     def test_update_confidence_custom_learning_rate(self):
         """Test confidence update with custom learning rate."""
-        data = SelectorData(selector=".test", confidence=0.5)
+        initial_confidence = 0.5
+        learning_rate = 0.2
+        expected_confidence_with_learning_rate = 0.7  # 0.5 + 0.2
+        data = SelectorData(selector=".test", confidence=initial_confidence)
 
-        data.update_confidence(success=True, learning_rate=0.2)
+        data.update_confidence(success=True, learning_rate=learning_rate)
 
-        assert data.confidence == 0.7  # 0.5 + 0.2
+        assert data.confidence == expected_confidence_with_learning_rate
 
 
 class TestSelectorStorage:
@@ -147,8 +160,6 @@ class TestSelectorStorage:
 
         # Ensure the directory doesn't exist
         if test_dir.exists():
-            import shutil
-
             shutil.rmtree(test_dir)
 
         SelectorStorage(str(storage_file))
@@ -164,6 +175,7 @@ class TestSelectorStorage:
 
     def test_load_valid_data(self, temp_storage_path):
         """Test loading valid selector data from file."""
+        confidence = 0.8
         test_data = {
             "metadata": {
                 "version": "1.0",
@@ -174,7 +186,7 @@ class TestSelectorStorage:
                 "example.com": {
                     "product_name": {
                         "selector": ".product-title",
-                        "confidence": 0.8,
+                        "confidence": confidence,
                         "last_updated": "2023-01-01T00:00:00Z",
                         "fallbacks": [".title"],
                     }
@@ -191,7 +203,7 @@ class TestSelectorStorage:
         assert "product_name" in storage.data["example.com"]
         selector_data = storage.data["example.com"]["product_name"]
         assert selector_data.selector == ".product-title"
-        assert selector_data.confidence == 0.8
+        assert selector_data.confidence == confidence
 
     def test_load_corrupted_file(self, temp_storage_path):
         """Test loading from a corrupted JSON file."""
@@ -205,10 +217,11 @@ class TestSelectorStorage:
 
     def test_save_and_load_roundtrip(self, temp_storage_path):
         """Test saving and loading data preserves information."""
+        confidence = 0.9
         storage = SelectorStorage(temp_storage_path)
 
         # Add some data
-        storage.set_selector("example.com", "price", ".price", 0.9, [".cost"])
+        storage.set_selector("example.com", "price", ".price", confidence, [".cost"])
 
         # Save and reload
         storage.save()
@@ -217,7 +230,7 @@ class TestSelectorStorage:
         selector_data = new_storage.get_selector("example.com", "price")
         assert selector_data is not None
         assert selector_data.selector == ".price"
-        assert selector_data.confidence == 0.9
+        assert selector_data.confidence == confidence
         assert selector_data.fallbacks == [".cost"]
 
     def test_get_selector_exists(self, temp_storage_path):
@@ -240,39 +253,44 @@ class TestSelectorStorage:
 
     def test_set_selector_new(self, temp_storage_path):
         """Test setting a new selector."""
+        confidence = 0.7
         storage = SelectorStorage(temp_storage_path)
 
-        storage.set_selector("example.com", "name", ".name", 0.7, [".title"])
+        storage.set_selector("example.com", "name", ".name", confidence, [".title"])
 
         selector_data = storage.get_selector("example.com", "name")
         assert selector_data is not None
         assert selector_data.selector == ".name"
-        assert selector_data.confidence == 0.7
+        assert selector_data.confidence == confidence
         assert selector_data.fallbacks == [".title"]
 
     def test_set_selector_update(self, temp_storage_path):
         """Test updating an existing selector."""
+        initial_confidence = 0.5
+        updated_confidence = 0.8
         storage = SelectorStorage(temp_storage_path)
-        storage.set_selector("example.com", "name", ".name", 0.5)
+        storage.set_selector("example.com", "name", ".name", initial_confidence)
 
-        storage.set_selector("example.com", "name", ".new-name", 0.8, [".alt"])
+        storage.set_selector("example.com", "name", ".new-name", updated_confidence, [".alt"])
 
         selector_data = storage.get_selector("example.com", "name")
         assert selector_data is not None
         assert selector_data.selector == ".new-name"
-        assert selector_data.confidence == 0.8
+        assert selector_data.confidence == updated_confidence
         assert selector_data.fallbacks == [".alt"]
 
     def test_update_selector_confidence(self, temp_storage_path):
         """Test updating selector confidence."""
+        initial_confidence = 0.5
+        updated_confidence = 0.6
         storage = SelectorStorage(temp_storage_path)
-        storage.set_selector("example.com", "price", ".price", 0.5)
+        storage.set_selector("example.com", "price", ".price", initial_confidence)
 
         storage.update_selector_confidence("example.com", "price", True)
 
         selector_data = storage.get_selector("example.com", "price")
         assert selector_data is not None
-        assert selector_data.confidence == 0.6
+        assert selector_data.confidence == updated_confidence
 
     def test_get_fallback_chain(self, temp_storage_path):
         """Test getting fallback chain."""
@@ -304,6 +322,7 @@ class TestSelectorStorage:
 
     def test_add_fallback_duplicate(self, temp_storage_path):
         """Test adding a duplicate fallback selector."""
+        num_fallbacks = 1
         storage = SelectorStorage(temp_storage_path)
         storage.set_selector("example.com", "title", ".title", fallbacks=[".alt"])
 
@@ -311,7 +330,7 @@ class TestSelectorStorage:
 
         selector_data = storage.get_selector("example.com", "title")
         assert selector_data is not None
-        assert selector_data.fallbacks.count(".alt") == 1  # Should not duplicate
+        assert selector_data.fallbacks.count(".alt") == num_fallbacks  # Should not duplicate
 
     def test_get_all_domains(self, temp_storage_path):
         """Test getting all stored domains."""
@@ -381,13 +400,14 @@ class TestSelectorManager:
         """Test learning with existing selector (same selector)."""
         manager = SelectorManager(temp_storage_path)
         manager.learn_selector("example.com", "title", ".title", success=True)
+        expected_confidence = 0.6  # 0.5 + 0.1
 
         # Learn again with same selector
         manager.learn_selector("example.com", "title", ".title", success=True)
 
         selector_data = manager.storage.get_selector("example.com", "title")
         assert selector_data is not None
-        assert selector_data.confidence == 0.6  # 0.5 + 0.1
+        assert selector_data.confidence == expected_confidence
 
     def test_learn_selector_promote_new(self, temp_storage_path):
         """Test promoting a new selector when confidence is low."""
@@ -439,12 +459,15 @@ class TestSelectorManager:
 
     def test_get_selector_stats(self, temp_storage_path):
         """Test getting selector statistics."""
+        confidence = 0.8
+        fallback_count = 2
+        total_selectors = 3
         manager = SelectorManager(temp_storage_path)
         manager.storage.set_selector(
             "example.com",
             "title",
             ".title",
-            confidence=0.8,
+            confidence=confidence,
             fallbacks=[".alt1", ".alt2"],
         )
 
@@ -452,9 +475,9 @@ class TestSelectorManager:
 
         assert stats is not None
         assert stats["selector"] == ".title"
-        assert stats["confidence"] == 0.8
-        assert stats["fallback_count"] == 2
-        assert stats["total_selectors"] == 3
+        assert stats["confidence"] == confidence
+        assert stats["fallback_count"] == fallback_count
+        assert stats["total_selectors"] == total_selectors
 
     def test_get_selector_stats_none(self, temp_storage_path):
         """Test getting stats for non-existing selector."""
@@ -466,12 +489,18 @@ class TestSelectorManager:
 
     def test_cleanup_low_confidence_selectors(self, temp_storage_path):
         """Test cleaning up low confidence selectors."""
+        good_confidence = 0.9
+        bad_confidence1 = 0.1
+        bad_confidence2 = 0.2
+        cleanup_threshold = 0.3
         manager = SelectorManager(temp_storage_path)
-        manager.storage.set_selector("example.com", "good", ".good", confidence=0.9)
-        manager.storage.set_selector("example.com", "bad", ".bad", confidence=0.1)
-        manager.storage.set_selector("other.com", "also_bad", ".also-bad", confidence=0.2)
+        manager.storage.set_selector("example.com", "good", ".good", confidence=good_confidence)
+        manager.storage.set_selector("example.com", "bad", ".bad", confidence=bad_confidence1)
+        manager.storage.set_selector(
+            "other.com", "also_bad", ".also-bad", confidence=bad_confidence2
+        )
 
-        manager.cleanup_low_confidence_selectors(threshold=0.3)
+        manager.cleanup_low_confidence_selectors(threshold=cleanup_threshold)
 
         assert manager.storage.get_selector("example.com", "good") is not None
         assert manager.storage.get_selector("example.com", "bad") is None

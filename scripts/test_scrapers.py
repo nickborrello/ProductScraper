@@ -13,24 +13,23 @@ Usage:
     python test_scrapers.py                          # Default: test all scrapers
 """
 
-import os
-import sys
-import json
-import yaml
-import time
-import logging
 import argparse
 import copy
+import logging
+import sys
+import time
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
+
+import yaml
 
 # Add project root to path
 PROJECT_ROOT = Path(__file__).parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.scrapers.parser.yaml_parser import ScraperConfigParser
 from src.scrapers.executor.workflow_executor import WorkflowExecutor
+from src.scrapers.parser.yaml_parser import ScraperConfigParser
 
 # Configure logging
 logging.basicConfig(
@@ -44,7 +43,7 @@ logging.getLogger('urllib3').setLevel(logging.WARNING)
 logging.getLogger('selenium.webdriver').setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
-def get_all_scrapers() -> List[str]:
+def get_all_scrapers() -> list[str]:
     """Dynamically find all scraper config files."""
     configs_path = PROJECT_ROOT / "src" / "scrapers" / "configs"
     scraper_files = [f for f in configs_path.glob("*.yaml")]
@@ -85,7 +84,7 @@ def get_test_sku(scraper_name: str) -> str:
     """Get the first test SKU for a scraper from its YAML config file."""
     config_path = PROJECT_ROOT / "src" / "scrapers" / "configs" / f"{scraper_name}.yaml"
     try:
-        with open(config_path, 'r', encoding='utf-8') as f:
+        with open(config_path, encoding='utf-8') as f:
             config_dict = yaml.safe_load(f)
         test_skus = config_dict.get("test_skus", [])
         if test_skus:
@@ -101,7 +100,7 @@ def replace_sku_placeholders(config, sku: str):
         if step.action == "navigate" and "url" in step.params:
             step.params["url"] = step.params["url"].replace("{sku}", sku)
 
-def perform_data_quality_check(extracted_data: Dict[str, Any]) -> List[str]:
+def perform_data_quality_check(extracted_data: dict[str, Any]) -> list[str]:
     """
     Performs a data quality check on the extracted data.
     Returns a list of issues found.
@@ -117,11 +116,11 @@ def perform_data_quality_check(extracted_data: Dict[str, Any]) -> List[str]:
         elif field == "Images" and not isinstance(extracted_data[field], list):
             issues.append(f"Invalid format for Images: expected a list, got {type(extracted_data[field])}")
         elif field == "Images" and isinstance(extracted_data[field], list) and not all(isinstance(item, str) and item.startswith("http") for item in extracted_data[field]):
-            issues.append(f"Invalid image URLs in Images field: expected list of http(s) URLs")
+            issues.append("Invalid image URLs in Images field: expected list of http(s) URLs")
     
     return issues
 
-def perform_data_quality_check(extracted_data: Dict[str, Any]) -> List[str]:
+def perform_data_quality_check(extracted_data: dict[str, Any]) -> list[str]:
     """
     Performs a data quality check on the extracted data.
     Returns a list of issues found.
@@ -137,11 +136,11 @@ def perform_data_quality_check(extracted_data: Dict[str, Any]) -> List[str]:
         elif field == "Images" and not isinstance(extracted_data[field], list):
             issues.append(f"Invalid format for Images: expected a list, got {type(extracted_data[field])}")
         elif field == "Images" and isinstance(extracted_data[field], list) and not all(isinstance(item, str) and item.startswith("http") for item in extracted_data[field]):
-            issues.append(f"Invalid image URLs in Images field: expected list of http(s) URLs")
+            issues.append("Invalid image URLs in Images field: expected list of http(s) URLs")
     
     return issues
 
-def test_scraper_config(scraper_name: str, headless: bool = True, test_no_results: bool = False, temp_dir: str = None) -> Dict[str, Any]:
+def test_scraper_config(scraper_name: str, headless: bool = True, test_no_results: bool = False, temp_dir: str | None = None) -> dict[str, Any]:
     """
     Test a single scraper configuration.
 
@@ -349,16 +348,15 @@ def main():
                 return
             scrapers_to_test = [args.no_results]
             test_no_results_mode = True
+    # Regular testing mode
+    elif args.all or not args.scrapers:
+        scrapers_to_test = ALL_SCRAPER_CONFIGS
     else:
-        # Regular testing mode
-        if args.all or not args.scrapers:
-            scrapers_to_test = ALL_SCRAPER_CONFIGS
-        else:
-            scrapers_to_test = args.scrapers
-            invalid = [s for s in scrapers_to_test if s not in ALL_SCRAPER_CONFIGS]
-            if invalid:
-                logger.error(f"Invalid scraper names: {invalid}. Available scrapers: {ALL_SCRAPER_CONFIGS}")
-                return
+        scrapers_to_test = args.scrapers
+        invalid = [s for s in scrapers_to_test if s not in ALL_SCRAPER_CONFIGS]
+        if invalid:
+            logger.error(f"Invalid scraper names: {invalid}. Available scrapers: {ALL_SCRAPER_CONFIGS}")
+            return
 
     logger.info(f"Starting {'NO RESULTS ' if test_no_results_mode else ''}scraper tests")
     logger.info(f"Testing configs: {scrapers_to_test}")

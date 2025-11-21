@@ -15,9 +15,9 @@ Usage:
 import argparse
 import os
 import sys
-import pytest
 from pathlib import Path
-from typing import List
+
+import pytest
 
 # Add project root to path
 PROJECT_ROOT = Path(__file__).parent.parent
@@ -123,7 +123,7 @@ Examples:
     os.environ['SCRAPER_HEADLESS'] = str(headless).lower()
 
     # Build pytest arguments
-    pytest_args: List[str] = [
+    pytest_args: list[str] = [
         'tests/integration/test_scraper_integration.py',
         '--tb=short',
     ]

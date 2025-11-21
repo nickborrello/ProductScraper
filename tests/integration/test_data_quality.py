@@ -1,13 +1,10 @@
-import sys
 from pathlib import Path
-
-# Add project root to path
-PROJECT_ROOT = Path(__file__).parent.parent.parent
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.core.data_quality_scorer import DataQualityScorer, is_product_high_quality
 from src.scrapers.parser.yaml_parser import ScraperConfigParser
+
+PROJECT_ROOT = Path(__file__).parent.parent.parent
+QUALITY_THRESHOLD = 0.6
 
 
 def get_available_scrapers():
@@ -63,11 +60,12 @@ def test_data_quality_gate():
 
     quality_rate = high_quality_records / total_records if total_records > 0 else 0
     print(
-        f"Quality validation: {high_quality_records}/{total_records} records pass quality gate ({quality_rate:.1%})"
+        f"Quality validation: {high_quality_records}/{total_records} "
+        f"records pass quality gate ({quality_rate:.1%})"
     )
 
     # Quality gate: at least 60% of test records should pass (allowing for incomplete mock data)
-    assert quality_rate >= 0.6, (
+    assert quality_rate >= QUALITY_THRESHOLD, (
         f"Quality gate failed: only {quality_rate:.1%} records pass validation"
     )
 

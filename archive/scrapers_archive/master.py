@@ -1,16 +1,10 @@
+import importlib.util
 import os
 import sys
 import time
-import pandas as pd
-from collections import defaultdict
-from datetime import datetime
-import tkinter as tk
-from tkinter import filedialog
-import importlib.util
-import glob
-import subprocess
 import warnings
-from typing import Optional, Dict, Any
+from typing import Any
+
 from src.scrapers.models.config import ScraperConfig
 
 # DEPRECATION WARNING: This archived scraper system is deprecated
@@ -23,37 +17,20 @@ warnings.warn(
 )
 
 # Ensure project root is on sys.path before importing local packages to avoid shadowing
-import os
-import sys
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 # Import classification module (after ensuring project root is first on sys.path)
-from src.core.classification.manager import (
-    classify_products_batch,
-    classify_single_product,
-)
-from src.ui.product_editor import product_editor_interactive, edit_products_in_batch
-from src.core.cross_sell.ui import assign_cross_sells_batch
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from selenium import webdriver
+
 from src.utils.scraping.scraping import (
-    create_fileName,
-    create_html,
-    clean_brand,
-    full_name,
     get_standard_chrome_options,
 )
-from src.utils.images.processing import download_image
-from src.utils.files.excel import convert_xlsx_to_xls_with_excel
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-
-
-from src.core.scrapers.apify_client import ApifyScraperClient, ApifyJobError, ApifyTimeoutError, ApifyAuthError
 
 
 class ScrapingProgressTracker:
@@ -113,12 +90,10 @@ class ScrapingProgressTracker:
             # Calculate progress as: current SKU / total SKUs for current site
             site_progress = (
                 min(
-                    int(
-                        round(
+                    round(
                             (self.current_sku_index / self.total_skus_current_site)
                             * 100
-                        )
-                    ),
+                        ),
                     100,
                 )
                 if self.total_skus_current_site > 0
@@ -307,16 +282,15 @@ def get_browser(site, headless_settings=None, force_headless=False):
             error_msg = str(e)
             if "user data directory is already in use" in error_msg:
                 pass  # Continue with retry logic for this specific error
+            elif attempt < max_retries - 1:
+                time.sleep(1 + attempt)
+                try:
+                    if browser is not None:
+                        browser.quit()
+                except:
+                    pass
             else:
-                if attempt < max_retries - 1:
-                    time.sleep(1 + attempt)
-                    try:
-                        if browser is not None:
-                            browser.quit()
-                    except:
-                        pass
-                else:
-                    return None
+                return None
     return None
 
 
@@ -325,7 +299,7 @@ class ModularScraper:
 
     def __init__(self, config_path: str):
         self.config_path = config_path
-        self.config: Optional[ScraperConfig] = None
+        self.config: ScraperConfig | None = None
         self._load_config()
         self._logged_in = False
 
@@ -339,7 +313,7 @@ class ModularScraper:
         except Exception as e:
             raise Exception(f"Failed to load config from {self.config_path}: {e}")
 
-    def _get_credentials(self) -> Optional[Dict[str, str]]:
+    def _get_credentials(self) -> dict[str, str] | None:
         """
         Get login credentials from environment variables.
 
@@ -490,7 +464,7 @@ class ModularScraper:
 
     def _transform_workflow_results(self, workflow_results: dict, sku: str):
         """Transform workflow execution results to product dictionary format."""
-        product: Dict[str, Any] = {"SKU": sku}
+        product: dict[str, Any] = {"SKU": sku}
 
         # Map workflow results to standard product fields
         field_mapping = {
@@ -577,7 +551,7 @@ def discover_scrapers():
                     headless_pref = getattr(module, "HEADLESS", True)
                     headless_settings[display_name] = headless_pref
 
-        except Exception as e:
+        except Exception:
             pass
 
     # Discover YAML-based scraper configurations

@@ -46,7 +46,9 @@ dev = [
     "mypy>=1.0.0",
     "types-requests",
     "types-PyYAML",
-    "pyinstaller>=6.0.0"
+    "pyinstaller>=6.0.0",
+    "bandit",
+    "safety"
 ]
 
 [project.scripts]
@@ -56,6 +58,7 @@ productscraper = "src.main:main"
 where = ["src"]
 
 [tool.pytest.ini_options]
+pythonpath = ["src"]
 norecursedirs = ["tests/unit/test_scrapers.py"]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",

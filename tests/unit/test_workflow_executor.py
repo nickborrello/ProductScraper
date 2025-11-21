@@ -1,15 +1,10 @@
-import os
-import sys
 from unittest.mock import Mock, patch
 
 import pytest
-
-# Add project root to sys.path
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.insert(0, PROJECT_ROOT)
-
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.by import By
 
+from src.core.failure_classifier import FailureType
 from src.scrapers.executor.workflow_executor import WorkflowExecutionError, WorkflowExecutor
 from src.scrapers.models.config import LoginConfig, ScraperConfig, SelectorConfig, WorkflowStep
 
@@ -17,11 +12,14 @@ from src.scrapers.models.config import LoginConfig, ScraperConfig, SelectorConfi
 @pytest.fixture
 def sample_config():
     """Create a sample ScraperConfig for testing."""
+    timeout = 30
+    retries = 3
+    wait_timeout = 10
     return ScraperConfig(
         name="Test Scraper",
         base_url="https://example.com",
-        timeout=30,
-        retries=3,
+        timeout=timeout,
+        retries=retries,
         selectors=[
             SelectorConfig(
                 name="product_name",
@@ -39,7 +37,7 @@ def sample_config():
         ],
         workflows=[
             WorkflowStep(action="navigate", params={"url": "https://example.com/products"}),
-            WorkflowStep(action="wait_for", params={"selector": ".product-list", "timeout": 10}),
+            WorkflowStep(action="wait_for", params={"selector": ".product-list", "timeout": wait_timeout}),
             WorkflowStep(
                 action="extract",
                 params={"fields": ["product_name", "price", "image_urls"]},
@@ -81,13 +79,14 @@ class TestWorkflowExecutor:
     def test_init_success(self, sample_config, mock_create_browser):
         """Test successful initialization of WorkflowExecutor."""
         executor = WorkflowExecutor(sample_config, headless=True)
+        expected_selector_count = 3
 
         assert executor.config == sample_config
         # Timeout should be 60s in CI, 30s locally
         expected_timeout = 60 if executor.is_ci else 30
         assert executor.timeout == expected_timeout
         assert executor.results == {}
-        assert len(executor.selectors) == 3
+        assert len(executor.selectors) == expected_selector_count
         mock_create_browser.assert_called_once()
         call_args = mock_create_browser.call_args
         assert call_args[1]["site_name"] == "Test Scraper"
@@ -96,9 +95,10 @@ class TestWorkflowExecutor:
 
     def test_init_custom_timeout(self, sample_config, mock_create_browser):
         """Test initialization with custom timeout."""
-        executor = WorkflowExecutor(sample_config, headless=True, timeout=60)
+        custom_timeout = 60
+        executor = WorkflowExecutor(sample_config, headless=True, timeout=custom_timeout)
 
-        assert executor.timeout == 60
+        assert executor.timeout == custom_timeout
 
     def test_init_browser_failure(self, sample_config):
         """Test initialization failure when browser creation fails."""
@@ -117,6 +117,7 @@ class TestWorkflowExecutor:
         mock_element = Mock()
         mock_element.text = "Test Product"
         mock_browser.driver.find_element.return_value = mock_element
+        expected_steps_executed = 3
 
         mock_elements = [Mock(), Mock()]
         mock_elements[0].get_attribute.return_value = "image1.jpg"
@@ -129,7 +130,7 @@ class TestWorkflowExecutor:
 
         assert result["success"] is True
         assert result["config_name"] == "Test Scraper"
-        assert result["steps_executed"] == 3
+        assert result["steps_executed"] == expected_steps_executed
         assert "results" in result
 
         # Verify browser was quit
@@ -151,8 +152,8 @@ class TestWorkflowExecutor:
     def test_action_navigate(self, sample_config, mock_create_browser, mock_browser):
         """Test navigate action."""
         executor = WorkflowExecutor(sample_config, headless=True)
-
-        params = {"url": "https://test.com", "wait_after": 2}
+        wait_after = 2
+        params = {"url": "https://test.com", "wait_after": wait_after}
         executor._action_navigate(params)
 
         mock_browser.get.assert_called_once_with("https://test.com")
@@ -168,10 +169,10 @@ class TestWorkflowExecutor:
 
     def test_action_wait_for_success(self, sample_config, mock_create_browser, mock_browser):
         """Test successful wait_for action."""
-
+        timeout = 5
         executor = WorkflowExecutor(sample_config, headless=True)
 
-        params = {"selector": ".test", "timeout": 5}
+        params = {"selector": ".test", "timeout": timeout}
         executor._action_wait_for(params)
 
         # Verify WebDriverWait was called correctly
@@ -179,16 +180,14 @@ class TestWorkflowExecutor:
 
     def test_action_wait_for_timeout(self, sample_config, mock_create_browser, mock_browser):
         """Test wait_for action that times out."""
-        from selenium.common.exceptions import TimeoutException
-
         executor = WorkflowExecutor(sample_config, headless=True)
+        expected_timeout = 60 if executor.is_ci else 30
 
         # Mock WebDriverWait to raise TimeoutException
         with patch("src.scrapers.executor.workflow_executor.WebDriverWait") as mock_wait:
             mock_wait.return_value.until.side_effect = TimeoutException()
 
             # Error message should reflect actual timeout (60s in CI, 30s locally)
-            expected_timeout = 60 if executor.is_ci else 30
             with pytest.raises(
                 WorkflowExecutionError, match=f"Element not found within {expected_timeout}s"
             ):
@@ -222,8 +221,6 @@ class TestWorkflowExecutor:
         self, sample_config, mock_create_browser, mock_browser
     ):
         """Test extract_single when element is not found."""
-        from selenium.common.exceptions import NoSuchElementException
-
         executor = WorkflowExecutor(sample_config, headless=True)
 
         mock_browser.driver.find_element.side_effect = NoSuchElementException()
@@ -281,13 +278,13 @@ class TestWorkflowExecutor:
     def test_action_click_success(self, sample_config, mock_create_browser, mock_browser):
         """Test successful click action."""
         executor = WorkflowExecutor(sample_config, headless=True)
-
+        wait_after = 1
         mock_element = Mock()
         mock_element.is_displayed.return_value = True
         mock_element.is_enabled.return_value = True
         mock_browser.driver.find_element.return_value = mock_element
 
-        params = {"selector": ".button", "wait_after": 1}
+        params = {"selector": ".button", "wait_after": wait_after}
 
         with (
             patch("src.scrapers.executor.workflow_executor.WebDriverWait") as mock_wait,
@@ -345,7 +342,7 @@ class TestWorkflowExecutor:
         mock_element = Mock()
         mock_element.text = "Test Product"
         mock_browser.driver.find_element.return_value = mock_element
-
+        steps_executed = 2
         executor = WorkflowExecutor(sample_config, headless=True)
 
         steps = [
@@ -359,7 +356,7 @@ class TestWorkflowExecutor:
         result = executor.execute_steps(steps)
 
         assert result["success"] is True
-        assert result["steps_executed"] == 2
+        assert result["steps_executed"] == steps_executed
         assert "product_name" in executor.results
 
     def test_execute_steps_failure(self, sample_config, mock_create_browser, mock_browser):
@@ -376,18 +373,18 @@ class TestWorkflowExecutor:
     def test_action_wait_success(self, sample_config, mock_create_browser):
         """Test wait action."""
         executor = WorkflowExecutor(sample_config, headless=True)
-
+        wait_seconds = 2
         with patch("time.sleep") as mock_sleep:
-            executor._action_wait({"seconds": 2})
-            mock_sleep.assert_called_once_with(2)
+            executor._action_wait({"seconds": wait_seconds})
+            mock_sleep.assert_called_once_with(wait_seconds)
 
     def test_action_wait_default(self, sample_config, mock_create_browser):
         """Test wait action with default timeout."""
         executor = WorkflowExecutor(sample_config, headless=True)
-
+        default_wait = 1
         with patch("time.sleep") as mock_sleep:
             executor._action_wait({})
-            mock_sleep.assert_called_once_with(1)
+            mock_sleep.assert_called_once_with(default_wait)
 
     def test_action_extract_brand_processing(
         self, sample_config, mock_create_browser, mock_browser
@@ -497,11 +494,13 @@ class TestWorkflowExecutor:
 
     def test_action_login_success(self, sample_config, mock_create_browser, mock_browser):
         """Test successful login action."""
+        timeout = 30
+        retries = 3
         login_config = ScraperConfig(
             name="phillips",
             base_url="https://example.com",
-            timeout=30,
-            retries=3,
+            timeout=timeout,
+            retries=retries,
             login=LoginConfig(
                 url="https://example.com/login",
                 username_field="#username",
@@ -601,8 +600,6 @@ class TestWorkflowExecutor:
 
     def test_anti_detection_pre_action_hook_failure(self, sample_config, mock_create_browser):
         """Test pre-action anti-detection hook failure."""
-        from unittest.mock import Mock
-
         mock_anti_detection = Mock()
         mock_anti_detection.pre_action_hook.return_value = False
 
@@ -622,7 +619,7 @@ class TestWorkflowExecutor:
         mock_anti_detection.handle_error.return_value = True  # Retry
         mock_anti_detection.pre_action_hook.return_value = True
         mock_anti_detection.post_action_hook.return_value = None
-
+        call_count = 2
         executor = WorkflowExecutor(sample_config, headless=True)
         executor.anti_detection_manager = mock_anti_detection
 
@@ -635,7 +632,7 @@ class TestWorkflowExecutor:
 
         # Should have called handle_error and retried
         mock_anti_detection.handle_error.assert_called_once()
-        assert mock_browser.get.call_count == 2
+        assert mock_browser.get.call_count == call_count
 
     def test_get_locator_type_xpath(self, sample_config, mock_create_browser):
         """Test locator type detection for XPath."""
@@ -696,15 +693,15 @@ class TestWorkflowExecutor:
 
     def test_no_results_failure_no_retry(self, sample_config, mock_create_browser, mock_browser):
         """Test that NO_RESULTS failures are properly classified and handled without retries."""
-        from src.core.failure_classifier import FailureType
-
         # Mock the failure classifier to return NO_RESULTS
         mock_failure_context = Mock()
         mock_failure_context.failure_type = FailureType.NO_RESULTS
         mock_failure_context.confidence = 0.8
         mock_failure_context.details = {"no_results_detected": True}
         mock_failure_context.recovery_strategy = "retry_with_different_query"
-
+        max_retries = 3
+        delay = 1.0
+        call_count = 1
         executor = WorkflowExecutor(sample_config, headless=True)
 
         # Mock the failure classifier
@@ -713,12 +710,12 @@ class TestWorkflowExecutor:
         ):
             # Mock adaptive retry strategy to return config that would normally allow retries
             mock_config = Mock()
-            mock_config.max_retries = 3
+            mock_config.max_retries = max_retries
             with patch.object(
                 executor.adaptive_retry_strategy, "get_adaptive_config", return_value=mock_config
             ):
                 with patch.object(
-                    executor.adaptive_retry_strategy, "calculate_delay", return_value=1.0
+                    executor.adaptive_retry_strategy, "calculate_delay", return_value=delay
                 ):
                     # Make extract_single fail
                     mock_browser.driver.find_element.side_effect = Exception("No results found")
@@ -733,21 +730,20 @@ class TestWorkflowExecutor:
                         executor._execute_step(step)
 
                     # Verify browser.get was not called again (no retry)
-                    assert mock_browser.driver.find_element.call_count == 1
+                    assert mock_browser.driver.find_element.call_count == call_count
 
     def test_no_results_failure_context_storage(
         self, sample_config, mock_create_browser, mock_browser
     ):
         """Test that failure context is correctly stored in workflow results for NO_RESULTS."""
-        from src.core.failure_classifier import FailureType
-
         # Mock the failure classifier to return NO_RESULTS
         mock_failure_context = Mock()
         mock_failure_context.failure_type = FailureType.NO_RESULTS
-        mock_failure_context.confidence = 0.9
+        confidence = 0.9
+        mock_failure_context.confidence = confidence
         mock_failure_context.details = {"selector_match": True, "text_match": True}
         mock_failure_context.recovery_strategy = "retry_with_different_query"
-
+        retries = 0
         executor = WorkflowExecutor(sample_config, headless=True)
 
         # Mock the failure classifier
@@ -756,7 +752,7 @@ class TestWorkflowExecutor:
         ):
             # Mock adaptive retry strategy to prevent retries
             mock_config = Mock()
-            mock_config.max_retries = 0
+            mock_config.max_retries = retries
             with patch.object(
                 executor.adaptive_retry_strategy, "get_adaptive_config", return_value=mock_config
             ):
@@ -775,21 +771,19 @@ class TestWorkflowExecutor:
                 assert "failure_context" in executor.results
                 failure_context = executor.results["failure_context"]
                 assert failure_context["type"] == "no_results"
-                assert failure_context["confidence"] == 0.9
+                assert failure_context["confidence"] == confidence
                 assert failure_context["details"]["selector_match"] is True
                 assert failure_context["recovery_strategy"] == "retry_with_different_query"
-                assert failure_context["retries_attempted"] == 0
+                assert failure_context["retries_attempted"] == retries
 
     def test_no_results_analytics_recording(self, sample_config, mock_create_browser, mock_browser):
         """Test that NO_RESULTS failures trigger appropriate analytics recording."""
-        from src.core.failure_classifier import FailureType
-
         # Mock the failure classifier to return NO_RESULTS
         mock_failure_context = Mock()
         mock_failure_context.failure_type = FailureType.NO_RESULTS
         mock_failure_context.confidence = 0.7
         mock_failure_context.details = {"no_results_detected": True}
-
+        retries = 0
         executor = WorkflowExecutor(sample_config, headless=True)
 
         # Mock the failure classifier and analytics
@@ -799,7 +793,7 @@ class TestWorkflowExecutor:
             with patch.object(executor.failure_analytics, "record_failure") as mock_record_failure:
                 # Mock adaptive retry strategy to prevent retries
                 mock_config = Mock()
-                mock_config.max_retries = 0
+                mock_config.max_retries = retries
                 with patch.object(
                     executor.adaptive_retry_strategy,
                     "get_adaptive_config",
@@ -822,7 +816,7 @@ class TestWorkflowExecutor:
                     assert call_args[1]["site_name"] == "Test Scraper"
                     assert call_args[1]["failure_type"] == FailureType.NO_RESULTS
                     assert call_args[1]["action"] == "extract_single"
-                    assert call_args[1]["retry_count"] == 0
+                    assert call_args[1]["retry_count"] == retries
                     assert "exception" in call_args[1]["context"]
                     assert "failure_details" in call_args[1]["context"]
                     assert call_args[1]["context"]["failure_details"]["no_results_detected"] is True
@@ -831,14 +825,15 @@ class TestWorkflowExecutor:
         self, sample_config, mock_create_browser, mock_browser
     ):
         """Test differentiation between NO_RESULTS and other failure types in retry logic."""
-        from src.core.failure_classifier import FailureType
-
         executor = WorkflowExecutor(sample_config, headless=True)
-
+        max_retries = 3
+        confidence = 0.8
+        delay = 0.1
+        call_count = 2
         # Test 1: NO_RESULTS should NOT be retried
         no_results_context = Mock()
         no_results_context.failure_type = FailureType.NO_RESULTS
-        no_results_context.confidence = 0.8
+        no_results_context.confidence = confidence
 
         with patch.object(
             executor.failure_classifier, "classify_exception", return_value=no_results_context
@@ -847,7 +842,7 @@ class TestWorkflowExecutor:
                 executor.adaptive_retry_strategy, "get_adaptive_config"
             ) as mock_get_config:
                 mock_config = Mock()
-                mock_config.max_retries = 3  # Would normally retry
+                mock_config.max_retries = max_retries  # Would normally retry
                 mock_get_config.return_value = mock_config
 
                 mock_browser.driver.find_element.side_effect = Exception("No results")
@@ -869,7 +864,7 @@ class TestWorkflowExecutor:
         # Test 2: NETWORK_ERROR should be retried
         network_context = Mock()
         network_context.failure_type = FailureType.NETWORK_ERROR
-        network_context.confidence = 0.8
+        network_context.confidence = confidence
 
         with patch.object(
             executor.failure_classifier, "classify_exception", return_value=network_context
@@ -878,7 +873,7 @@ class TestWorkflowExecutor:
                 executor.adaptive_retry_strategy, "get_adaptive_config"
             ) as mock_get_config:
                 with patch.object(
-                    executor.adaptive_retry_strategy, "calculate_delay", return_value=0.1
+                    executor.adaptive_retry_strategy, "calculate_delay", return_value=delay
                 ):
                     mock_config = Mock()
                     mock_config.max_retries = 1
@@ -899,20 +894,19 @@ class TestWorkflowExecutor:
                     executor._execute_step(step)
 
                     # Verify it was called twice (initial + 1 retry)
-                    assert mock_browser.driver.find_element.call_count == 2
+                    assert mock_browser.driver.find_element.call_count == call_count
 
     def test_no_results_detection_integration(
         self, sample_config, mock_create_browser, mock_browser
     ):
         """Test integration with failure classifier for NO_RESULTS detection during extraction actions."""
-        from src.core.failure_classifier import FailureType
-
         executor = WorkflowExecutor(sample_config, headless=True)
-
+        confidence = 0.85
+        max_retries = 0
         # Mock the failure classifier to detect NO_RESULTS from exception analysis
         mock_failure_context = Mock()
         mock_failure_context.failure_type = FailureType.NO_RESULTS
-        mock_failure_context.confidence = 0.85
+        mock_failure_context.confidence = confidence
         mock_failure_context.details = {"exception_analysis": True, "no_results_indicated": True}
 
         with patch.object(
@@ -921,7 +915,7 @@ class TestWorkflowExecutor:
             with patch.object(executor.failure_analytics, "record_failure") as mock_record_failure:
                 # Mock adaptive retry strategy to prevent retries
                 mock_config = Mock()
-                mock_config.max_retries = 0
+                mock_config.max_retries = max_retries
                 with patch.object(
                     executor.adaptive_retry_strategy,
                     "get_adaptive_config",

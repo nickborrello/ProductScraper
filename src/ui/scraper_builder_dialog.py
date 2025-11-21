@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional, cast
 from urllib.parse import urlparse
 
+import yaml
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
@@ -160,7 +161,7 @@ class UrlInputPage(QWizardPage):
         self.progress_bar.setVisible(False)
         QMessageBox.critical(self, "Error", f"Failed to load page: {error_msg}")
 
-    def isComplete(self):
+    def is_complete(self):
         """Check if page is complete."""
         return (
             super().isComplete() and self.typed_wizard.get_wizard_data("page_content") is not None
@@ -202,7 +203,7 @@ class SelectorGenerationPage(QWizardPage):
         self.selectors_table = QTableWidget()
         self.selectors_table.setColumnCount(4)
         self.selectors_table.setHorizontalHeaderLabels(["Field", "Selector", "Attribute", "Source"])
-        self.selectors_table.horizontalHeader().setStretchLastSection(True)  # type: ignore
+        self.selectors_table.horizontalHeader().setStretchLastSection(True)
         self.selectors_table.setAlternatingRowColors(True)
         selectors_layout.addWidget(self.selectors_table)
 
@@ -247,7 +248,7 @@ class SelectorGenerationPage(QWizardPage):
         manual_layout.addWidget(QLabel("Attribute:"))
         manual_layout.addWidget(self.attr_combo)
 
-        self.add_selector_btn = QPushButton("➕ Add")
+        self.add_selector_btn = QPushButton("+ Add")
         self.add_selector_btn.clicked.connect(self.add_manual_selector)
         manual_layout.addWidget(self.add_selector_btn)
 
@@ -322,8 +323,7 @@ class SelectorGenerationPage(QWizardPage):
         for field_name, selector_info in list(selectors.items()):
             if not isinstance(selector_info, dict):
                 selectors[field_name] = {}
-                selector_info = selectors[field_name]
-            selector_info["source"] = "ai"
+            selectors[field_name]["source"] = "ai"
         self.typed_wizard.set_wizard_data("suggested_selectors", selectors)
 
         # Populate table
@@ -468,7 +468,7 @@ class SelectorGenerationPage(QWizardPage):
         self.typed_wizard.set_wizard_data("suggested_selectors", {})
         self.completeChanged.emit()
 
-    def isComplete(self):
+    def is_complete(self):
         """Check if page is complete."""
         suggested_selectors = self.typed_wizard.get_wizard_data("suggested_selectors", {}) or {}
         return super().isComplete() and len(suggested_selectors) > 0
@@ -511,7 +511,7 @@ class SelectorTestingPage(QWizardPage):
         self.results_table.setHorizontalHeaderLabels(
             ["Field", "Selector", "Status", "Extracted Value"]
         )
-        self.results_table.horizontalHeader().setStretchLastSection(True)  # type: ignore
+        self.results_table.horizontalHeader().setStretchLastSection(True)
         self.results_table.setAlternatingRowColors(True)
         results_layout.addWidget(self.results_table)
 
@@ -521,7 +521,7 @@ class SelectorTestingPage(QWizardPage):
         self.summary_label = QLabel("Run tests to see results...")
         layout.addWidget(self.summary_label)
 
-    def initializePage(self):
+    def initialize_page(self):
         """Initialize page with selectors from previous page."""
         prev_page = self.typed_wizard.page(1)  # Selector generation page
         if isinstance(prev_page, SelectorGenerationPage):
@@ -628,9 +628,10 @@ class SelectorTestingPage(QWizardPage):
         # Enable next button
         self.completeChanged.emit()
 
-    def isComplete(self):
+    def is_complete(self):
         """Check if page is complete."""
         return super().isComplete() and hasattr(self.typed_wizard, "test_results")
+
 
 
 class ConfigurationSavingPage(QWizardPage):
@@ -691,131 +692,96 @@ class ConfigurationSavingPage(QWizardPage):
         # Register fields
         self.registerField("scraper_name*", self.name_input)
 
-    def initializePage(self):
+    def initialize_page(self):
         """Initialize page with data from previous pages."""
         # Generate YAML preview
         self.generate_yaml_preview()
 
+    def _create_workflows(self, url: str) -> list[WorkflowStep]:
+        """Create a list of workflow steps based on test results."""
+        workflows = []
+        if self.create_workflow_cb.isChecked():
+            workflows.append(WorkflowStep(action="navigate", params={"url": url}))
+            workflows.append(WorkflowStep(action="wait", params={"selector": "body", "timeout": 5}))
+
+            if self.typed_wizard.test_results:
+                for field_name, result in self.typed_wizard.test_results.items():
+                    if not result.get("success", False):
+                        continue
+                    selector_info = result.get("selector_info", {})
+                    processing = selector_info.get("processing", {})
+                    selector = selector_info.get("selector")
+                    is_multiple = field_name.endswith("s")
+                    action = "extract_multiple" if is_multiple else "extract_single"
+
+                    workflows.append(
+                        WorkflowStep(
+                            action=action,
+                            params={"field": field_name, "selector": selector},
+                        )
+                    )
+                    if processing:
+                        self._add_processing_steps(workflows, field_name, processing)
+        return workflows
+
+    def _add_processing_steps(
+        self, workflows: list, field_name: str, processing: dict
+    ) -> None:
+        """Add processing steps to the workflow."""
+        p_type = processing.get("type")
+        if p_type == "weight":
+            workflows.append(WorkflowStep(action="parse_weight", params={"field": field_name}))
+        elif p_type == "regex":
+            workflows.append(
+                WorkflowStep(
+                    action="transform_value",
+                    params={
+                        "field": field_name,
+                        "transformations": [
+                            {
+                                "type": "regex_extract",
+                                "pattern": processing.get("pattern"),
+                                "group": processing.get("group", 1),
+                            }
+                        ],
+                    },
+                )
+            )
+        elif p_type == "price":
+            workflows.append(
+                WorkflowStep(
+                    action="transform_value",
+                    params={
+                        "field": field_name,
+                        "transformations": [
+                            {"type": "replace", "pattern": "[^0-9.]", "replacement": ""}
+                        ],
+                    },
+                )
+            )
+
     def generate_yaml_preview(self):
         """Generate YAML preview from collected data."""
         try:
-            # Get data from wizard
             url = self.typed_wizard.field("url")
             scraper_name = self.name_input.text().strip() or "Generated Scraper"
-
-            # Parse domain from URL
             domain = urlparse(url).netloc.replace("www.", "")
 
-            # Get successful selectors from test results
             selectors = []
             if self.typed_wizard.test_results:
                 for field_name, result in self.typed_wizard.test_results.items():
                     if result.get("success", False):
                         selector_info = result.get("selector_info", {})
-                        selector_config = SelectorConfig(
-                            name=field_name,
-                            selector=selector_info.get("selector", ""),
-                            attribute=selector_info.get("attribute", "text"),
-                            multiple=field_name.endswith("s"),  # Plural fields are multiple
+                        selectors.append(
+                            SelectorConfig(
+                                name=field_name,
+                                selector=selector_info.get("selector", ""),
+                                attribute=selector_info.get("attribute", "text"),
+                                multiple=field_name.endswith("s"),
+                            )
                         )
-                        selectors.append(selector_config)
 
-            # Create advanced workflow
-            workflows = []
-            if self.create_workflow_cb.isChecked():
-                workflows.append(WorkflowStep(action="navigate", params={"url": url}))
-                workflows.append(
-                    WorkflowStep(action="wait", params={"selector": "body", "timeout": 5})
-                )
-
-                # Generate steps for each field
-                if self.typed_wizard.test_results:
-                    for field_name, result in self.typed_wizard.test_results.items():
-                        if not result.get("success", False):
-                            continue
-
-                        selector_info = result.get("selector_info", {})
-                        processing = selector_info.get("processing", {})
-                        selector = selector_info.get("selector")
-
-                        if processing and processing.get("type") == "json":
-                            # JSON Extraction
-                            temp_field = f"{field_name}_raw_json"
-                            workflows.append(
-                                WorkflowStep(
-                                    action="extract_single",
-                                    params={"field": temp_field, "selector": selector},
-                                )
-                            )
-                            workflows.append(
-                                WorkflowStep(
-                                    action="extract_from_json",
-                                    params={
-                                        "source_field": temp_field,
-                                        "target_field": field_name,
-                                        "json_path": processing.get("path"),
-                                    },
-                                )
-                            )
-                        else:
-                            # Standard extraction
-                            is_multiple = (
-                                selector_config.multiple
-                                if "selector_config" in locals()
-                                else field_name.endswith("s")
-                            )
-                            action = "extract_multiple" if is_multiple else "extract_single"
-
-                            workflows.append(
-                                WorkflowStep(
-                                    action=action,
-                                    params={"field": field_name, "selector": selector},
-                                )
-                            )
-
-                            # Post-processing
-                            if processing:
-                                p_type = processing.get("type")
-                                if p_type == "weight":
-                                    workflows.append(
-                                        WorkflowStep(
-                                            action="parse_weight", params={"field": field_name}
-                                        )
-                                    )
-                                elif p_type == "regex":
-                                    workflows.append(
-                                        WorkflowStep(
-                                            action="transform_value",
-                                            params={
-                                                "field": field_name,
-                                                "transformations": [
-                                                    {
-                                                        "type": "regex_extract",
-                                                        "pattern": processing.get("pattern"),
-                                                        "group": processing.get("group", 1),
-                                                    }
-                                                ],
-                                            },
-                                        )
-                                    )
-                                elif p_type == "price":
-                                    workflows.append(
-                                        WorkflowStep(
-                                            action="transform_value",
-                                            params={
-                                                "field": field_name,
-                                                "transformations": [
-                                                    {
-                                                        "type": "replace",
-                                                        "pattern": "[^0-9.]",
-                                                        "replacement": "",
-                                                    }
-                                                ],
-                                            },
-                                        )
-                                    )
-
-            # Create config
+            workflows = self._create_workflows(url)
             config = ScraperConfig(
                 name=scraper_name,
                 base_url=f"https://{domain}",
@@ -827,13 +793,9 @@ class ConfigurationSavingPage(QWizardPage):
                 anti_detection=None,
             )
 
-            # Convert to YAML
-            import yaml
-
             yaml_content = yaml.safe_dump(
                 config.model_dump(), default_flow_style=False, sort_keys=False
             )
-
             self.yaml_preview.setPlainText(yaml_content)
 
         except Exception as e:
@@ -847,14 +809,10 @@ class ConfigurationSavingPage(QWizardPage):
                 QMessageBox.warning(self, "Error", "Please enter a scraper name.")
                 return
 
-            # Generate YAML content
             yaml_content = self.yaml_preview.toPlainText()
-
-            # Parse config
             parser = ScraperConfigParser()
             config = parser.load_from_string(yaml_content)
 
-            # Save to file
             configs_dir = Path("src/scrapers/configs")
             configs_dir.mkdir(exist_ok=True)
             filename = f"{scraper_name.lower().replace(' ', '_')}.yaml"
@@ -862,7 +820,6 @@ class ConfigurationSavingPage(QWizardPage):
 
             parser.save_to_file(config, config_file)
 
-            # Save selectors to storage for learning
             if self.save_to_storage_cb.isChecked():
                 self.save_selectors_to_storage(config)
 
@@ -875,7 +832,6 @@ class ConfigurationSavingPage(QWizardPage):
                 f"Workflows: {len(config.workflows)}",
             )
 
-            # Mark wizard as complete
             self.typed_wizard.config_saved = True
             self.completeChanged.emit()
 
@@ -889,7 +845,6 @@ class ConfigurationSavingPage(QWizardPage):
             domain = urlparse(config.base_url).netloc
 
             for selector in config.selectors:
-                # Only save if we have test results indicating success
                 if self.typed_wizard.test_results:
                     test_result = self.typed_wizard.test_results.get(selector.name, {})
                     if test_result.get("success", False):
@@ -903,7 +858,7 @@ class ConfigurationSavingPage(QWizardPage):
         except Exception as e:
             print(f"Warning: Failed to save selectors to storage: {e}")
 
-    def isComplete(self):
+    def is_complete(self):
         """Check if page is complete."""
         return super().isComplete() and self.typed_wizard.config_saved
 

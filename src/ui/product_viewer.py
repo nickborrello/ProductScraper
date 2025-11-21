@@ -5,11 +5,13 @@ from pathlib import Path
 
 # Add project root to path for imports
 current_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.dirname(os.path.dirname(current_dir))
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(current_dir))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
-from PyQt6.QtWidgets import (
+DB_PATH = Path(PROJECT_ROOT) / "data" / "databases" / "products.db"
+
+from PyQt6.QtWidgets import (  # noqa: E402
     QAbstractItemView,
     QApplication,
     QCheckBox,
@@ -38,12 +40,6 @@ except ImportError:
     except ImportError:
         # Last resort - import from current directory
         from product_editor import edit_products_in_batch
-
-# Database path - find it relative to project root
-import os
-
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-DB_PATH = Path(PROJECT_ROOT) / "data" / "databases" / "products.db"
 
 
 class ProductViewer(QMainWindow):

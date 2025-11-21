@@ -2,6 +2,7 @@ import os
 import sys
 
 import pytest
+from pydantic import ValidationError
 
 # Add project root to sys.path
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -95,7 +96,8 @@ class TestWorkflowStep:
 
     def test_init_with_params(self):
         """Test WorkflowStep initialization with parameters."""
-        params = {"url": "https://example.com", "wait_after": 2}
+        wait_after = 2
+        params = {"url": "https://example.com", "wait_after": wait_after}
         step = WorkflowStep(action="navigate", params=params)
 
         assert step.action == "navigate"
@@ -132,12 +134,13 @@ class TestWorkflowStep:
 
     def test_from_dict(self):
         """Test creating WorkflowStep from dictionary."""
-        data = {"action": "click", "params": {"selector": ".button", "wait_after": 1}}
+        wait_after = 1
+        data = {"action": "click", "params": {"selector": ".button", "wait_after": wait_after}}
 
         step = WorkflowStep(**data)
 
         assert step.action == "click"
-        assert step.params == {"selector": ".button", "wait_after": 1}
+        assert step.params == {"selector": ".button", "wait_after": wait_after}
 
 
 class TestLoginConfig:
@@ -240,12 +243,14 @@ class TestScraperConfig:
 
     def test_init_minimal(self):
         """Test ScraperConfig initialization with minimal required fields."""
+        default_timeout = 30
+        default_retries = 3
         config = ScraperConfig(name="Test Scraper", base_url="https://example.com")
 
         assert config.name == "Test Scraper"
         assert config.base_url == "https://example.com"
-        assert config.timeout == 30
-        assert config.retries == 3
+        assert config.timeout == default_timeout
+        assert config.retries == default_retries
         assert config.selectors == []
         assert config.workflows == []
         assert config.login is None
@@ -254,6 +259,10 @@ class TestScraperConfig:
 
     def test_init_full(self):
         """Test ScraperConfig initialization with all fields."""
+        num_selectors = 2
+        num_workflows = 2
+        timeout = 60
+        retries = 5
         selectors = [
             SelectorConfig(name="title", selector=".title"),
             SelectorConfig(name="price", selector=".price", attribute="text"),
@@ -273,8 +282,8 @@ class TestScraperConfig:
         config = ScraperConfig(
             name="Full Test Scraper",
             base_url="https://example.com",
-            timeout=60,
-            retries=5,
+            timeout=timeout,
+            retries=retries,
             selectors=selectors,
             workflows=workflows,
             login=login,
@@ -283,15 +292,18 @@ class TestScraperConfig:
         )
 
         assert config.name == "Full Test Scraper"
-        assert config.timeout == 60
-        assert config.retries == 5
-        assert len(config.selectors) == 2
-        assert len(config.workflows) == 2
+        assert config.timeout == timeout
+        assert config.retries == retries
+        assert len(config.selectors) == num_selectors
+        assert len(config.workflows) == num_workflows
         assert config.login is not None
         assert config.test_skus == test_skus
 
     def test_init_with_selectors_and_workflows(self):
         """Test ScraperConfig with selectors and workflows."""
+        num_selectors = 2
+        num_workflows = 3
+        wait_timeout = 10
         selectors = [
             SelectorConfig(name="product_name", selector=".product-title", attribute="text"),
             SelectorConfig(
@@ -300,7 +312,7 @@ class TestScraperConfig:
         ]
         workflows = [
             WorkflowStep(action="navigate", params={"url": "https://example.com/products"}),
-            WorkflowStep(action="wait_for", params={"selector": ".products", "timeout": 10}),
+            WorkflowStep(action="wait_for", params={"selector": ".products", "timeout": wait_timeout}),
             WorkflowStep(action="extract", params={"fields": ["product_name", "product_price"]}),
         ]
 
@@ -311,15 +323,17 @@ class TestScraperConfig:
             workflows=workflows,
         )
 
-        assert len(config.selectors) == 2
-        assert len(config.workflows) == 3
+        assert len(config.selectors) == num_selectors
+        assert len(config.workflows) == num_workflows
         assert config.selectors[0].name == "product_name"
         assert config.workflows[0].action == "navigate"
 
     def test_equality(self):
         """Test ScraperConfig equality."""
-        config1 = ScraperConfig(name="Test", base_url="https://example.com", timeout=45, retries=2)
-        config2 = ScraperConfig(name="Test", base_url="https://example.com", timeout=45, retries=2)
+        timeout = 45
+        retries = 2
+        config1 = ScraperConfig(name="Test", base_url="https://example.com", timeout=timeout, retries=retries)
+        config2 = ScraperConfig(name="Test", base_url="https://example.com", timeout=timeout, retries=retries)
         config3 = ScraperConfig(name="Different", base_url="https://example.com")
 
         assert config1 == config2
@@ -327,14 +341,18 @@ class TestScraperConfig:
 
     def test_to_dict(self):
         """Test converting ScraperConfig to dictionary."""
+        timeout = 45
+        retries = 2
+        num_selectors = 1
+        num_workflows = 1
         selectors = [SelectorConfig(name="title", selector=".title")]
         workflows = [WorkflowStep(action="navigate", params={"url": "https://test.com"})]
 
         config = ScraperConfig(
             name="Test Scraper",
             base_url="https://example.com",
-            timeout=45,
-            retries=2,
+            timeout=timeout,
+            retries=retries,
             selectors=selectors,
             workflows=workflows,
             test_skus=["TEST001"],
@@ -344,19 +362,23 @@ class TestScraperConfig:
 
         assert data["name"] == "Test Scraper"
         assert data["base_url"] == "https://example.com"
-        assert data["timeout"] == 45
-        assert data["retries"] == 2
-        assert len(data["selectors"]) == 1
-        assert len(data["workflows"]) == 1
+        assert data["timeout"] == timeout
+        assert data["retries"] == retries
+        assert len(data["selectors"]) == num_selectors
+        assert len(data["workflows"]) == num_workflows
         assert data["test_skus"] == ["TEST001"]
 
     def test_from_dict(self):
         """Test creating ScraperConfig from dictionary."""
+        timeout = 45
+        retries = 2
+        num_selectors = 1
+        num_workflows = 1
         data = {
             "name": "Test Scraper",
             "base_url": "https://example.com",
-            "timeout": 45,
-            "retries": 2,
+            "timeout": timeout,
+            "retries": retries,
             "selectors": [{"name": "title", "selector": ".title", "attribute": "text"}],
             "workflows": [{"action": "navigate", "params": {"url": "https://example.com"}}],
             "test_skus": ["TEST001", "TEST002"],
@@ -365,33 +387,34 @@ class TestScraperConfig:
         config = ScraperConfig(**data)
 
         assert config.name == "Test Scraper"
-        assert config.timeout == 45
-        assert len(config.selectors) == 1
-        assert len(config.workflows) == 1
+        assert config.timeout == timeout
+        assert len(config.selectors) == num_selectors
+        assert len(config.workflows) == num_workflows
         assert config.test_skus == ["TEST001", "TEST002"]
 
     def test_validation_required_fields(self):
         """Test that required fields are validated."""
         # Missing name
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             ScraperConfig(base_url="https://example.com")
 
         # Missing base_url
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             ScraperConfig(name="Test Scraper")
 
     def test_validation_field_types(self):
         """Test field type validation."""
         # Invalid timeout type
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             ScraperConfig(name="Test", base_url="https://example.com", timeout="not_a_number")
 
         # Invalid retries type
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             ScraperConfig(name="Test", base_url="https://example.com", retries="not_a_number")
 
     def test_selectors_validation(self):
         """Test selectors field validation."""
+        num_selectors = 2
         # Valid selectors
         selectors = [
             SelectorConfig(name="valid", selector=".valid"),
@@ -400,19 +423,21 @@ class TestScraperConfig:
 
         config = ScraperConfig(name="Test", base_url="https://example.com", selectors=selectors)
 
-        assert len(config.selectors) == 2
+        assert len(config.selectors) == num_selectors
 
     def test_workflows_validation(self):
         """Test workflows field validation."""
+        num_workflows = 3
+        wait_seconds = 2
         workflows = [
             WorkflowStep(action="navigate", params={"url": "https://test.com"}),
-            WorkflowStep(action="wait", params={"seconds": 2}),
+            WorkflowStep(action="wait", params={"seconds": wait_seconds}),
             WorkflowStep(action="extract", params={"fields": ["title"]}),
         ]
 
         config = ScraperConfig(name="Test", base_url="https://example.com", workflows=workflows)
 
-        assert len(config.workflows) == 3
+        assert len(config.workflows) == num_workflows
 
     def test_login_config_validation(self):
         """Test login configuration validation."""

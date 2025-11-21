@@ -50,10 +50,11 @@ class TestDataQualityScorer:
     def test_score_record_valid(self, scorer, valid_record):
         """Test scoring a valid record."""
         score, details = scorer.score_record(valid_record)
-
+        max_score = 100
+        high_quality_threshold = 85
         assert isinstance(score, float)
-        assert 0 <= score <= 100
-        assert score >= 85  # Should be high quality
+        assert 0 <= score <= max_score
+        assert score >= high_quality_threshold  # Should be high quality
         assert "completeness" in details
         assert "accuracy" in details
         assert "consistency" in details
@@ -62,31 +63,35 @@ class TestDataQualityScorer:
     def test_score_record_invalid(self, scorer, invalid_record):
         """Test scoring an invalid record."""
         score, _details = scorer.score_record(invalid_record)
-
+        max_score = 100
+        high_quality_threshold = 85
         assert isinstance(score, float)
-        assert 0 <= score <= 100
-        assert score < 85  # Should be low quality
+        assert 0 <= score <= max_score
+        assert score < high_quality_threshold  # Should be low quality
 
     def test_completeness_scoring(self, scorer, valid_record, invalid_record):
         """Test completeness scoring."""
         _, valid_details = scorer.score_record(valid_record)
         _, invalid_details = scorer.score_record(invalid_record)
-
-        assert valid_details["completeness"]["score"] == 100.0
-        assert invalid_details["completeness"]["score"] == 0.0
+        max_score = 100.0
+        min_score = 0.0
+        assert valid_details["completeness"]["score"] == max_score
+        assert invalid_details["completeness"]["score"] == min_score
 
     def test_accuracy_scoring(self, scorer):
         """Test accuracy scoring components."""
         # Test weight normalization
         record = {"Weight": "10 oz"}
-        score, details = scorer._score_accuracy(record)
+        _, details = scorer._score_accuracy(record)
         assert details["weight"]["normalized"] == "0.62 lb"
 
         # Test image URLs
         record = {"Images": "https://valid.com/img.jpg,invalid-url"}
         _score, details = scorer._score_accuracy(record)
-        assert details["images"]["valid_urls"] == 1
-        assert details["images"]["total_urls"] == 2
+        valid_urls = 1
+        total_urls = 2
+        assert details["images"]["valid_urls"] == valid_urls
+        assert details["images"]["total_urls"] == total_urls
 
     def test_consistency_scoring(self, scorer):
         """Test consistency scoring."""
@@ -98,8 +103,9 @@ class TestDataQualityScorer:
             "Product_Field_24": "Category",
             "Product_Field_25": "Type",
         }
-        score, details = scorer._score_consistency(record)
-        assert score == 100.0
+        score, _ = scorer._score_consistency(record)
+        max_score = 100.0
+        assert score == max_score
 
         # Invalid formats
         record = {
@@ -109,21 +115,32 @@ class TestDataQualityScorer:
             "Product_Field_24": "N/A",
             "Product_Field_25": None,
         }
-        score, _details = scorer._score_consistency(record)
-        assert score == 0.0
+        score, _ = scorer._score_consistency(record)
+        min_score = 0.0
+        assert score == min_score
 
     def test_is_high_quality(self, scorer, valid_record, invalid_record):
         """Test high quality threshold check."""
-        assert scorer.is_high_quality(90) is True
-        assert scorer.is_high_quality(80) is False
-        assert scorer.is_high_quality(85) is True  # Boundary
+        high_score = 90
+        low_score = 80
+        boundary_score = 85
+        assert scorer.is_high_quality(high_score) is True
+        assert scorer.is_high_quality(low_score) is False
+        assert scorer.is_high_quality(boundary_score) is True  # Boundary
 
     def test_weight_normalization(self, scorer):
         """Test weight normalization to LB."""
-        assert scorer._normalize_weight_to_lb("5 lb") == 5.0
-        assert scorer._normalize_weight_to_lb("16 oz") == 1.0
-        assert scorer._normalize_weight_to_lb("2.2 kg") == pytest.approx(4.8508, rel=1e-3)
-        assert scorer._normalize_weight_to_lb("1000 g") == 2.20462
+        five_lbs = 5.0
+        one_lb = 1.0
+        two_point_two_kg = 4.8508
+        one_thousand_g = 2.20462
+        rel_tolerance = 1e-3
+        assert scorer._normalize_weight_to_lb("5 lb") == five_lbs
+        assert scorer._normalize_weight_to_lb("16 oz") == one_lb
+        assert scorer._normalize_weight_to_lb("2.2 kg") == pytest.approx(
+            two_point_two_kg, rel=rel_tolerance
+        )
+        assert scorer._normalize_weight_to_lb("1000 g") == one_thousand_g
         assert scorer._normalize_weight_to_lb("invalid") is None
         assert scorer._normalize_weight_to_lb("") is None
 
@@ -137,12 +154,15 @@ class TestDataQualityScorer:
 
     def test_price_accuracy(self, scorer):
         """Test price parsing."""
-        score, details = scorer._score_price_accuracy("$29.99")
-        assert score == 100
-        assert details["value"] == 29.99
+        max_score = 100
+        min_score = 0
+        price = 29.99
+        score, details = scorer._score_price_accuracy(f"${price}")
+        assert score == max_score
+        assert details["value"] == price
 
         score, details = scorer._score_price_accuracy("invalid price")
-        assert score == 0
+        assert score == min_score
         assert details["numeric"] is False
 
 
@@ -157,8 +177,10 @@ class TestConvenienceFunctions:
 
     def test_is_product_high_quality(self, sample_high_quality_record, sample_low_quality_record):
         """Test is_product_high_quality function."""
+        high_quality_threshold = 95
         assert is_product_high_quality(sample_high_quality_record) is True
         assert is_product_high_quality(sample_low_quality_record) is False
         assert (
-            is_product_high_quality(sample_high_quality_record, threshold=95) is True
+            is_product_high_quality(sample_high_quality_record, threshold=high_quality_threshold)
+            is True
         )  # Custom threshold

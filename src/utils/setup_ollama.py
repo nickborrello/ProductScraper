@@ -9,6 +9,7 @@ import platform
 import subprocess
 from pathlib import Path
 
+import ollama
 import requests
 
 
@@ -105,8 +106,6 @@ def check_ollama_installation():
 
     # Check if Ollama is running
     try:
-        import ollama
-
         ollama.list()
         print("✅ Ollama service is running")
         return True

@@ -168,7 +168,9 @@ def main():
                         results = db.query_products(query)
                         print(f"\n📊 Query returned {len(results)} results:")
                         QUERY_DISPLAY_LIMIT = 10
-                        for i, product in enumerate(results[:QUERY_DISPLAY_LIMIT], 1):  # Show first 10
+                        for i, product in enumerate(
+                            results[:QUERY_DISPLAY_LIMIT], 1
+                        ):  # Show first 10
                             print(f"  {i}. {product}")
                         if len(results) > QUERY_DISPLAY_LIMIT:
                             print(f"     ... and {len(results) - QUERY_DISPLAY_LIMIT} more")

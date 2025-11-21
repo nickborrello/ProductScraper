@@ -5,11 +5,20 @@ Scrapers can use this as a base and customize as needed.
 
 import os
 import time
+from dataclasses import dataclass, field
 
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 
 from src.utils.scraping.scraping import get_standard_chrome_options
+
+
+@dataclass
+class DevToolsConfig:
+    """Configuration for Chrome DevTools."""
+
+    enabled: bool = False
+    port: int = 9222
 
 
 class ScraperBrowser:
@@ -21,8 +30,7 @@ class ScraperBrowser:
         headless=True,
         profile_suffix=None,
         custom_options=None,
-        enable_devtools=False,
-        devtools_port=9222,
+        devtools_config: DevToolsConfig | None = None,
     ):
         """
         Initialize browser for scraping.
@@ -32,21 +40,19 @@ class ScraperBrowser:
             headless: Whether to run in headless mode
             profile_suffix: Optional suffix for profile directory
             custom_options: Additional Chrome options to add
-            enable_devtools: Whether to enable Chrome DevTools remote debugging
-            devtools_port: Port for DevTools remote debugging (default: 9222)
+            devtools_config: Configuration for Chrome DevTools
         """
         self.site_name = site_name
         self.headless = headless
         self.profile_suffix = profile_suffix or f"{int(time.time() * 1000)}"
-        self.enable_devtools = enable_devtools
-        self.devtools_port = devtools_port
+        self.devtools_config = devtools_config or DevToolsConfig()
 
         # Get standard options
         options = get_standard_chrome_options(
             headless=headless,
             profile_suffix=self.profile_suffix,
-            enable_devtools=enable_devtools,
-            devtools_port=devtools_port,
+            enable_devtools=self.devtools_config.enabled,
+            devtools_port=self.devtools_config.port,
         )
 
         # Set Chrome binary location for CI environments
@@ -96,7 +102,8 @@ class ScraperBrowser:
 
         is_ci = os.getenv("CI") == "true"
         print(
-            f"[WEB] [{site_name}] Browser initialized in {init_time:.2f}s (headless={headless}, devtools={enable_devtools}, CI={is_ci}, size=1920x1080)"
+            f"[WEB] [{site_name}] Browser initialized in {init_time:.2f}s "
+            f"(headless={headless}, devtools={self.devtools_config.enabled}, CI={is_ci}, size=1920x1080)"
         )
 
     def __getattr__(self, name):
@@ -204,8 +211,7 @@ def create_browser(
     headless=True,
     profile_suffix=None,
     custom_options=None,
-    enable_devtools=False,
-    devtools_port=9222,
+    devtools_config: DevToolsConfig | None = None,
 ):
     """
     Factory function to create a browser instance.
@@ -215,8 +221,7 @@ def create_browser(
         headless: Whether to run headless
         profile_suffix: Optional profile suffix
         custom_options: Additional Chrome options
-        enable_devtools: Whether to enable Chrome DevTools remote debugging
-        devtools_port: Port for DevTools remote debugging (default: 9222)
+        devtools_config: Configuration for Chrome DevTools
 
     Returns:
         ScraperBrowser instance
@@ -226,6 +231,5 @@ def create_browser(
         headless,
         profile_suffix,
         custom_options,
-        enable_devtools,
-        devtools_port,
+        devtools_config,
     )

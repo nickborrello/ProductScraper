@@ -6,13 +6,17 @@ on:
   pull_request:
     branches: [ main, develop ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-environment
-      
+
       - name: Run Ruff (Linting)
         run: uv run ruff check src/ tests/
 
@@ -27,9 +31,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-environment
-
-      - name: Install security tools
-        run: uv pip install bandit safety
 
       - name: Run Bandit
         run: uv run bandit -r src/ -f json -o bandit-report.json || true
@@ -47,7 +48,7 @@ jobs:
         run: uv run pytest tests/unit/ -v --cov=src --cov-report=xml
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
-          file: ./coverage.xml
+          files: ./coverage.xml
           flags: unittests

@@ -1,22 +1,19 @@
-import os
-import platform
 import time
-from selenium import webdriver
+
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.options import Options
-from src.utils.scraping.scraping import get_standard_chrome_options
-from src.utils.scraping.scraping import clean_string
-from src.utils.scraping.browser import create_browser
+from selenium.webdriver.support.ui import WebDriverWait
+
 from src.utils.general.display import (
+    display_error,
     display_product_result,
     display_scraping_progress,
     display_scraping_summary,
-    display_error,
     display_success,
     display_warning,
 )
+from src.utils.scraping.browser import create_browser
+from src.utils.scraping.scraping import clean_string
 
 HEADLESS = True
 TEST_SKU = "035585499741"  # KONG Pull A Partz Pals Koala SM - test SKU for Central Pet
@@ -208,7 +205,7 @@ def scrape_single_product(UPC, driver, log_callback=None):
                 if weight_text
                 else "N/A"
             )
-        except Exception as e:
+        except Exception:
             product_info["Weight"] = "N/A"
 
         # Image extraction (no sleep, minimal clicks)

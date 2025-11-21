@@ -12,7 +12,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Dict, Any, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -25,13 +25,13 @@ try:
     from src.core.failure_analytics import FailureAnalytics
 except ImportError:
     # Fallback for different execution contexts
-    import src.core.failure_analytics as failure_analytics
+    from src.core import failure_analytics
     FailureAnalytics = failure_analytics.FailureAnalytics
 
 
 def generate_report(
     analytics: Any,
-    site_name: Optional[str] = None,
+    site_name: str | None = None,
     hours: int = 24,
     output_format: str = "text"
 ) -> str:

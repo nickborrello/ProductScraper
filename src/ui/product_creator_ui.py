@@ -96,9 +96,24 @@ def append_row_to_site_file(row: dict, site: str, output_dir=None):
 
     # Determine columns used by master.save_incremental_results
     more_info_cols = [f"More Information Image {i}" for i in range(1, 6)]
-    columns = (
-        ["SKU", "Name", "Product Description", "Price", "Weight", "Product Field 16", "File name", "Graphic", "More Information Graphic", "Product Field 1", "Product Field 11", *more_info_cols, "Product Field 24", "Product Field 25", "Product On Pages", "ProductDisabled"]
-    )
+    columns = [
+        "SKU",
+        "Name",
+        "Product Description",
+        "Price",
+        "Weight",
+        "Product Field 16",
+        "File name",
+        "Graphic",
+        "More Information Graphic",
+        "Product Field 1",
+        "Product Field 11",
+        *more_info_cols,
+        "Product Field 24",
+        "Product Field 25",
+        "Product On Pages",
+        "ProductDisabled",
+    ]
 
     if site_file.exists():
         try:

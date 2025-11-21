@@ -522,7 +522,8 @@ class FailureAnalytics:
                 # Reset recent failures counter every few hours
                 TWO_HOURS_IN_SECONDS = 7200
                 if (
-                    metrics.last_failure_time and time.time() - metrics.last_failure_time > TWO_HOURS_IN_SECONDS
+                    metrics.last_failure_time
+                    and time.time() - metrics.last_failure_time > TWO_HOURS_IN_SECONDS
                 ):  # 2 hours
                     metrics.recent_failures = max(0, metrics.recent_failures - 1)
 

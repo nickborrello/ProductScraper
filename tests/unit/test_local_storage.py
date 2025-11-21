@@ -52,12 +52,14 @@ class TestLocalDataset:
         ]
         self.dataset.push_data(data_list)
 
-        assert len(self.dataset) == 2
+        expected_item_count = 2
+        assert len(self.dataset) == expected_item_count
         assert self.dataset._cache == data_list
 
         # Check files were created
         files = list(self.dataset.storage_dir.glob("*.json"))
-        assert len(files) == 2
+        expected_file_count = 2
+        assert len(files) == expected_file_count
 
     def test_get_data(self):
         """Test getting data from dataset."""
@@ -83,7 +85,8 @@ class TestLocalDataset:
 
         info = self.dataset.get_info()
         assert info["id"] == "test_dataset"
-        assert info["itemCount"] == 2
+        expected_item_count = 2
+        assert info["itemCount"] == expected_item_count
         assert str(self.temp_dir / "test_dataset") in info["storageDir"]
 
     def test_drop(self):
@@ -134,7 +137,8 @@ class TestLocalKeyValueStore:
         self.store.set_value("key2", "value2")
 
         keys = self.store.list_keys()
-        assert len(keys) == 2
+        expected_key_count = 2
+        assert len(keys) == expected_key_count
         assert "key1" in keys
         assert "key2" in keys
 

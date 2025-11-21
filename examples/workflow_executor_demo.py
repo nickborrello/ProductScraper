@@ -8,7 +8,6 @@ This example demonstrates:
 - Handling results and errors
 """
 
-import os
 import sys
 from pathlib import Path
 
@@ -137,7 +136,7 @@ def demo_error_handling():
     try:
         config = validate_config_dict(config_dict)
         executor = WorkflowExecutor(config, headless=True)
-        result = executor.execute_workflow()
+        executor.execute_workflow()
         print("Expected error but execution succeeded")
         return False
     except Exception as e:

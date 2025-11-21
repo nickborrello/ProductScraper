@@ -1,22 +1,23 @@
 import os
-import platform
 import re
 import time
+
 from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.chrome.options import Options
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
-from src.utils.scraping.scraping import clean_string
-from src.utils.scraping.browser import create_browser
+from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+
 from src.utils.general.display import (
+    display_error,
     display_product_result,
     display_scraping_progress,
     display_scraping_summary,
-    display_error,
 )
+from src.utils.scraping.browser import create_browser
+from src.utils.scraping.scraping import clean_string
 
 # Bradley Caldwell can run headless
 HEADLESS = True

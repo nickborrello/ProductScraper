@@ -28,7 +28,7 @@ SIGNIFICANT_DELAY_THRESHOLD = 0.1
 class AntiDetectionConfig:
     """Configuration for anti-detection modules."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         enable_captcha_detection: bool = True,
         enable_rate_limiting: bool = True,
@@ -144,7 +144,7 @@ class AntiDetectionManager:
         )
         # Get adaptive config for rate limiting
         rate_limit_adaptive_config = None
-        if hasattr(self, 'adaptive_retry_strategy'):
+        if hasattr(self, "adaptive_retry_strategy"):
             rate_limit_adaptive_config = self.adaptive_retry_strategy.get_adaptive_config(
                 FailureType.RATE_LIMITED, self.site_name
             )
@@ -155,9 +155,7 @@ class AntiDetectionManager:
             else None
         )
         self.human_simulator = (
-            HumanBehaviorSimulator(self.config)
-            if config.enable_human_simulation
-            else None
+            HumanBehaviorSimulator(self.config) if config.enable_human_simulation else None
         )
         self.session_manager = (
             SessionManager(self.config) if config.enable_session_rotation else None
@@ -187,9 +185,7 @@ class AntiDetectionManager:
                             f"{module}_manager"
                             if module == "session"
                             else (
-                                f"{module}_simulator"
-                                if module == "human"
-                                else f"{module}_limiter"
+                                f"{module}_simulator" if module == "human" else f"{module}_limiter"
                             )
                         )
                     )
@@ -221,7 +217,7 @@ class AntiDetectionManager:
         Returns:
             True if action should proceed, False if blocked
         """
-        is_ci = os.getenv('CI') == 'true'
+        is_ci = os.getenv("CI") == "true"
 
         try:
             logger.debug(f"Pre-action hook for '{action}' (CI: {is_ci})")
@@ -262,9 +258,7 @@ class AntiDetectionManager:
             logger.error(f"Pre-action hook failed for '{action}': {e}")
             return False
 
-    def post_action_hook(
-        self, action: str, params: dict[str, Any], success: bool
-    ) -> None:
+    def post_action_hook(self, action: str, params: dict[str, Any], success: bool) -> None:
         """
         Execute post-action anti-detection measures.
 
@@ -285,7 +279,7 @@ class AntiDetectionManager:
         except Exception as e:
             logger.error(f"Post-action hook failed: {e}")
 
-    def handle_error(self, error: Exception, action: str, retry_count: int = 0) -> bool:
+    def handle_error(self, error: Exception, action: str, retry_count: int = 0) -> bool:  # noqa: PLR0911
         """
         Handle errors with adaptive anti-detection recovery strategies.
 
@@ -304,9 +298,7 @@ class AntiDetectionManager:
 
             # Get adaptive retry configuration
             adaptive_config = self.adaptive_retry_strategy.get_adaptive_config(
-                failure_context.failure_type,
-                self.site_name,
-                retry_count
+                failure_context.failure_type, self.site_name, retry_count
             )
 
             # Check if we should retry based on adaptive config
@@ -342,9 +334,9 @@ class AntiDetectionManager:
                         retry_count=retry_count,
                         context={"error": error_str, "recovery": "captcha_solve"},
                         success_after_retry=True,
-                        final_success=True
+                        final_success=True,
                     )
-    
+
                     # Record successful recovery
                     self.adaptive_retry_strategy.record_failure(
                         FailureContext(
@@ -355,14 +347,12 @@ class AntiDetectionManager:
                             failure_type=failure_context.failure_type,
                         ),
                         success_after_retry=True,
-                        final_success=True
+                        final_success=True,
                     )
                 return success
 
             elif (
-                any(
-                    term in error_str for term in ["blocked", "banned", "access denied"]
-                )
+                any(term in error_str for term in ["blocked", "banned", "access denied"])
                 and self.blocking_handler
             ):
                 logger.info("Blocking-related error detected, attempting recovery")
@@ -376,9 +366,9 @@ class AntiDetectionManager:
                         retry_count=retry_count,
                         context={"error": error_str, "recovery": "blocking_handled"},
                         success_after_retry=True,
-                        final_success=True
+                        final_success=True,
                     )
-    
+
                     # Record successful recovery
                     self.adaptive_retry_strategy.record_failure(
                         FailureContext(
@@ -389,7 +379,7 @@ class AntiDetectionManager:
                             failure_type=failure_context.failure_type,
                         ),
                         success_after_retry=True,
-                        final_success=True
+                        final_success=True,
                     )
                 return success
 
@@ -404,7 +394,7 @@ class AntiDetectionManager:
                     retry_count=retry_count,
                     context={"error": error_str, "recovery": "rate_limit_backoff"},
                     success_after_retry=False,
-                    final_success=False
+                    final_success=False,
                 )
 
                 # Record the timeout handling
@@ -417,7 +407,7 @@ class AntiDetectionManager:
                         failure_type=failure_context.failure_type,
                     ),
                     success_after_retry=False,  # Will retry
-                    final_success=False
+                    final_success=False,
                 )
                 return True
 
@@ -436,7 +426,7 @@ class AntiDetectionManager:
                         retry_count=retry_count,
                         context={"error": error_str, "recovery": "session_rotation"},
                         success_after_retry=True,
-                        final_success=True
+                        final_success=True,
                     )
 
                     # Record successful session rotation
@@ -449,7 +439,7 @@ class AntiDetectionManager:
                             failure_type=failure_context.failure_type,
                         ),
                         success_after_retry=True,
-                        final_success=True
+                        final_success=True,
                     )
                 return success
 
@@ -461,7 +451,7 @@ class AntiDetectionManager:
                 retry_count=retry_count,
                 context={"error": error_str, "recovery": "default_retry"},
                 success_after_retry=False,
-                final_success=False
+                final_success=False,
             )
 
             # Record that we're retrying with default strategy
@@ -474,7 +464,7 @@ class AntiDetectionManager:
                     failure_type=failure_context.failure_type,
                 ),
                 success_after_retry=False,  # Will retry
-                final_success=False
+                final_success=False,
             )
 
             return True  # Allow retry with adaptive delay already applied
@@ -594,8 +584,9 @@ class RateLimiter:
             page_title = driver.title.lower()
 
             for pattern in self.config.rate_limiting_text_patterns:
-                if (re.search(pattern, page_text, re.IGNORECASE) or
-                    re.search(pattern, page_title, re.IGNORECASE)):
+                if re.search(pattern, page_text, re.IGNORECASE) or re.search(
+                    pattern, page_title, re.IGNORECASE
+                ):
                     logger.info(f"Rate limiting detected using text pattern: {pattern}")
                     return True
 
@@ -606,7 +597,7 @@ class RateLimiter:
 
     def apply_delay(self, driver=None) -> None:
         """Apply appropriate delay before next request using adaptive strategies."""
-        is_ci = os.getenv('CI') == 'true'
+        is_ci = os.getenv("CI") == "true"
 
         # Check for rate limiting indicators on the page before applying delay
         if driver and self.detect_rate_limiting(driver):
@@ -663,9 +654,7 @@ class RateLimiter:
         """Apply exponential backoff delay."""
         self.consecutive_failures += 1
         delay = self.config.rate_limit_max_delay * (2**self.consecutive_failures)
-        logger.info(
-            f"Applying backoff delay: {delay:.2f}s (failure #{self.consecutive_failures})"
-        )
+        logger.info(f"Applying backoff delay: {delay:.2f}s (failure #{self.consecutive_failures})")
         time.sleep(delay)
 
     def update_after_action(self, success: bool) -> None:
@@ -694,9 +683,7 @@ class HumanBehaviorSimulator:
             # Page reading time
             time.sleep(random.uniform(1, 3))
 
-    def simulate_post_action(
-        self, action: str, params: dict[str, Any], success: bool
-    ) -> None:
+    def simulate_post_action(self, action: str, params: dict[str, Any], success: bool) -> None:
         """Simulate human behavior after an action."""
         if action == "navigate" and success:
             # Simulate reading time
@@ -717,9 +704,7 @@ class SessionManager:
         """Check if session should be rotated."""
         self.request_count += 1
         if self.request_count >= self.config.session_rotation_interval:
-            logger.info(
-                f"Session rotation triggered after {self.request_count} requests"
-            )
+            logger.info(f"Session rotation triggered after {self.request_count} requests")
             self.rotate_session(manager)
 
     def rotate_session(self, manager: "AntiDetectionManager") -> bool:
@@ -762,19 +747,14 @@ class BlockingHandler:
                 try:
                     elements = driver.find_elements(By.CSS_SELECTOR, selector)
                     if elements:
-                        logger.info(
-                            f"Blocking page detected using selector: {selector}"
-                        )
+                        logger.info(f"Blocking page detected using selector: {selector}")
                         return True
                 except Exception:
                     continue
 
             # Check page title/content for blocking indicators
             title = driver.title.lower()
-            if any(
-                term in title
-                for term in ["blocked", "banned", "access denied", "forbidden"]
-            ):
+            if any(term in title for term in ["blocked", "banned", "access denied", "forbidden"]):
                 logger.info("Blocking page detected in page title")
                 return True
 

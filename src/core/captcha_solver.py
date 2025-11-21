@@ -147,7 +147,8 @@ class CaptchaSolver:
                                     return recaptcha.getAttribute('data-sitekey');
                                 }
                                 return null;
-                            """)
+                            """
+                        )
                         if site_key:
                             return CaptchaType.RECAPTCHA_V2, {
                                 "site_key": site_key,

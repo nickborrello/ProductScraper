@@ -1,19 +1,17 @@
 import re
-from selenium import webdriver
+import time
+
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.service import Service as ChromeService
-from src.utils.scraping.scraping import get_standard_chrome_options
-from src.utils.scraping.browser import create_browser
+from selenium.webdriver.support.ui import WebDriverWait
+
 from src.utils.general.display import (
+    display_error,
     display_product_result,
     display_scraping_progress,
     display_scraping_summary,
-    display_error,
 )
-import os
-import time
+from src.utils.scraping.browser import create_browser
 
 HEADLESS = False
 DEBUG_MODE = False  # Default to False, will be set to True when run from file

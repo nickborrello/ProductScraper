@@ -1,0 +1,92 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.7, pytest-9.0.1, pluggy-1.6.0 -- C:\Users\Nick\OneDrive\Desktop\Projectos\ProductScraper\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\Nick\OneDrive\Desktop\Projectos\ProductScraper
+configfile: pytest.ini (WARNING: ignoring pytest config in pyproject.toml!)
+plugins: anyio-4.11.0, asyncio-1.3.0, cov-7.0.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 15 items / 14 deselected / 1 selected
+
+tests/e2e/test_scrapers_e2e.py::TestScraperIntegration::test_no_results_browser_response_simulation FAILED [100%]
+
+================================== FAILURES ===================================
+_____ TestScraperIntegration.test_no_results_browser_response_simulation ______
+
+self = <test_scrapers_e2e.TestScraperIntegration object at 0x000001B1C2068410>
+tester = <test_scrapers_e2e.ScraperIntegrationTester object at 0x000001B1C1FB67B0>
+
+    @pytest.mark.integration
+    def test_no_results_browser_response_simulation(self, tester):
+        """Test real browser responses with fake SKUs that trigger no results pages."""
+        # Use a fake SKU that should not exist and trigger no results
+        fake_sku = "23184912789412789078124940172"
+    
+        # Run scraper with fake SKU - should fail to find products
+        result = tester.run_scraper_locally("amazon", [fake_sku], headless=True)
+    
+        print(f"DEBUG: Result: {result}")
+    
+        # Verify scraper execution failed due to no results
+>       assert result["success"] is False, f"Expected success=False, got {result['success']}"
+E       AssertionError: Expected success=False, got True
+E       assert True is False
+
+tests\e2e\test_scrapers_e2e.py:592: AssertionError
+---------------------------- Captured stdout call -----------------------------
+DEBUG: Starting scraper execution for amazon with SKUs ['23184912789412789078124940172'], headless=True
+DEBUG: Loading config for amazon
+DEBUG: Config loaded successfully for amazon
+DEBUG: Processing SKU 23184912789412789078124940172 (1/1) for amazon
+DEBUG: Starting workflow execution for SKU 23184912789412789078124940172
+[WEB] [amazon] Browser initialized in 1.03s (headless=True, devtools=False, CI=False, size=1920x1080)
+[LOCK] [amazon] Browser closed
+DEBUG: Workflow execution completed for SKU 23184912789412789078124940172, success=True
+DEBUG: Successfully scraped product for SKU 23184912789412789078124940172
+DEBUG: Scraper amazon execution completed in 13.64s
+DEBUG: Result: {'scraper': 'amazon', 'skus': ['23184912789412789078124940172'], 'success': True, 'products': [{'no_results_found': True, 'SKU': '23184912789412789078124940172'}], 'errors': [], 'execution_time': 13.640517234802246, 'output': 'Successfully scraped 1 products'}
+============================== warnings summary ===============================
+tests\e2e\test_scrapers_e2e.py:420
+  C:\Users\Nick\OneDrive\Desktop\Projectos\ProductScraper\tests\e2e\test_scrapers_e2e.py:420: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+tests\e2e\test_scrapers_e2e.py:445
+  C:\Users\Nick\OneDrive\Desktop\Projectos\ProductScraper\tests\e2e\test_scrapers_e2e.py:445: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+tests\e2e\test_scrapers_e2e.py:483
+  C:\Users\Nick\OneDrive\Desktop\Projectos\ProductScraper\tests\e2e\test_scrapers_e2e.py:483: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+tests\e2e\test_scrapers_e2e.py:532
+  C:\Users\Nick\OneDrive\Desktop\Projectos\ProductScraper\tests\e2e\test_scrapers_e2e.py:532: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+tests\e2e\test_scrapers_e2e.py:580
+  C:\Users\Nick\OneDrive\Desktop\Projectos\ProductScraper\tests\e2e\test_scrapers_e2e.py:580: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+tests\e2e\test_scrapers_e2e.py:600
+  C:\Users\Nick\OneDrive\Desktop\Projectos\ProductScraper\tests\e2e\test_scrapers_e2e.py:600: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+tests\e2e\test_scrapers_e2e.py:618
+  C:\Users\Nick\OneDrive\Desktop\Projectos\ProductScraper\tests\e2e\test_scrapers_e2e.py:618: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+tests\e2e\test_scrapers_e2e.py:636
+  C:\Users\Nick\OneDrive\Desktop\Projectos\ProductScraper\tests\e2e\test_scrapers_e2e.py:636: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+tests\e2e\test_scrapers_e2e.py:654
+  C:\Users\Nick\OneDrive\Desktop\Projectos\ProductScraper\tests\e2e\test_scrapers_e2e.py:654: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+tests\e2e\test_scrapers_e2e.py:691
+  C:\Users\Nick\OneDrive\Desktop\Projectos\ProductScraper\tests\e2e\test_scrapers_e2e.py:691: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/e2e/test_scrapers_e2e.py::TestScraperIntegration::test_no_results_browser_response_simulation - AssertionError: Expected success=False, got True
+assert True is False
+=============== 1 failed, 14 deselected, 10 warnings in 13.92s ================

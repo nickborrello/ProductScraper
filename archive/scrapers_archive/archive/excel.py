@@ -1,5 +1,6 @@
-import pandas as pd
 import re
+
+import pandas as pd
 
 
 def log_error(message):
@@ -176,7 +177,7 @@ def get_product_info(file_path, sku):
             except Exception as e:
                 print(f"❌ Excel: Error saving updated spreadsheet: {e}")
                 return None
-            print(f"⚠️ Excel: Please fill in the new columns and rerun.")
+            print("⚠️ Excel: Please fill in the new columns and rerun.")
             return None
 
         return scrape_excel(sku, excel_data=data)

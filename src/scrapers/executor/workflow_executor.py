@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 
 class WorkflowExecutionError(Exception):
     """Exception raised for workflow execution errors."""
+
     pass
 
 
@@ -345,7 +346,9 @@ class WorkflowExecutor:
 
             # Check if we should retry
             should_retry = (
-                retry_count < adaptive_config.max_retries and failure_context.failure_type not in (FailureType.PAGE_NOT_FOUND, FailureType.NO_RESULTS)
+                retry_count < adaptive_config.max_retries
+                and failure_context.failure_type
+                not in (FailureType.PAGE_NOT_FOUND, FailureType.NO_RESULTS)
             )
 
             if should_retry:

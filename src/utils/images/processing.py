@@ -78,7 +78,11 @@ def download_image(img_url, subdir, file_name, idx, results_folder=None):
         img_name = os.path.join(folder_path, f"{name}-{idx}.jpg")
 
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/123.0.0.0 Safari/537.36"
+        ),
         "Accept": "image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
     }
 

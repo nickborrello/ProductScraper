@@ -1,24 +1,22 @@
 import os
 import sys
 import time
-import pickle
-import re
-import pandas as pd
+
 from dotenv import load_dotenv
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.options import Options
-from src.utils.scraping.scraping import get_standard_chrome_options
-from src.utils.scraping.browser import create_browser
+from selenium.webdriver.support.ui import WebDriverWait
+
+from src.core.settings_manager import settings
 from src.utils.general.display import (
+    display_error,
     display_product_result,
     display_scraping_progress,
     display_scraping_summary,
-    display_error,
 )
-from src.core.settings_manager import settings
+from src.utils.scraping.browser import create_browser
+from src.utils.scraping.scraping import get_standard_chrome_options
 
 # Ensure project root is on sys.path
 PROJECT_ROOT = os.path.dirname(
@@ -70,7 +68,6 @@ def save_cookies(driver):
 
 def init_browser(profile_suffix="default", headless=True):
     # Use standard Chrome options
-    from src.utils.scraping.scraping import get_standard_chrome_options
 
     options = get_standard_chrome_options(
         headless=headless, profile_suffix=profile_suffix
@@ -163,11 +160,10 @@ def scrape_phillips(skus, browser=None, log_callback=None, progress_tracker=None
                 else:
                     print("🔐 Phillips: Logging in...")
                 login(driver)
+            elif log_callback:
+                log_callback("✅ Phillips: Already logged in.")
             else:
-                if log_callback:
-                    log_callback("✅ Phillips: Already logged in.")
-                else:
-                    print("✅ Phillips: Already logged in.")
+                print("✅ Phillips: Already logged in.")
 
         for i, sku in enumerate(skus, 1):
             product_info = scrape_single_product(sku, driver)

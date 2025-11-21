@@ -17,11 +17,11 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(_
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from src.core.classification.manager import classify_products_batch
+from src.core.classification.manager import classify_products_batch  # noqa: E402
 
 # Import classification functions
-from src.core.classification.ui import edit_classification_in_batch
-from src.core.settings_manager import SettingsManager
+from src.core.classification.ui import edit_classification_in_batch  # noqa: E402
+from src.core.settings_manager import SettingsManager  # noqa: E402
 
 
 def classify_excel_file():

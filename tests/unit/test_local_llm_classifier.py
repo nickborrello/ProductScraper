@@ -1,16 +1,11 @@
 import json
 import os
-import sys
+import uuid
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-# Add project root to path
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
-
-# Import the local LLM classifier
+import src.core.classification.local_llm_classifier as llm_module
 from src.core.classification.local_llm_classifier import (
     LocalLLMProductClassifier,
     classify_product_local_llm,
@@ -45,7 +40,9 @@ class TestLocalLLMClassifier:
         """Mock Ollama API response."""
         return {
             "message": {
-                "content": '{"category": "Dog Food", "product_type": "Dry Dog Food", "product_on_pages": "Dog Food Shop All"}'
+                "content": (
+                    '{"category": "Dog Food", "product_type": "Dry Dog Food", "product_on_pages": "Dog Food Shop All"}'
+                )
             }
         }
 
@@ -59,8 +56,6 @@ class TestLocalLLMClassifier:
     @pytest.fixture
     def unique_cache_file(self, tmp_path):
         """Create a unique cache file for each test."""
-        import uuid
-
         cache_file = tmp_path / f"test_cache_{uuid.uuid4().hex}.json"
         return cache_file
 
@@ -252,7 +247,9 @@ class TestLocalLLMClassifier:
         mock_list.return_value = {"models": []}
         mock_chat.return_value = {
             "message": {
-                "content": '{"classifications": [{"product_index": 1, "category": "Test", "product_type": "Test", "product_on_pages": "Test"}]}'
+                "content": (
+                    '{"classifications": [{"product_index": 1, "category": "Test", "product_type": "Test", "product_on_pages": "Test"}]}'
+                )
             }
         }
 
@@ -410,8 +407,6 @@ class TestLocalLLMClassifier:
         mock_list.return_value = {"models": []}
 
         # Reset global instance
-        import src.core.classification.local_llm_classifier as llm_module
-
         llm_module._local_llm_classifier = None
 
         # First call should create instance
@@ -428,8 +423,6 @@ class TestLocalLLMClassifier:
         mock_list.side_effect = Exception("Ollama not running")
 
         # Reset global instance
-        import src.core.classification.local_llm_classifier as llm_module
-
         llm_module._local_llm_classifier = None
 
         classifier = get_local_llm_classifier()
@@ -675,7 +668,7 @@ class TestLocalLLMClassifier:
     )
     @patch("ollama.list")
     @patch("ollama.chat")
-    def test_comprehensive_product_classification(
+    def test_comprehensive_product_classification(  # noqa: PLR0913
         self,
         mock_chat,
         mock_list,
@@ -845,9 +838,16 @@ class TestLocalLLMClassifier:
             # Missing closing brace
             '{"category": "Dog Food", "product_type": "Dry Dog Food"',
             # Extra text before JSON
-            'Let me classify this: {"category": "Cat Food", "product_type": "Wet Cat Food", "product_on_pages": "Cat Food Shop All"} Hope this helps!',
+            (
+                "Let me classify this: "
+                '{"category": "Cat Food", "product_type": "Wet Cat Food", "product_on_pages": "Cat Food Shop All"} '
+                "Hope this helps!"
+            ),
             # JSON with extra fields
-            '{"category": "Bird Supplies", "product_type": "Bird Food", "product_on_pages": "Bird Supplies Shop All", "confidence": 0.95, "notes": "Good match"}',
+            (
+                '{"category": "Bird Supplies", "product_type": "Bird Food", "product_on_pages": "Bird Supplies Shop All", '
+                '"confidence": 0.95, "notes": "Good match"}'
+            ),
             # Nested JSON (should extract inner)
             '{"response": {"category": "Dog Food", "product_type": "Dry Dog Food", "product_on_pages": "Dog Food Shop All"}}',
             # Array response (should handle gracefully)
@@ -889,7 +889,8 @@ class TestLocalLLMClassifier:
 
         # Should eventually succeed after retries
         assert result["category"] == "Dog Food"
-        assert mock_chat.call_count == 3  # Should have tried 3 times
+        expected_retry_count = 3  # Should have tried 3 times
+        assert mock_chat.call_count == expected_retry_count
 
     @patch("ollama.list")
     @patch("ollama.chat")

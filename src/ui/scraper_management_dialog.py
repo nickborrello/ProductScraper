@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 
+import yaml
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
@@ -68,7 +69,7 @@ class ScraperManagementDialog(QDialog):
         # Bottom buttons
         buttons_layout = QHBoxLayout()
 
-        self.add_btn = QPushButton("➕ Add New Scraper")
+        self.add_btn = QPushButton("+ Add New Scraper")
         self.add_btn.clicked.connect(self.add_scraper)
         buttons_layout.addWidget(self.add_btn)
 
@@ -168,7 +169,8 @@ class ScraperManagementDialog(QDialog):
                     # Add to list
                     item = QListWidgetItem(f"📄 {config.name}")
                     item.setToolTip(
-                        f"Base URL: {config.base_url}\nTimeout: {config.timeout}s\nRetries: {config.retries}"
+                        f"Base URL: {config.base_url}\nTimeout: {config.timeout}s\n"
+                        f"Retries: {config.retries}"
                     )
                     self.scraper_list.addItem(item)
 
@@ -484,8 +486,6 @@ class EditScraperDialog(QDialog):
 
         # Load current config as YAML
         try:
-            import yaml
-
             yaml_content = yaml.safe_dump(
                 self.config.model_dump(), default_flow_style=False, sort_keys=False
             )
@@ -523,7 +523,11 @@ class EditScraperDialog(QDialog):
             QMessageBox.information(
                 self,
                 "Validation Success",
-                f"✅ Configuration is valid!\n\nScraper: {config.name}\nBase URL: {config.base_url}\nSelectors: {len(config.selectors)}\nWorkflows: {len(config.workflows)}",
+                "✅ Configuration is valid!\n\n"
+                f"Scraper: {config.name}\n"
+                f"Base URL: {config.base_url}\n"
+                f"Selectors: {len(config.selectors)}\n"
+                f"Workflows: {len(config.workflows)}",
             )
         except Exception as e:
             QMessageBox.warning(self, "Validation Error", f"❌ Configuration is invalid:\n\n{e!s}")

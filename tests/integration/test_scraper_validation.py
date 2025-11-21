@@ -6,6 +6,19 @@ import pytest
 
 from src.core.data_quality_scorer import is_product_high_quality
 
+HIGH_QUALITY_SCORE = 85.0
+MEDIUM_QUALITY_SCORE = 70.0
+LOW_QUALITY_SCORE = 0.0
+FULL_COVERAGE = 100.0
+HIGH_ACCURACY_SCORE = 80.0
+VALID_URLS = 3
+TOTAL_URLS_PERCENTAGE = 100.0
+HIGH_QUALITY_RECORDS = 1
+MAX_PROCESSING_TIME = 300.0
+MAX_MEMORY_INCREASE = 500.0
+MAX_AVG_TIME_MS = 10.0
+MAX_MAX_TIME_MS = 50.0
+
 
 @pytest.mark.integration
 class TestScraperValidation:
@@ -14,12 +27,12 @@ class TestScraperValidation:
     @pytest.mark.parametrize(
         "quality_level,expected_score_min,expected_high_quality",
         [
-            ("high", 85.0, True),
-            ("medium", 70.0, False),
-            ("low", 0.0, False),
+            ("high", HIGH_QUALITY_SCORE, True),
+            ("medium", MEDIUM_QUALITY_SCORE, False),
+            ("low", LOW_QUALITY_SCORE, False),
         ],
     )
-    def test_record_quality_validation_parametrized(
+    def test_record_quality_validation_parametrized(  # noqa: PLR0913
         self,
         data_quality_scorer,
         quality_level,
@@ -40,35 +53,33 @@ class TestScraperValidation:
 
         score, _details = data_quality_scorer.score_record(record)
 
-        assert score >= expected_score_min, (
-            f"{quality_level}-quality record scored too low: {score}"
-        )
-        assert is_product_high_quality(record) == expected_high_quality, (
-            f"{quality_level}-quality record high-quality detection incorrect"
-        )
+        assert score >= expected_score_min, f"{quality_level}-quality record scored too low: {score}"
+        assert (
+            is_product_high_quality(record) == expected_high_quality
+        ), f"{quality_level}-quality record high-quality detection incorrect"
 
     def test_high_quality_record_validation(self, data_quality_scorer, sample_high_quality_record):
         """Test that high-quality records pass validation."""
         score, details = data_quality_scorer.score_record(sample_high_quality_record)
 
-        assert score >= 85.0, f"High-quality record scored too low: {score}"
-        assert is_product_high_quality(sample_high_quality_record), (
-            "High-quality record not recognized"
-        )
+        assert score >= HIGH_QUALITY_SCORE, f"High-quality record scored too low: {score}"
+        assert is_product_high_quality(
+            sample_high_quality_record
+        ), "High-quality record not recognized"
 
         # Check all components are high
-        assert details["completeness"]["score"] == 100.0
-        assert details["accuracy"]["score"] >= 80.0
-        assert details["consistency"]["score"] == 100.0
+        assert details["completeness"]["score"] == FULL_COVERAGE
+        assert details["accuracy"]["score"] >= HIGH_ACCURACY_SCORE
+        assert details["consistency"]["score"] == FULL_COVERAGE
 
     def test_low_quality_record_validation(self, data_quality_scorer, sample_low_quality_record):
         """Test that low-quality records fail validation."""
         score, _details = data_quality_scorer.score_record(sample_low_quality_record)
 
-        assert score < 85.0, f"Low-quality record scored too high: {score}"
-        assert not is_product_high_quality(sample_low_quality_record), (
-            "Low-quality record incorrectly recognized as high quality"
-        )
+        assert score < HIGH_QUALITY_SCORE, f"Low-quality record scored too high: {score}"
+        assert not is_product_high_quality(
+            sample_low_quality_record
+        ), "Low-quality record incorrectly recognized as high quality"
 
     def test_mixed_quality_batch_validation(
         self, data_quality_scorer, sample_mixed_quality_records
@@ -81,7 +92,9 @@ class TestScraperValidation:
 
         # Should have one high and one low quality
         high_quality_count = sum(1 for _, is_high in results if is_high)
-        assert high_quality_count == 1, f"Expected 1 high-quality record, got {high_quality_count}"
+        assert (
+            high_quality_count == HIGH_QUALITY_RECORDS
+        ), f"Expected 1 high-quality record, got {high_quality_count}"
 
     def test_weight_normalization_integration(self, data_quality_scorer):
         """Test weight normalization in various units."""
@@ -91,11 +104,11 @@ class TestScraperValidation:
             ("2.2 kg", 4.8508),
             ("1000 g", 2.20462),
         ]
-
+        rel_tolerance = 1e-10
         for weight_str, expected_lb in test_cases:
             record = {"Weight": weight_str}
             _score, details = data_quality_scorer._score_accuracy(record)
-            assert details["weight"]["normalized"] == f"{expected_lb:.2f} lb"
+            assert pytest.approx(float(details["weight"]["normalized"].split(" ")[0]), rel=rel_tolerance) == expected_lb
 
     def test_image_url_validation_integration(self, data_quality_scorer):
         """Test image URL validation in records."""
@@ -103,9 +116,9 @@ class TestScraperValidation:
         record = {
             "Images": "https://example.com/img1.jpg,http://example.com/img2.png,https://cdn.example.com/img3.jpeg"
         }
-        score, details = data_quality_scorer._score_accuracy(record)
-        assert details["images"]["valid_urls"] == 3
-        assert details["images"]["percentage"] == 100.0
+        _score, details = data_quality_scorer._score_accuracy(record)
+        assert details["images"]["valid_urls"] == VALID_URLS
+        assert details["images"]["percentage"] == TOTAL_URLS_PERCENTAGE
 
         # Mixed valid/invalid
         record = {"Images": "https://valid.com/img.jpg,invalid-url,ftp://invalid.com/img.jpg"}
@@ -133,22 +146,22 @@ class TestPerformanceValidation:
         for record in performance_test_data:
             score, _ = data_quality_scorer.score_record(record)
             total_score += score
-            if score >= 85.0:
+            if score >= HIGH_QUALITY_SCORE:
                 high_quality_count += 1
 
         elapsed_seconds = time_monitor.elapsed_seconds()
         memory_delta_mb = memory_monitor.get_memory_delta_mb()
 
         # Performance assertions
-        assert elapsed_seconds < 300.0, f"Processing took too long: {elapsed_seconds}s (>5 min)"
-        assert memory_delta_mb < 500.0, f"Memory usage too high: {memory_delta_mb}MB (>500MB)"
+        assert elapsed_seconds < MAX_PROCESSING_TIME, f"Processing took too long: {elapsed_seconds}s (>5 min)"
+        assert memory_delta_mb < MAX_MEMORY_INCREASE, f"Memory usage too high: {memory_delta_mb}MB (>500MB)"
 
         # Quality assertions
         avg_score = total_score / len(performance_test_data)
-        assert avg_score >= 85.0, f"Average score too low: {avg_score}"
-        assert high_quality_count == len(performance_test_data), (
-            "Not all records recognized as high quality"
-        )
+        assert avg_score >= HIGH_QUALITY_SCORE, f"Average score too low: {avg_score}"
+        assert high_quality_count == len(
+            performance_test_data
+        ), "Not all records recognized as high quality"
 
         print(
             f"Performance test results: {elapsed_seconds:.2f}s, {memory_delta_mb:.2f}MB memory delta"
@@ -169,8 +182,8 @@ class TestPerformanceValidation:
         max_time_ms = max(times)
 
         # Should be very fast (< 10ms average)
-        assert avg_time_ms < 10.0, f"Average scoring time too slow: {avg_time_ms}ms"
-        assert max_time_ms < 50.0, f"Max scoring time too slow: {max_time_ms}ms"
+        assert avg_time_ms < MAX_AVG_TIME_MS, f"Average scoring time too slow: {avg_time_ms}ms"
+        assert max_time_ms < MAX_MAX_TIME_MS, f"Max scoring time too slow: {max_time_ms}ms"
 
         print(
             f"Individual record performance: {avg_time_ms:.2f}ms average, {max_time_ms:.2f}ms max"
@@ -204,7 +217,9 @@ class TestValidationFrameworkIntegration:
         assert len(set(scores)) > 1, "All records scored the same - validation not working"
 
         high_quality_results = [r for r in validation_results if r["is_high_quality"]]
-        assert len(high_quality_results) == 1, "Expected exactly 1 high-quality record"
+        assert (
+            len(high_quality_results) == HIGH_QUALITY_RECORDS
+        ), "Expected exactly 1 high-quality record"
 
     def test_threshold_configuration(self, data_quality_scorer, sample_high_quality_record):
         """Test configurable quality thresholds."""

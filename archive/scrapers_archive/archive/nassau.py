@@ -1,16 +1,18 @@
 import re
+import time
+
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from src.utils.scraping.scraping import clean_string
-from src.utils.scraping.browser import create_browser
+from selenium.webdriver.support.ui import WebDriverWait
+
 from src.utils.general.display import (
+    display_error,
     display_product_result,
     display_scraping_progress,
     display_scraping_summary,
-    display_error,
 )
-import time
+from src.utils.scraping.browser import create_browser
+from src.utils.scraping.scraping import clean_string
 
 HEADLESS = True
 
@@ -76,7 +78,7 @@ def scrape_single_product(SKU, driver):
                     ),
                 )
             )
-        except Exception as e:
+        except Exception:
             print(
                 f"DEBUG: Timeout waiting for search results. Page title: {driver.title}"
             )
@@ -123,7 +125,7 @@ def scrape_single_product(SKU, driver):
                     continue
 
             if not product_url:
-                print(f"DEBUG: No product link found. Available links on page:")
+                print("DEBUG: No product link found. Available links on page:")
                 links = driver.find_elements(By.TAG_NAME, "a")
                 for i, link in enumerate(links[:5]):  # Show first 5 links
                     href = link.get_attribute("href")

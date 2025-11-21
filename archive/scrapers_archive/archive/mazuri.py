@@ -1,20 +1,16 @@
-import os
-import platform
-import time
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.options import Options
-import sys
 import pathlib
+import sys
+
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 
 # Add the parent of ProductScraper to sys.path
 project_root = pathlib.Path(__file__).resolve().parents[1]
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
-from src.utils.scraping.scraping import get_standard_chrome_options, clean_string
 from src.utils.scraping.browser import create_browser
+from src.utils.scraping.scraping import clean_string
 
 HEADLESS = True
 TEST_SKU = "3002770745"  # KONG Pull A Partz Pals Koala SM - test SKU for Mazuri
@@ -134,8 +130,9 @@ def scrape_single_product(SKU, driver, log_callback=None):
         return None
 
     # Try to parse embedded product JSON for robust extraction
-    from bs4 import BeautifulSoup
     import re
+
+    from bs4 import BeautifulSoup
 
     soup = BeautifulSoup(driver.page_source, "html.parser")
     product_json = None

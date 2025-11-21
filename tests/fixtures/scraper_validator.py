@@ -7,6 +7,11 @@ from typing import Any
 
 import pandas as pd
 
+MAX_SKU_LENGTH = 50
+MIN_WEIGHT = 0.01
+MAX_WEIGHT = 1000.0
+MAX_ERRORS_TO_SHOW = 10
+
 
 class ScraperValidator:
     """Validates scraper output data format and content."""
@@ -33,6 +38,33 @@ class ScraperValidator:
             "phillips": ["SKU", "Name", "Brand", "Weight", "Image URLs"],
             "orgill": ["SKU", "Name", "Brand", "Weight", "Image URLs"],
         }
+
+    def _validate_product_fields(
+        self, product: dict, expected_fields: list[str], field_counts: dict
+    ) -> tuple[list[str], list[str]]:
+        product_errors = []
+        product_warnings = []
+
+        # Check required fields
+        for field in self.common_rules.get("required_fields", []):
+            if field not in product or product[field] is None:
+                product_errors.append(f"Missing required field: {field}")
+            elif str(product[field]).strip() in self.common_rules.get("invalid_values", []):
+                product_errors.append(f"Invalid value for required field {field}: '{product[field]}'")
+
+        # Check expected fields and field-specific validation
+        for field in expected_fields:
+            if field in product:
+                field_counts[field] += 1
+                if field == "SKU" and not self._validate_sku(product[field]):
+                    product_warnings.append(f"SKU format may be invalid: {product[field]}")
+                elif field == "Price" and not self._validate_price(product[field]):
+                    product_warnings.append(f"Price format may be invalid: {product[field]}")
+                elif field == "Images" and not self._validate_images(product[field]):
+                    product_warnings.append(f"Images format may be invalid: {product[field]}")
+                elif field == "Weight" and not self._validate_weight(product[field]):
+                    product_warnings.append(f"Weight format may be invalid: {product[field]}")
+        return product_errors, product_warnings
 
     def validate_product_data(self, products: list[dict], scraper_name: str) -> dict[str, Any]:
         """
@@ -61,8 +93,6 @@ class ScraperValidator:
             return results
 
         expected_fields = self.expected_fields.get(scraper_name, [])
-
-        # Track field coverage
         field_counts = {field: 0 for field in expected_fields}
 
         for i, product in enumerate(products):
@@ -71,41 +101,11 @@ class ScraperValidator:
                 results["invalid_products"] += 1
                 continue
 
-            product_valid = True
-            product_errors = []
-            product_warnings = []
+            product_errors, product_warnings = self._validate_product_fields(
+                product, expected_fields, field_counts
+            )
 
-            # Check required fields
-            for field in self.common_rules.get("required_fields", []):
-                if field not in product or product[field] is None:
-                    product_errors.append(f"Missing required field: {field}")
-                    product_valid = False
-                elif str(product[field]).strip() in self.common_rules.get("invalid_values", []):
-                    product_errors.append(
-                        f"Invalid value for required field {field}: '{product[field]}'"
-                    )
-                    product_valid = False
-                # Note: field_counts increment moved to expected fields loop below
-
-            # Check expected fields
-            for field in expected_fields:
-                if field in product:
-                    field_counts[field] += 1
-
-                    # Field-specific validation
-                    if field == "SKU" and not self._validate_sku(product[field]):
-                        product_warnings.append(f"SKU format may be invalid: {product[field]}")
-
-                    elif field == "Price" and not self._validate_price(product[field]):
-                        product_warnings.append(f"Price format may be invalid: {product[field]}")
-
-                    elif field == "Images" and not self._validate_images(product[field]):
-                        product_warnings.append(f"Images format may be invalid: {product[field]}")
-
-                    elif field == "Weight" and not self._validate_weight(product[field]):
-                        product_warnings.append(f"Weight format may be invalid: {product[field]}")
-
-            if product_valid:
+            if not product_errors:
                 results["valid_products"] += 1
             else:
                 results["invalid_products"] += 1
@@ -114,16 +114,12 @@ class ScraperValidator:
             if product_warnings:
                 results["warnings"].extend([f"Product {i}: {warn}" for warn in product_warnings])
 
-        # Calculate field coverage percentages
-        results["field_coverage"] = {
-            field: (
-                (count / results["total_products"]) * 100 if results["total_products"] > 0 else 0
-            )
-            for field, count in field_counts.items()
-        }
-
-        # Calculate data quality score (0-100)
+        # Calculate field coverage and data quality score
         if results["total_products"] > 0:
+            results["field_coverage"] = {
+                field: (count / results["total_products"]) * 100
+                for field, count in field_counts.items()
+            }
             valid_ratio = results["valid_products"] / results["total_products"]
             field_coverage_avg = (
                 sum(results["field_coverage"].values()) / len(results["field_coverage"])
@@ -191,15 +187,13 @@ class ScraperValidator:
         if not sku:
             return False
         sku_str = str(sku).strip()
-        # Basic SKU validation - not empty and reasonable length
-        return 1 <= len(sku_str) <= 50
+        return 1 <= len(sku_str) <= MAX_SKU_LENGTH
 
     def _validate_price(self, price: Any) -> bool:
         """Validate price format."""
         if not price:
             return False
         price_str = str(price).strip()
-        # Allow various price formats: $10.99, 10.99, 10, etc.
         price_pattern = r"^\$?\d+(\.\d{1,2})?$"
         return bool(re.match(price_pattern, price_str))
 
@@ -208,11 +202,9 @@ class ScraperValidator:
         if not images:
             return False
 
-        # Handle both "Images" and "Image URLs" field names
         if isinstance(images, list):
             image_list = images
         elif isinstance(images, str):
-            # If it's a string, it might be comma-separated
             image_list = [url.strip() for url in images.split(",") if url.strip()]
         else:
             return False
@@ -220,7 +212,6 @@ class ScraperValidator:
         if not image_list:
             return False
 
-        # Check that all items are valid URLs
         url_pattern = r"^https?://[^\s,]+$"
         return all(re.match(url_pattern, str(url)) for url in image_list if url)
 
@@ -230,18 +221,15 @@ class ScraperValidator:
             return False
         weight_str = str(weight).strip().upper()
 
-        # Check for LB unit
         if "LB" not in weight_str and "POUND" not in weight_str:
             return False
 
-        # Extract numeric part
         weight_match = re.search(r"(\d+(?:\.\d+)?)", weight_str)
         if not weight_match:
             return False
 
         weight_value = float(weight_match.group(1))
-        # Reasonable weight range for pet products
-        return 0.01 <= weight_value <= 1000.0
+        return MIN_WEIGHT <= weight_value <= MAX_WEIGHT
 
     def print_validation_report(self, results: dict[str, Any]) -> None:
         """Print a formatted validation report."""
@@ -264,19 +252,18 @@ class ScraperValidator:
 
         if results["errors"]:
             print(f"\n❌ ERRORS ({len(results['errors'])}):")
-            for error in results["errors"][:10]:  # Show first 10 errors
+            for error in results["errors"][:MAX_ERRORS_TO_SHOW]:
                 print(f"  • {error}")
-            if len(results["errors"]) > 10:
-                print(f"  ... and {len(results['errors']) - 10} more errors")
+            if len(results["errors"]) > MAX_ERRORS_TO_SHOW:
+                print(f"  ... and {len(results['errors']) - MAX_ERRORS_TO_SHOW} more errors")
 
         if results["warnings"]:
             print(f"\n⚠️  WARNINGS ({len(results['warnings'])}):")
-            for warning in results["warnings"][:10]:  # Show first 10 warnings
+            for warning in results["warnings"][:MAX_ERRORS_TO_SHOW]:
                 print(f"  • {warning}")
-            if len(results["warnings"]) > 10:
-                print(f"  ... and {len(results['warnings']) - 10} more warnings")
+            if len(results["warnings"]) > MAX_ERRORS_TO_SHOW:
+                print(f"  ... and {len(results['warnings']) - MAX_ERRORS_TO_SHOW} more warnings")
 
-        # Overall assessment
         if results["errors"]:
             print("\n❌ VALIDATION FAILED - Fix errors before deployment")
         elif results["warnings"]:

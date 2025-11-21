@@ -1,12 +1,6 @@
-import os
-import sys
 from unittest.mock import MagicMock, patch
 
 import pytest
-
-# Add project root to sys.path to allow imports from the main project directory
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.insert(0, PROJECT_ROOT)
 
 from src.scrapers.main import run_db_refresh
 
@@ -62,6 +56,7 @@ def test_run_scraping_empty_excel(mock_callbacks, mock_os_remove):
 def test_run_db_refresh_success(mock_callbacks, mock_db_refresh_func):
     """Test a successful database refresh."""
     progress_callback, log_callback = mock_callbacks
+    expected_call_count = 3
 
     mock_db_refresh_func.return_value = (True, "DB updated")
 
@@ -71,7 +66,7 @@ def test_run_db_refresh_success(mock_callbacks, mock_db_refresh_func):
     log_callback.emit.assert_any_call("🔄 Processing XML and updating database...")
     mock_db_refresh_func.assert_called_once()
     log_callback.emit.assert_any_call("💡 Database updated successfully.")
-    assert progress_callback.emit.call_count == 3  # 10, 30, 90
+    assert progress_callback.emit.call_count == expected_call_count  # 10, 30, 90
 
 
 def test_run_db_refresh_failure(mock_callbacks, mock_db_refresh_func):
@@ -94,7 +89,7 @@ def test_run_db_refresh_failure(mock_callbacks, mock_db_refresh_func):
 def test_run_db_refresh_exception(mock_callbacks, mock_db_refresh_func):
     """Test database refresh when an exception occurs."""
     progress_callback, log_callback = mock_callbacks
-    mock_db_refresh_func.side_effect = Exception("DB connection failed")
+    mock_db_refresh_func.side_effect = ConnectionError("DB connection failed")
 
-    with pytest.raises(Exception, match="DB connection failed"):
+    with pytest.raises(ConnectionError, match="DB connection failed"):
         run_db_refresh(progress_callback, log_callback)

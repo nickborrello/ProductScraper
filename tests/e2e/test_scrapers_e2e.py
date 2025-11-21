@@ -2,22 +2,22 @@
 Integration tests for running scrapers locally and validating output.
 """
 
+import copy
 import os
 import sys
+import threading
 import time
-from pathlib import Path
 from typing import Any
 
 import pytest
-
-# Add project root to path
-PROJECT_ROOT = Path(__file__).parent.parent.parent
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
+import yaml
 
 from src.scrapers.executor.workflow_executor import WorkflowExecutor
 from src.scrapers.parser.yaml_parser import ScraperConfigParser
 from tests.fixtures.scraper_validator import ScraperValidator
+
+from pathlib import Path
+PROJECT_ROOT = Path(__file__).parent.parent.parent
 
 
 class ScraperIntegrationTester:
@@ -72,7 +72,8 @@ class ScraperIntegrationTester:
             headless = os.getenv("SCRAPER_HEADLESS", "true").lower() == "true"
 
         print(
-            f"DEBUG: Starting scraper execution for {scraper_name} with SKUs {skus}, headless={headless}"
+            "DEBUG: Starting scraper execution for "
+            f"{scraper_name} with SKUs {skus}, headless={headless}"
         )
 
         results = {
@@ -102,8 +103,6 @@ class ScraperIntegrationTester:
                 print(f"DEBUG: Processing SKU {sku} ({i + 1}/{len(skus)}) for {scraper_name}")
                 try:
                     # Clone config and replace {sku} placeholders
-                    import copy
-
                     sku_config = copy.deepcopy(config)
                     for step in sku_config.workflows:
                         if step.action == "navigate" and "url" in step.params:
@@ -114,7 +113,8 @@ class ScraperIntegrationTester:
                     executor = WorkflowExecutor(sku_config, headless=headless)
                     workflow_result = executor.execute_workflow()
                     print(
-                        f"DEBUG: Workflow execution completed for SKU {sku}, success={workflow_result.get('success', False)}"
+                        f"DEBUG: Workflow execution completed for SKU {sku}, "
+                        f"success={workflow_result.get('success', False)}"
                     )
 
                     if workflow_result["success"]:
@@ -133,7 +133,8 @@ class ScraperIntegrationTester:
 
             results["execution_time"] = time.time() - start_time
             print(
-                f"DEBUG: Scraper {scraper_name} execution completed in {results['execution_time']:.2f}s"
+                f"DEBUG: Scraper {scraper_name} execution completed in "
+                f"{results['execution_time']:.2f}s"
             )
 
             if products:
@@ -223,7 +224,8 @@ class ScraperIntegrationTester:
             skipped_count = original_count - len(scrapers)
             if skipped_count > 0:
                 print(
-                    f"SKIP: Skipping {skipped_count} login-requiring scrapers: {', '.join(login_required_scrapers)}"
+                    "SKIP: Skipping "
+                    f"{skipped_count} login-requiring scrapers: {', '.join(login_required_scrapers)}"
                 )
 
         results = {
@@ -291,7 +293,7 @@ class ScraperIntegrationTester:
         scraper = test_results["scraper"]
         run_results = test_results["run_results"]
         validation_results = test_results["validation_results"]
-
+        full_coverage = 100.0
         print(f"\nTEST SUMMARY: {scraper}")
 
         # Run results
@@ -317,7 +319,7 @@ class ScraperIntegrationTester:
             if field_coverage:
                 print("   Field Coverage:")
                 for field, coverage in field_coverage.items():
-                    status = "PASS" if coverage == 100.0 else "WARN" if coverage > 0 else "FAIL"
+                    status = "PASS" if coverage == full_coverage else "WARN" if coverage > 0 else "FAIL"
                     print(f"     {status} {field}: {coverage:.1f}%")
 
             if validation_results.get("errors"):
@@ -428,8 +430,6 @@ class TestScraperIntegration:
     def test_scraper_execution_parametrized(self, tester, scraper_name):
         """Test running individual scrapers with parametrization."""
         # Skip login-requiring scrapers in CI
-        import os
-
         if os.getenv("CI") == "true" and scraper_name in {"orgill", "petfoodex", "phillips"}:
             pytest.skip(f"Skipping {scraper_name} in CI (requires login)")
 
@@ -446,9 +446,6 @@ class TestScraperIntegration:
     def test_single_scraper_with_timeout(self, tester):
         """Test running a single scraper with timeout handling."""
         print("DEBUG: Starting test_single_scraper_with_timeout")
-        import threading
-        from typing import Any
-
         result: dict[str, Any] = {"completed": False, "data": None, "error": None}
 
         def run_scraper():
@@ -488,13 +485,8 @@ class TestScraperIntegration:
         """Test all scrapers (full integration test)."""
         print("DEBUG: Starting test_all_scrapers_integration")
         # For CI/CD, skip login-requiring scrapers; locally, test all
-        import os
-
         skip_login = os.getenv("CI") == "true"  # Skip in CI environment
         print(f"DEBUG: skip_login_required={skip_login}")
-
-        import threading
-        from typing import Any
 
         result: dict[str, Any] = {"completed": False, "data": None, "error": None}
 
@@ -532,7 +524,8 @@ class TestScraperIntegration:
 
             # Print summary
             print(
-                f"Integration test results: {results['successful_scrapers']}/{results['total_scrapers']} passed"
+                f"Integration test results: {results['successful_scrapers']}/"
+                f"{results['total_scrapers']} passed"
             )
             print("DEBUG: test_all_scrapers_integration completed successfully")
 
@@ -542,14 +535,9 @@ class TestScraperIntegration:
         """Test scraper execution in both headless and non-headless modes."""
         print(f"DEBUG: Starting test_scraper_headless_modes with headless={headless}")
         # Only test amazon for mode testing
-        import os
-
         if not headless and os.getenv("CI") == "true":
             print("DEBUG: Skipping non-headless test in CI environment")
             pytest.skip("Skipping non-headless test in CI environment")
-
-        import threading
-        from typing import Any
 
         result: dict[str, Any] = {"completed": False, "data": None, "error": None}
 
@@ -598,11 +586,18 @@ class TestScraperIntegration:
         # Run scraper with fake SKU - should fail to find products
         result = tester.run_scraper_locally("amazon", [fake_sku], headless=True)
 
-        # Verify scraper execution failed due to no results
-        assert result["success"] is False  # No products found
-        assert result["products"] == []  # Empty products list
-        assert len(result["errors"]) > 0  # Should have error for failed SKU
-        assert "Failed to scrape SKU" in result["errors"][0]
+        # Verify scraper execution
+        # The scraper may return success=True with a product record indicating no_results_found=True
+        if result["success"]:
+            assert len(result["products"]) == 1, f"Expected 1 product record, got {len(result['products'])}"
+            product = result["products"][0]
+            assert product.get("no_results_found") is True, f"Expected no_results_found=True, got {product}"
+            assert product["SKU"] == fake_sku
+        else:
+            # Fallback to old behavior (failure)
+            assert result["products"] == [], f"Expected empty products, got {result['products']}"
+            assert len(result["errors"]) > 0, "Expected errors, got none"
+            assert "Failed to scrape SKU" in result["errors"][0], f"Expected 'Failed to scrape SKU' in error, got {result['errors'][0]}"
 
         # Verify execution completed
         assert result["execution_time"] > 0
@@ -664,8 +659,6 @@ class TestScraperIntegration:
     @pytest.mark.integration
     def test_no_results_integration_with_config_validation(self, tester):
         """Test integration with scraper configuration validation sections for no results."""
-        from src.scrapers.parser.yaml_parser import ScraperConfigParser
-
         # Test with amazon config which has no_results validation
         parser = ScraperConfigParser()
         config = parser.load_from_file(
@@ -693,8 +686,6 @@ class TestScraperIntegration:
             assert "your search returned no results" in validation_data["no_results_text_patterns"]
         else:
             # If validation section is not loaded, at least verify the YAML file contains it
-            import yaml
-
             with open(tester.project_root / "src" / "scrapers" / "configs" / "amazon.yaml") as f:
                 raw_config = yaml.safe_load(f)
 

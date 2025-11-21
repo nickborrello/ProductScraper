@@ -1,10 +1,3 @@
-import os
-import sys
-
-# Add project root to the Python path to allow imports from src
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
 
 from src.core.classification.manager import classify_products_batch
 from src.core.classification.ui import edit_classification_in_batch

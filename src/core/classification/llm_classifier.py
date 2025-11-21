@@ -81,12 +81,12 @@ class LLMProductClassifier:
     def _load_taxonomy(self) -> dict[str, list[str]]:
         """Load product taxonomy from manager or fallback."""
         try:
-            from src.core.classification.manager import GENERAL_PRODUCT_TAXONOMY
+            from src.core.classification.manager import GENERAL_PRODUCT_TAXONOMY  # noqa: PLC0415
 
             return GENERAL_PRODUCT_TAXONOMY
         except ImportError:
             try:
-                from .manager import GENERAL_PRODUCT_TAXONOMY
+                from .manager import GENERAL_PRODUCT_TAXONOMY  # noqa: PLC0415
 
                 return GENERAL_PRODUCT_TAXONOMY
             except ImportError:
@@ -108,12 +108,12 @@ class LLMProductClassifier:
     def _load_product_pages(self) -> list[str]:
         """Load product pages from manager or fallback."""
         try:
-            from src.core.classification.manager import PRODUCT_PAGES
+            from src.core.classification.manager import PRODUCT_PAGES  # noqa: PLC0415
 
             return PRODUCT_PAGES
         except ImportError:
             try:
-                from .manager import PRODUCT_PAGES
+                from .manager import PRODUCT_PAGES  # noqa: PLC0415
 
                 return PRODUCT_PAGES
             except ImportError:
@@ -127,20 +127,22 @@ class LLMProductClassifier:
     def _initialize_conversation(self) -> None:
         """Initialize conversation with taxonomy and instructions."""
         try:
-            from src.core.classification.manager import (
+            from src.core.classification.manager import (  # noqa: PLC0415
                 UNIFIED_SINGLE_PRODUCT_JSON_FORMAT,
                 UNIFIED_SYSTEM_PROMPT,
             )
         except ImportError:
             try:
-                from .manager import UNIFIED_SINGLE_PRODUCT_JSON_FORMAT, UNIFIED_SYSTEM_PROMPT
+                from .manager import (  # noqa: PLC0415
+                    UNIFIED_SINGLE_PRODUCT_JSON_FORMAT,
+                    UNIFIED_SYSTEM_PROMPT,
+                )
             except ImportError:
                 # Define fallbacks if imports fail
-                UNIFIED_SYSTEM_PROMPT = (
-                    "You are a product classifier. "
-                    "Taxonomy: {taxonomy_text}\nPages: {pages_text}"
+                UNIFIED_SYSTEM_PROMPT = (  # noqa: N806
+                    "You are a product classifier. Taxonomy: {taxonomy_text}\nPages: {pages_text}"
                 )
-                UNIFIED_SINGLE_PRODUCT_JSON_FORMAT = "\nRespond in JSON."
+                UNIFIED_SINGLE_PRODUCT_JSON_FORMAT = "\nRespond in JSON."  # noqa: N806
 
         # Create comprehensive system prompt
         taxonomy_text = "PRODUCT TAXONOMY:\n"
@@ -179,8 +181,8 @@ class LLMProductClassifier:
                     timeout=30,
                 )
 
-                HTTP_OK = 200
-                if response.status_code == HTTP_OK:
+                http_ok = 200
+                if response.status_code == http_ok:
                     result = response.json()
                     return result["choices"][0]["message"]["content"]
                 else:
@@ -304,18 +306,20 @@ class LLMProductClassifier:
 
         return results
 
-    def _classify_batch_api_call(self, products: list[dict[str, Any]]) -> list[dict[str, str]]:
+    def _classify_batch_api_call(  # noqa: PLR0912
+        self, products: list[dict[str, Any]]
+    ) -> list[dict[str, str]]:
         """Make a single API call for multiple products."""
         if not products:
             return []
 
         try:
-            from src.core.classification.manager import UNIFIED_BATCH_JSON_FORMAT
+            from src.core.classification.manager import UNIFIED_BATCH_JSON_FORMAT  # noqa: PLC0415
         except ImportError:
             try:
-                from .manager import UNIFIED_BATCH_JSON_FORMAT
+                from .manager import UNIFIED_BATCH_JSON_FORMAT  # noqa: PLC0415
             except ImportError:
-                UNIFIED_BATCH_JSON_FORMAT = "\nRespond in JSON format."
+                UNIFIED_BATCH_JSON_FORMAT = "\nRespond in JSON format."  # noqa: N806
 
         # Create batch prompt with essential product information
         batch_prompt = (
@@ -489,7 +493,7 @@ def get_llm_classifier(
     product_pages: list[str] | None = None,
 ) -> LLMProductClassifier | None:
     """Get or create LLM classifier instance."""
-    global _llm_classifier
+    global _llm_classifier  # noqa: PLW0603
     if _llm_classifier is None:
         try:
             _llm_classifier = LLMProductClassifier(product_taxonomy, product_pages)

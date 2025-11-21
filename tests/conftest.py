@@ -2,6 +2,10 @@
 Pytest configuration and fixtures for ProductScraper tests
 """
 
+import os
+import time
+
+import psutil
 import pytest
 
 from src.core.data_quality_scorer import DataQualityScorer
@@ -89,10 +93,6 @@ def performance_test_data(sample_high_quality_record):
 @pytest.fixture
 def memory_monitor():
     """Fixture to monitor memory usage during tests."""
-    import os
-
-    import psutil
-
     process = psutil.Process(os.getpid())
     initial_memory = process.memory_info().rss / 1024 / 1024  # MB
 
@@ -109,7 +109,6 @@ def memory_monitor():
 @pytest.fixture
 def time_monitor():
     """Fixture to monitor execution time."""
-    import time
 
     class TimeMonitor:
         def __init__(self):
@@ -127,3 +126,51 @@ def time_monitor():
             return self.elapsed_seconds() * 1000
 
     return TimeMonitor()
+
+
+# Browser fixtures
+@pytest.fixture(scope="session")
+def browser_config():
+    """Global browser configuration."""
+    return {
+        "headless": True,
+        "window_size": (1920, 1080),
+        "disable_gpu": True,
+        "no_sandbox": True,
+    }
+
+
+@pytest.fixture
+def chrome_options(browser_config):
+    """Standard Chrome options for testing."""
+    from selenium.webdriver.chrome.options import Options
+
+    options = Options()
+    if browser_config["headless"]:
+        options.add_argument("--headless=new")
+
+    if browser_config["disable_gpu"]:
+        options.add_argument("--disable-gpu")
+
+    if browser_config["no_sandbox"]:
+        options.add_argument("--no-sandbox")
+
+    width, height = browser_config["window_size"]
+    options.add_argument(f"--window-size={width},{height}")
+
+    return options
+
+
+@pytest.fixture
+def mock_browser_driver(chrome_options):
+    """
+    Mock browser driver for tests that don't need a real browser.
+    Returns a MagicMock that mimics a Selenium driver.
+    """
+    from unittest.mock import MagicMock
+
+    driver = MagicMock()
+    driver.page_source = "<html><body><h1>Test Page</h1></body></html>"
+    driver.title = "Test Page"
+    driver.current_url = "http://example.com"
+    return driver

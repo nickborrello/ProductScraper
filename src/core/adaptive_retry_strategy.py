@@ -31,7 +31,6 @@ class RetryStrategy(Enum):
     CAPTCHA_SOLVE = "captcha_solve"
 
 
-
 # Constants for adaptive strategy
 RECENT_OCCURRENCES_THRESHOLD = 10
 MAX_RETRIES_CAP = 10
@@ -499,13 +498,13 @@ class AdaptiveRetryStrategy:
                         "retry_count": record_data.pop("retry_count"),
                         "context": record_data.pop("context"),
                     }
-                
+
                 # Handle new format
                 if isinstance(record_data.get("failure_context"), dict):
-                     ctx = record_data["failure_context"]
-                     if isinstance(ctx.get("failure_type"), str):
-                         ctx["failure_type"] = FailureType(ctx["failure_type"])
-                     record_data["failure_context"] = FailureContext(**ctx)
+                    ctx = record_data["failure_context"]
+                    if isinstance(ctx.get("failure_type"), str):
+                        ctx["failure_type"] = FailureType(ctx["failure_type"])
+                    record_data["failure_context"] = FailureContext(**ctx)
 
                 record = FailureRecord(**record_data)
                 self.failure_history.append(record)
@@ -587,4 +586,3 @@ class AdaptiveRetryStrategy:
             delay = min(delay, config.max_delay)
 
         return delay
-

@@ -1,7 +1,7 @@
 import os
 import re
-import time
 import sys
+import time
 
 # Ensure project root is on sys.path
 PROJECT_ROOT = os.path.dirname(
@@ -14,26 +14,24 @@ if PROJECT_ROOT not in sys.path:
 if __name__ == "__main__":
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.utils.scraping.scraping import clean_string
 from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import (
     TimeoutException,
-    NoSuchElementException,
-    WebDriverException,
 )
-from src.utils.scraping.browser import create_browser
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+
 from src.utils.general.display import (
+    display_error,
     display_product_result,
     display_scraping_progress,
     display_scraping_summary,
-    display_error,
-    display_info,
 )
+from src.utils.scraping.browser import create_browser
+from src.utils.scraping.scraping import clean_string
 
 # Amazon scraper with optimizations for speed
 # - Runs headless for maximum speed (no visual browser window)
@@ -70,7 +68,6 @@ def init_browser(profile_suffix="default", headless=True):
 
 def get_amazon_optimized_options(profile_suffix="default", headless=True):
     """Get Chrome options optimized specifically for Amazon scraping - blocks ads, images, and unnecessary resources."""
-    from selenium.webdriver.chrome.options import Options
 
     options = Options()
 
@@ -263,7 +260,7 @@ def scrape_single_product(UPC_or_ASIN, driver, max_retries=0, log_callback=None)
 
         except Exception as e:
             display_error(
-                f"Error on attempt {attempt + 1}: {str(e)}",
+                f"Error on attempt {attempt + 1}: {e!s}",
                 UPC_or_ASIN,
                 log_callback=log_callback,
             )
@@ -444,7 +441,7 @@ def _click_first_search_result(driver, log_callback=None):
             "div[data-component-type='s-search-result'], .s-result-item",
         )
 
-        for i, container in enumerate(result_containers):
+        for _i, container in enumerate(result_containers):
             try:
                 # Check for sponsored indicators in this container
                 sponsored_indicators = container.find_elements(
@@ -476,7 +473,7 @@ def _click_first_search_result(driver, log_callback=None):
                 except:
                     continue
 
-            except Exception as e:
+            except Exception:
                 continue
 
         # display_info("No organic search results found - all results appear to be sponsored")  # Removed verbose debug message

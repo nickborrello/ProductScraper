@@ -57,7 +57,7 @@ class TestLocalLLMIntegration:
     @patch("ollama.chat")
     @patch("src.core.classification.local_llm_classifier.LocalLLMProductClassifier._load_cache")
     @patch("src.core.classification.local_llm_classifier.LocalLLMProductClassifier._save_cache")
-    def test_local_llm_method_integration(
+    def test_local_llm_method_integration(  # noqa: PLR0913
         self,
         mock_save_cache,
         mock_load_cache,
@@ -91,7 +91,7 @@ class TestLocalLLMIntegration:
     @patch("ollama.chat")
     @patch("src.core.classification.local_llm_classifier.LocalLLMProductClassifier._load_cache")
     @patch("src.core.classification.local_llm_classifier.LocalLLMProductClassifier._save_cache")
-    def test_batch_classification_integration(
+    def test_batch_classification_integration(  # noqa: PLR0913
         self,
         mock_save_cache,
         mock_load_cache,
@@ -103,7 +103,7 @@ class TestLocalLLMIntegration:
         """Test batch classification through main classifier."""
         # Mock empty cache initially
         mock_load_cache.return_value = {}
-
+        num_products = 2
         mock_list.return_value = [
             {"name": "llama2", "size": 1000000}
         ]  # Mock successful list response
@@ -139,7 +139,7 @@ class TestLocalLLMIntegration:
         # Test batch classification
         results = classify_products_batch(sample_products, method="local_llm")
 
-        assert len(results) == 2
+        assert len(results) == num_products
         assert results[0]["Category"] == "Dog Food"
         assert results[1]["Category"] == "Cat Supplies"
 
@@ -147,7 +147,7 @@ class TestLocalLLMIntegration:
     @patch("ollama.chat")
     @patch("src.core.classification.local_llm_classifier.LocalLLMProductClassifier._load_cache")
     @patch("src.core.classification.local_llm_classifier.LocalLLMProductClassifier._save_cache")
-    def test_caching_integration(
+    def test_caching_integration(  # noqa: PLR0913
         self,
         mock_save_cache,
         mock_load_cache,
@@ -263,14 +263,14 @@ class TestLocalLLMIntegration:
         """Test processing of large batches."""
         # Mock empty cache initially
         mock_load_cache.return_value = {}
-
+        batch_size = 10
         mock_list.return_value = [
             {"name": "llama2", "size": 1000000}
         ]  # Mock successful list response
         # Create large batch of products
         large_batch = [
             {"SKU": f"TEST{i:03d}", "Name": f"Product {i}", "Price": "9.99"}
-            for i in range(10)  # Smaller batch for testing
+            for i in range(batch_size)  # Smaller batch for testing
         ]
 
         # Mock batch response
@@ -287,7 +287,7 @@ class TestLocalLLMIntegration:
                                 "confidence": "high",
                                 "reasoning": "Test reasoning",
                             }
-                            for i in range(10)
+                            for i in range(batch_size)
                         ]
                     }
                 )
@@ -296,7 +296,7 @@ class TestLocalLLMIntegration:
         mock_chat.return_value = batch_response
 
         results = classify_products_batch(large_batch, method="local_llm")
-        assert len(results) == 10
+        assert len(results) == batch_size
 
     @patch("ollama.list")
     def test_ollama_availability_check(self, mock_list, sample_products):

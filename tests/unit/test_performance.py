@@ -3,6 +3,7 @@ Performance tests for validation framework
 """
 
 import os
+import threading
 import time
 
 import psutil
@@ -61,20 +62,28 @@ class TestValidationPerformance:
         memory_delta = final_memory - initial_memory
 
         # Performance assertions
-        assert elapsed_time < 300.0, f"Processing 5000 records took {elapsed_time:.2f}s (>5 min)"
-        assert memory_delta < 500.0, f"Memory usage increased by {memory_delta:.2f}MB (>500MB)"
+        max_processing_time = 300.0  # 5 minutes
+        max_memory_increase = 500.0  # 500MB
+        assert elapsed_time < max_processing_time, (
+            f"Processing 5000 records took {elapsed_time:.2f}s (>5 min)"
+        )
+        assert (
+            memory_delta < max_memory_increase
+        ), f"Memory usage increased by {memory_delta:.2f}MB (>500MB)"
 
         # Quality assertions
         avg_score = sum(results) / len(results)
-        high_quality_count = sum(1 for score in results if score >= 85.0)
+        quality_threshold = 85.0
+        high_quality_count = sum(1 for score in results if score >= quality_threshold)
 
-        assert avg_score >= 85.0, f"Average quality score too low: {avg_score:.2f}"
-        assert high_quality_count == len(results), (
-            f"Only {high_quality_count}/{len(results)} records are high quality"
-        )
+        assert avg_score >= quality_threshold, f"Average quality score too low: {avg_score:.2f}"
+        assert high_quality_count == len(
+            results
+        ), f"Only {high_quality_count}/{len(results)} records are high quality"
 
         print(
-            f"Performance results: {elapsed_time:.2f}s, {memory_delta:.2f}MB memory, avg score: {avg_score:.2f}"
+            f"Performance results: {elapsed_time:.2f}s, {memory_delta:.2f}MB memory, avg score:"
+            f" {avg_score:.2f}"
         )
 
     def test_memory_efficiency_under_load(self):
@@ -119,15 +128,17 @@ class TestValidationPerformance:
         memory_growth = final_memory - initial_memory
         peak_growth = max_memory - initial_memory
 
-        assert memory_growth < 50.0, f"Memory grew by {memory_growth:.2f}MB during test (>50MB)"
-        assert peak_growth < 100.0, f"Peak memory growth {peak_growth:.2f}MB (>100MB)"
+        max_memory_growth = 50.0  # MB
+        max_peak_growth = 100.0  # MB
+        assert (
+            memory_growth < max_memory_growth
+        ), f"Memory grew by {memory_growth:.2f}MB during test (>50MB)"
+        assert peak_growth < max_peak_growth, f"Peak memory growth {peak_growth:.2f}MB (>100MB)"
 
         print(f"Memory stability: growth {memory_growth:.2f}MB, peak {peak_growth:.2f}MB")
 
     def test_concurrent_performance_simulation(self):
         """Simulate concurrent validation scenarios."""
-        import threading
-
         scorer = DataQualityScorer()
         results = {}
         errors = []
@@ -183,7 +194,10 @@ class TestValidationPerformance:
         assert total_scores == num_workers * records_per_worker, "Not all records were scored"
 
         # Performance check
-        assert elapsed_time < 60.0, f"Concurrent processing took {elapsed_time:.2f}s (>1 min)"
+        max_concurrent_time = 60.0  # 1 minute
+        assert elapsed_time < max_concurrent_time, (
+            f"Concurrent processing took {elapsed_time:.2f}s (>1 min)"
+        )
 
         print(f"Concurrent performance: {elapsed_time:.2f}s for {total_scores} records")
 
@@ -221,8 +235,11 @@ def test_individual_scoring_speed():
     p95_time = sorted(times)[int(len(times) * 0.95)]
 
     # Performance thresholds
-    assert avg_time < 5.0, f"Average scoring time {avg_time:.2f}ms (>5ms)"
-    assert max_time < 20.0, f"Max scoring time {max_time:.2f}ms (>20ms)"
-    assert p95_time < 10.0, f"95th percentile {p95_time:.2f}ms (>10ms)"
+    max_avg_time = 5.0  # ms
+    max_max_time = 20.0  # ms
+    max_p95_time = 10.0  # ms
+    assert avg_time < max_avg_time, f"Average scoring time {avg_time:.2f}ms (>5ms)"
+    assert max_time < max_max_time, f"Max scoring time {max_time:.2f}ms (>20ms)"
+    assert p95_time < max_p95_time, f"95th percentile {p95_time:.2f}ms (>10ms)"
 
     print(f"Speed test: avg {avg_time:.2f}ms, max {max_time:.2f}ms, p95 {p95_time:.2f}ms")

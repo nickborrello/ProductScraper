@@ -8,25 +8,25 @@ PROJECT_ROOT = os.path.dirname(
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-import time
 import pickle
 import re
-import pandas as pd
+import time
+
 from dotenv import load_dotenv
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.options import Options
-from src.utils.scraping.scraping import clean_string, get_standard_chrome_options
-from src.utils.scraping.browser import create_browser
+from selenium.webdriver.support.ui import WebDriverWait
+
+from src.core.settings_manager import SettingsManager
 from src.utils.general.display import (
+    display_error,
     display_product_result,
     display_scraping_progress,
     display_scraping_summary,
-    display_error,
 )
-from src.core.settings_manager import SettingsManager
+from src.utils.scraping.browser import create_browser
+from src.utils.scraping.scraping import clean_string, get_standard_chrome_options
 
 load_dotenv()
 settings = SettingsManager()
@@ -38,7 +38,6 @@ BASE_SEARCH_URL = "https://www.orgill.com/SearchResultN.aspx?ddlhQ={SKU}"
 
 def init_browser(profile_suffix="default", headless=False):
     # Use standard Chrome options
-    from src.utils.scraping.scraping import get_standard_chrome_options
 
     chrome_options = get_standard_chrome_options(
         headless=headless, profile_suffix=profile_suffix
@@ -383,7 +382,7 @@ def scrape_single_product(SKU, driver, log_callback=None):
             # If content_count == 1, this shouldn't happen since it redirects to product page
             # but if it does, we can proceed with extraction
 
-        except Exception as e:
+        except Exception:
             # Content count element not found - this means we're likely on a product page
             # (since search results pages have the content count element)
             # Continue with product extraction
@@ -395,7 +394,7 @@ def scrape_single_product(SKU, driver, log_callback=None):
             )
 
             # Wait a bit longer and check if element has text content
-            for attempt in range(5):
+            for _attempt in range(5):
                 name_text = name_element.text.strip()
                 if name_text:
                     product_info["Name"] = clean_string(name_text)
@@ -410,7 +409,7 @@ def scrape_single_product(SKU, driver, log_callback=None):
                     product_info["Name"] = clean_string(name_text)
                 else:
                     product_info["Name"] = "N/A"  # Placeholder instead of failing
-        except Exception as e:
+        except Exception:
             product_info["Name"] = "N/A"  # Placeholder instead of failing
 
         try:
@@ -449,7 +448,7 @@ def scrape_single_product(SKU, driver, log_callback=None):
                 product_info["Name"] = re.sub(
                     r"\s{2,}", " ", product_info["Name"]
                 ).strip()
-        except Exception as e:
+        except Exception:
             # Model number is optional, don't display error for missing element
             pass
 
@@ -574,7 +573,7 @@ if __name__ == "__main__":
     else:
         # Run unit tests by default
         import unittest
-        from unittest.mock import Mock, MagicMock, patch, call
+        from unittest.mock import Mock, patch
 
         class TestOrgillScraper(unittest.TestCase):
             def setUp(self):
