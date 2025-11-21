@@ -75,7 +75,10 @@ class FailureAnalytics:
     """
 
     def __init__(
-        self, max_records: int = 10000, retention_days: int = 30, data_dir: str = "src/data/analytics"
+        self,
+        max_records: int = 10000,
+        retention_days: int = 30,
+        data_dir: str = "src/data/analytics",
     ):
         """
         Initialize the failure analytics system.

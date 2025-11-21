@@ -27,11 +27,10 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from src.ui.widgets import ActionCard, LogViewer, Worker
-
 # Conditional import for core logic to ensure GUI is runnable even if main fails.
 # Check scraper system preference
 from src.core.settings_manager import settings
+from src.ui.widgets import ActionCard, LogViewer, Worker
 
 scraper_system = settings.get("scraper_system", "new")
 
@@ -246,8 +245,6 @@ except ImportError as e:
             else:
                 log_callback("Error: ShopSite publish logic not found.")
         return False, "Error: ShopSite publish logic not found."
-
-
 
 
 class MainWindow(QMainWindow):
@@ -1399,12 +1396,14 @@ class MainWindow(QMainWindow):
         self.cancel_scraping_btn.setEnabled(False)  # Disable cancel button when worker finishes
         self.worker = None
 
+
 def main():
     """Main function to run the GUI application."""
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
+
 
 if __name__ == "__main__":
     main()

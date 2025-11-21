@@ -201,7 +201,6 @@ class ScraperIntegrationTester:
 
         return test_results
 
-
     def _print_test_summary(self, test_results: dict[str, Any]) -> None:
         """Print a summary of test results for a single scraper."""
         scraper = test_results["scraper"]
@@ -357,8 +356,6 @@ class TestScraperIntegration:
 
         # Print results for debugging
         print(f"Test result for {scraper_name}: {result['overall_success']}")
-
-
 
     @pytest.mark.integration
     def test_no_results_browser_response_simulation(self, tester):
