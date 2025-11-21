@@ -2,10 +2,10 @@
 """
 SQLite Query Interface for ShopSite Products Database
 """
-import json
+
 import os
 import sqlite3
-from typing import Any, Dict, List
+from typing import Any
 
 
 class ProductDatabase:
@@ -38,7 +38,7 @@ class ProductDatabase:
         cursor = self.conn.execute("SELECT COUNT(*) FROM products")
         return cursor.fetchone()[0]
 
-    def get_sample_fields(self) -> List[str]:
+    def get_sample_fields(self) -> list[str]:
         """Get list of available fields from database schema"""
         # Get column names from the database schema
         cursor = self.conn.execute("PRAGMA table_info(products)")
@@ -46,7 +46,7 @@ class ProductDatabase:
         # Return column names, excluding 'id' and 'last_updated'
         return [row[1] for row in columns_info if row[1] not in ["id", "last_updated"]]
 
-    def query_products(self, sql_query: str, limit: int = 50) -> List[Dict[str, Any]]:
+    def query_products(self, sql_query: str, limit: int = 50) -> list[dict[str, Any]]:
         """
         Execute a custom SQL query on the products table
         Returns list of dictionaries with product data
@@ -71,9 +71,7 @@ class ProductDatabase:
         except sqlite3.Error as e:
             raise Exception(f"SQL Error: {e}")
 
-    def search_products(
-        self, field: str, value: str, limit: int = 20
-    ) -> List[Dict[str, Any]]:
+    def search_products(self, field: str, value: str, limit: int = 20) -> list[dict[str, Any]]:
         """
         Search for products where a specific field contains a value
         """

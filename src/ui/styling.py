@@ -3,10 +3,9 @@
 import traceback
 from datetime import datetime
 
-from PyQt6.QtCore import QEventLoop, QObject, Qt, QThread, QTimer, pyqtSignal
+from PyQt6.QtCore import QEventLoop, QObject, QThread, QTimer, pyqtSignal
 from PyQt6.QtGui import QFont, QTextCursor
-from PyQt6.QtWidgets import (QApplication, QGroupBox, QPushButton, QTextEdit,
-                             QVBoxLayout)
+from PyQt6.QtWidgets import QApplication, QGroupBox, QPushButton, QTextEdit, QVBoxLayout
 
 # Professional color palette
 DARK_BACKGROUND = "#1e1e1e"
@@ -292,9 +291,7 @@ class LogViewer(QTextEdit):
         color = self.LOG_COLORS.get(level, TEXT_COLOR)
         icon = self.LOG_ICONS.get(level, "•")
 
-        formatted = (
-            f'<span style="color: {color}"><b>[{timestamp}]</b> {icon} {message}</span>'
-        )
+        formatted = f'<span style="color: {color}"><b>[{timestamp}]</b> {icon} {message}</span>'
         self.append(formatted)
 
         if self.auto_scroll:
@@ -311,7 +308,7 @@ class ActionCard(QGroupBox):
 
     def __init__(self, title, icon=""):
         super().__init__()
-        self.setTitle(f"{{icon}} {{title}}" if icon else title)
+        self.setTitle("{icon} {title}" if icon else title)
         self.setStyleSheet(
             f"""
             QGroupBox {{
@@ -338,7 +335,7 @@ class ActionCard(QGroupBox):
 
     def add_button(self, text, callback, tooltip="", icon=""):
         """Add a styled button to the card"""
-        button = QPushButton(f"{{icon}} {{text}}" if icon else text)
+        button = QPushButton("{icon} {text}" if icon else text)
         button.setMinimumHeight(40)
         button.setToolTip(tooltip)
         # The global stylesheet for QPushButton is good enough, but ActionCard buttons are special.
@@ -415,9 +412,7 @@ class Worker(QThread):
         # Inject progress and log callbacks into the target function's kwargs
         self.kwargs["progress_callback"] = self.signals.progress
         self.kwargs["log_callback"] = self.signals.log.emit
-        self.kwargs["editor_callback"] = (
-            self._request_editor_sync
-        )  # Inject sync editor callback
+        self.kwargs["editor_callback"] = self._request_editor_sync  # Inject sync editor callback
 
     def _request_editor_sync(self, products_list):
         """Request editor on main thread and wait for result (synchronous from worker's perspective)"""

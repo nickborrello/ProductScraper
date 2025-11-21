@@ -8,12 +8,9 @@ import logging
 import random
 import re
 import time
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
-from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait
 
 from src.core.adaptive_retry_strategy import AdaptiveRetryStrategy
 from src.core.captcha_solver import CaptchaSolver, CaptchaSolverConfig
@@ -33,16 +30,16 @@ class AntiDetectionConfig:
         enable_human_simulation: bool = True,
         enable_session_rotation: bool = True,
         enable_blocking_handling: bool = True,
-        captcha_selectors: Optional[List[str]] = None,
-        blocking_selectors: Optional[List[str]] = None,
-        rate_limiting_selectors: Optional[List[str]] = None,
-        rate_limiting_text_patterns: Optional[List[str]] = None,
+        captcha_selectors: list[str] | None = None,
+        blocking_selectors: list[str] | None = None,
+        rate_limiting_selectors: list[str] | None = None,
+        rate_limiting_text_patterns: list[str] | None = None,
         rate_limit_min_delay: float = 1.0,
         rate_limit_max_delay: float = 5.0,
         human_simulation_enabled: bool = True,
         session_rotation_interval: int = 100,
         max_retries_on_detection: int = 3,
-        captcha_solver_config: Optional[CaptchaSolverConfig] = None,
+        captcha_solver_config: CaptchaSolverConfig | None = None,
     ):
         self.enable_captcha_detection = enable_captcha_detection
         self.enable_rate_limiting = enable_rate_limiting
@@ -194,7 +191,7 @@ class AntiDetectionManager:
 
         logger.info("AntiDetectionManager initialized with enabled modules: %s", enabled_modules)
 
-    def pre_action_hook(self, action: str, params: Dict[str, Any], skip_rate_limit_check: bool = False) -> bool:
+    def pre_action_hook(self, action: str, params: dict[str, Any], skip_rate_limit_check: bool = False) -> bool:
         """
         Execute pre-action anti-detection measures.
 
@@ -249,7 +246,7 @@ class AntiDetectionManager:
             return False
 
     def post_action_hook(
-        self, action: str, params: Dict[str, Any], success: bool
+        self, action: str, params: dict[str, Any], success: bool
     ) -> None:
         """
         Execute post-action anti-detection measures.
@@ -469,7 +466,7 @@ class AntiDetectionManager:
 class CaptchaDetector:
     """Handles CAPTCHA detection and resolution."""
 
-    def __init__(self, config: AntiDetectionConfig, captcha_solver: Optional[CaptchaSolver] = None):
+    def __init__(self, config: AntiDetectionConfig, captcha_solver: CaptchaSolver | None = None):
         self.config = config
         self.captcha_solver = captcha_solver
 
@@ -592,14 +589,13 @@ class RateLimiter:
         if self.adaptive_config is not None:
             min_delay = self.adaptive_config.base_delay
             max_delay = self.adaptive_config.max_delay
+        # Use reduced delays in CI environment to prevent timeouts
+        elif is_ci:
+            min_delay = min(self.config.rate_limit_min_delay, 0.5)  # Cap at 0.5s
+            max_delay = min(self.config.rate_limit_max_delay, 2.0)  # Cap at 2.0s
         else:
-            # Use reduced delays in CI environment to prevent timeouts
-            if is_ci:
-                min_delay = min(self.config.rate_limit_min_delay, 0.5)  # Cap at 0.5s
-                max_delay = min(self.config.rate_limit_max_delay, 2.0)  # Cap at 2.0s
-            else:
-                min_delay = self.config.rate_limit_min_delay
-                max_delay = self.config.rate_limit_max_delay
+            min_delay = self.config.rate_limit_min_delay
+            max_delay = self.config.rate_limit_max_delay
 
         # Increase delay based on consecutive failures
         if self.consecutive_failures > 0:
@@ -639,7 +635,7 @@ class HumanBehaviorSimulator:
     def __init__(self, config: AntiDetectionConfig):
         self.config = config
 
-    def simulate_pre_action(self, action: str, params: Dict[str, Any]) -> None:
+    def simulate_pre_action(self, action: str, params: dict[str, Any]) -> None:
         """Simulate human behavior before an action."""
         if action == "click":
             # Random mouse movement before click
@@ -652,7 +648,7 @@ class HumanBehaviorSimulator:
             time.sleep(random.uniform(1, 3))
 
     def simulate_post_action(
-        self, action: str, params: Dict[str, Any], success: bool
+        self, action: str, params: dict[str, Any], success: bool
     ) -> None:
         """Simulate human behavior after an action."""
         if action == "navigate" and success:

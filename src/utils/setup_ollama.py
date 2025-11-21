@@ -5,10 +5,8 @@ Ollama Installation and Setup Script for ProductScraper
 This script helps install and configure Ollama for local LLM classification.
 """
 
-import os
 import platform
 import subprocess
-import sys
 from pathlib import Path
 
 import requests
@@ -17,7 +15,7 @@ import requests
 def run_command(command, shell=False):
     """Run a command and return success status."""
     try:
-        result = subprocess.run(command, shell=shell, capture_output=True, text=True)
+        result = subprocess.run(command, check=False, shell=shell, capture_output=True, text=True)
         return result.returncode == 0, result.stdout, result.stderr
     except Exception as e:
         return False, "", str(e)
@@ -152,17 +150,13 @@ def main():
             print("1. Run the downloaded installer")
             print("2. Start Ollama: ollama serve")
             print("3. Pull a model: ollama pull llama3.2")
-            print(
-                "4. Test in ProductScraper by selecting 'local_llm' classification method"
-            )
+            print("4. Test in ProductScraper by selecting 'local_llm' classification method")
 
     elif system == "linux":
         if install_ollama_linux():
             pull_default_model()
             print("\n📋 Next steps:")
-            print(
-                "1. Test in ProductScraper by selecting 'local_llm' classification method"
-            )
+            print("1. Test in ProductScraper by selecting 'local_llm' classification method")
 
     elif system == "darwin":  # macOS
         if install_ollama_macos():
@@ -170,18 +164,14 @@ def main():
             print("1. Run the downloaded installer")
             print("2. Ollama should start automatically")
             print("3. Pull a model: ollama pull llama3.2")
-            print(
-                "4. Test in ProductScraper by selecting 'local_llm' classification method"
-            )
+            print("4. Test in ProductScraper by selecting 'local_llm' classification method")
 
     else:
         print(f"❌ Unsupported platform: {system}")
         print("Please visit https://ollama.com/download for manual installation")
 
     print("\n📖 For more information, visit: https://ollama.com")
-    print(
-        "🔧 To use in ProductScraper: Set classification method to 'local_llm' in settings"
-    )
+    print("🔧 To use in ProductScraper: Set classification method to 'local_llm' in settings")
 
 
 if __name__ == "__main__":

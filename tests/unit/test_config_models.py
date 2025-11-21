@@ -1,13 +1,10 @@
 import os
 import sys
-from typing import Any, Dict
 
 import pytest
 
 # Add project root to sys.path
-PROJECT_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, PROJECT_ROOT)
 
 from src.scrapers.models.config import LoginConfig, ScraperConfig, SelectorConfig, WorkflowStep
@@ -18,10 +15,7 @@ class TestSelectorConfig:
 
     def test_init_minimal(self):
         """Test SelectorConfig initialization with minimal required fields."""
-        config = SelectorConfig(
-            name="test_selector",
-            selector=".test-class"
-        )
+        config = SelectorConfig(name="test_selector", selector=".test-class")
 
         assert config.name == "test_selector"
         assert config.selector == ".test-class"
@@ -31,10 +25,7 @@ class TestSelectorConfig:
     def test_init_full(self):
         """Test SelectorConfig initialization with all fields."""
         config = SelectorConfig(
-            name="price_selector",
-            selector=".price",
-            attribute="text",
-            multiple=True
+            name="price_selector", selector=".price", attribute="text", multiple=True
         )
 
         assert config.name == "price_selector"
@@ -45,9 +36,7 @@ class TestSelectorConfig:
     def test_init_with_attribute(self):
         """Test SelectorConfig with attribute field."""
         config = SelectorConfig(
-            name="image_selector",
-            selector="img.product-image",
-            attribute="src"
+            name="image_selector", selector="img.product-image", attribute="src"
         )
 
         assert config.name == "image_selector"
@@ -57,23 +46,10 @@ class TestSelectorConfig:
 
     def test_equality(self):
         """Test SelectorConfig equality."""
-        config1 = SelectorConfig(
-            name="test",
-            selector=".test",
-            attribute="text",
-            multiple=False
-        )
-        config2 = SelectorConfig(
-            name="test",
-            selector=".test",
-            attribute="text",
-            multiple=False
-        )
+        config1 = SelectorConfig(name="test", selector=".test", attribute="text", multiple=False)
+        config2 = SelectorConfig(name="test", selector=".test", attribute="text", multiple=False)
         config3 = SelectorConfig(
-            name="different",
-            selector=".test",
-            attribute="text",
-            multiple=False
+            name="different", selector=".test", attribute="text", multiple=False
         )
 
         assert config1 == config2
@@ -82,10 +58,7 @@ class TestSelectorConfig:
     def test_to_dict(self):
         """Test converting SelectorConfig to dictionary."""
         config = SelectorConfig(
-            name="test_selector",
-            selector=".test",
-            attribute="href",
-            multiple=True
+            name="test_selector", selector=".test", attribute="href", multiple=True
         )
 
         data = config.model_dump()
@@ -94,18 +67,13 @@ class TestSelectorConfig:
             "name": "test_selector",
             "selector": ".test",
             "attribute": "href",
-            "multiple": True
+            "multiple": True,
         }
         assert data == expected
 
     def test_from_dict(self):
         """Test creating SelectorConfig from dictionary."""
-        data = {
-            "name": "test_selector",
-            "selector": ".test",
-            "attribute": "href",
-            "multiple": True
-        }
+        data = {"name": "test_selector", "selector": ".test", "attribute": "href", "multiple": True}
 
         config = SelectorConfig(**data)
 
@@ -154,24 +122,17 @@ class TestWorkflowStep:
     def test_to_dict(self):
         """Test converting WorkflowStep to dictionary."""
         step = WorkflowStep(
-            action="extract",
-            params={"fields": ["name", "price"], "multiple": True}
+            action="extract", params={"fields": ["name", "price"], "multiple": True}
         )
 
         data = step.model_dump()
 
-        expected = {
-            "action": "extract",
-            "params": {"fields": ["name", "price"], "multiple": True}
-        }
+        expected = {"action": "extract", "params": {"fields": ["name", "price"], "multiple": True}}
         assert data == expected
 
     def test_from_dict(self):
         """Test creating WorkflowStep from dictionary."""
-        data = {
-            "action": "click",
-            "params": {"selector": ".button", "wait_after": 1}
-        }
+        data = {"action": "click", "params": {"selector": ".button", "wait_after": 1}}
 
         step = WorkflowStep(**data)
 
@@ -188,7 +149,7 @@ class TestLoginConfig:
             url="https://example.com/login",
             username_field="#username",
             password_field="#password",
-            submit_button="#submit"
+            submit_button="#submit",
         )
 
         assert config.url == "https://example.com/login"
@@ -204,7 +165,7 @@ class TestLoginConfig:
             username_field="#username",
             password_field="#password",
             submit_button="#submit",
-            success_indicator=".dashboard"
+            success_indicator=".dashboard",
         )
 
         assert config.url == "https://example.com/login"
@@ -217,20 +178,20 @@ class TestLoginConfig:
             username_field="#user",
             password_field="#pass",
             submit_button="#submit",
-            success_indicator=".success"
+            success_indicator=".success",
         )
         config2 = LoginConfig(
             url="https://test.com/login",
             username_field="#user",
             password_field="#pass",
             submit_button="#submit",
-            success_indicator=".success"
+            success_indicator=".success",
         )
         config3 = LoginConfig(
             url="https://different.com/login",
             username_field="#user",
             password_field="#pass",
-            submit_button="#submit"
+            submit_button="#submit",
         )
 
         assert config1 == config2
@@ -243,7 +204,7 @@ class TestLoginConfig:
             username_field="#username",
             password_field="#password",
             submit_button="#submit",
-            success_indicator=".welcome"
+            success_indicator=".welcome",
         )
 
         data = config.model_dump()
@@ -253,7 +214,7 @@ class TestLoginConfig:
             "username_field": "#username",
             "password_field": "#password",
             "submit_button": "#submit",
-            "success_indicator": ".welcome"
+            "success_indicator": ".welcome",
         }
         assert data == expected
 
@@ -264,7 +225,7 @@ class TestLoginConfig:
             "username_field": "#username",
             "password_field": "#password",
             "submit_button": "#submit",
-            "success_indicator": ".dashboard"
+            "success_indicator": ".dashboard",
         }
 
         config = LoginConfig(**data)
@@ -279,10 +240,7 @@ class TestScraperConfig:
 
     def test_init_minimal(self):
         """Test ScraperConfig initialization with minimal required fields."""
-        config = ScraperConfig(
-            name="Test Scraper",
-            base_url="https://example.com"
-        )
+        config = ScraperConfig(name="Test Scraper", base_url="https://example.com")
 
         assert config.name == "Test Scraper"
         assert config.base_url == "https://example.com"
@@ -298,17 +256,17 @@ class TestScraperConfig:
         """Test ScraperConfig initialization with all fields."""
         selectors = [
             SelectorConfig(name="title", selector=".title"),
-            SelectorConfig(name="price", selector=".price", attribute="text")
+            SelectorConfig(name="price", selector=".price", attribute="text"),
         ]
         workflows = [
             WorkflowStep(action="navigate", params={"url": "https://example.com"}),
-            WorkflowStep(action="extract", params={"fields": ["title", "price"]})
+            WorkflowStep(action="extract", params={"fields": ["title", "price"]}),
         ]
         login = LoginConfig(
             url="https://example.com/login",
             username_field="#user",
             password_field="#pass",
-            submit_button="#submit"
+            submit_button="#submit",
         )
         test_skus = ["SKU001", "SKU002"]
 
@@ -321,7 +279,7 @@ class TestScraperConfig:
             workflows=workflows,
             login=login,
             anti_detection=None,
-            test_skus=test_skus
+            test_skus=test_skus,
         )
 
         assert config.name == "Full Test Scraper"
@@ -336,19 +294,21 @@ class TestScraperConfig:
         """Test ScraperConfig with selectors and workflows."""
         selectors = [
             SelectorConfig(name="product_name", selector=".product-title", attribute="text"),
-            SelectorConfig(name="product_price", selector=".price", attribute="text", multiple=False)
+            SelectorConfig(
+                name="product_price", selector=".price", attribute="text", multiple=False
+            ),
         ]
         workflows = [
             WorkflowStep(action="navigate", params={"url": "https://example.com/products"}),
             WorkflowStep(action="wait_for", params={"selector": ".products", "timeout": 10}),
-            WorkflowStep(action="extract", params={"fields": ["product_name", "product_price"]})
+            WorkflowStep(action="extract", params={"fields": ["product_name", "product_price"]}),
         ]
 
         config = ScraperConfig(
             name="Product Scraper",
             base_url="https://example.com",
             selectors=selectors,
-            workflows=workflows
+            workflows=workflows,
         )
 
         assert len(config.selectors) == 2
@@ -358,22 +318,9 @@ class TestScraperConfig:
 
     def test_equality(self):
         """Test ScraperConfig equality."""
-        config1 = ScraperConfig(
-            name="Test",
-            base_url="https://example.com",
-            timeout=45,
-            retries=2
-        )
-        config2 = ScraperConfig(
-            name="Test",
-            base_url="https://example.com",
-            timeout=45,
-            retries=2
-        )
-        config3 = ScraperConfig(
-            name="Different",
-            base_url="https://example.com"
-        )
+        config1 = ScraperConfig(name="Test", base_url="https://example.com", timeout=45, retries=2)
+        config2 = ScraperConfig(name="Test", base_url="https://example.com", timeout=45, retries=2)
+        config3 = ScraperConfig(name="Different", base_url="https://example.com")
 
         assert config1 == config2
         assert config1 != config3
@@ -390,7 +337,7 @@ class TestScraperConfig:
             retries=2,
             selectors=selectors,
             workflows=workflows,
-            test_skus=["TEST001"]
+            test_skus=["TEST001"],
         )
 
         data = config.model_dump()
@@ -410,13 +357,9 @@ class TestScraperConfig:
             "base_url": "https://example.com",
             "timeout": 45,
             "retries": 2,
-            "selectors": [
-                {"name": "title", "selector": ".title", "attribute": "text"}
-            ],
-            "workflows": [
-                {"action": "navigate", "params": {"url": "https://example.com"}}
-            ],
-            "test_skus": ["TEST001", "TEST002"]
+            "selectors": [{"name": "title", "selector": ".title", "attribute": "text"}],
+            "workflows": [{"action": "navigate", "params": {"url": "https://example.com"}}],
+            "test_skus": ["TEST001", "TEST002"],
         }
 
         config = ScraperConfig(**data)
@@ -441,33 +384,21 @@ class TestScraperConfig:
         """Test field type validation."""
         # Invalid timeout type
         with pytest.raises(Exception):
-            ScraperConfig(
-                name="Test",
-                base_url="https://example.com",
-                timeout="not_a_number"
-            )
+            ScraperConfig(name="Test", base_url="https://example.com", timeout="not_a_number")
 
         # Invalid retries type
         with pytest.raises(Exception):
-            ScraperConfig(
-                name="Test",
-                base_url="https://example.com",
-                retries="not_a_number"
-            )
+            ScraperConfig(name="Test", base_url="https://example.com", retries="not_a_number")
 
     def test_selectors_validation(self):
         """Test selectors field validation."""
         # Valid selectors
         selectors = [
             SelectorConfig(name="valid", selector=".valid"),
-            SelectorConfig(name="another", selector="#another", attribute="href")
+            SelectorConfig(name="another", selector="#another", attribute="href"),
         ]
 
-        config = ScraperConfig(
-            name="Test",
-            base_url="https://example.com",
-            selectors=selectors
-        )
+        config = ScraperConfig(name="Test", base_url="https://example.com", selectors=selectors)
 
         assert len(config.selectors) == 2
 
@@ -476,14 +407,10 @@ class TestScraperConfig:
         workflows = [
             WorkflowStep(action="navigate", params={"url": "https://test.com"}),
             WorkflowStep(action="wait", params={"seconds": 2}),
-            WorkflowStep(action="extract", params={"fields": ["title"]})
+            WorkflowStep(action="extract", params={"fields": ["title"]}),
         ]
 
-        config = ScraperConfig(
-            name="Test",
-            base_url="https://example.com",
-            workflows=workflows
-        )
+        config = ScraperConfig(name="Test", base_url="https://example.com", workflows=workflows)
 
         assert len(config.workflows) == 3
 
@@ -493,14 +420,10 @@ class TestScraperConfig:
             url="https://example.com/login",
             username_field="#username",
             password_field="#password",
-            submit_button="#submit"
+            submit_button="#submit",
         )
 
-        config = ScraperConfig(
-            name="Test",
-            base_url="https://example.com",
-            login=login
-        )
+        config = ScraperConfig(name="Test", base_url="https://example.com", login=login)
 
         assert config.login is not None
         assert config.login.url == "https://example.com/login"
@@ -509,20 +432,13 @@ class TestScraperConfig:
         """Test test_skus field validation."""
         test_skus = ["SKU001", "SKU002", "SKU003"]
 
-        config = ScraperConfig(
-            name="Test",
-            base_url="https://example.com",
-            test_skus=test_skus
-        )
+        config = ScraperConfig(name="Test", base_url="https://example.com", test_skus=test_skus)
 
         assert config.test_skus == test_skus
 
     def test_empty_lists_defaults(self):
         """Test that empty lists are handled correctly."""
-        config = ScraperConfig(
-            name="Test",
-            base_url="https://example.com"
-        )
+        config = ScraperConfig(name="Test", base_url="https://example.com")
 
         assert config.selectors == []
         assert config.workflows == []
@@ -534,7 +450,7 @@ class TestScraperConfig:
             base_url="https://example.com",
             login=None,
             anti_detection=None,
-            test_skus=None
+            test_skus=None,
         )
 
         assert config.login is None

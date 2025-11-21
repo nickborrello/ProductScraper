@@ -50,9 +50,7 @@ def process_and_replace_image(path):
 def convert_all_images(folder):
     for root, _, files in os.walk(folder):
         for file in files:
-            if file.lower().endswith(
-                (".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tiff")
-            ):
+            if file.lower().endswith((".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tiff")):
                 process_and_replace_image(os.path.join(root, file))
 
 

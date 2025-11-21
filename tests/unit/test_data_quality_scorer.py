@@ -4,9 +4,11 @@ Unit tests for DataQualityScorer
 
 import pytest
 
-from src.core.data_quality_scorer import (DataQualityScorer,
-                                          is_product_high_quality,
-                                          score_product_data)
+from src.core.data_quality_scorer import (
+    DataQualityScorer,
+    is_product_high_quality,
+    score_product_data,
+)
 
 
 class TestDataQualityScorer:
@@ -120,9 +122,7 @@ class TestDataQualityScorer:
         """Test weight normalization to LB."""
         assert scorer._normalize_weight_to_lb("5 lb") == 5.0
         assert scorer._normalize_weight_to_lb("16 oz") == 1.0
-        assert scorer._normalize_weight_to_lb("2.2 kg") == pytest.approx(
-            4.8508, rel=1e-3
-        )
+        assert scorer._normalize_weight_to_lb("2.2 kg") == pytest.approx(4.8508, rel=1e-3)
         assert scorer._normalize_weight_to_lb("1000 g") == 2.20462
         assert scorer._normalize_weight_to_lb("invalid") is None
         assert scorer._normalize_weight_to_lb("") is None
@@ -155,9 +155,7 @@ class TestConvenienceFunctions:
         assert isinstance(score, float)
         assert isinstance(details, dict)
 
-    def test_is_product_high_quality(
-        self, sample_high_quality_record, sample_low_quality_record
-    ):
+    def test_is_product_high_quality(self, sample_high_quality_record, sample_low_quality_record):
         """Test is_product_high_quality function."""
         assert is_product_high_quality(sample_high_quality_record) is True
         assert is_product_high_quality(sample_low_quality_record) is False

@@ -1,8 +1,8 @@
 import logging
-from typing import Any, Dict, List
+from typing import Any
 
-from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.common.by import By
 
 from src.scrapers.actions.base import BaseAction
 from src.scrapers.actions.registry import ActionRegistry
@@ -10,11 +10,12 @@ from src.scrapers.exceptions import WorkflowExecutionError
 
 logger = logging.getLogger(__name__)
 
+
 @ActionRegistry.register("extract_single")
 class ExtractSingleAction(BaseAction):
     """Action to extract a single value using a selector."""
 
-    def execute(self, params: Dict[str, Any]) -> None:
+    def execute(self, params: dict[str, Any]) -> None:
         field_name = params.get("field")
         selector_name = params.get("selector")
 
@@ -25,9 +26,7 @@ class ExtractSingleAction(BaseAction):
 
         selector_config = self.executor.selectors.get(selector_name)
         if not selector_config:
-            raise WorkflowExecutionError(
-                f"Selector '{selector_name}' not found in config"
-            )
+            raise WorkflowExecutionError(f"Selector '{selector_name}' not found in config")
 
         try:
             element = self.executor.browser.driver.find_element(
@@ -40,11 +39,12 @@ class ExtractSingleAction(BaseAction):
             logger.warning(f"Element not found for field: {field_name}")
             self.executor.results[field_name] = None
 
+
 @ActionRegistry.register("extract_multiple")
 class ExtractMultipleAction(BaseAction):
     """Action to extract multiple values using a selector."""
 
-    def execute(self, params: Dict[str, Any]) -> None:
+    def execute(self, params: dict[str, Any]) -> None:
         field_name = params.get("field")
         selector_name = params.get("selector")
 
@@ -55,9 +55,7 @@ class ExtractMultipleAction(BaseAction):
 
         selector_config = self.executor.selectors.get(selector_name)
         if not selector_config:
-            raise WorkflowExecutionError(
-                f"Selector '{selector_name}' not found in config"
-            )
+            raise WorkflowExecutionError(f"Selector '{selector_name}' not found in config")
 
         try:
             elements = self.executor.browser.driver.find_elements(
@@ -76,11 +74,12 @@ class ExtractMultipleAction(BaseAction):
             logger.warning(f"Failed to extract multiple values for {field_name}: {e}")
             self.executor.results[field_name] = []
 
+
 @ActionRegistry.register("extract")
 class ExtractAction(BaseAction):
     """Action to extract multiple fields at once (legacy compatibility)."""
 
-    def execute(self, params: Dict[str, Any]) -> None:
+    def execute(self, params: dict[str, Any]) -> None:
         fields = params.get("fields", [])
         logger.debug(f"Starting extract action for fields: {fields}")
         for field_name in fields:

@@ -1,4 +1,3 @@
-import json
 import sys
 from pathlib import Path
 
@@ -7,9 +6,8 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from src.core.data_quality_scorer import DataQualityScorer, is_product_high_quality
 from src.scrapers.parser.yaml_parser import ScraperConfigParser
-from src.core.data_quality_scorer import (DataQualityScorer,
-                                          is_product_high_quality)
 
 
 def get_available_scrapers():
@@ -32,9 +30,6 @@ def get_test_skus(scraper_name: str):
     parser = ScraperConfigParser()
     config = parser.load_from_file(config_path)
     return config.test_skus or ["035585499741"]
-
-
-import pytest
 
 
 def test_data_quality_gate():
@@ -72,9 +67,9 @@ def test_data_quality_gate():
     )
 
     # Quality gate: at least 60% of test records should pass (allowing for incomplete mock data)
-    assert (
-        quality_rate >= 0.6
-    ), f"Quality gate failed: only {quality_rate:.1%} records pass validation"
+    assert quality_rate >= 0.6, (
+        f"Quality gate failed: only {quality_rate:.1%} records pass validation"
+    )
 
 
 def test_scraper_config_validation():
@@ -95,7 +90,9 @@ def test_scraper_config_validation():
         # Basic validation
         assert config.base_url, f"Scraper {scraper_name} missing base_url"
         assert config.workflows, f"Scraper {scraper_name} missing workflows"
-        assert isinstance(config.test_skus, list), f"Scraper {scraper_name} test_skus should be list"
+        assert isinstance(config.test_skus, list), (
+            f"Scraper {scraper_name} test_skus should be list"
+        )
 
         print(f"Test SKUs: {len(config.test_skus or [])} configured")
         print(f"Base URL: {config.base_url}")

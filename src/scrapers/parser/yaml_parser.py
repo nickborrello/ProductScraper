@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Union
 
 import yaml
 
@@ -17,16 +16,12 @@ class ScraperConfigParser:
     def _preprocess_config_dict(self, config_dict: dict) -> dict:
         """Preprocess configuration dictionary to handle complex types."""
         # Convert anti_detection dict to AntiDetectionConfig if present
-        if "anti_detection" in config_dict and isinstance(
-            config_dict["anti_detection"], dict
-        ):
-            config_dict["anti_detection"] = AntiDetectionConfig(
-                **config_dict["anti_detection"]
-            )
+        if "anti_detection" in config_dict and isinstance(config_dict["anti_detection"], dict):
+            config_dict["anti_detection"] = AntiDetectionConfig(**config_dict["anti_detection"])
 
         return config_dict
 
-    def load_from_file(self, file_path: Union[str, Path]) -> ScraperConfig:
+    def load_from_file(self, file_path: str | Path) -> ScraperConfig:
         """Load and parse a scraper configuration from a YAML file.
 
         Args:
@@ -45,7 +40,7 @@ class ScraperConfigParser:
         if not file_path.exists():
             raise FileNotFoundError(f"Configuration file not found: {file_path}")
 
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             config_dict = yaml.safe_load(f)
 
         # Preprocess anti_detection field if present
@@ -71,7 +66,7 @@ class ScraperConfigParser:
         config_dict = self._preprocess_config_dict(config_dict)
         return validate_config_dict(config_dict)
 
-    def save_to_file(self, config: ScraperConfig, file_path: Union[str, Path]) -> None:
+    def save_to_file(self, config: ScraperConfig, file_path: str | Path) -> None:
         """Save a ScraperConfig to a YAML file.
 
         Args:

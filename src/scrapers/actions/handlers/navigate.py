@@ -1,6 +1,6 @@
-import time
 import logging
-from typing import Any, Dict
+import time
+from typing import Any
 
 from src.scrapers.actions.base import BaseAction
 from src.scrapers.actions.registry import ActionRegistry
@@ -8,11 +8,12 @@ from src.scrapers.exceptions import WorkflowExecutionError
 
 logger = logging.getLogger(__name__)
 
+
 @ActionRegistry.register("navigate")
 class NavigateAction(BaseAction):
     """Action to navigate to a URL."""
 
-    def execute(self, params: Dict[str, Any]) -> None:
+    def execute(self, params: dict[str, Any]) -> None:
         url = params.get("url")
         if not url:
             raise WorkflowExecutionError("Navigate action requires 'url' parameter")

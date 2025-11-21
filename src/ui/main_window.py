@@ -4,14 +4,25 @@ import traceback
 from datetime import datetime
 from pathlib import Path
 
-from PyQt6.QtCore import QObject, QSize, Qt, QThread, QTimer, pyqtSignal
-from PyQt6.QtGui import QAction, QFont, QIcon, QTextCursor
-from PyQt6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
-                             QDialogButtonBox, QFileDialog, QFrame, QGroupBox,
-                             QHBoxLayout, QLabel, QMainWindow, QMenu, QMenuBar,
-                             QMessageBox, QProgressBar, QPushButton,
-                             QScrollArea, QSplitter, QStatusBar, QTextBrowser,
-                             QTextEdit, QVBoxLayout, QWidget)
+from PyQt6.QtCore import QObject, Qt, QThread, QTimer, pyqtSignal
+from PyQt6.QtGui import QAction, QFont, QTextCursor
+from PyQt6.QtWidgets import (
+    QCheckBox,
+    QDialog,
+    QFileDialog,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QMainWindow,
+    QMessageBox,
+    QProgressBar,
+    QPushButton,
+    QScrollArea,
+    QSplitter,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
 
 # Conditional import for core logic to ensure GUI is runnable even if main fails.
 # Check scraper system preference
@@ -25,15 +36,15 @@ try:
         # DEPRECATION WARNING: Using legacy system
         import warnings
 
-        from src.core.database.refresh import \
-            refresh_database_from_xml as \
-            run_db_refresh  # type: ignore[assignment]
-        from src.core.database.xml_import import \
-            import_from_shopsite_xml as \
-            run_shopsite_xml_download  # type: ignore[assignment]
-        from src.core.database.xml_import import \
-            publish_shopsite_changes as \
-            run_shopsite_publish  # type: ignore[assignment]
+        from src.core.database.refresh import (
+            refresh_database_from_xml as run_db_refresh,  # type: ignore[assignment]
+        )
+        from src.core.database.xml_import import (
+            import_from_shopsite_xml as run_shopsite_xml_download,  # type: ignore[assignment]
+        )
+        from src.core.database.xml_import import (
+            publish_shopsite_changes as run_shopsite_publish,  # type: ignore[assignment]
+        )
         from src.scrapers.main import run_scraping
 
         warnings.warn(
@@ -46,12 +57,11 @@ try:
     else:
         print("🚀 GUI using new modular scraper system...")
         # Import legacy functions for backward compatibility
-        from src.core.database.refresh import \
-            refresh_database_from_xml as run_db_refresh
-        from src.core.database.xml_import import \
-            import_from_shopsite_xml as run_shopsite_xml_download
-        from src.core.database.xml_import import \
-            publish_shopsite_changes as run_shopsite_publish
+        from src.core.database.refresh import refresh_database_from_xml as run_db_refresh
+        from src.core.database.xml_import import (
+            import_from_shopsite_xml as run_shopsite_xml_download,
+        )
+        from src.core.database.xml_import import publish_shopsite_changes as run_shopsite_publish
         from src.scrapers.main import run_scraping
 
     def run_scraper_tests(
@@ -228,9 +238,7 @@ class WorkerSignals(QObject):
     request_editor_sync = pyqtSignal(
         list, object, str
     )  # products_list, result_container, editor_type
-    request_confirmation_sync = pyqtSignal(
-        str, str, object
-    )  # title, text, result_container
+    request_confirmation_sync = pyqtSignal(str, str, object)  # title, text, result_container
 
 
 class Worker(QThread):
@@ -293,9 +301,7 @@ class Worker(QThread):
         result_container = {"result": None, "done": False}
 
         # Emit signal to main thread with products and result container
-        self.signals.request_editor_sync.emit(
-            products_list, result_container, editor_type
-        )
+        self.signals.request_editor_sync.emit(products_list, result_container, editor_type)
 
         # Wait for main thread to complete
         loop = QEventLoop()
@@ -394,9 +400,7 @@ class LogViewer(QTextEdit):
         color = self.LOG_COLORS.get(level, "#000000")
         icon = self.LOG_ICONS.get(level, "•")
 
-        formatted = (
-            f'<span style="color: {color}"><b>[{timestamp}]</b> {icon} {message}</span>'
-        )
+        formatted = f'<span style="color: {color}"><b>[{timestamp}]</b> {icon} {message}</span>'
         self.append(formatted)
 
         if self.auto_scroll:
@@ -509,9 +513,7 @@ class MainWindow(QMainWindow):
         except (ImportError, ModuleNotFoundError):
             print("CRITICAL: Could not import stylesheet. UI will be unstyled.")
             # Fallback to a very basic theme if the import fails
-            self.setStyleSheet(
-                "QMainWindow { background-color: #1e1e1e; color: #ffffff; }"
-            )
+            self.setStyleSheet("QMainWindow { background-color: #1e1e1e; color: #ffffff; }")
 
         # Initial status
         self.log_message("Application started successfully", "SUCCESS")
@@ -936,9 +938,7 @@ class MainWindow(QMainWindow):
         """Generic method to run a function in the worker thread"""
         self.progress_bar.setValue(0)
         self._set_buttons_enabled(False)
-        self.cancel_scraping_btn.setEnabled(
-            True
-        )  # Enable cancel button when worker starts
+        self.cancel_scraping_btn.setEnabled(True)  # Enable cancel button when worker starts
         self.update_status("Running...", "working")
 
         # Reset metrics labels
@@ -957,9 +957,7 @@ class MainWindow(QMainWindow):
         self.worker.signals.metrics.connect(self.update_metrics)
         self.worker.signals.error.connect(self.handle_error)
         self.worker.signals.finished.connect(self.worker_finished)
-        self.worker.signals.request_editor_sync.connect(
-            self.open_editor_on_main_thread_sync
-        )
+        self.worker.signals.request_editor_sync.connect(self.open_editor_on_main_thread_sync)
         self.worker.signals.request_confirmation_sync.connect(
             self.open_confirmation_on_main_thread_sync
         )
@@ -979,40 +977,30 @@ class MainWindow(QMainWindow):
         result_container["result"] = reply == QMessageBox.StandardButton.Yes
         result_container["done"] = True
 
-    def open_editor_on_main_thread_sync(
-        self, products_list, result_container, editor_type
-    ):
+    def open_editor_on_main_thread_sync(self, products_list, result_container, editor_type):
         """Open a specified editor on the main GUI thread (synchronous)."""
         if editor_type == "product":
-            from src.ui.product_editor import \
-                edit_products_in_batch as editor_func
+            from src.ui.product_editor import edit_products_in_batch as editor_func
 
             log_msg = "product editor"
         elif editor_type == "classification":
-            from src.core.classification.ui import \
-                edit_classification_in_batch as editor_func
+            from src.core.classification.ui import edit_classification_in_batch as editor_func
 
             log_msg = "classification editor"
         else:
-            self.log_message(
-                f"❌ Unknown editor type requested: {editor_type}", "ERROR"
-            )
+            self.log_message(f"❌ Unknown editor type requested: {editor_type}", "ERROR")
             result_container["result"] = None
             result_container["done"] = True
             return
 
-        self.log_message(
-            f"📝 Opening {log_msg} for {len(products_list)} products...", "INFO"
-        )
+        self.log_message(f"📝 Opening {log_msg} for {len(products_list)} products...", "INFO")
 
         try:
             # Open editor - this runs on the main thread so it's safe
             edited_products = editor_func(products_list)
 
             if edited_products:
-                self.log_message(
-                    f"✅ User edited {len(edited_products)} products", "SUCCESS"
-                )
+                self.log_message(f"✅ User edited {len(edited_products)} products", "SUCCESS")
                 result_container["result"] = edited_products
             else:
                 self.log_message("❌ User cancelled editing", "WARNING")
@@ -1130,18 +1118,14 @@ class MainWindow(QMainWindow):
 
         except Exception as e:
             self.log_message(f"Failed to get database statistics: {e}", "ERROR")
-            QMessageBox.critical(
-                self, "Error", f"Failed to get database statistics:\n{e}"
-            )
+            QMessageBox.critical(self, "Error", f"Failed to get database statistics:\n{e}")
 
     def classify_excel_file(self):
         """Classify products in an Excel file"""
         file_path = self.select_excel_file()
         if file_path:
             self.last_operation = "Classification"
-            self.log_message(
-                f"Starting classification for: {os.path.basename(file_path)}", "INFO"
-            )
+            self.log_message(f"Starting classification for: {os.path.basename(file_path)}", "INFO")
             self._run_worker(self.run_classification_worker, file_path)
 
     def run_classification_worker(
@@ -1157,7 +1141,6 @@ class MainWindow(QMainWindow):
         import pandas as pd
 
         from src.core.classification.manager import classify_products_batch
-        from src.core.classification.ui import edit_classification_in_batch
 
         # Determine log function
         if log_callback is None:
@@ -1200,9 +1183,7 @@ class MainWindow(QMainWindow):
                     "ProductDisabled": "Product Disabled",
                 }
             ).to_dict("records")
-            log(
-                f"Converted {len(products_for_classification)} products for classification"
-            )
+            log(f"Converted {len(products_for_classification)} products for classification")
 
             if progress_callback:
                 progress_callback.emit(40)
@@ -1213,9 +1194,7 @@ class MainWindow(QMainWindow):
             settings = SettingsManager()
             classification_method = settings.get("classification_method", "llm")
 
-            log(
-                f"Running automatic classification using {classification_method} method..."
-            )
+            log(f"Running automatic classification using {classification_method} method...")
             classified_products = classify_products_batch(
                 products_for_classification, method=classification_method
             )
@@ -1226,14 +1205,10 @@ class MainWindow(QMainWindow):
 
             log("Opening manual classification editor...")
             if editor_callback:
-                edited_products = editor_callback(
-                    classified_products, editor_type="classification"
-                )
+                edited_products = editor_callback(classified_products, editor_type="classification")
             else:
                 log("Editor callback not available, skipping manual edit.", "WARNING")
-                edited_products = (
-                    classified_products  # Proceed with auto-classified data
-                )
+                edited_products = classified_products  # Proceed with auto-classified data
 
             if edited_products is None:
                 log("Classification cancelled by user. No file will be saved.")
@@ -1271,9 +1246,7 @@ class MainWindow(QMainWindow):
             save_path = Path(file_path)
             if save_path.suffix.lower() == ".xls":
                 save_path = save_path.with_suffix(".xlsx")
-                log(
-                    f"Original was .xls, saving as .xlsx to preserve features: {save_path.name}"
-                )
+                log(f"Original was .xls, saving as .xlsx to preserve features: {save_path.name}")
 
             df.to_excel(save_path, index=False)
             log(f"Saved {len(df)} classified products back to: {save_path}")
@@ -1320,9 +1293,15 @@ class MainWindow(QMainWindow):
 
     def select_sites_dialog(self, available_sites):
         """Show dialog to select which sites to scrape"""
-        from PyQt6.QtWidgets import (QCheckBox, QDialog, QHBoxLayout, QLabel,
-                                     QListWidget, QListWidgetItem, QPushButton,
-                                     QVBoxLayout)
+        from PyQt6.QtWidgets import (
+            QDialog,
+            QHBoxLayout,
+            QLabel,
+            QListWidget,
+            QListWidgetItem,
+            QPushButton,
+            QVBoxLayout,
+        )
 
         dialog = QDialog(self)
         dialog.setWindowTitle("Select Scraping Sites")
@@ -1378,15 +1357,11 @@ class MainWindow(QMainWindow):
         buttons_layout = QHBoxLayout()
 
         select_all_btn = QPushButton("Select All")
-        select_all_btn.clicked.connect(
-            lambda: self._set_all_sites_checked(list_widget, True)
-        )
+        select_all_btn.clicked.connect(lambda: self._set_all_sites_checked(list_widget, True))
         buttons_layout.addWidget(select_all_btn)
 
         deselect_all_btn = QPushButton("Deselect All")
-        deselect_all_btn.clicked.connect(
-            lambda: self._set_all_sites_checked(list_widget, False)
-        )
+        deselect_all_btn.clicked.connect(lambda: self._set_all_sites_checked(list_widget, False))
         buttons_layout.addWidget(deselect_all_btn)
 
         layout.addLayout(buttons_layout)
@@ -1424,9 +1399,7 @@ class MainWindow(QMainWindow):
 
     def select_excel_file(self):
         """Open file dialog to select Excel file"""
-        project_root = os.path.dirname(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        )
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         file_path, _ = QFileDialog.getOpenFileName(
             self,
             "Select Excel File",
@@ -1453,23 +1426,18 @@ class MainWindow(QMainWindow):
             dialog.exec()
         except Exception as e:
             self.log_message(f"Failed to open add scraper dialog: {e}", "ERROR")
-            QMessageBox.critical(
-                self, "Error", f"Failed to open add scraper dialog:\n{e}"
-            )
+            QMessageBox.critical(self, "Error", f"Failed to open add scraper dialog:\n{e}")
 
     def manage_scrapers(self):
         """Open dialog to manage existing scraper configurations"""
         try:
-            from src.ui.scraper_management_dialog import \
-                ScraperManagementDialog
+            from src.ui.scraper_management_dialog import ScraperManagementDialog
 
             dialog = ScraperManagementDialog(self)
             dialog.exec()
         except Exception as e:
             self.log_message(f"Failed to open scraper management dialog: {e}", "ERROR")
-            QMessageBox.critical(
-                self, "Error", f"Failed to open scraper management dialog:\n{e}"
-            )
+            QMessageBox.critical(self, "Error", f"Failed to open scraper management dialog:\n{e}")
 
     def open_scraper_builder(self):
         """Open the scraper builder dialog"""
@@ -1480,9 +1448,7 @@ class MainWindow(QMainWindow):
             dialog.exec()
         except Exception as e:
             self.log_message(f"Failed to open scraper builder dialog: {e}", "ERROR")
-            QMessageBox.critical(
-                self, "Error", f"Failed to open scraper builder dialog:\n{e}"
-            )
+            QMessageBox.critical(self, "Error", f"Failed to open scraper builder dialog:\n{e}")
 
     def log_message(self, message, level="INFO"):
         """Add a message to the log viewer"""
@@ -1496,11 +1462,7 @@ class MainWindow(QMainWindow):
         elif message.startswith("⚠️"):
             level = "WARNING"
             message = message[2:].strip()
-        elif (
-            message.startswith("🔧")
-            or message.startswith("💾")
-            or message.startswith("🚀")
-        ):
+        elif message.startswith("🔧") or message.startswith("💾") or message.startswith("🚀"):
             level = "INFO"
             message = message[2:].strip()
 
@@ -1549,12 +1511,10 @@ class MainWindow(QMainWindow):
             self.db_product_count = db.get_product_count()
             db.disconnect()
 
-            self.db_status_label.setText(
-                f"🗄️ Database: {self.db_product_count:,} products"
-            )
+            self.db_status_label.setText(f"🗄️ Database: {self.db_product_count:,} products")
             self.status_db_label.setText(f"DB: {self.db_product_count:,} products")
 
-        except Exception as e:
+        except Exception:
             self.db_status_label.setText("🗄️ Database: Not available")
             self.status_db_label.setText("DB: Not available")
 
@@ -1631,21 +1591,15 @@ class MainWindow(QMainWindow):
             self.progress_bar.setValue(100)
             self.log_message(f"{self.last_operation} completed successfully", "SUCCESS")
             self.update_status("Ready", "ready")
-            self.last_operation_label.setText(
-                f"📋 Last Operation: {self.last_operation} (Success)"
-            )
+            self.last_operation_label.setText(f"📋 Last Operation: {self.last_operation} (Success)")
 
             # Update database stats after operations that might change it
             if self.last_operation in ["Database Refresh", "XML Download", "Scraping"]:
                 QTimer.singleShot(1000, self.update_database_stats)
         else:
             self.update_status("Ready", "ready")
-            self.last_operation_label.setText(
-                f"📋 Last Operation: {self.last_operation} (Failed)"
-            )
+            self.last_operation_label.setText(f"📋 Last Operation: {self.last_operation} (Failed)")
 
         self._set_buttons_enabled(True)
-        self.cancel_scraping_btn.setEnabled(
-            False
-        )  # Disable cancel button when worker finishes
+        self.cancel_scraping_btn.setEnabled(False)  # Disable cancel button when worker finishes
         self.worker = None

@@ -1,20 +1,22 @@
 import os
 import sys
-import tempfile
-from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 import yaml
 
 # Add project root to sys.path
-PROJECT_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, PROJECT_ROOT)
 
-from src.scrapers.models.config import ScraperConfig, SelectorConfig, WorkflowStep
-from src.scrapers.parser.yaml_parser import ScraperConfigParser
+from src.core.anti_detection_manager import AntiDetectionConfig  # noqa: E402
+from src.scrapers.models.config import ScraperConfig  # noqa: E402
+from src.scrapers.parser.yaml_parser import ScraperConfigParser  # noqa: E402
+
+# Constants
+TIMEOUT_DEFAULT = 30
+RETRIES_DEFAULT = 3
+EXPECTED_SELECTORS_COUNT = 2
+EXPECTED_WORKFLOWS_COUNT = 2
 
 
 @pytest.fixture
@@ -49,8 +51,8 @@ def sample_config_dict():
     return {
         "name": "Test Scraper",
         "base_url": "https://example.com",
-        "timeout": 30,
-        "retries": 3,
+        "timeout": TIMEOUT_DEFAULT,
+        "retries": RETRIES_DEFAULT,
         "selectors": [
             {
                 "name": "product_name",
@@ -62,18 +64,12 @@ def sample_config_dict():
                 "selector": ".price",
                 "attribute": "text",
                 "multiple": False,
-            }
+            },
         ],
         "workflows": [
-            {
-                "action": "navigate",
-                "params": {"url": "https://example.com/products"}
-            },
-            {
-                "action": "extract",
-                "params": {"fields": ["product_name", "price"]}
-            }
-        ]
+            {"action": "navigate", "params": {"url": "https://example.com/products"}},
+            {"action": "extract", "params": {"fields": ["product_name", "price"]}},
+        ],
     }
 
 
@@ -89,7 +85,7 @@ def config_with_anti_detection():
             "enable_human_simulation": True,
             "enable_session_rotation": True,
             "enable_blocking_handling": True,
-        }
+        },
     }
 
 
@@ -112,7 +108,6 @@ class TestScraperConfigParser:
 
     def test_preprocess_config_dict_with_anti_detection(self, config_with_anti_detection):
         """Test preprocessing config dict with anti-detection."""
-        from src.core.anti_detection_manager import AntiDetectionConfig
 
         parser = ScraperConfigParser()
 
@@ -136,10 +131,10 @@ class TestScraperConfigParser:
         assert isinstance(config, ScraperConfig)
         assert config.name == "Test Scraper"
         assert config.base_url == "https://example.com"
-        assert config.timeout == 30
-        assert config.retries == 3
-        assert len(config.selectors) == 2
-        assert len(config.workflows) == 2
+        assert config.timeout == TIMEOUT_DEFAULT
+        assert config.retries == RETRIES_DEFAULT
+        assert len(config.selectors) == EXPECTED_SELECTORS_COUNT
+        assert len(config.workflows) == EXPECTED_WORKFLOWS_COUNT
 
     def test_load_from_file_not_found(self):
         """Test loading from non-existent file."""
@@ -172,7 +167,9 @@ timeout: "not_a_number"  # Invalid timeout
         yaml_file.write_text(invalid_yaml)
 
         # Should raise validation error
-        with pytest.raises(Exception):  # Pydantic validation error
+        from pydantic import ValidationError  # noqa: PLC0415
+
+        with pytest.raises(ValidationError):
             parser.load_from_file(str(yaml_file))
 
     def test_load_from_string_success(self, sample_yaml_config):
@@ -184,8 +181,8 @@ timeout: "not_a_number"  # Invalid timeout
         assert isinstance(config, ScraperConfig)
         assert config.name == "Test Scraper"
         assert config.base_url == "https://example.com"
-        assert len(config.selectors) == 2
-        assert len(config.workflows) == 2
+        assert len(config.selectors) == EXPECTED_SELECTORS_COUNT
+        assert len(config.workflows) == EXPECTED_WORKFLOWS_COUNT
 
     def test_load_from_string_invalid_yaml(self):
         """Test loading from invalid YAML string."""
@@ -219,7 +216,9 @@ selectors:
         """Test loading from empty YAML string."""
         parser = ScraperConfigParser()
 
-        with pytest.raises(TypeError):  # yaml.safe_load("") returns None, causing TypeError in preprocess
+        with pytest.raises(
+            TypeError
+        ):  # yaml.safe_load("") returns None, causing TypeError in preprocess
             parser.load_from_string("")
 
     def test_save_to_file_success(self, sample_config_dict, tmp_path):
@@ -246,11 +245,11 @@ selectors:
         config = ScraperConfig(
             name="Test",
             base_url="https://example.com",
-            timeout=30,
-            retries=3,
+            timeout=TIMEOUT_DEFAULT,
+            retries=RETRIES_DEFAULT,
             login=None,
             anti_detection=None,
-            test_skus=None
+            test_skus=None,
         )
 
         nested_dir = tmp_path / "nested" / "deep" / "path"
@@ -268,11 +267,11 @@ selectors:
         config = ScraperConfig(
             name="Test",
             base_url="https://example.com",
-            timeout=30,
-            retries=3,
+            timeout=TIMEOUT_DEFAULT,
+            retries=RETRIES_DEFAULT,
             login=None,
             anti_detection=None,
-            test_skus=None
+            test_skus=None,
         )
 
         yaml_file = tmp_path / "config.yaml"
@@ -283,7 +282,7 @@ selectors:
         parser.save_to_file(config, str(yaml_file))
 
         # Verify it was overwritten
-        with open(yaml_file, "r") as f:
+        with open(yaml_file) as f:
             content = f.read()
             assert "name:" in content
             assert "initial:" not in content
@@ -338,8 +337,8 @@ base_url: "https://example.com"
 
         assert config.name == "Minimal Scraper"
         assert config.base_url == "https://example.com"
-        assert config.timeout == 30  # default
-        assert config.retries == 3   # default
+        assert config.timeout == TIMEOUT_DEFAULT  # default
+        assert config.retries == RETRIES_DEFAULT  # default
         assert config.selectors == []  # default
         assert config.workflows == []  # default
 
@@ -391,11 +390,11 @@ test_skus:
         config = ScraperConfig(
             name="Test",
             base_url="https://example.com",
-            timeout=30,
-            retries=3,
+            timeout=TIMEOUT_DEFAULT,
+            retries=RETRIES_DEFAULT,
             login=None,
             anti_detection=None,
-            test_skus=None
+            test_skus=None,
         )
 
         yaml_file = tmp_path / "output.yaml"

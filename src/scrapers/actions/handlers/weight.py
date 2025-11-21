@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import Any, Dict
+from typing import Any
 
 from src.scrapers.actions.base import BaseAction
 from src.scrapers.actions.registry import ActionRegistry
@@ -8,14 +8,15 @@ from src.scrapers.exceptions import WorkflowExecutionError
 
 logger = logging.getLogger(__name__)
 
+
 @ActionRegistry.register("parse_weight")
 class ParseWeightAction(BaseAction):
     """Action to parse and normalize weight strings."""
 
-    def execute(self, params: Dict[str, Any]) -> None:
+    def execute(self, params: dict[str, Any]) -> None:
         field = params.get("field")
-        target_unit = params.get("target_unit", "lb") # lb, kg, oz, g
-        
+        target_unit = params.get("target_unit", "lb")  # lb, kg, oz, g
+
         if not field:
             raise WorkflowExecutionError("Parse_weight requires 'field' parameter")
 
@@ -30,7 +31,7 @@ class ParseWeightAction(BaseAction):
         if match:
             value = float(match.group(1))
             unit = match.group(2).lower()
-            
+
             # Normalize unit
             if unit in ["lbs", "lb", "pound", "pounds"]:
                 normalized_unit = "lb"
@@ -58,7 +59,7 @@ class ParseWeightAction(BaseAction):
                     grams = value * 28.3495
                 elif normalized_unit == "g":
                     grams = value
-                
+
                 # Convert from grams to target
                 if target_unit == "lb":
                     converted_value = grams / 453.592
@@ -68,7 +69,7 @@ class ParseWeightAction(BaseAction):
                     converted_value = grams / 28.3495
                 elif target_unit == "g":
                     converted_value = grams
-            
+
             self.executor.results[field] = f"{converted_value:.2f} {target_unit}"
             logger.debug(f"Parsed weight: {raw_weight} -> {self.executor.results[field]}")
         else:

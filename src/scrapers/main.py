@@ -8,26 +8,18 @@ It replaces the legacy archived scraper system.
 import os
 import sys
 import warnings
-from typing import List, Optional
 
 # Ensure project root is in path
-project_root = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 import os
 
 from src.core.database.refresh import refresh_database_from_xml
-from src.scrapers.executor.workflow_executor import WorkflowExecutor
-from src.scrapers.models.config import ScraperConfig
-from src.scrapers.parser.yaml_parser import ScraperConfigParser
 
 
-def run_scraping(
-    file_path: str, selected_sites: Optional[List[str]] = None, **kwargs
-) -> None:
+def run_scraping(file_path: str, selected_sites: list[str] | None = None, **kwargs) -> None:
     """
     Run scraping using the new modular scraper system.
 
@@ -44,15 +36,9 @@ def run_scraping(
 
     if os.path.exists(config_dir):
         for filename in os.listdir(config_dir):
-            if (
-                filename.endswith((".yaml", ".yml"))
-                and filename != "sample_config.yaml"
-            ):
+            if filename.endswith((".yaml", ".yml")) and filename != "sample_config.yaml":
                 site_name = (
-                    filename.replace(".yaml", "")
-                    .replace(".yml", "")
-                    .replace("_", " ")
-                    .title()
+                    filename.replace(".yaml", "").replace(".yml", "").replace("_", " ").title()
                 )
                 available_sites.append(site_name)
 
@@ -67,8 +53,7 @@ def run_scraping(
         available_sites = [
             site
             for site in available_sites
-            if site.lower().replace(" ", "")
-            in [s.lower().replace(" ", "") for s in selected_sites]
+            if site.lower().replace(" ", "") in [s.lower().replace(" ", "") for s in selected_sites]
         ]
         if not available_sites:
             print(f"❌ None of the selected sites are available: {selected_sites}")
@@ -84,7 +69,7 @@ def run_scraping(
     print("📖 See docs/SCRAPER_CONFIGURATION_GUIDE.md for configuration details")
 
 
-def get_available_scrapers() -> List[str]:
+def get_available_scrapers() -> list[str]:
     """
     Get list of available scraper configurations.
 
@@ -96,15 +81,9 @@ def get_available_scrapers() -> List[str]:
 
     if os.path.exists(config_dir):
         for filename in os.listdir(config_dir):
-            if (
-                filename.endswith((".yaml", ".yml"))
-                and filename != "sample_config.yaml"
-            ):
+            if filename.endswith((".yaml", ".yml")) and filename != "sample_config.yaml":
                 site_name = (
-                    filename.replace(".yaml", "")
-                    .replace(".yml", "")
-                    .replace("_", " ")
-                    .title()
+                    filename.replace(".yaml", "").replace(".yml", "").replace("_", " ").title()
                 )
                 scrapers.append(site_name)
 
@@ -113,7 +92,8 @@ def get_available_scrapers() -> List[str]:
     if os.path.exists(passing_file):
         try:
             import json
-            with open(passing_file, 'r') as f:
+
+            with open(passing_file) as f:
                 passing_scrapers = json.load(f)
             # Normalize names for comparison
             passing_normalized = [s.lower().replace(" ", "") for s in passing_scrapers]
@@ -147,12 +127,8 @@ def run_db_refresh(progress_callback=None, log_callback=None) -> tuple[bool, str
         Tuple of (success, message)
     """
     # Find the XML file path
-    project_root = os.path.dirname(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    )
-    xml_path = os.path.join(
-        project_root, "data", "databases", "shopsite_products_cleaned.xml"
-    )
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    xml_path = os.path.join(project_root, "data", "databases", "shopsite_products_cleaned.xml")
 
     if progress_callback:
         try:

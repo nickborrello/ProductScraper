@@ -24,16 +24,18 @@ Usage in master.py:
     reviewed_products = edit_products_in_batch(classified_products)
 """
 
-from src.core.classification.manager import (RECOMMEND_COLS,
-                                             classify_products_batch,
-                                             classify_single_product)
+from src.core.classification.manager import (
+    RECOMMEND_COLS,
+    classify_products_batch,
+    classify_single_product,
+)
 
 from .product_editor import edit_products_in_batch, product_editor_interactive
 
 __all__ = [
+    "RECOMMEND_COLS",
     "classify_products_batch",
     "classify_single_product",
-    "product_editor_interactive",
     "edit_products_in_batch",
-    "RECOMMEND_COLS",
+    "product_editor_interactive",
 ]

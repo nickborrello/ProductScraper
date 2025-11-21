@@ -6,17 +6,27 @@ on web pages to automatically generate CSS selectors.
 """
 
 import json
-from typing import Any, Callable, Dict, Optional
+from typing import Any
 
-from PyQt6.QtCore import Qt, QTimer, QUrl, pyqtSignal
+from PyQt6.QtCore import Qt, QUrl, pyqtSignal
 from PyQt6.QtGui import QFont
-from PyQt6.QtWidgets import (QComboBox, QGroupBox, QHBoxLayout, QLabel,
-                             QLineEdit, QMessageBox, QProgressBar, QPushButton,
-                             QSplitter, QTextEdit, QVBoxLayout, QWidget)
+from PyQt6.QtWidgets import (
+    QComboBox,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QProgressBar,
+    QPushButton,
+    QSplitter,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
 
 try:
-    from PyQt6.QtWebEngineWidgets import (QWebEnginePage,  # type: ignore
-                                          QWebEngineView)
+    from PyQt6.QtWebEngineWidgets import QWebEnginePage, QWebEngineView  # type: ignore
 except ImportError:
     # PyQt6-WebEngine not available
     QWebEngineView = None
@@ -29,9 +39,7 @@ class VisualSelectorPicker(QWidget):
     # Signals
     selector_selected = pyqtSignal(str, str, str)  # selector, attribute, field_name
     page_loaded = pyqtSignal()
-    selector_validated = pyqtSignal(
-        str, bool, str
-    )  # selector, is_valid, extracted_value
+    selector_validated = pyqtSignal(str, bool, str)  # selector, is_valid, extracted_value
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -401,9 +409,7 @@ class VisualSelectorPicker(QWidget):
         script = "window.startSelection();"
         self.web_view.page().runJavaScript(script)
         self.select_mode_btn.setText("⏹️ Stop Selection")
-        self.element_info.setPlainText(
-            "Click on elements in the web page to select them..."
-        )
+        self.element_info.setPlainText("Click on elements in the web page to select them...")
 
     def stop_selection_mode(self):
         """Stop element selection mode."""
@@ -494,7 +500,7 @@ class VisualSelectorPicker(QWidget):
         self.url_input.setText(url)
         self.load_page()
 
-    def get_current_selector_info(self) -> Optional[Dict[str, Any]]:
+    def get_current_selector_info(self) -> dict[str, Any] | None:
         """Get information about the currently selected element."""
         return self.selected_element_info
 
@@ -524,7 +530,7 @@ class SelectorJavaScriptBridge(QWidget if QWebEnginePage is None else QWebEngine
 
 
 # Integration helper functions
-def generate_css_selector(element_info: Dict[str, Any]) -> str:
+def generate_css_selector(element_info: dict[str, Any]) -> str:
     """Generate a CSS selector from element information."""
     # This is a simplified version - the JavaScript version is more sophisticated
     tag = element_info.get("tagName", "div")
@@ -543,7 +549,7 @@ def generate_css_selector(element_info: Dict[str, Any]) -> str:
 
 def validate_selector_on_page(
     html_content: str, selector: str, attribute: str = "text"
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Validate a selector against HTML content."""
     try:
         from bs4 import BeautifulSoup

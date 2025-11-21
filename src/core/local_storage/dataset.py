@@ -3,9 +3,8 @@ Local dataset implementation for storing data items as JSON files.
 """
 
 import json
-import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 
 class LocalDataset:
@@ -35,13 +34,13 @@ class LocalDataset:
         self._cache = []
         for json_file in sorted(self.storage_dir.glob("*.json")):
             try:
-                with open(json_file, "r", encoding="utf-8") as f:
+                with open(json_file, encoding="utf-8") as f:
                     data = json.load(f)
                     self._cache.append(data)
-            except (json.JSONDecodeError, IOError):
+            except (OSError, json.JSONDecodeError):
                 continue
 
-    def push_data(self, data: Union[Dict[str, Any], List[Dict[str, Any]]]):
+    def push_data(self, data: dict[str, Any] | list[dict[str, Any]]):
         """
         Push data to the dataset.
 
@@ -65,9 +64,7 @@ class LocalDataset:
             # Add to cache
             self._cache.append(item)
 
-    def get_data(
-        self, limit: Optional[int] = None, offset: int = 0
-    ) -> List[Dict[str, Any]]:
+    def get_data(self, limit: int | None = None, offset: int = 0) -> list[dict[str, Any]]:
         """
         Get data from the dataset.
 
@@ -83,7 +80,7 @@ class LocalDataset:
             data = data[:limit]
         return data
 
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         """
         Get dataset information.
 

@@ -13,13 +13,12 @@ from tkinter import filedialog
 import pandas as pd
 
 # Add project root to path
-PROJECT_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from src.core.classification.manager import classify_products_batch
+
 # Import classification functions
 from src.core.classification.ui import edit_classification_in_batch
 from src.core.settings_manager import SettingsManager
@@ -86,9 +85,7 @@ def classify_excel_file():
         settings = SettingsManager()
         classification_method = settings.get("classification_method", "llm")
 
-        print(
-            f"🤖 Running automatic classification using {classification_method} method..."
-        )
+        print(f"🤖 Running automatic classification using {classification_method} method...")
         classified_products = classify_products_batch(
             products_for_classification, method=classification_method
         )
@@ -139,9 +136,7 @@ def classify_excel_file():
         # Always save as .xlsx for compatibility, even if original was .xls
         if save_path.suffix.lower() == ".xls":
             save_path = save_path.with_suffix(".xlsx")
-            print(
-                f"📝 Original was .xls, saving as .xlsx to preserve features: {save_path.name}"
-            )
+            print(f"📝 Original was .xls, saving as .xlsx to preserve features: {save_path.name}")
 
         df.to_excel(save_path, index=False)
 

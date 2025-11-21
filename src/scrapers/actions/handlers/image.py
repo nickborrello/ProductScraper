@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import Any, Dict, List
+from typing import Any
 
 from src.scrapers.actions.base import BaseAction
 from src.scrapers.actions.registry import ActionRegistry
@@ -8,11 +8,12 @@ from src.scrapers.exceptions import WorkflowExecutionError
 
 logger = logging.getLogger(__name__)
 
+
 @ActionRegistry.register("process_images")
 class ProcessImagesAction(BaseAction):
     """Action to process, filter, and upgrade image URLs."""
 
-    def execute(self, params: Dict[str, Any]) -> None:
+    def execute(self, params: dict[str, Any]) -> None:
         field = params.get("field")
         if not field:
             raise WorkflowExecutionError("Process_images requires 'field' parameter")
@@ -28,11 +29,11 @@ class ProcessImagesAction(BaseAction):
         # 1. Quality Upgrades (URL Transformation)
         upgrade_patterns = params.get("quality_patterns", [])
         processed_images = []
-        
+
         for img_url in images:
             if not img_url:
                 continue
-                
+
             new_url = img_url
             for pattern in upgrade_patterns:
                 regex = pattern.get("regex")
@@ -42,7 +43,7 @@ class ProcessImagesAction(BaseAction):
                         new_url = re.sub(regex, replacement, new_url)
                     except Exception as e:
                         logger.warning(f"Regex error in image upgrade: {e}")
-            
+
             processed_images.append(new_url)
 
         # 2. Filtering

@@ -6,7 +6,7 @@ import json
 import os
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import ollama
 
@@ -30,7 +30,7 @@ except ImportError:
         # Last resort - try to load from settings.json directly
         config_path = Path(__file__).parent.parent.parent.parent / "settings.json"
         if config_path.exists():
-            with open(config_path, "r") as f:
+            with open(config_path) as f:
                 _config = json.load(f)
                 _ollama_model = _config.get("ollama_model", OLLAMA_MODEL)
         else:
@@ -45,8 +45,8 @@ class LocalLLMProductClassifier:
         self,
         model_name: str = None,
         cache_file: Path = None,
-        product_taxonomy: Dict[str, List[str]] = None,
-        product_pages: List[str] = None,
+        product_taxonomy: dict[str, list[str]] = None,
+        product_pages: list[str] = None,
     ):
         # Try to get model name from settings first, then parameter, then environment, then default
         if model_name is None:
@@ -60,9 +60,7 @@ class LocalLLMProductClassifier:
         self.model_name = model_name or OLLAMA_MODEL
         self.conversation_history = []
         self.classification_cache = {}  # Cache for classifications
-        self.cache_file = (
-            cache_file or Path.home() / ".cache" / "productscraper_ollama_cache.json"
-        )
+        self.cache_file = cache_file or Path.home() / ".cache" / "productscraper_ollama_cache.json"
         self.cache_file.parent.mkdir(parents=True, exist_ok=True)
         self._load_cache()
 
@@ -74,8 +72,7 @@ class LocalLLMProductClassifier:
                 self.product_taxonomy = get_product_taxonomy()
             except ImportError:
                 try:
-                    from src.core.classification.taxonomy_manager import \
-                        get_product_taxonomy
+                    from src.core.classification.taxonomy_manager import get_product_taxonomy
 
                     self.product_taxonomy = get_product_taxonomy()
                 except ImportError:
@@ -133,10 +130,11 @@ class LocalLLMProductClassifier:
         """Initialize conversation with taxonomy and instructions."""
         try:
             from src.core.classification.manager import (
-                UNIFIED_SINGLE_PRODUCT_JSON_FORMAT, UNIFIED_SYSTEM_PROMPT)
+                UNIFIED_SINGLE_PRODUCT_JSON_FORMAT,
+                UNIFIED_SYSTEM_PROMPT,
+            )
         except ImportError:
-            from .manager import (UNIFIED_SINGLE_PRODUCT_JSON_FORMAT,
-                                  UNIFIED_SYSTEM_PROMPT)
+            from .manager import UNIFIED_SINGLE_PRODUCT_JSON_FORMAT, UNIFIED_SYSTEM_PROMPT
 
         # Create comprehensive system prompt
         taxonomy_text = "PRODUCT TAXONOMY:\n"
@@ -150,15 +148,13 @@ class LocalLLMProductClassifier:
         )
 
         system_prompt = (
-            UNIFIED_SYSTEM_PROMPT.format(
-                taxonomy_text=taxonomy_text, pages_text=pages_text
-            )
+            UNIFIED_SYSTEM_PROMPT.format(taxonomy_text=taxonomy_text, pages_text=pages_text)
             + UNIFIED_SINGLE_PRODUCT_JSON_FORMAT
         )
 
         self.conversation_history = [{"role": "system", "content": system_prompt}]
 
-    def _call_ollama(self, messages: List[Dict], max_retries: int = 3) -> Optional[str]:
+    def _call_ollama(self, messages: list[dict], max_retries: int = 3) -> str | None:
         """Call Ollama API with retry logic."""
         for attempt in range(max_retries):
             try:
@@ -178,9 +174,7 @@ class LocalLLMProductClassifier:
 
         return None
 
-    def classify_product(
-        self, product_name: str, product_brand: str = ""
-    ) -> Dict[str, str]:
+    def classify_product(self, product_name: str, product_brand: str = "") -> dict[str, str]:
         """
         Classify a single product using local LLM with caching.
 
@@ -205,7 +199,7 @@ class LocalLLMProductClassifier:
                 self._save_cache()
 
         # Create user prompt
-        user_prompt = f"Classify this product:\n"
+        user_prompt = "Classify this product:\n"
         if product_brand:
             user_prompt += f"Brand: {product_brand}\n"
         user_prompt += f"Name: {product_name}"
@@ -233,8 +227,8 @@ class LocalLLMProductClassifier:
         return result
 
     def classify_products_batch(
-        self, products: List[Dict[str, str]], batch_size: int = 15
-    ) -> List[Dict[str, str]]:
+        self, products: list[dict[str, str]], batch_size: int = 15
+    ) -> list[dict[str, str]]:
         """
         Classify multiple products in batch using efficient API calls.
 
@@ -245,9 +239,7 @@ class LocalLLMProductClassifier:
         Returns:
             List of classification results
         """
-        print(
-            f"🤖 Batch classifying {len(products)} products (batch size: {batch_size})..."
-        )
+        print(f"🤖 Batch classifying {len(products)} products (batch size: {batch_size})...")
 
         # Filter out products without names
         valid_products = []
@@ -258,29 +250,21 @@ class LocalLLMProductClassifier:
                 valid_indices.append(i)
 
         if not valid_products:
-            return [
-                {"category": "", "product_type": "", "product_on_pages": ""}
-                for _ in products
-            ]
+            return [{"category": "", "product_type": "", "product_on_pages": ""} for _ in products]
 
         # Use efficient batch processing
-        valid_results = self.classify_products_batch_efficient(
-            valid_products, batch_size
-        )
+        valid_results = self.classify_products_batch_efficient(valid_products, batch_size)
 
         # Reconstruct full results list with empty results for invalid products
-        results = [
-            {"category": "", "product_type": "", "product_on_pages": ""}
-            for _ in products
-        ]
+        results = [{"category": "", "product_type": "", "product_on_pages": ""} for _ in products]
         for idx, result in zip(valid_indices, valid_results):
             results[idx] = result
 
         return results
 
     def classify_products_batch_efficient(
-        self, products: List[Dict[str, Any]], batch_size: int = 15
-    ) -> List[Dict[str, str]]:
+        self, products: list[dict[str, Any]], batch_size: int = 15
+    ) -> list[dict[str, str]]:
         """
         Efficiently classify multiple products using batch API calls.
 
@@ -305,16 +289,13 @@ class LocalLLMProductClassifier:
 
         return results
 
-    def _classify_batch_ollama_call(
-        self, products: List[Dict[str, Any]]
-    ) -> List[Dict[str, str]]:
+    def _classify_batch_ollama_call(self, products: list[dict[str, Any]]) -> list[dict[str, str]]:
         """Make a single API call for multiple products."""
         if not products:
             return []
 
         try:
-            from src.core.classification.manager import \
-                UNIFIED_BATCH_JSON_FORMAT
+            from src.core.classification.manager import UNIFIED_BATCH_JSON_FORMAT
         except ImportError:
             from .manager import UNIFIED_BATCH_JSON_FORMAT
 
@@ -337,9 +318,7 @@ class LocalLLMProductClassifier:
         batch_prompt += UNIFIED_BATCH_JSON_FORMAT
 
         # Construct messages for this specific call to keep it stateless and manage token usage
-        messages_for_call = self.conversation_history[
-            :1
-        ]  # Start with just the system prompt
+        messages_for_call = self.conversation_history[:1]  # Start with just the system prompt
         messages_for_call.append({"role": "user", "content": batch_prompt})
 
         # Call Ollama
@@ -347,10 +326,7 @@ class LocalLLMProductClassifier:
 
         if not response:
             # Return empty results for all products in batch
-            return [
-                {"category": "", "product_type": "", "product_on_pages": ""}
-                for _ in products
-            ]
+            return [{"category": "", "product_type": "", "product_on_pages": ""} for _ in products]
 
         # NOTE: We do not append the assistant response to the instance's conversation history
         # to keep each batch call stateless and prevent token usage from growing.
@@ -379,9 +355,7 @@ class LocalLLMProductClassifier:
                         batch_results.append(
                             {
                                 "category": product_classification.get("category", ""),
-                                "product_type": product_classification.get(
-                                    "product_type", ""
-                                ),
+                                "product_type": product_classification.get("product_type", ""),
                                 "product_on_pages": product_classification.get(
                                     "product_on_pages", ""
                                 ),
@@ -396,17 +370,13 @@ class LocalLLMProductClassifier:
             else:
                 print(f"Could not parse batch JSON from response: {response[:200]}...")
                 return [
-                    {"category": "", "product_type": "", "product_on_pages": ""}
-                    for _ in products
+                    {"category": "", "product_type": "", "product_on_pages": ""} for _ in products
                 ]
 
         except json.JSONDecodeError as e:
             print(f"Batch JSON parsing error: {e}")
             print(f"Response: {response[:500]}...")
-            return [
-                {"category": "", "product_type": "", "product_on_pages": ""}
-                for _ in products
-            ]
+            return [{"category": "", "product_type": "", "product_on_pages": ""} for _ in products]
 
     def reset_conversation(self):
         """Reset conversation thread."""
@@ -416,11 +386,9 @@ class LocalLLMProductClassifier:
         """Load classification cache from disk."""
         try:
             if self.cache_file.exists():
-                with open(self.cache_file, "r") as f:
+                with open(self.cache_file) as f:
                     self.classification_cache = json.load(f)
-                print(
-                    f"📋 Loaded {len(self.classification_cache)} cached classifications"
-                )
+                print(f"📋 Loaded {len(self.classification_cache)} cached classifications")
         except Exception as e:
             print(f"⚠️ Could not load cache: {e}")
             self.classification_cache = {}
@@ -439,7 +407,7 @@ class LocalLLMProductClassifier:
 
     def classify_product_with_cache(
         self, product_name: str, product_brand: str = ""
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """
         Classify a product with caching.
 
@@ -466,7 +434,7 @@ class LocalLLMProductClassifier:
 
         return result
 
-    def _parse_classification_response(self, response: str) -> Dict[str, str]:
+    def _parse_classification_response(self, response: str) -> dict[str, str]:
         """Parse classification response from LLM."""
         try:
             # Extract JSON from response (LLM might add extra text)
@@ -497,8 +465,8 @@ _local_llm_classifier = None
 
 def get_local_llm_classifier(
     model_name: str = None,
-    product_taxonomy: Dict[str, List[str]] = None,
-    product_pages: List[str] = None,
+    product_taxonomy: dict[str, list[str]] = None,
+    product_pages: list[str] = None,
 ) -> LocalLLMProductClassifier:
     """Get or create local LLM classifier instance."""
     global _local_llm_classifier
@@ -530,10 +498,10 @@ def reset_local_llm_classifier():
 
 
 def classify_product_local_llm(
-    product_info: Dict[str, Any],
-    product_taxonomy: Dict[str, List[str]] = None,
-    product_pages: List[str] = None,
-) -> Dict[str, str]:
+    product_info: dict[str, Any],
+    product_taxonomy: dict[str, list[str]] = None,
+    product_pages: list[str] = None,
+) -> dict[str, str]:
     """
     Classify a product using local LLM via Ollama (no API key required).
 
@@ -579,11 +547,8 @@ if __name__ == "__main__":
     import sys
 
     # Add project root to path to allow direct script execution
-    sys.path.insert(
-        0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-    )
-    from src.core.classification.local_llm_classifier import \
-        get_local_llm_classifier
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
+    from src.core.classification.local_llm_classifier import get_local_llm_classifier
 
     print("🧠 Testing Local LLM Product Classifier")
     print("=" * 50)
@@ -618,6 +583,4 @@ if __name__ == "__main__":
 
         print("\n✅ Local LLM classification test completed!")
     else:
-        print(
-            "[ERROR] Could not initialize local LLM classifier - check Ollama installation"
-        )
+        print("[ERROR] Could not initialize local LLM classifier - check Ollama installation")

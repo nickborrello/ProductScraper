@@ -5,7 +5,7 @@ Local request queue implementation using JSON file storage.
 import json
 import uuid
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class LocalRequestQueue:
@@ -40,10 +40,10 @@ class LocalRequestQueue:
         # Load pending requests
         if self.pending_file.exists():
             try:
-                with open(self.pending_file, "r", encoding="utf-8") as f:
+                with open(self.pending_file, encoding="utf-8") as f:
                     data = json.load(f)
                     self._pending_requests = data.get("requests", [])
-            except (json.JSONDecodeError, IOError):
+            except (OSError, json.JSONDecodeError):
                 self._pending_requests = []
         else:
             self._pending_requests = []
@@ -51,10 +51,10 @@ class LocalRequestQueue:
         # Load handled requests
         if self.handled_file.exists():
             try:
-                with open(self.handled_file, "r", encoding="utf-8") as f:
+                with open(self.handled_file, encoding="utf-8") as f:
                     data = json.load(f)
                     self._handled_requests = data.get("requests", [])
-            except (json.JSONDecodeError, IOError):
+            except (OSError, json.JSONDecodeError):
                 self._handled_requests = []
         else:
             self._handled_requests = []
@@ -62,18 +62,14 @@ class LocalRequestQueue:
     def _save_pending(self):
         """Save pending requests to file."""
         with open(self.pending_file, "w", encoding="utf-8") as f:
-            json.dump(
-                {"requests": self._pending_requests}, f, ensure_ascii=False, indent=2
-            )
+            json.dump({"requests": self._pending_requests}, f, ensure_ascii=False, indent=2)
 
     def _save_handled(self):
         """Save handled requests to file."""
         with open(self.handled_file, "w", encoding="utf-8") as f:
-            json.dump(
-                {"requests": self._handled_requests}, f, ensure_ascii=False, indent=2
-            )
+            json.dump({"requests": self._handled_requests}, f, ensure_ascii=False, indent=2)
 
-    def add_request(self, request: Dict[str, Any]) -> str:
+    def add_request(self, request: dict[str, Any]) -> str:
         """
         Add a request to the queue.
 
@@ -88,7 +84,7 @@ class LocalRequestQueue:
         self._save_pending()
         return request_id
 
-    def fetch_next_request(self) -> Optional[Dict[str, Any]]:
+    def fetch_next_request(self) -> dict[str, Any] | None:
         """
         Fetch the next pending request.
 
@@ -102,7 +98,7 @@ class LocalRequestQueue:
         self._save_pending()
         return request
 
-    def mark_request_as_handled(self, request: Dict[str, Any]):
+    def mark_request_as_handled(self, request: dict[str, Any]):
         """
         Mark a request as handled.
 
@@ -112,7 +108,7 @@ class LocalRequestQueue:
         self._handled_requests.append(request)
         self._save_handled()
 
-    def reclaim_request(self, request: Dict[str, Any]):
+    def reclaim_request(self, request: dict[str, Any]):
         """
         Reclaim a handled request back to pending.
 
@@ -128,7 +124,7 @@ class LocalRequestQueue:
             self._pending_requests.append(request)
             self._save_pending()
 
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         """
         Get queue information.
 
@@ -139,8 +135,7 @@ class LocalRequestQueue:
             "id": self.queue_id,
             "pendingRequestCount": len(self._pending_requests),
             "handledRequestCount": len(self._handled_requests),
-            "totalRequestCount": len(self._pending_requests)
-            + len(self._handled_requests),
+            "totalRequestCount": len(self._pending_requests) + len(self._handled_requests),
         }
 
     def drop(self):

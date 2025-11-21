@@ -66,7 +66,9 @@ def sample_medium_quality_record():
 
 
 @pytest.fixture
-def sample_mixed_quality_records(sample_high_quality_record, sample_medium_quality_record, sample_low_quality_record):
+def sample_mixed_quality_records(
+    sample_high_quality_record, sample_medium_quality_record, sample_low_quality_record
+):
     """List of mixed quality records."""
     return [sample_high_quality_record, sample_medium_quality_record, sample_low_quality_record]
 
@@ -81,11 +83,14 @@ def performance_test_data(sample_high_quality_record):
         record["Name"] = f"Test Product {i}"
         records.append(record)
     return records
+
+
 # Performance monitoring fixtures
 @pytest.fixture
 def memory_monitor():
     """Fixture to monitor memory usage during tests."""
     import os
+
     import psutil
 
     process = psutil.Process(os.getpid())

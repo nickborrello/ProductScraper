@@ -4,23 +4,20 @@ import os
 import sqlite3
 import xml.etree.ElementTree as ET
 from datetime import datetime
-from typing import Dict, Optional, Tuple
 
 import pandas as pd
 import requests
 from dotenv import load_dotenv
 
 # Define project root
-PROJECT_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import field mapping configuration
 try:
     from ..field_mapping import REQUIRED_FIELDS, map_shopsite_fields
 except ImportError:
     # Fallback for standalone execution
-    from field_mapping import REQUIRED_FIELDS, map_shopsite_fields
+    from field_mapping import map_shopsite_fields
 
 # Import settings manager
 try:
@@ -36,9 +33,7 @@ load_dotenv()
 settings = SettingsManager()
 
 # Set up logging (per project guidelines)
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 # ShopSite XML Download configuration
 SHOPSITE_CONFIG = {
@@ -55,7 +50,7 @@ def get_product_count(db_path: str) -> int:
         return cursor.fetchone()[0]
 
 
-def get_column_statistics(db_path: str) -> Dict[str, int]:
+def get_column_statistics(db_path: str) -> dict[str, int]:
     """
     Get statistics about non-empty values in important columns.
 
@@ -114,7 +109,7 @@ def get_column_statistics(db_path: str) -> Dict[str, int]:
     return stats
 
 
-def print_column_statistics(stats: Dict[str, int], total_products: int):
+def print_column_statistics(stats: dict[str, int], total_products: int):
     """Print formatted statistics about non-empty values in important columns."""
     print("\n📊 Database Column Statistics")
     print("=" * 50)
@@ -212,9 +207,7 @@ class ShopSiteXMLClient:
     def authenticate(self) -> bool:
         """Authenticate with ShopSite using basic auth (username/password)."""
         if not (self.config.get("username") and self.config.get("password")):
-            logging.error(
-                "❌ ShopSite XML credentials not found in environment variables"
-            )
+            logging.error("❌ ShopSite XML credentials not found in environment variables")
             return False
 
         # Use basic HTTP authentication
@@ -222,7 +215,7 @@ class ShopSiteXMLClient:
         logging.info("✅ Using basic authentication with ShopSite XML interface")
         return True
 
-    def download_products_xml(self) -> Optional[str]:
+    def download_products_xml(self) -> str | None:
         """Download products database as XML from ShopSite with progress tracking."""
         try:
             params = {
@@ -262,9 +255,7 @@ class ShopSiteXMLClient:
                     total_mb = total_size / (1024 * 1024)
                     self.log(f"📊 Downloading {total_mb:.1f} MB...")
                 else:
-                    self.log(
-                        f"📊 Downloading (size unknown - showing progress info)..."
-                    )
+                    self.log("📊 Downloading (size unknown - showing progress info)...")
 
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:
@@ -277,15 +268,11 @@ class ShopSiteXMLClient:
                             elapsed = time.time() - start_time
                             if elapsed > 0:
                                 speed = downloaded_size / elapsed
-                                eta = (
-                                    (total_size - downloaded_size) / speed
-                                    if speed > 0
-                                    else 0
-                                )
+                                eta = (total_size - downloaded_size) / speed if speed > 0 else 0
                                 eta_str = (
                                     f" ETA: {eta:.0f}s"
                                     if eta < 3600
-                                    else f" ETA: {eta/3600:.1f}h"
+                                    else f" ETA: {eta / 3600:.1f}h"
                                 )
                             else:
                                 eta_str = ""
@@ -294,9 +281,7 @@ class ShopSiteXMLClient:
                             current_time = time.time()
                             if (
                                 downloaded_size % (1024 * 1024) < 8192  # Every ~1MB
-                                or current_time
-                                - (getattr(self, "last_progress_time", 0))
-                                > 5
+                                or current_time - (getattr(self, "last_progress_time", 0)) > 5
                             ):  # Or every 5 seconds
                                 downloaded_mb = downloaded_size / (1024 * 1024)
                                 total_mb = total_size / (1024 * 1024)
@@ -309,18 +294,13 @@ class ShopSiteXMLClient:
                             if elapsed > 0:
                                 speed = downloaded_size / elapsed
                                 speed_mbps = speed / (1024 * 1024)
-                                speed_str = (
-                                    f" @ {speed_mbps:.2f} MB/s" if speed > 0 else ""
-                                )
+                                speed_str = f" @ {speed_mbps:.2f} MB/s" if speed > 0 else ""
                             else:
                                 speed_str = ""
 
                             # Send progress update to log callback (every 5 seconds)
                             current_time = time.time()
-                            if (
-                                current_time - getattr(self, "last_progress_time", 0)
-                                > 5
-                            ):
+                            if current_time - getattr(self, "last_progress_time", 0) > 5:
                                 downloaded_mb = downloaded_size / (1024 * 1024)
                                 progress_msg = f"📥 Downloaded: {downloaded_mb:.1f} MB{speed_str} ({elapsed:.1f}s elapsed)"
                                 self.log(progress_msg)
@@ -328,16 +308,12 @@ class ShopSiteXMLClient:
 
                 # Send final download complete message
                 downloaded_mb = downloaded_size / (1024 * 1024)
-                speed_mbps = (downloaded_size / (time.time() - start_time)) / (
-                    1024 * 1024
-                )
-                final_msg = f"📥 Downloaded: {downloaded_mb:.1f} MB @ {speed_mbps:.2f} MB/s ({time.time()-start_time:.1f}s elapsed)"
+                speed_mbps = (downloaded_size / (time.time() - start_time)) / (1024 * 1024)
+                final_msg = f"📥 Downloaded: {downloaded_mb:.1f} MB @ {speed_mbps:.2f} MB/s ({time.time() - start_time:.1f}s elapsed)"
                 self.log(final_msg)
 
                 # Combine chunks into full content
-                full_content = b"".join(content_chunks).decode(
-                    "utf-8", errors="replace"
-                )
+                full_content = b"".join(content_chunks).decode("utf-8", errors="replace")
 
                 logging.info(
                     f"✅ Products XML downloaded successfully ({len(full_content)} characters)"
@@ -357,9 +333,7 @@ class ShopSiteXMLClient:
 
                 return full_content
             else:
-                logging.error(
-                    f"❌ Download failed: {response.status_code} - {response.text}"
-                )
+                logging.error(f"❌ Download failed: {response.status_code} - {response.text}")
                 return None
 
         except requests.RequestException as e:
@@ -369,7 +343,7 @@ class ShopSiteXMLClient:
 
 def save_dataframe_to_database(
     df: pd.DataFrame, db_path: str = None, clear_existing: bool = True
-) -> Tuple[bool, str]:
+) -> tuple[bool, str]:
     """Save DataFrame directly to SQLite database."""
     try:
         if db_path is None:
@@ -437,9 +411,7 @@ def save_dataframe_to_database(
                     """Split by |, remove duplicates while preserving order, rejoin with |"""
                     if not value:
                         return ""
-                    parts = [
-                        part.strip() for part in str(value).split("|") if part.strip()
-                    ]
+                    parts = [part.strip() for part in str(value).split("|") if part.strip()]
                     unique_parts = list(
                         dict.fromkeys(parts)
                     )  # Preserve order while removing duplicates
@@ -448,9 +420,7 @@ def save_dataframe_to_database(
                 # Apply deduplication to relevant fields
                 for field in ["Category", "Product_Type", "Product_On_Pages"]:
                     if field in product_data:
-                        product_data[field] = deduplicate_pipe_separated(
-                            product_data[field]
-                        )
+                        product_data[field] = deduplicate_pipe_separated(product_data[field])
 
                 # Extract individual fields for database columns
                 sku = str(product_data.get("SKU", "")).strip()
@@ -461,7 +431,7 @@ def save_dataframe_to_database(
 
                 # Get main image URL
                 image_url = ""
-                if "Image_URLs" in product_data and product_data["Image_URLs"]:
+                if product_data.get("Image_URLs"):
                     image_url = (
                         str(product_data["Image_URLs"][0]).strip()
                         if isinstance(product_data["Image_URLs"], list)
@@ -496,9 +466,7 @@ def save_dataframe_to_database(
 
             # Commit the transaction
             conn.commit()
-            logging.info(
-                f"💾 Successfully inserted {inserted_count} out of {len(df)} products"
-            )
+            logging.info(f"💾 Successfully inserted {inserted_count} out of {len(df)} products")
 
         logging.info(f"💾 Saved {len(df)} products directly to database")
         return True, db_path
@@ -508,7 +476,7 @@ def save_dataframe_to_database(
         return False, db_path
 
 
-def parse_xml_to_dataframe(xml_content: str) -> Optional[pd.DataFrame]:
+def parse_xml_to_dataframe(xml_content: str) -> pd.DataFrame | None:
     """Parse ShopSite XML content to pandas DataFrame."""
     try:
         # Preprocess XML to handle HTML entities that aren't valid in XML
@@ -587,14 +555,12 @@ def parse_xml_to_dataframe(xml_content: str) -> Optional[pd.DataFrame]:
 
         # CRITICAL: Replace any remaining unencoded ampersands with &amp;
         # Use regex to only replace ampersands that are NOT already part of XML entities
-        import re
 
         # Replace & that is not followed by a valid entity pattern (letters, numbers, #, or ; at end)
         xml_content = re.sub(r"&(?![a-zA-Z0-9#]+;)", "&amp;", xml_content)
 
         # Handle any remaining HTML entities by converting them to numeric references
         # This catches entities that aren't in our predefined list
-        import html
 
         try:
             # Find any remaining &entity; patterns and replace with safe alternatives
@@ -614,14 +580,10 @@ def parse_xml_to_dataframe(xml_content: str) -> Optional[pd.DataFrame]:
                         return "?"
                 except (ImportError, AttributeError):
                     # html.entities not available or entity not found
-                    logging.warning(
-                        f"Unknown HTML entity '&{entity};' found, replacing with '?'"
-                    )
+                    logging.warning(f"Unknown HTML entity '&{entity};' found, replacing with '?'")
                     return "?"
 
-            xml_content = re.sub(
-                r"&([a-zA-Z][a-zA-Z0-9]*);", replace_unknown_entity, xml_content
-            )
+            xml_content = re.sub(r"&([a-zA-Z][a-zA-Z0-9]*);", replace_unknown_entity, xml_content)
 
         except Exception as e:
             logging.warning(f"Entity processing warning: {e}")
@@ -662,23 +624,16 @@ def parse_xml_to_dataframe(xml_content: str) -> Optional[pd.DataFrame]:
                         # Look for Name elements under PageLink elements
                         for page_link in child.findall("PageLink"):
                             name_elem = page_link.find("Name")
-                            if (
-                                name_elem is not None
-                                and name_elem.text
-                                and name_elem.text.strip()
-                            ):
+                            if name_elem is not None and name_elem.text and name_elem.text.strip():
                                 page_names.append(name_elem.text.strip())
 
                         # Store as comma-separated string
-                        product_data[child.tag] = (
-                            ", ".join(page_names) if page_names else ""
-                        )
+                        product_data[child.tag] = ", ".join(page_names) if page_names else ""
+                    # Preserve the original text for other fields, don't strip whitespace
+                    elif child.text is not None:
+                        product_data[child.tag] = child.text
                     else:
-                        # Preserve the original text for other fields, don't strip whitespace
-                        if child.text is not None:
-                            product_data[child.tag] = child.text
-                        else:
-                            product_data[child.tag] = ""
+                        product_data[child.tag] = ""
 
                 # Only add if we have actual data
                 if product_data and any(product_data.values()):
@@ -688,9 +643,7 @@ def parse_xml_to_dataframe(xml_content: str) -> Optional[pd.DataFrame]:
                         products.append(mapped_product)
 
         if not products:
-            logging.warning(
-                "⚠️ No products with data found in XML. Checking structure..."
-            )
+            logging.warning("⚠️ No products with data found in XML. Checking structure...")
             # Log XML structure for debugging
             logging.info(f"Root tag: {root.tag}")
             for child in list(root)[:5]:  # First 5 elements
@@ -718,19 +671,15 @@ def parse_xml_to_dataframe(xml_content: str) -> Optional[pd.DataFrame]:
             for i in range(start_line, end_line + 1):
                 marker = ">>> " if i == error_line else "    "
                 logging.error(
-                    f"{marker}Line {i}: {lines[i-1][:200]}{'...' if len(lines[i-1]) > 200 else ''}"
+                    f"{marker}Line {i}: {lines[i - 1][:200]}{'...' if len(lines[i - 1]) > 200 else ''}"
                 )
 
         # Save the problematic XML for manual inspection
-        error_xml_path = os.path.join(
-            PROJECT_ROOT, "data", "databases", "shopsite_error_debug.xml"
-        )
+        error_xml_path = os.path.join(PROJECT_ROOT, "data", "databases", "shopsite_error_debug.xml")
         try:
             with open(error_xml_path, "w", encoding="utf-8") as f:
                 f.write(xml_content)
-            logging.info(
-                f"💾 Error XML saved to: {error_xml_path} for manual inspection"
-            )
+            logging.info(f"💾 Error XML saved to: {error_xml_path} for manual inspection")
         except Exception as save_error:
             logging.warning(f"⚠️ Failed to save error XML: {save_error}")
 
@@ -745,7 +694,7 @@ def import_from_shopsite_xml(
     save_to_db: bool = False,
     interactive: bool = True,
     log_callback=None,
-) -> Tuple[bool, str]:
+) -> tuple[bool, str]:
     """
     Import products from ShopSite using Database Automated XML Download.
 
@@ -787,8 +736,7 @@ def import_from_shopsite_xml(
     # Basic data validation
     if "SKU" not in df.columns and "Name" not in df.columns:
         logging.warning(
-            "⚠️ Expected columns (SKU, Name) not found. Available: "
-            + ", ".join(df.columns.tolist())
+            "⚠️ Expected columns (SKU, Name) not found. Available: " + ", ".join(df.columns.tolist())
         )
 
     # Save operations
@@ -836,7 +784,7 @@ def publish_shopsite_changes(
     sitemap: bool = True,
     full_regen: bool = False,
     log_callback=None,
-) -> Tuple[bool, str]:
+) -> tuple[bool, str]:
     """
     Publish changes to ShopSite by regenerating website content.
 
@@ -896,9 +844,7 @@ def publish_shopsite_changes(
         session.auth = (config["username"], config["password"])
 
         # Make the publish request
-        response = session.get(
-            publish_url, params=params, timeout=600
-        )  # 10 minute timeout
+        response = session.get(publish_url, params=params, timeout=600)  # 10 minute timeout
 
         if response.status_code == 200:
             success_msg = "✅ ShopSite publish completed successfully"
@@ -911,9 +857,7 @@ def publish_shopsite_changes(
 
             return True, success_msg
         else:
-            error_msg = (
-                f"❌ Publish failed: {response.status_code} - {response.text[:200]}"
-            )
+            error_msg = f"❌ Publish failed: {response.status_code} - {response.text[:200]}"
             log(error_msg)
             return False, error_msg
 
@@ -928,8 +872,8 @@ def publish_shopsite_changes(
 
 
 def import_from_saved_xml(
-    xml_file_path: Optional[str] = None, save_to_db: bool = False
-) -> Tuple[bool, str]:
+    xml_file_path: str | None = None, save_to_db: bool = False
+) -> tuple[bool, str]:
     """
     Import products from a saved ShopSite XML file (for testing/debugging).
 
@@ -947,7 +891,7 @@ def import_from_saved_xml(
 
     logging.info(f"📖 Reading saved XML file: {xml_file_path}")
     try:
-        with open(xml_file_path, "r", encoding="utf-8") as f:
+        with open(xml_file_path, encoding="utf-8") as f:
             xml_content = f.read()
         logging.info(f"✅ XML file loaded ({len(xml_content)} characters)")
     except Exception as e:
@@ -961,8 +905,7 @@ def import_from_saved_xml(
     # Basic data validation
     if "SKU" not in df.columns and "Name" not in df.columns:
         logging.warning(
-            "⚠️ Expected columns (SKU, Name) not found. Available: "
-            + ", ".join(df.columns.tolist())
+            "⚠️ Expected columns (SKU, Name) not found. Available: " + ", ".join(df.columns.tolist())
         )
 
     # Save operations
@@ -1017,9 +960,7 @@ def main() -> None:
     print("=" * 50)
 
     confirm = (
-        input(
-            "Are you sure you want to import live product data? (type 'yes' to proceed): "
-        )
+        input("Are you sure you want to import live product data? (type 'yes' to proceed): ")
         .strip()
         .lower()
     )
@@ -1034,9 +975,7 @@ def main() -> None:
     print(message)
 
     if success:
-        print(
-            "💡 Tip: Run 'update_website_cache.py' to generate cleaned files for viewing."
-        )
+        print("💡 Tip: Run 'update_website_cache.py' to generate cleaned files for viewing.")
     else:
         print("❌ Import failed. Check the logs above for details.")
 

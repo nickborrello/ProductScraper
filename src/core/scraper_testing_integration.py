@@ -3,18 +3,13 @@ Scraper Testing Integration
 Extends local testing with scraper testing capabilities.
 """
 
-import asyncio
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from tests.fixtures.scraper_validator import ScraperValidator
 
-from .scraper_testing_client import (ScraperTestingAuthError,
-                                     ScraperTestingClient,
-                                     ScraperTestingError,
-                                     ScraperTestingJobError,
-                                     ScraperTestingTimeoutError, TestingMode)
+from .scraper_testing_client import ScraperTestingClient, TestingMode
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +21,7 @@ class ScraperIntegrationTester:
 
     def __init__(
         self,
-        test_data_path: Optional[str] = None,
+        test_data_path: str | None = None,
         mode: TestingMode = TestingMode.LOCAL,
     ):
         """
@@ -46,21 +41,16 @@ class ScraperIntegrationTester:
         # Initialize testing client
         # In CI environments, always use headless mode
         import os
-        is_ci = os.getenv('CI') == 'true'
+
+        is_ci = os.getenv("CI") == "true"
         headless = True if is_ci else False
         self.testing_client = ScraperTestingClient(mode=mode, headless=headless)
 
-    def get_test_skus(self, scraper_name: str) -> List[str]:
+    def get_test_skus(self, scraper_name: str) -> list[str]:
         """Get test SKUs for a scraper from its YAML config."""
         from src.scrapers.parser.yaml_parser import ScraperConfigParser
 
-        config_path = (
-            self.project_root
-            / "src"
-            / "scrapers"
-            / "configs"
-            / f"{scraper_name}.yaml"
-        )
+        config_path = self.project_root / "src" / "scrapers" / "configs" / f"{scraper_name}.yaml"
         if not config_path.exists():
             return ["035585499741"]  # Default fallback
 
@@ -68,7 +58,7 @@ class ScraperIntegrationTester:
         config = parser.load_from_file(config_path)
         return config.test_skus or ["035585499741"]
 
-    def get_available_scrapers(self) -> List[str]:
+    def get_available_scrapers(self) -> list[str]:
         """Get list of available scraper names."""
         configs_dir = self.project_root / "src" / "scrapers" / "configs"
         scrapers = []
@@ -82,8 +72,8 @@ class ScraperIntegrationTester:
         return sorted(scrapers)
 
     async def run_scraper_test(
-        self, scraper_name: str, skus: Optional[List[str]] = None
-    ) -> Dict[str, Any]:
+        self, scraper_name: str, skus: list[str] | None = None
+    ) -> dict[str, Any]:
         """
         Run a scraper test in the configured mode.
 
@@ -104,12 +94,10 @@ class ScraperIntegrationTester:
         # At this point skus is guaranteed to be List[str]
         assert isinstance(skus, list) and all(isinstance(s, str) for s in skus)
 
-        print(f"\n{'='*60}")
-        print(
-            f"TESTING SCRAPER: {scraper_name.upper()} ({self.mode.value.upper()} MODE)"
-        )
+        print(f"\n{'=' * 60}")
+        print(f"TESTING SCRAPER: {scraper_name.upper()} ({self.mode.value.upper()} MODE)")
         print(f"SKUs: {skus}")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
 
         # Run the scraper
         async with self.testing_client:
@@ -128,8 +116,7 @@ class ScraperIntegrationTester:
             "mode": self.mode.value,
             "run_results": run_results,
             "validation_results": validation_results,
-            "overall_success": run_results["success"]
-            and not validation_results.get("errors", []),
+            "overall_success": run_results["success"] and not validation_results.get("errors", []),
         }
 
         # Print summary
@@ -137,7 +124,9 @@ class ScraperIntegrationTester:
 
         return test_results
 
-    async def run_all_scrapers_test(self, skip_failing: bool = True, scrapers: Optional[List[str]] = None) -> Dict[str, Any]:
+    async def run_all_scrapers_test(
+        self, skip_failing: bool = True, scrapers: list[str] | None = None
+    ) -> dict[str, Any]:
         """
         Test all available scrapers in the configured mode.
 
@@ -159,11 +148,11 @@ class ScraperIntegrationTester:
             "mode": self.mode.value,
         }
 
-        print(f"\n{'='*80}")
+        print(f"\n{'=' * 80}")
         print(
             f"RUNNING {self.mode.value.upper()} INTEGRATION TESTS FOR ALL {len(scrapers)} SCRAPERS"
         )
-        print(f"{'='*80}")
+        print(f"{'=' * 80}")
 
         for scraper_name in scrapers:
             try:
@@ -195,9 +184,9 @@ class ScraperIntegrationTester:
         # Generate summary
         results["summary"] = self._generate_summary(results)
 
-        print(f"\n{'='*80}")
+        print(f"\n{'=' * 80}")
         print("FINAL SUMMARY")
-        print(f"{'='*80}")
+        print(f"{'=' * 80}")
         print(f"Total Scrapers: {results['total_scrapers']}")
         print(f"Successful: {results['successful_scrapers']}")
         print(f"Failed: {results['failed_scrapers']}")
@@ -205,7 +194,7 @@ class ScraperIntegrationTester:
         print(f"Testing Mode: {self.mode.value.upper()}")
 
         if results["failed_scrapers"] > 0:
-            print(f"\nFAILED SCRAPERS:")
+            print("\nFAILED SCRAPERS:")
             for name, result in results["scraper_results"].items():
                 if not result.get("overall_success", False):
                     print(f"  • {name}")
@@ -214,7 +203,7 @@ class ScraperIntegrationTester:
 
         return results
 
-    def _print_test_summary(self, test_results: Dict[str, Any]) -> None:
+    def _print_test_summary(self, test_results: dict[str, Any]) -> None:
         """Print a summary of test results for a single scraper."""
         scraper = test_results["scraper"]
         mode = test_results["mode"]
@@ -225,14 +214,14 @@ class ScraperIntegrationTester:
 
         # Run results
         if run_results["success"]:
-            print(f"SUCCESS: Execution")
+            print("SUCCESS: Execution")
             print(f"   Products found: {len(run_results['products'])}")
             if run_results.get("run_id"):
                 print(f"   Run ID: {run_results['run_id']}")
             if run_results.get("dataset_id"):
                 print(f"   Dataset ID: {run_results['dataset_id']}")
         else:
-            print(f"FAILED: Execution")
+            print("FAILED: Execution")
             for error in run_results["errors"][:3]:
                 print(f"   • {error}")
 
@@ -248,11 +237,9 @@ class ScraperIntegrationTester:
             # Print field coverage
             field_coverage = validation_results.get("field_coverage", {})
             if field_coverage:
-                print(f"   Field Coverage:")
+                print("   Field Coverage:")
                 for field, coverage in field_coverage.items():
-                    status = (
-                        "PASS" if coverage == 100.0 else "WARN" if coverage > 0 else "FAIL"
-                    )
+                    status = "PASS" if coverage == 100.0 else "WARN" if coverage > 0 else "FAIL"
                     print(f"     {status} {field}: {coverage:.1f}%")
 
             if validation_results.get("errors"):
@@ -261,18 +248,16 @@ class ScraperIntegrationTester:
                     print(f"     - {error}")
             if validation_results.get("warnings"):
                 print(f"   Warnings: {len(validation_results['warnings'])}")
-                for warning in validation_results["warnings"][
-                    :3
-                ]:  # Show first 3 warnings
+                for warning in validation_results["warnings"][:3]:  # Show first 3 warnings
                     print(f"     - {warning}")
 
         # Overall result
         if test_results["overall_success"]:
-            print(f"OVERALL: PASSED")
+            print("OVERALL: PASSED")
         else:
-            print(f"OVERALL: FAILED")
+            print("OVERALL: FAILED")
 
-    def _generate_summary(self, results: Dict[str, Any]) -> Dict[str, Any]:
+    def _generate_summary(self, results: dict[str, Any]) -> dict[str, Any]:
         """Generate a summary of all test results."""
         summary = {
             "total_scrapers": results["total_scrapers"],
@@ -296,9 +281,7 @@ class ScraperIntegrationTester:
 
             # Collect common errors
             run_errors = test_result.get("run_results", {}).get("errors", [])
-            validation_errors = test_result.get("validation_results", {}).get(
-                "errors", []
-            )
+            validation_errors = test_result.get("validation_results", {}).get("errors", [])
 
             for error in run_errors + validation_errors:
                 if error in summary["common_errors"]:
@@ -307,9 +290,7 @@ class ScraperIntegrationTester:
                     summary["common_errors"][error] = 1
 
             # Collect quality scores
-            score = test_result.get("validation_results", {}).get(
-                "data_quality_score", 0
-            )
+            score = test_result.get("validation_results", {}).get("data_quality_score", 0)
             if score > 0:
                 quality_scores.append(score)
 

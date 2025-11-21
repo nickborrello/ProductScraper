@@ -6,15 +6,15 @@ This utility helps with debugging, progress tracking, and consistent output form
 """
 
 import time
-from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional
+from collections.abc import Callable
+from typing import Any
 
 
 def display_product_result(
-    product: Dict[str, Any],
-    index: Optional[int] = None,
-    total: Optional[int] = None,
-    log_callback: Optional[Callable[[str], None]] = None,
+    product: dict[str, Any],
+    index: int | None = None,
+    total: int | None = None,
+    log_callback: Callable[[str], None] | None = None,
 ) -> None:
     """
     Display a single product result in a standardized format.
@@ -96,7 +96,7 @@ def display_scraping_progress(
     total: int,
     start_time: float,
     scraper_name: str = "Scraper",
-    log_callback: Optional[Callable[[str], None]] = None,
+    log_callback: Callable[[str], None] | None = None,
 ) -> None:
     """
     Display scraping progress with timing information.
@@ -155,11 +155,11 @@ def set_suppress_summary(suppress: bool):
 
 
 def display_scraping_summary(
-    products: List[Dict[str, Any]],
+    products: list[dict[str, Any]],
     start_time: float,
     scraper_name: str = "Scraper",
     quiet: bool = False,
-    log_callback: Optional[Callable[[str], None]] = None,
+    log_callback: Callable[[str], None] | None = None,
 ) -> None:
     """
     Display a summary of scraping results.
@@ -205,17 +205,15 @@ def display_scraping_summary(
         # Show image statistics
         total_images = sum(len(p.get("Image URLs", [])) for p in products if p)
         avg_images = total_images / successful if successful > 0 else 0
-        output(
-            f"   🖼️  Total images: {total_images} (avg: {avg_images:.1f} per product)"
-        )
+        output(f"   🖼️  Total images: {total_images} (avg: {avg_images:.1f} per product)")
 
     output("")
 
 
 def display_error(
     message: str,
-    sku: Optional[str] = None,
-    log_callback: Optional[Callable[[str], None]] = None,
+    sku: str | None = None,
+    log_callback: Callable[[str], None] | None = None,
 ) -> None:
     """
     Display an error message in a standardized format.
@@ -243,9 +241,7 @@ def display_error(
     output("")  # Add spacing after error messages
 
 
-def display_info(
-    message: str, log_callback: Optional[Callable[[str], None]] = None
-) -> None:
+def display_info(message: str, log_callback: Callable[[str], None] | None = None) -> None:
     """
     Display an informational message.
 
@@ -265,9 +261,7 @@ def display_info(
     output(f"ℹ️  {message}")
 
 
-def display_success(
-    message: str, log_callback: Optional[Callable[[str], None]] = None
-) -> None:
+def display_success(message: str, log_callback: Callable[[str], None] | None = None) -> None:
     """
     Display a success message.
 
@@ -287,9 +281,7 @@ def display_success(
     output(f"✅ {message}")
 
 
-def display_warning(
-    message: str, log_callback: Optional[Callable[[str], None]] = None
-) -> None:
+def display_warning(message: str, log_callback: Callable[[str], None] | None = None) -> None:
     """
     Display a warning message.
 

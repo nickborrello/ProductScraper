@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from src.scrapers.executor.workflow_executor import WorkflowExecutor
+
 
 class BaseAction(ABC):
     """Abstract base class for all workflow actions."""
@@ -11,13 +12,13 @@ class BaseAction(ABC):
         self.executor = executor
 
     @abstractmethod
-    def execute(self, params: Dict[str, Any]) -> Any:
+    def execute(self, params: dict[str, Any]) -> Any:
         """
         Execute the action with the given parameters.
-        
+
         Args:
             params: Dictionary of parameters for the action
-            
+
         Returns:
             Result of the action execution
         """

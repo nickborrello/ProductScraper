@@ -3,12 +3,21 @@ Settings Dialog for ProductScraper
 Provides a GUI for configuring application settings.
 """
 
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont, QIcon
-from PyQt6.QtWidgets import (QCheckBox, QDialog, QFileDialog, QFormLayout,
-                             QGroupBox, QHBoxLayout, QLabel, QLineEdit,
-                             QMessageBox, QPushButton, QSpinBox, QTabWidget,
-                             QTextEdit, QVBoxLayout, QWidget)
+from PyQt6.QtWidgets import (
+    QCheckBox,
+    QDialog,
+    QFileDialog,
+    QFormLayout,
+    QGroupBox,
+    QHBoxLayout,
+    QLineEdit,
+    QMessageBox,
+    QPushButton,
+    QSpinBox,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
+)
 
 from src.core.settings_manager import settings
 
@@ -273,9 +282,7 @@ class SettingsDialog(QDialog):
 
         self.ollama_model = QLineEdit()
         self.ollama_model.setText("llama3.2")
-        self.ollama_model.setPlaceholderText(
-            "Enter Ollama model name (e.g., llama3.2, gemma3)"
-        )
+        self.ollama_model.setPlaceholderText("Enter Ollama model name (e.g., llama3.2, gemma3)")
         ai_layout.addRow("Ollama Model:", self.ollama_model)
 
         ai_group.setLayout(ai_layout)
@@ -289,52 +296,30 @@ class SettingsDialog(QDialog):
         # Credentials
         self.petfood_username.setText(self.current_settings.get("petfood_username", ""))
         self.petfood_password.setText(self.current_settings.get("petfood_password", ""))
-        self.phillips_username.setText(
-            self.current_settings.get("phillips_username", "")
-        )
-        self.phillips_password.setText(
-            self.current_settings.get("phillips_password", "")
-        )
+        self.phillips_username.setText(self.current_settings.get("phillips_username", ""))
+        self.phillips_password.setText(self.current_settings.get("phillips_password", ""))
         self.orgill_username.setText(self.current_settings.get("orgill_username", ""))
         self.orgill_password.setText(self.current_settings.get("orgill_password", ""))
 
         # ShopSite
-        self.shopsite_client_id.setText(
-            self.current_settings.get("shopsite_client_id", "")
-        )
-        self.shopsite_secret_key.setText(
-            self.current_settings.get("shopsite_secret_key", "")
-        )
+        self.shopsite_client_id.setText(self.current_settings.get("shopsite_client_id", ""))
+        self.shopsite_secret_key.setText(self.current_settings.get("shopsite_secret_key", ""))
         self.shopsite_auth_code.setText(
             self.current_settings.get("shopsite_authorization_code", "")
         )
-        self.shopsite_auth_url.setText(
-            self.current_settings.get("shopsite_auth_url", "")
-        )
-        self.shopsite_username.setText(
-            self.current_settings.get("shopsite_username", "")
-        )
-        self.shopsite_password.setText(
-            self.current_settings.get("shopsite_password", "")
-        )
+        self.shopsite_auth_url.setText(self.current_settings.get("shopsite_auth_url", ""))
+        self.shopsite_username.setText(self.current_settings.get("shopsite_username", ""))
+        self.shopsite_password.setText(self.current_settings.get("shopsite_password", ""))
 
         # Application
         self.database_path.setText(self.current_settings.get("database_path", ""))
-        self.selenium_headless.setChecked(
-            self.current_settings.get("selenium_headless", True)
-        )
-        self.selenium_timeout.setValue(
-            self.current_settings.get("selenium_timeout", 30)
-        )
+        self.selenium_headless.setChecked(self.current_settings.get("selenium_headless", True))
+        self.selenium_timeout.setValue(self.current_settings.get("selenium_timeout", 30))
         self.debug_mode.setChecked(self.current_settings.get("debug_mode", False))
-        self.auto_scroll_logs.setChecked(
-            self.current_settings.get("auto_scroll_logs", True)
-        )
+        self.auto_scroll_logs.setChecked(self.current_settings.get("auto_scroll_logs", True))
 
         # AI/ML
-        self.openrouter_api_key.setText(
-            self.current_settings.get("openrouter_api_key", "")
-        )
+        self.openrouter_api_key.setText(self.current_settings.get("openrouter_api_key", ""))
         method = self.current_settings.get("classification_method", "llm")
         index = self.classification_method.findText(method)
         if index >= 0:
@@ -355,9 +340,7 @@ class SettingsDialog(QDialog):
             # ShopSite
             settings.set("shopsite_client_id", self.shopsite_client_id.text().strip())
             settings.set("shopsite_secret_key", self.shopsite_secret_key.text().strip())
-            settings.set(
-                "shopsite_authorization_code", self.shopsite_auth_code.text().strip()
-            )
+            settings.set("shopsite_authorization_code", self.shopsite_auth_code.text().strip())
             settings.set("shopsite_auth_url", self.shopsite_auth_url.text().strip())
             settings.set("shopsite_username", self.shopsite_username.text().strip())
             settings.set("shopsite_password", self.shopsite_password.text().strip())
@@ -371,16 +354,14 @@ class SettingsDialog(QDialog):
 
             # AI/ML
             settings.set("openrouter_api_key", self.openrouter_api_key.text().strip())
-            settings.set(
-                "classification_method", self.classification_method.currentText()
-            )
+            settings.set("classification_method", self.classification_method.currentText())
             settings.set("ollama_model", self.ollama_model.text().strip())
 
             QMessageBox.information(self, "Success", "Settings saved successfully!")
             self.accept()
 
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to save settings:\n{str(e)}")
+            QMessageBox.critical(self, "Error", f"Failed to save settings:\n{e!s}")
 
     def reset_to_defaults(self):
         """Reset all settings to defaults."""

@@ -7,10 +7,9 @@ automatic learning capabilities.
 """
 
 import json
-import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 
 class SelectorData:
@@ -20,15 +19,15 @@ class SelectorData:
         self,
         selector: str,
         confidence: float = 0.5,
-        last_updated: Optional[str] = None,
-        fallbacks: Optional[List[str]] = None,
+        last_updated: str | None = None,
+        fallbacks: list[str] | None = None,
     ):
         self.selector = selector
         self.confidence = confidence
-        self.last_updated = last_updated or datetime.now(timezone.utc).isoformat()
+        self.last_updated = last_updated or datetime.now(UTC).isoformat()
         self.fallbacks = fallbacks or []
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return {
             "selector": self.selector,
@@ -38,7 +37,7 @@ class SelectorData:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "SelectorData":
+    def from_dict(cls, data: dict[str, Any]) -> "SelectorData":
         """Create from dictionary."""
         return cls(
             selector=data["selector"],
@@ -56,7 +55,7 @@ class SelectorData:
             # Decrease confidence towards 0.0
             self.confidence = max(0.0, self.confidence - learning_rate)
 
-        self.last_updated = datetime.now(timezone.utc).isoformat()
+        self.last_updated = datetime.now(UTC).isoformat()
 
 
 class SelectorStorage:
@@ -65,11 +64,11 @@ class SelectorStorage:
     def __init__(self, storage_path: str = "data/selectors.json"):
         self.storage_path = Path(storage_path)
         self.storage_path.parent.mkdir(parents=True, exist_ok=True)
-        self.data: Dict[str, Dict[str, SelectorData]] = {}
+        self.data: dict[str, dict[str, SelectorData]] = {}
         self.metadata = {
             "version": "1.0",
-            "created_at": datetime.now(timezone.utc).isoformat(),
-            "last_modified": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
+            "last_modified": datetime.now(UTC).isoformat(),
         }
         self.load()
 
@@ -77,7 +76,7 @@ class SelectorStorage:
         """Load selector data from JSON file."""
         if self.storage_path.exists():
             try:
-                with open(self.storage_path, "r", encoding="utf-8") as f:
+                with open(self.storage_path, encoding="utf-8") as f:
                     raw_data = json.load(f)
 
                 self.metadata = raw_data.get("metadata", self.metadata)
@@ -87,9 +86,7 @@ class SelectorStorage:
                 for domain, fields in selectors_data.items():
                     self.data[domain] = {}
                     for field_name, field_data in fields.items():
-                        self.data[domain][field_name] = SelectorData.from_dict(
-                            field_data
-                        )
+                        self.data[domain][field_name] = SelectorData.from_dict(field_data)
 
             except (json.JSONDecodeError, KeyError) as e:
                 print(f"Warning: Error loading selector storage: {e}. Starting fresh.")
@@ -99,7 +96,7 @@ class SelectorStorage:
 
     def save(self):
         """Save selector data to JSON file."""
-        self.metadata["last_modified"] = datetime.now(timezone.utc).isoformat()
+        self.metadata["last_modified"] = datetime.now(UTC).isoformat()
 
         selectors_dict = {}
         for domain, fields in self.data.items():
@@ -112,7 +109,7 @@ class SelectorStorage:
         with open(self.storage_path, "w", encoding="utf-8") as f:
             json.dump(data_to_save, f, indent=2, ensure_ascii=False)
 
-    def get_selector(self, domain: str, field_name: str) -> Optional[SelectorData]:
+    def get_selector(self, domain: str, field_name: str) -> SelectorData | None:
         """Get selector data for a specific domain and field."""
         return self.data.get(domain, {}).get(field_name)
 
@@ -122,7 +119,7 @@ class SelectorStorage:
         field_name: str,
         selector: str,
         confidence: float = 0.5,
-        fallbacks: Optional[List[str]] = None,
+        fallbacks: list[str] | None = None,
     ):
         """Set or update a selector for a domain and field."""
         if domain not in self.data:
@@ -140,7 +137,7 @@ class SelectorStorage:
             selector_data.update_confidence(success)
             self.save()
 
-    def get_fallback_chain(self, domain: str, field_name: str) -> List[str]:
+    def get_fallback_chain(self, domain: str, field_name: str) -> list[str]:
         """Get the complete fallback chain for a selector (primary + fallbacks)."""
         selector_data = self.get_selector(domain, field_name)
         if not selector_data:
@@ -155,14 +152,14 @@ class SelectorStorage:
         selector_data = self.get_selector(domain, field_name)
         if selector_data and fallback_selector not in selector_data.fallbacks:
             selector_data.fallbacks.append(fallback_selector)
-            selector_data.last_updated = datetime.now(timezone.utc).isoformat()
+            selector_data.last_updated = datetime.now(UTC).isoformat()
             self.save()
 
-    def get_all_domains(self) -> List[str]:
+    def get_all_domains(self) -> list[str]:
         """Get list of all stored domains."""
         return list(self.data.keys())
 
-    def get_domain_fields(self, domain: str) -> List[str]:
+    def get_domain_fields(self, domain: str) -> list[str]:
         """Get list of all fields for a domain."""
         return list(self.data.get(domain, {}).keys())
 
@@ -217,12 +214,12 @@ class SelectorManager:
             # New selector
             self.storage.set_selector(domain, field_name, selector, initial_confidence)
 
-    def get_best_selector(self, domain: str, field_name: str) -> Optional[str]:
+    def get_best_selector(self, domain: str, field_name: str) -> str | None:
         """Get the best (highest confidence) selector for a field."""
         selector_data = self.storage.get_selector(domain, field_name)
         return selector_data.selector if selector_data else None
 
-    def get_selector_with_fallbacks(self, domain: str, field_name: str) -> List[str]:
+    def get_selector_with_fallbacks(self, domain: str, field_name: str) -> list[str]:
         """Get primary selector and all fallbacks."""
         return self.storage.get_fallback_chain(domain, field_name)
 
@@ -230,9 +227,7 @@ class SelectorManager:
         """Check if a selector exists for the given domain and field."""
         return self.storage.get_selector(domain, field_name) is not None
 
-    def get_selector_stats(
-        self, domain: str, field_name: str
-    ) -> Optional[Dict[str, Any]]:
+    def get_selector_stats(self, domain: str, field_name: str) -> dict[str, Any] | None:
         """Get statistics for a selector."""
         selector_data = self.storage.get_selector(domain, field_name)
         if not selector_data:
@@ -267,7 +262,6 @@ class SelectorManager:
             del self.storage.data[domain]
 
         if domains_to_remove or any(
-            fields_to_remove
-            for fields_to_remove in [[] for _ in self.storage.data.values()]
+            fields_to_remove for fields_to_remove in [[] for _ in self.storage.data.values()]
         ):
             self.storage.save()

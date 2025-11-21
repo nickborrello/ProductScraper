@@ -63,7 +63,7 @@ def map_shopsite_fields(product_data):
     for editor_field, shopsite_fields in EDITOR_FIELD_MAPPING.items():
         value = None
         for shopsite_field in shopsite_fields:
-            if shopsite_field in product_data and product_data[shopsite_field]:
+            if product_data.get(shopsite_field):
                 value = product_data[shopsite_field]
                 break
 
@@ -80,30 +80,22 @@ def map_shopsite_fields(product_data):
         if editor_field == "Product_Type" and value:
             # Split by "|", deduplicate, and rejoin with "|"
             types = [pt.strip() for pt in str(value).split("|") if pt.strip()]
-            unique_types = list(
-                dict.fromkeys(types)
-            )  # Preserve order while removing duplicates
+            unique_types = list(dict.fromkeys(types))  # Preserve order while removing duplicates
             value = "|".join(unique_types)
 
         # Special handling for Product_On_Pages - ensure "|" separator and unique values
         if editor_field == "Product_On_Pages" and value:
             # Split by comma, deduplicate, and rejoin with "|" to standardize separator
             pages = [page.strip() for page in str(value).split(",") if page.strip()]
-            unique_pages = list(
-                dict.fromkeys(pages)
-            )  # Preserve order while removing duplicates
+            unique_pages = list(dict.fromkeys(pages))  # Preserve order while removing duplicates
             value = "|".join(unique_pages)
 
         # Special handling for Special_Order
         if editor_field == "Special_Order":
             # Check if the field exists in the source data (even if empty)
-            field_exists = any(
-                shopsite_field in product_data for shopsite_field in shopsite_fields
-            )
+            field_exists = any(shopsite_field in product_data for shopsite_field in shopsite_fields)
             if field_exists:
-                raw_value = product_data.get(
-                    shopsite_fields[0], ""
-                )  # Get the actual value
+                raw_value = product_data.get(shopsite_fields[0], "")  # Get the actual value
                 if str(raw_value).lower().strip() == "yes":
                     mapped_product[editor_field] = "yes"
                 else:

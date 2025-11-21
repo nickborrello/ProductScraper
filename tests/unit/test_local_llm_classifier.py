@@ -1,25 +1,22 @@
 import json
 import os
 import sys
-import tempfile
-from pathlib import Path
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 # Add project root to path
-PROJECT_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 # Import the local LLM classifier
 from src.core.classification.local_llm_classifier import (
-    LocalLLMProductClassifier, classify_product_local_llm,
-    get_local_llm_classifier)
-from src.core.classification.manager import (GENERAL_PRODUCT_TAXONOMY,
-                                             PRODUCT_PAGES)
+    LocalLLMProductClassifier,
+    classify_product_local_llm,
+    get_local_llm_classifier,
+)
+from src.core.classification.manager import GENERAL_PRODUCT_TAXONOMY, PRODUCT_PAGES
 
 
 class TestLocalLLMClassifier:
@@ -104,9 +101,7 @@ class TestLocalLLMClassifier:
         assert hasattr(classifier, "cache_file")
 
     @patch("ollama.list")
-    def test_initialization_ollama_unavailable(
-        self, mock_ollama_list, unique_cache_file
-    ):
+    def test_initialization_ollama_unavailable(self, mock_ollama_list, unique_cache_file):
         """Test initialization failure when Ollama is not available."""
         mock_ollama_list.side_effect = Exception("Ollama not running")
 
@@ -115,9 +110,7 @@ class TestLocalLLMClassifier:
 
     @patch("ollama.list")
     @patch("src.core.classification.local_llm_classifier.settings")
-    def test_model_name_from_settings(
-        self, mock_settings, mock_ollama_list, unique_cache_file
-    ):
+    def test_model_name_from_settings(self, mock_settings, mock_ollama_list, unique_cache_file):
         """Test that model name is read from settings.json."""
         mock_ollama_list.return_value = {"models": []}
         mock_settings.get.return_value = "gemma3"
@@ -127,9 +120,7 @@ class TestLocalLLMClassifier:
 
     @patch("ollama.list")
     @patch("src.core.classification.local_llm_classifier.settings")
-    def test_model_name_from_env_var(
-        self, mock_settings, mock_ollama_list, unique_cache_file
-    ):
+    def test_model_name_from_env_var(self, mock_settings, mock_ollama_list, unique_cache_file):
         """Test that model name is read from environment variable."""
         mock_ollama_list.return_value = {"models": []}
         mock_settings.get.return_value = None
@@ -144,9 +135,7 @@ class TestLocalLLMClassifier:
         mock_ollama_list.return_value = {"models": []}
 
         with patch.dict(os.environ, {"OLLAMA_MODEL": "phi4"}):
-            classifier = LocalLLMProductClassifier(
-                "custom-model", cache_file=unique_cache_file
-            )
+            classifier = LocalLLMProductClassifier("custom-model", cache_file=unique_cache_file)
             assert classifier.model_name == "custom-model"
 
     @patch("ollama.list")
@@ -258,9 +247,7 @@ class TestLocalLLMClassifier:
 
     @patch("ollama.list")
     @patch("ollama.chat")
-    def test_batch_processing_filters_empty_names(
-        self, mock_chat, mock_list, unique_cache_file
-    ):
+    def test_batch_processing_filters_empty_names(self, mock_chat, mock_list, unique_cache_file):
         """Test that batch processing filters out products without names."""
         mock_list.return_value = {"models": []}
         mock_chat.return_value = {
@@ -340,9 +327,7 @@ class TestLocalLLMClassifier:
         classifier._save_cache()
 
         # Create new classifier and load cache
-        classifier2 = LocalLLMProductClassifier(
-            "llama3.2", cache_file=unique_cache_file
-        )
+        classifier2 = LocalLLMProductClassifier("llama3.2", cache_file=unique_cache_file)
 
         # Should load the cached data
         assert test_key in classifier2.classification_cache
@@ -356,9 +341,7 @@ class TestLocalLLMClassifier:
         classifier = LocalLLMProductClassifier("llama3.2", cache_file=unique_cache_file)
 
         # Test various combinations
-        assert (
-            classifier._get_cache_key("Product Name", "Brand") == "Brand|Product Name"
-        )
+        assert classifier._get_cache_key("Product Name", "Brand") == "Brand|Product Name"
         assert classifier._get_cache_key("Product Name", "") == "Product Name"
         assert classifier._get_cache_key("Product Name") == "Product Name"
 
@@ -379,9 +362,7 @@ class TestLocalLLMClassifier:
 
     @patch("ollama.list")
     @patch("ollama.chat")
-    def test_json_parsing_with_extra_text(
-        self, mock_chat, mock_list, unique_cache_file
-    ):
+    def test_json_parsing_with_extra_text(self, mock_chat, mock_list, unique_cache_file):
         """Test JSON parsing when response contains extra text."""
         mock_list.return_value = {"models": []}
 
@@ -412,9 +393,7 @@ class TestLocalLLMClassifier:
 
         # Add some conversation history
         classifier.conversation_history.append({"role": "user", "content": "test"})
-        classifier.conversation_history.append(
-            {"role": "assistant", "content": "response"}
-        )
+        classifier.conversation_history.append({"role": "assistant", "content": "response"})
 
         assert len(classifier.conversation_history) > 1
 
@@ -473,9 +452,7 @@ class TestLocalLLMClassifier:
         assert result["Category"] == "Dog Food"
         assert result["Product Type"] == "Dry Dog Food"
         assert result["Product On Pages"] == "Dog Food Shop All"
-        mock_classifier.classify_product.assert_called_once_with(
-            "Test Dog Food", "Test Brand"
-        )
+        mock_classifier.classify_product.assert_called_once_with("Test Dog Food", "Test Brand")
 
     @patch("src.core.classification.local_llm_classifier.get_local_llm_classifier")
     def test_classify_product_local_llm_no_classifier(self, mock_get_classifier):
@@ -746,9 +723,7 @@ class TestLocalLLMClassifier:
         """Test classification with invalid or meaningless product names."""
         mock_list.return_value = {"models": []}
         mock_chat.return_value = {
-            "message": {
-                "content": '{"category": "", "product_type": "", "product_on_pages": ""}'
-            }
+            "message": {"content": '{"category": "", "product_type": "", "product_on_pages": ""}'}
         }
 
         classifier = LocalLLMProductClassifier("llama2", cache_file=unique_cache_file)
@@ -761,9 +736,7 @@ class TestLocalLLMClassifier:
 
     @patch("ollama.list")
     @patch("ollama.chat")
-    def test_brand_influence_on_classification(
-        self, mock_chat, mock_list, unique_cache_file
-    ):
+    def test_brand_influence_on_classification(self, mock_chat, mock_list, unique_cache_file):
         """Test that brand information influences classification appropriately."""
         mock_list.return_value = {"models": []}
 
@@ -796,15 +769,11 @@ class TestLocalLLMClassifier:
 
             assert result["category"] == expected_category
             result_types = result["product_type"].split("|")
-            assert any(
-                expected_type in result_types for expected_type in expected_types
-            )
+            assert any(expected_type in result_types for expected_type in expected_types)
 
     @patch("ollama.list")
     @patch("ollama.chat")
-    def test_batch_classification_consistency(
-        self, mock_chat, mock_list, unique_cache_file
-    ):
+    def test_batch_classification_consistency(self, mock_chat, mock_list, unique_cache_file):
         """Test that batch and individual classification give consistent results."""
         mock_list.return_value = {"models": []}
 
@@ -848,15 +817,13 @@ class TestLocalLLMClassifier:
         individual_results = []
         for product in products:
             mock_response = {
-                "category": batch_response["classifications"][len(individual_results)][
-                    "category"
+                "category": batch_response["classifications"][len(individual_results)]["category"],
+                "product_type": batch_response["classifications"][len(individual_results)][
+                    "product_type"
                 ],
-                "product_type": batch_response["classifications"][
-                    len(individual_results)
-                ]["product_type"],
-                "product_on_pages": batch_response["classifications"][
-                    len(individual_results)
-                ]["product_on_pages"],
+                "product_on_pages": batch_response["classifications"][len(individual_results)][
+                    "product_on_pages"
+                ],
             }
             mock_chat.return_value = {"message": {"content": json.dumps(mock_response)}}
             result = classifier.classify_product(product["Name"], product["Brand"])
@@ -866,10 +833,7 @@ class TestLocalLLMClassifier:
         for batch_result, individual_result in zip(batch_results, individual_results):
             assert batch_result["category"] == individual_result["category"]
             assert batch_result["product_type"] == individual_result["product_type"]
-            assert (
-                batch_result["product_on_pages"]
-                == individual_result["product_on_pages"]
-            )
+            assert batch_result["product_on_pages"] == individual_result["product_on_pages"]
 
     @patch("ollama.list")
     @patch("ollama.chat")
@@ -936,8 +900,7 @@ class TestLocalLLMClassifier:
         # Create a large batch of products
         num_products = 50
         products = [
-            {"Name": f"Test Product {i}", "Brand": f"Brand {i}"}
-            for i in range(num_products)
+            {"Name": f"Test Product {i}", "Brand": f"Brand {i}"} for i in range(num_products)
         ]
 
         # Mock batch response for all products
@@ -983,9 +946,7 @@ class TestLocalLLMClassifier:
 
     @patch("ollama.list")
     @patch("ollama.chat")
-    def test_cache_persistence_across_sessions(
-        self, mock_chat, mock_list, unique_cache_file
-    ):
+    def test_cache_persistence_across_sessions(self, mock_chat, mock_list, unique_cache_file):
         """Test that cache persists correctly across classifier instances."""
         mock_list.return_value = {"models": []}
 

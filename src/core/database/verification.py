@@ -2,9 +2,7 @@ import json
 import os
 import sqlite3
 
-PROJECT_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DB_PATH = os.path.join(PROJECT_ROOT, "data", "databases", "products.db")
 
 conn = sqlite3.connect(DB_PATH)
@@ -39,7 +37,7 @@ if row:
     print()
     print("📊 Field count optimization:")
     print(f"• Total fields stored: {len(extra)} (was 100+ before)")
-    print(f"• Only editor-used fields: ✅")
+    print("• Only editor-used fields: ✅")
     separator = "|" if "|" in str(extra.get("Product_On_Pages", "")) else "old"
     print(f"• Product_On_Pages separator: {separator} ✅")
 

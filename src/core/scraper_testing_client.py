@@ -3,10 +3,9 @@ Scraper Testing Client
 Provides interface for local scraper testing only.
 """
 
-import asyncio
 import logging
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -70,9 +69,7 @@ class ScraperTestingClient:
         """Exit async context."""
         pass
 
-    async def run_scraper(
-        self, scraper_name: str, skus: List[str], **kwargs
-    ) -> Dict[str, Any]:
+    async def run_scraper(self, scraper_name: str, skus: list[str], **kwargs) -> dict[str, Any]:
         """
         Run a scraper locally with the specified SKUs.
 
@@ -87,8 +84,8 @@ class ScraperTestingClient:
         return await self._run_local_scraper(scraper_name, skus, **kwargs)
 
     async def _run_local_scraper(
-        self, scraper_name: str, skus: List[str], **kwargs
-    ) -> Dict[str, Any]:
+        self, scraper_name: str, skus: list[str], **kwargs
+    ) -> dict[str, Any]:
         """
         Run scraper locally.
 
@@ -101,8 +98,7 @@ class ScraperTestingClient:
             Dict with run results
         """
         # Import the integration tester for local runs
-        from tests.integration.test_scraper_integration import \
-            ScraperIntegrationTester
+        from tests.integration.test_scraper_integration import ScraperIntegrationTester
 
         tester = ScraperIntegrationTester()
         local_results = tester.run_scraper_locally(scraper_name, skus, headless=self.headless)

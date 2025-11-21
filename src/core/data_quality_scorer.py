@@ -6,7 +6,7 @@ It evaluates completeness, accuracy, and consistency against validation criteria
 """
 
 import re
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 from urllib.parse import urlparse
 
 
@@ -42,7 +42,7 @@ class DataQualityScorer:
     def __init__(self):
         pass
 
-    def score_record(self, record: Dict[str, Any]) -> Tuple[float, Dict[str, Any]]:
+    def score_record(self, record: dict[str, Any]) -> tuple[float, dict[str, Any]]:
         """
         Score a single product record.
 
@@ -57,9 +57,7 @@ class DataQualityScorer:
         consistency_score, consistency_details = self._score_consistency(record)
 
         # Weighted overall score: 40% completeness, 40% accuracy, 20% consistency
-        overall_score = (
-            0.4 * completeness_score + 0.4 * accuracy_score + 0.2 * consistency_score
-        )
+        overall_score = 0.4 * completeness_score + 0.4 * accuracy_score + 0.2 * consistency_score
 
         details = {
             "completeness": {
@@ -86,7 +84,7 @@ class DataQualityScorer:
         """
         return score >= threshold
 
-    def _score_completeness(self, record: Dict[str, Any]) -> Tuple[float, Any]:
+    def _score_completeness(self, record: dict[str, Any]) -> tuple[float, Any]:
         """
         Score completeness: Check if required fields are present and valid.
 
@@ -107,7 +105,7 @@ class DataQualityScorer:
         score = (valid_fields / total_fields) * 100
         return score, details
 
-    def _score_accuracy(self, record: Dict[str, Any]) -> Tuple[float, Any]:
+    def _score_accuracy(self, record: dict[str, Any]) -> tuple[float, Any]:
         """
         Score accuracy: Check weight normalization, URL validity, etc.
 
@@ -136,12 +134,10 @@ class DataQualityScorer:
         details["price"] = price_details
 
         # Average of components
-        overall_score = (
-            sum(score_components) / len(score_components) if score_components else 0
-        )
+        overall_score = sum(score_components) / len(score_components) if score_components else 0
         return overall_score, details
 
-    def _score_consistency(self, record: Dict[str, Any]) -> Tuple[float, Any]:
+    def _score_consistency(self, record: dict[str, Any]) -> tuple[float, Any]:
         """
         Score consistency: Check formats and patterns.
 
@@ -188,9 +184,7 @@ class DataQualityScorer:
             }
         )
 
-        overall_score = (
-            sum(score_components) / len(score_components) if score_components else 0
-        )
+        overall_score = sum(score_components) / len(score_components) if score_components else 0
         return overall_score, details
 
     def _is_field_valid(self, value: Any, field_name: str = "") -> bool:
@@ -212,7 +206,7 @@ class DataQualityScorer:
                 return False
         return True
 
-    def _score_weight_accuracy(self, weight_str: str) -> Tuple[float, Dict[str, Any]]:
+    def _score_weight_accuracy(self, weight_str: str) -> tuple[float, dict[str, Any]]:
         """Score weight field accuracy and normalization."""
         if not weight_str or weight_str.strip() in self.INVALID_VALUES:
             return 0, {"normalized": None, "valid": False}
@@ -226,14 +220,12 @@ class DataQualityScorer:
         except:
             return 0, {"normalized": None, "valid": False}
 
-    def _normalize_weight_to_lb(self, weight_str: str) -> Optional[float]:
+    def _normalize_weight_to_lb(self, weight_str: str) -> float | None:
         """Parse weight string and convert to LB."""
         weight_str = weight_str.strip().lower()
 
         # Match patterns like "5 lb", "10.5 oz", "2 kg"
-        match = re.match(
-            r"^(\d+(?:\.\d+)?)\s*(lb|lbs|oz|kg|g|gram|grams)?$", weight_str
-        )
+        match = re.match(r"^(\d+(?:\.\d+)?)\s*(lb|lbs|oz|kg|g|gram|grams)?$", weight_str)
         if not match:
             return None
 
@@ -244,7 +236,7 @@ class DataQualityScorer:
             return value * self.WEIGHT_UNITS[unit]
         return None
 
-    def _score_images_accuracy(self, images_str: str) -> Tuple[float, Any]:
+    def _score_images_accuracy(self, images_str: str) -> tuple[float, Any]:
         """Score images field accuracy (valid URLs)."""
         if not images_str or images_str.strip() in self.INVALID_VALUES:
             return 0, {"valid_urls": 0, "total_urls": 0, "percentage": 0}
@@ -270,7 +262,7 @@ class DataQualityScorer:
         except:
             return False
 
-    def _score_price_accuracy(self, price_str: str) -> Tuple[float, Any]:
+    def _score_price_accuracy(self, price_str: str) -> tuple[float, Any]:
         """Score price field accuracy (numeric format)."""
         if not price_str or price_str.strip() in self.INVALID_VALUES:
             return 0, {"numeric": False, "value": None}
@@ -310,7 +302,7 @@ class DataQualityScorer:
 
 
 # Convenience functions
-def score_product_data(record: Dict[str, Any]) -> Tuple[float, Any]:
+def score_product_data(record: dict[str, Any]) -> tuple[float, Any]:
     """
     Score a single product record using DataQualityScorer.
 
@@ -324,7 +316,7 @@ def score_product_data(record: Dict[str, Any]) -> Tuple[float, Any]:
     return scorer.score_record(record)
 
 
-def is_product_high_quality(record: Dict[str, Any], threshold: float = 85.0) -> bool:
+def is_product_high_quality(record: dict[str, Any], threshold: float = 85.0) -> bool:
     """
     Check if product data meets quality threshold.
 

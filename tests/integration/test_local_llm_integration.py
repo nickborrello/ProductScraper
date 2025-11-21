@@ -1,12 +1,12 @@
 import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
 from src.core.classification.local_llm_classifier import (
-    LocalLLMProductClassifier, reset_local_llm_classifier)
-from src.core.classification.manager import (classify_products_batch,
-                                             classify_single_product)
+    reset_local_llm_classifier,
+)
+from src.core.classification.manager import classify_products_batch, classify_single_product
 
 
 class TestLocalLLMIntegration:
@@ -55,12 +55,8 @@ class TestLocalLLMIntegration:
 
     @patch("ollama.list")
     @patch("ollama.chat")
-    @patch(
-        "src.core.classification.local_llm_classifier.LocalLLMProductClassifier._load_cache"
-    )
-    @patch(
-        "src.core.classification.local_llm_classifier.LocalLLMProductClassifier._save_cache"
-    )
+    @patch("src.core.classification.local_llm_classifier.LocalLLMProductClassifier._load_cache")
+    @patch("src.core.classification.local_llm_classifier.LocalLLMProductClassifier._save_cache")
     def test_local_llm_method_integration(
         self,
         mock_save_cache,
@@ -93,12 +89,8 @@ class TestLocalLLMIntegration:
 
     @patch("ollama.list")
     @patch("ollama.chat")
-    @patch(
-        "src.core.classification.local_llm_classifier.LocalLLMProductClassifier._load_cache"
-    )
-    @patch(
-        "src.core.classification.local_llm_classifier.LocalLLMProductClassifier._save_cache"
-    )
+    @patch("src.core.classification.local_llm_classifier.LocalLLMProductClassifier._load_cache")
+    @patch("src.core.classification.local_llm_classifier.LocalLLMProductClassifier._save_cache")
     def test_batch_classification_integration(
         self,
         mock_save_cache,
@@ -153,12 +145,8 @@ class TestLocalLLMIntegration:
 
     @patch("ollama.list")
     @patch("ollama.chat")
-    @patch(
-        "src.core.classification.local_llm_classifier.LocalLLMProductClassifier._load_cache"
-    )
-    @patch(
-        "src.core.classification.local_llm_classifier.LocalLLMProductClassifier._save_cache"
-    )
+    @patch("src.core.classification.local_llm_classifier.LocalLLMProductClassifier._load_cache")
+    @patch("src.core.classification.local_llm_classifier.LocalLLMProductClassifier._save_cache")
     def test_caching_integration(
         self,
         mock_save_cache,
@@ -205,9 +193,7 @@ class TestLocalLLMIntegration:
         result = classify_single_product(sample_products[0], method="local_llm")
 
         # Should return some fallback result or None
-        assert (
-            result is not None or result is None
-        )  # Allow for different error handling strategies
+        assert result is not None or result is None  # Allow for different error handling strategies
 
     @patch("ollama.list")
     @patch("ollama.chat")
@@ -271,15 +257,9 @@ class TestLocalLLMIntegration:
 
     @patch("ollama.list")
     @patch("ollama.chat")
-    @patch(
-        "src.core.classification.local_llm_classifier.LocalLLMProductClassifier._load_cache"
-    )
-    @patch(
-        "src.core.classification.local_llm_classifier.LocalLLMProductClassifier._save_cache"
-    )
-    def test_large_batch_processing(
-        self, mock_save_cache, mock_load_cache, mock_chat, mock_list
-    ):
+    @patch("src.core.classification.local_llm_classifier.LocalLLMProductClassifier._load_cache")
+    @patch("src.core.classification.local_llm_classifier.LocalLLMProductClassifier._save_cache")
+    def test_large_batch_processing(self, mock_save_cache, mock_load_cache, mock_chat, mock_list):
         """Test processing of large batches."""
         # Mock empty cache initially
         mock_load_cache.return_value = {}

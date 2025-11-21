@@ -98,7 +98,7 @@ def get_standard_chrome_options(
     # Additional consistency options
     options.add_argument("--disable-blink-features=AutomationControlled")
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
-    options.add_experimental_option('useAutomationExtension', False)
+    options.add_experimental_option("useAutomationExtension", False)
     options.add_argument("--disable-notifications")
     options.add_argument("--disable-popup-blocking")
 

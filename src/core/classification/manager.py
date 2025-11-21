@@ -6,12 +6,7 @@ Separates business logic from UI (product_editor.py).
 
 import json
 import os
-import re
-import sqlite3
 from pathlib import Path
-from typing import List
-
-import pandas as pd
 
 # Import taxonomy manager
 try:
@@ -20,8 +15,7 @@ try:
 except ImportError:
     try:
         # Try absolute import (when run as standalone script)
-        from src.core.classification.taxonomy_manager import \
-            get_product_taxonomy
+        from src.core.classification.taxonomy_manager import get_product_taxonomy
     except ImportError:
         # Last resort - try direct import from current directory
         import os
@@ -58,7 +52,7 @@ except ImportError:
 
         config_path = Path(__file__).parent.parent.parent.parent / "settings.json"
         if config_path.exists():
-            with open(config_path, "r") as f:
+            with open(config_path) as f:
                 _config = json.load(f)
                 _classification_method = _config.get("classification_method", "llm")
         else:
@@ -66,9 +60,7 @@ except ImportError:
         _settings_available = False
 
 # Database path instead of Excel
-DB_PATH = (
-    Path(__file__).parent.parent.parent.parent / "data" / "databases" / "products.db"
-)
+DB_PATH = Path(__file__).parent.parent.parent.parent / "data" / "databases" / "products.db"
 
 
 # Unified prompts for all LLM classifiers
@@ -128,23 +120,18 @@ RECOMMEND_COLS = [
 GENERAL_PRODUCT_TAXONOMY = get_product_taxonomy()
 
 
-def get_product_pages() -> List[str]:
+def get_product_pages() -> list[str]:
     """
     Load product pages from JSON file
 
     Returns:
         List of product page names
     """
-    pages_file = (
-        Path(__file__).parent.parent.parent.parent
-        / "src"
-        / "data"
-        / "product_pages.json"
-    )
+    pages_file = Path(__file__).parent.parent.parent.parent / "src" / "data" / "product_pages.json"
     try:
-        with open(pages_file, "r", encoding="utf-8") as f:
+        with open(pages_file, encoding="utf-8") as f:
             return json.load(f)
-    except (json.JSONDecodeError, IOError) as e:
+    except (OSError, json.JSONDecodeError) as e:
         print(f"[WARNING] Error loading product pages file: {e}")
         return []
 
@@ -178,13 +165,12 @@ def classify_products_batch(products_list, method=None):
     # Special handling for llm method - use batch processing
     if method == "llm":
         try:
-            from src.core.classification.llm_classifier import \
-                get_llm_classifier
+            from src.core.classification.llm_classifier import get_llm_classifier
         except ImportError:
             try:
                 from llm_classifier import get_llm_classifier
             except ImportError:
-                print(f"[WARNING] Could not import LLM classifier")
+                print("[WARNING] Could not import LLM classifier")
                 # Fall through to individual processing
 
         try:
@@ -214,24 +200,19 @@ def classify_products_batch(products_list, method=None):
                 )
                 return classified_products
             else:
-                print(
-                    "[WARNING] LLM classifier not available, leaving products unclassified"
-                )
+                print("[WARNING] LLM classifier not available, leaving products unclassified")
         except Exception as e:
-            print(
-                f"[WARNING] LLM batch classification failed: {e}, leaving products unclassified"
-            )
+            print(f"[WARNING] LLM batch classification failed: {e}, leaving products unclassified")
 
     # Special handling for local_llm method - use batch processing
     if method == "local_llm":
         try:
-            from src.core.classification.local_llm_classifier import \
-                get_local_llm_classifier
+            from src.core.classification.local_llm_classifier import get_local_llm_classifier
         except ImportError:
             try:
                 from local_llm_classifier import get_local_llm_classifier
             except ImportError:
-                print(f"[WARNING] Could not import local LLM classifier")
+                print("[WARNING] Could not import local LLM classifier")
                 # Fall through to individual processing
 
         try:
@@ -271,9 +252,7 @@ def classify_products_batch(products_list, method=None):
                         product_copy = product_info.copy()
                         product_copy["Category"] = result.get("category", "")
                         product_copy["Product Type"] = result.get("product_type", "")
-                        product_copy["Product On Pages"] = result.get(
-                            "product_on_pages", ""
-                        )
+                        product_copy["Product On Pages"] = result.get("product_on_pages", "")
                         classified_products.append(product_copy)
 
                 print(
@@ -281,9 +260,7 @@ def classify_products_batch(products_list, method=None):
                 )
                 return classified_products
             else:
-                print(
-                    "[WARNING] Local LLM classifier not available, leaving products unclassified"
-                )
+                print("[WARNING] Local LLM classifier not available, leaving products unclassified")
         except Exception as e:
             print(
                 f"[WARNING] Local LLM batch classification failed: {e}, leaving products unclassified"
@@ -329,13 +306,12 @@ def classify_single_product(product_info, method=None):
     # LLM-based classification (most accurate)
     if method == "llm":
         try:
-            from src.core.classification.llm_classifier import \
-                classify_product_llm
+            from src.core.classification.llm_classifier import classify_product_llm
         except ImportError:
             try:
                 from llm_classifier import classify_product_llm
             except ImportError:
-                print(f"[WARNING] Could not import LLM classifier")
+                print("[WARNING] Could not import LLM classifier")
                 return product_info
 
         try:
@@ -343,7 +319,7 @@ def classify_single_product(product_info, method=None):
 
             # Apply LLM results
             for label in ["Category", "Product Type", "Product On Pages"]:
-                if label in llm_result and llm_result[label]:
+                if llm_result.get(label):
                     product_info[label] = llm_result[label]
                 else:
                     product_info[label] = ""
@@ -359,13 +335,12 @@ def classify_single_product(product_info, method=None):
     # Local LLM-based classification (Ollama - no API key required)
     elif method == "local_llm":
         try:
-            from src.core.classification.local_llm_classifier import \
-                classify_product_local_llm
+            from src.core.classification.local_llm_classifier import classify_product_local_llm
         except ImportError:
             try:
                 from local_llm_classifier import classify_product_local_llm
             except ImportError:
-                print(f"[WARNING] Could not import local LLM classifier")
+                print("[WARNING] Could not import local LLM classifier")
                 return product_info
 
         try:
@@ -463,15 +438,11 @@ if __name__ == "__main__":
         print("RESULTS: Classification Results:")
         print(f"   Category: {classified_product.get('Category', 'None')}")
         print(f"   Product Type: {classified_product.get('Product Type', 'None')}")
-        print(
-            f"   Product On Pages: {classified_product.get('Product On Pages', 'None')}"
-        )
+        print(f"   Product On Pages: {classified_product.get('Product On Pages', 'None')}")
 
         # Verify classification added expected fields
         expected_fields = ["Category", "Product Type", "Product On Pages"]
-        missing_fields = [
-            field for field in expected_fields if not classified_product.get(field)
-        ]
+        missing_fields = [field for field in expected_fields if not classified_product.get(field)]
         if missing_fields:
             print(f"WARNING: Missing classification fields: {missing_fields}")
         else:

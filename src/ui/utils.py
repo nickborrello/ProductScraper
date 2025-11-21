@@ -4,9 +4,7 @@ import sys
 from PyQt6.QtWidgets import QApplication, QFileDialog
 
 # Ensure project root is on sys.path
-PROJECT_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
@@ -44,9 +42,7 @@ def select_excel_file_text():
 
     # List available Excel files
     if os.path.exists(input_dir):
-        excel_files = [
-            f for f in os.listdir(input_dir) if f.endswith((".xlsx", ".xls"))
-        ]
+        excel_files = [f for f in os.listdir(input_dir) if f.endswith((".xlsx", ".xls"))]
         if excel_files:
             print("📁 Available Excel files:")
             for i, file in enumerate(excel_files, 1):
@@ -55,9 +51,7 @@ def select_excel_file_text():
 
             while True:
                 try:
-                    choice = input(
-                        "➤ Select file number or enter custom path: "
-                    ).strip()
+                    choice = input("➤ Select file number or enter custom path: ").strip()
                     if choice == "0":
                         file_path = input("➤ Enter full path to Excel file: ").strip()
                         if file_path and os.path.exists(file_path):
@@ -65,9 +59,7 @@ def select_excel_file_text():
                         else:
                             print("❌ File not found. Try again.")
                     elif choice.isdigit() and 1 <= int(choice) <= len(excel_files):
-                        file_path = os.path.join(
-                            input_dir, excel_files[int(choice) - 1]
-                        )
+                        file_path = os.path.join(input_dir, excel_files[int(choice) - 1])
                         return file_path
                     else:
                         print("❌ Invalid choice. Try again.")

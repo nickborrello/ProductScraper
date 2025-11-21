@@ -1,11 +1,11 @@
-import time
 import logging
 import re
-from typing import Any, Dict
+import time
+from typing import Any
 
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 from src.scrapers.actions.base import BaseAction
 from src.scrapers.actions.registry import ActionRegistry
@@ -13,11 +13,12 @@ from src.scrapers.exceptions import WorkflowExecutionError
 
 logger = logging.getLogger(__name__)
 
+
 @ActionRegistry.register("click")
 class ClickAction(BaseAction):
     """Action to click on an element with proper WebDriverWait and retry logic."""
 
-    def execute(self, params: Dict[str, Any]) -> None:
+    def execute(self, params: dict[str, Any]) -> None:
         selector = params.get("selector")
         filter_text = params.get("filter_text")
         filter_text_exclude = params.get("filter_text_exclude")
@@ -29,7 +30,9 @@ class ClickAction(BaseAction):
         locator_type = self.executor._get_locator_type(selector)
         max_retries = params.get("max_retries", 3 if self.executor.is_ci else 1)
 
-        logger.debug(f"Attempting to click element: {selector} (locator: {locator_type}, CI: {self.executor.is_ci}, max_retries: {max_retries})")
+        logger.debug(
+            f"Attempting to click element: {selector} (locator: {locator_type}, CI: {self.executor.is_ci}, max_retries: {max_retries})"
+        )
 
         # Initial wait for at least one element to be present
         try:
@@ -44,28 +47,41 @@ class ClickAction(BaseAction):
         # Now find elements and perform filtering and click
         try:
             elements = self.executor.browser.driver.find_elements(locator_type, selector)
-            
+
             if not elements:
                 raise NoSuchElementException(f"No elements found for selector: {selector}")
 
             filtered_elements = elements
             if filter_text:
-                filtered_elements = [el for el in filtered_elements if re.search(filter_text, el.text, re.IGNORECASE)]
-            
+                filtered_elements = [
+                    el for el in filtered_elements if re.search(filter_text, el.text, re.IGNORECASE)
+                ]
+
             if filter_text_exclude:
-                filtered_elements = [el for el in filtered_elements if not re.search(filter_text_exclude, el.text, re.IGNORECASE)]
+                filtered_elements = [
+                    el
+                    for el in filtered_elements
+                    if not re.search(filter_text_exclude, el.text, re.IGNORECASE)
+                ]
 
             if not filtered_elements:
-                raise NoSuchElementException(f"No elements remaining after filtering for selector: {selector}")
+                raise NoSuchElementException(
+                    f"No elements remaining after filtering for selector: {selector}"
+                )
 
             if index >= len(filtered_elements):
-                raise WorkflowExecutionError(f"Index {index} out of bounds for filtered elements (count: {len(filtered_elements)}) for selector: {selector}")
+                raise WorkflowExecutionError(
+                    f"Index {index} out of bounds for filtered elements (count: {len(filtered_elements)}) for selector: {selector}"
+                )
 
             element_to_click = filtered_elements[index]
 
             # Scroll element into view if needed
             try:
-                self.executor.browser.driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'center'});", element_to_click)
+                self.executor.browser.driver.execute_script(
+                    "arguments[0].scrollIntoView({block: 'center', inline: 'center'});",
+                    element_to_click,
+                )
                 time.sleep(0.5)  # Brief pause after scrolling
             except Exception as scroll_e:
                 logger.debug(f"Could not scroll element into view: {scroll_e}")

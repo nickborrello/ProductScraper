@@ -3,9 +3,8 @@ Local key-value store implementation using JSON file storage.
 """
 
 import json
-import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class LocalKeyValueStore:
@@ -33,9 +32,9 @@ class LocalKeyValueStore:
         """Load existing data from storage file."""
         if self.storage_file.exists():
             try:
-                with open(self.storage_file, "r", encoding="utf-8") as f:
+                with open(self.storage_file, encoding="utf-8") as f:
                     self._data = json.load(f)
-            except (json.JSONDecodeError, IOError):
+            except (OSError, json.JSONDecodeError):
                 self._data = {}
         else:
             self._data = {}
@@ -86,7 +85,7 @@ class LocalKeyValueStore:
             return True
         return False
 
-    def list_keys(self) -> List[str]:
+    def list_keys(self) -> list[str]:
         """
         List all keys in the store.
 
@@ -95,7 +94,7 @@ class LocalKeyValueStore:
         """
         return list(self._data.keys())
 
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         """
         Get store information.
 

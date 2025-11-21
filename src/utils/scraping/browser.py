@@ -5,10 +5,8 @@ Scrapers can use this as a base and customize as needed.
 
 import os
 import time
-from typing import Optional
 
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service as ChromeService
 
 from src.utils.scraping.scraping import get_standard_chrome_options
@@ -52,14 +50,13 @@ class ScraperBrowser:
         )
 
         # Set Chrome binary location for CI environments
-        import os
-        is_ci = os.getenv('CI') == 'true'
+        is_ci = os.getenv("CI") == "true"
         if is_ci:
             # Try common Chrome binary locations
             chrome_paths = [
                 "/usr/bin/google-chrome-stable",
                 "/usr/bin/google-chrome",
-                "/opt/google/chrome/chrome"
+                "/opt/google/chrome/chrome",
             ]
             for path in chrome_paths:
                 if os.path.exists(path):
@@ -97,7 +94,7 @@ class ScraperBrowser:
         except Exception as e:
             print(f"[WEB] [{site_name}] Failed to set window size: {e}")
 
-        is_ci = os.getenv('CI') == 'true'
+        is_ci = os.getenv("CI") == "true"
         print(
             f"[WEB] [{site_name}] Browser initialized in {init_time:.2f}s (headless={headless}, devtools={enable_devtools}, CI={is_ci}, size=1920x1080)"
         )
@@ -110,7 +107,7 @@ class ScraperBrowser:
         """Navigate to URL."""
         self.driver.get(url)
 
-    def check_http_status(self) -> Optional[int]:
+    def check_http_status(self) -> int | None:
         """
         Check the HTTP status code of the current page using JavaScript.
 

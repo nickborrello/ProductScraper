@@ -1,6 +1,6 @@
-import logging
 import json
-from typing import Any, Dict
+import logging
+from typing import Any
 
 from src.scrapers.actions.base import BaseAction
 from src.scrapers.actions.registry import ActionRegistry
@@ -8,11 +8,12 @@ from src.scrapers.exceptions import WorkflowExecutionError
 
 logger = logging.getLogger(__name__)
 
+
 @ActionRegistry.register("extract_from_json")
 class ExtractFromJsonAction(BaseAction):
     """Action to extract data from a JSON string (e.g., in a script tag)."""
 
-    def execute(self, params: Dict[str, Any]) -> None:
+    def execute(self, params: dict[str, Any]) -> None:
         source_field = params.get("source_field")
         json_path = params.get("json_path")
         target_field = params.get("target_field")
@@ -44,7 +45,7 @@ class ExtractFromJsonAction(BaseAction):
                 else:
                     current = None
                     break
-            
+
             self.executor.results[target_field] = current
             logger.debug(f"Extracted JSON path {json_path} to {target_field}: {current}")
 

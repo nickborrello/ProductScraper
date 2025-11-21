@@ -1,17 +1,14 @@
-import json
 import logging
 import os
 import sqlite3
 import xml.etree.ElementTree as ET
 from datetime import datetime
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 import pandas as pd
 
 # Set up logging (per project guidelines)
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 
 class ShopSiteDatabase:
@@ -30,9 +27,7 @@ class ShopSiteDatabase:
         with sqlite3.connect(self.db_path) as conn:
             # Check if we need to migrate from old schema
             cursor = conn.cursor()
-            cursor.execute(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='products'"
-            )
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='products'")
             table_exists = cursor.fetchone()
 
             if table_exists:
@@ -107,12 +102,8 @@ class ShopSiteDatabase:
 
                     # Recreate indexes with new column names
                     conn.execute("CREATE INDEX IF NOT EXISTS idx_sku ON products(SKU)")
-                    conn.execute(
-                        "CREATE INDEX IF NOT EXISTS idx_name ON products(Name)"
-                    )
-                    conn.execute(
-                        "CREATE INDEX IF NOT EXISTS idx_brand ON products(Brand)"
-                    )
+                    conn.execute("CREATE INDEX IF NOT EXISTS idx_name ON products(Name)")
+                    conn.execute("CREATE INDEX IF NOT EXISTS idx_brand ON products(Brand)")
                     conn.execute(
                         "CREATE INDEX IF NOT EXISTS idx_product_on_pages ON products(Product_On_Pages)"
                     )
@@ -156,7 +147,7 @@ class ShopSiteDatabase:
             conn.execute("DELETE FROM products")
             logging.info("🗑️ Cleared all products from database")
 
-    def upsert_product(self, product_data: Dict[str, Any]):
+    def upsert_product(self, product_data: dict[str, Any]):
         """Insert or update a product in the database."""
         # Extract fields using user-friendly column names
         sku = product_data.get("SKU", product_data.get("sku", ""))
@@ -165,14 +156,8 @@ class ShopSiteDatabase:
 
         # Collect all images into a comma-separated string
         image_urls = []
-        graphic_url = product_data.get(
-            "Graphic", product_data.get("More Information Graphic", "")
-        )
-        if (
-            graphic_url
-            and graphic_url.strip()
-            and graphic_url.strip().lower() != "none"
-        ):
+        graphic_url = product_data.get("Graphic", product_data.get("More Information Graphic", ""))
+        if graphic_url and graphic_url.strip() and graphic_url.strip().lower() != "none":
             image_urls.append(graphic_url.strip())
         for i in range(1, 7):
             img_field = f"MoreInfoImage{i}"
@@ -188,9 +173,7 @@ class ShopSiteDatabase:
             "ProductField16",
             product_data.get("Product Field 16", product_data.get("Brand", "")),
         )
-        special_order = product_data.get(
-            "ProductField11", product_data.get("Product Field 11", "")
-        )
+        special_order = product_data.get("ProductField11", product_data.get("Product Field 11", ""))
         category = product_data.get(
             "ProductField24",
             product_data.get("Product Field 24", product_data.get("Category", "")),
@@ -247,11 +230,7 @@ class ShopSiteDatabase:
             graphic_url = product_data.get(
                 "Graphic", product_data.get("More Information Graphic", "")
             )
-            if (
-                graphic_url
-                and graphic_url.strip()
-                and graphic_url.strip().lower() != "none"
-            ):
+            if graphic_url and graphic_url.strip() and graphic_url.strip().lower() != "none":
                 image_urls.append(graphic_url.strip())
             for i in range(1, 7):
                 img_field = f"MoreInfoImage{i}"
@@ -276,9 +255,7 @@ class ShopSiteDatabase:
             )
             product_type = product_data.get(
                 "ProductField25",
-                product_data.get(
-                    "Product Field 25", product_data.get("Product Type", "")
-                ),
+                product_data.get("Product Field 25", product_data.get("Product Type", "")),
             )
             product_on_pages = product_data.get(
                 "ProductOnPages", product_data.get("Product On Pages", "")
@@ -318,9 +295,7 @@ class ShopSiteDatabase:
                     products_data,
                 )
                 conn.execute("COMMIT")
-                logging.info(
-                    f"✅ Successfully inserted {len(products_data)} products in batch"
-                )
+                logging.info(f"✅ Successfully inserted {len(products_data)} products in batch")
                 return len(products_data)
             except Exception as e:
                 conn.execute("ROLLBACK")
@@ -333,7 +308,7 @@ class ShopSiteDatabase:
             cursor = conn.execute("SELECT COUNT(*) FROM products")
             return cursor.fetchone()[0]
 
-    def get_column_statistics(self) -> Dict[str, int]:
+    def get_column_statistics(self) -> dict[str, int]:
         """
         Get statistics about non-empty values in all columns.
 
@@ -349,9 +324,7 @@ class ShopSiteDatabase:
             cursor.execute("PRAGMA table_info(products)")
             columns_info = cursor.fetchall()
             all_columns = [
-                row[1]
-                for row in columns_info
-                if row[1] != "id" and row[1] != "last_updated"
+                row[1] for row in columns_info if row[1] != "id" and row[1] != "last_updated"
             ]  # Exclude id and last_updated
 
             for column in all_columns:
@@ -412,19 +385,17 @@ class ShopSiteDatabase:
                 percentage = (count / total_products * 100) if total_products > 0 else 0
                 # Use user-friendly display names where available, otherwise format the column name
                 display_name = column_display_names.get(col, col.replace("_", " "))
-                print(
-                    f"  {display_name:<25}: {count:>4} non-empty ({percentage:5.1f}%)"
-                )
+                print(f"  {display_name:<25}: {count:>4} non-empty ({percentage:5.1f}%)")
 
         print()
         print("💡 These statistics show data completeness for all product fields.")
 
 
-def parse_xml_file_to_dataframe(xml_file_path: str) -> Optional[pd.DataFrame]:
+def parse_xml_file_to_dataframe(xml_file_path: str) -> pd.DataFrame | None:
     """Parse a local ShopSite XML file to pandas DataFrame."""
     try:
         # Explicitly parse with UTF-8 encoding to handle special characters properly
-        with open(xml_file_path, "r", encoding="utf-8", errors="replace") as f:
+        with open(xml_file_path, encoding="utf-8", errors="replace") as f:
             content = f.read()
 
         # Parse the XML content
@@ -453,11 +424,7 @@ def parse_xml_file_to_dataframe(xml_file_path: str) -> Optional[pd.DataFrame]:
                         # Try PageLink/Name structure first (import_shopsite.py style)
                         for page_link in child.findall("PageLink"):
                             name_elem = page_link.find("Name")
-                            if (
-                                name_elem is not None
-                                and name_elem.text
-                                and name_elem.text.strip()
-                            ):
+                            if name_elem is not None and name_elem.text and name_elem.text.strip():
                                 page_names.append(name_elem.text.strip())
 
                         # If no PageLink/Name found, try direct Name elements
@@ -467,21 +434,18 @@ def parse_xml_file_to_dataframe(xml_file_path: str) -> Optional[pd.DataFrame]:
                                     page_names.append(name_elem.text.strip())
 
                         # Store as comma-separated string
-                        product_data[child.tag] = (
-                            ", ".join(page_names) if page_names else ""
-                        )
+                        product_data[child.tag] = ", ".join(page_names) if page_names else ""
                     elif len(child) > 0:
                         # Element has children - serialize the entire subtree to XML string
                         # This preserves complex nested structures like QuantityPricing
                         xml_str = ET.tostring(child, encoding="unicode", method="xml")
                         product_data[child.tag] = xml_str
+                    # Simple text field - extract the text content
+                    elif child.text is not None:
+                        # Preserve original text, don't strip whitespace
+                        product_data[child.tag] = child.text
                     else:
-                        # Simple text field - extract the text content
-                        if child.text is not None:
-                            # Preserve original text, don't strip whitespace
-                            product_data[child.tag] = child.text
-                        else:
-                            product_data[child.tag] = ""
+                        product_data[child.tag] = ""
 
                 # Only add if we have actual data
                 if product_data:
@@ -492,9 +456,7 @@ def parse_xml_file_to_dataframe(xml_file_path: str) -> Optional[pd.DataFrame]:
             logging.info(f"Root tag: {root.tag}, attributes: {root.attrib}")
             products_elem = root.find(".//Products")
             if products_elem is not None:
-                logging.info(
-                    f"Found Products container with {len(products_elem)} children"
-                )
+                logging.info(f"Found Products container with {len(products_elem)} children")
                 for child in list(products_elem)[:3]:
                     logging.info(f"Sample product child: {child.tag}")
                     if hasattr(child, "text") and child.text:
@@ -551,13 +513,11 @@ def process_xml_to_database(
         end_time = datetime.now()
         duration = (end_time - start_time).total_seconds()
         logging.info(
-            f"⚡ Batch insert completed in {duration:.2f} seconds ({len(df)/duration:.0f} products/sec)"
+            f"⚡ Batch insert completed in {duration:.2f} seconds ({len(df) / duration:.0f} products/sec)"
         )
 
         final_count = db.get_product_count()
-        logging.info(
-            f"✅ Processed {products_processed} products, {final_count} total in database"
-        )
+        logging.info(f"✅ Processed {products_processed} products, {final_count} total in database")
 
         return True
 
@@ -566,9 +526,7 @@ def process_xml_to_database(
         return False
 
 
-def refresh_database_from_xml(
-    xml_file_path: str, db_path: str = None
-) -> Tuple[bool, str]:
+def refresh_database_from_xml(xml_file_path: str, db_path: str = None) -> tuple[bool, str]:
     """
     Refresh the local database with new XML data.
 
@@ -601,9 +559,7 @@ def main():
     """Process a downloaded ShopSite XML file into the local database."""
     print("🛒 Process ShopSite XML to Local Database")
     print("=" * 50)
-    print(
-        "This will parse your downloaded XML file and save products to a local SQLite database."
-    )
+    print("This will parse your downloaded XML file and save products to a local SQLite database.")
     print("The database will be refreshed with the new data.")
     print("=" * 50)
 
@@ -615,11 +571,7 @@ def main():
         return
 
     # Confirm database refresh
-    confirm = (
-        input("This will clear existing database data. Continue? (yes/no): ")
-        .strip()
-        .lower()
-    )
+    confirm = input("This will clear existing database data. Continue? (yes/no): ").strip().lower()
     if confirm != "yes":
         print("❌ Operation cancelled.")
         return

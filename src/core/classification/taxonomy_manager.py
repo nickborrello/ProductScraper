@@ -4,10 +4,8 @@ Handles loading, updating, and refreshing product taxonomy from database.
 """
 
 import json
-import os
 import sqlite3
 from pathlib import Path
-from typing import Dict, List, Set
 
 
 class TaxonomyManager:
@@ -37,7 +35,7 @@ class TaxonomyManager:
 
         self.taxonomy_file.parent.mkdir(parents=True, exist_ok=True)
 
-    def load_taxonomy(self) -> Dict[str, List[str]]:
+    def load_taxonomy(self) -> dict[str, list[str]]:
         """
         Load taxonomy from JSON file, or create default if file doesn't exist
 
@@ -46,16 +44,16 @@ class TaxonomyManager:
         """
         if self.taxonomy_file.exists():
             try:
-                with open(self.taxonomy_file, "r", encoding="utf-8") as f:
+                with open(self.taxonomy_file, encoding="utf-8") as f:
                     return json.load(f)
-            except (json.JSONDecodeError, IOError) as e:
+            except (OSError, json.JSONDecodeError) as e:
                 print(f"⚠️ Error loading taxonomy file: {e}")
                 print("📝 Using default taxonomy...")
 
         # Return default taxonomy if file doesn't exist or is corrupted
         return self._get_default_taxonomy()
 
-    def save_taxonomy(self, taxonomy: Dict[str, List[str]]) -> None:
+    def save_taxonomy(self, taxonomy: dict[str, list[str]]) -> None:
         """
         Save taxonomy to JSON file
 
@@ -66,10 +64,10 @@ class TaxonomyManager:
             with open(self.taxonomy_file, "w", encoding="utf-8") as f:
                 json.dump(taxonomy, f, indent=2, ensure_ascii=False)
             print(f"💾 Taxonomy saved to {self.taxonomy_file}")
-        except IOError as e:
+        except OSError as e:
             print(f"❌ Error saving taxonomy: {e}")
 
-    def refresh_from_database(self, save_changes: bool = True) -> Dict[str, List[str]]:
+    def refresh_from_database(self, save_changes: bool = True) -> dict[str, list[str]]:
         """
         Refresh taxonomy by scanning database for new categories and product types
 
@@ -105,7 +103,7 @@ class TaxonomyManager:
 
         return updated_taxonomy
 
-    def _get_distinct_categories_from_db(self) -> Set[str]:
+    def _get_distinct_categories_from_db(self) -> set[str]:
         """Get distinct categories from database"""
         categories = set()
 
@@ -129,14 +127,11 @@ class TaxonomyManager:
                     # Split combined categories on "|" and add each individual category
                     combined_category = row[0].strip()
                     individual_categories = [
-                        cat.strip()
-                        for cat in combined_category.split("|")
-                        if cat.strip()
+                        cat.strip() for cat in combined_category.split("|") if cat.strip()
                     ]
                     # Normalize each category name
                     normalized_categories = [
-                        self._normalize_category_name(cat)
-                        for cat in individual_categories
+                        self._normalize_category_name(cat) for cat in individual_categories
                     ]
                     categories.update(normalized_categories)
 
@@ -149,7 +144,7 @@ class TaxonomyManager:
 
         return categories
 
-    def _get_distinct_product_types_from_db(self) -> Dict[str, Set[str]]:
+    def _get_distinct_product_types_from_db(self) -> dict[str, set[str]]:
         """
         Get distinct product types from database, grouped by category
 
@@ -191,14 +186,10 @@ class TaxonomyManager:
                     ]
 
                     for individual_category in individual_categories:
-                        normalized_category = self._normalize_category_name(
-                            individual_category
-                        )
+                        normalized_category = self._normalize_category_name(individual_category)
                         if normalized_category not in product_types:
                             product_types[normalized_category] = set()
-                        product_types[normalized_category].update(
-                            individual_product_types
-                        )
+                        product_types[normalized_category].update(individual_product_types)
 
             conn.close()
 
@@ -211,10 +202,10 @@ class TaxonomyManager:
 
     def _merge_database_entries(
         self,
-        current_taxonomy: Dict[str, List[str]],
-        db_categories: Set[str],
-        db_product_types: Dict[str, Set[str]],
-    ) -> Dict[str, List[str]]:
+        current_taxonomy: dict[str, list[str]],
+        db_categories: set[str],
+        db_product_types: dict[str, set[str]],
+    ) -> dict[str, list[str]]:
         """
         Merge database entries into current taxonomy
 
@@ -255,7 +246,7 @@ class TaxonomyManager:
         return updated_taxonomy
 
     def _report_changes(
-        self, old_taxonomy: Dict[str, List[str]], new_taxonomy: Dict[str, List[str]]
+        self, old_taxonomy: dict[str, list[str]], new_taxonomy: dict[str, list[str]]
     ) -> None:
         """Report taxonomy changes"""
         old_categories = set(old_taxonomy.keys())
@@ -305,7 +296,7 @@ class TaxonomyManager:
 
         return " ".join(words)
 
-    def _get_default_taxonomy(self) -> Dict[str, List[str]]:
+    def _get_default_taxonomy(self) -> dict[str, list[str]]:
         """Get the default taxonomy (same as in manager.py)"""
         return {
             # Pet Products
@@ -522,12 +513,12 @@ def get_taxonomy_manager() -> TaxonomyManager:
     return _taxonomy_manager
 
 
-def get_product_taxonomy() -> Dict[str, List[str]]:
+def get_product_taxonomy() -> dict[str, list[str]]:
     """Get current product taxonomy"""
     return get_taxonomy_manager().load_taxonomy()
 
 
-def refresh_taxonomy_from_database(save_changes: bool = True) -> Dict[str, List[str]]:
+def refresh_taxonomy_from_database(save_changes: bool = True) -> dict[str, list[str]]:
     """Refresh taxonomy from database and optionally save changes"""
     return get_taxonomy_manager().refresh_from_database(save_changes=save_changes)
 

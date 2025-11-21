@@ -1,8 +1,8 @@
 import logging
-from typing import Any, Dict
+from typing import Any
 
-from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.common.by import By
 
 from src.scrapers.actions.base import BaseAction
 from src.scrapers.actions.registry import ActionRegistry
@@ -10,19 +10,18 @@ from src.scrapers.exceptions import WorkflowExecutionError
 
 logger = logging.getLogger(__name__)
 
+
 @ActionRegistry.register("input_text")
 class InputTextAction(BaseAction):
     """Action to input text into a form field."""
 
-    def execute(self, params: Dict[str, Any]) -> None:
+    def execute(self, params: dict[str, Any]) -> None:
         selector = params.get("selector")
         text = params.get("text")
         clear_first = params.get("clear_first", True)
 
         if not selector or text is None:
-            raise WorkflowExecutionError(
-                "Input_text requires 'selector' and 'text' parameters"
-            )
+            raise WorkflowExecutionError("Input_text requires 'selector' and 'text' parameters")
 
         try:
             element = self.executor.browser.driver.find_element(By.CSS_SELECTOR, selector)

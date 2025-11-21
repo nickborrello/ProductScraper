@@ -2,9 +2,7 @@ import json
 import os
 import sqlite3
 
-PROJECT_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DB_PATH = os.path.join(PROJECT_ROOT, "data", "databases", "products.db")
 
 conn = sqlite3.connect(DB_PATH)
@@ -40,9 +38,9 @@ if row:
     print(f"✅ Image URL: {image_url}")
     print()
     print("📋 Mapped fields in extra_data:")
-    print(f'✅ Brand: {extra.get("Brand", "MISSING")}')
-    print(f'✅ Product_Type: {extra.get("Product_Type", "MISSING")}')
-    print(f'✅ Product_On_Pages: {extra.get("Product_On_Pages", "MISSING")}')
+    print(f"✅ Brand: {extra.get('Brand', 'MISSING')}")
+    print(f"✅ Product_Type: {extra.get('Product_Type', 'MISSING')}")
+    print(f"✅ Product_On_Pages: {extra.get('Product_On_Pages', 'MISSING')}")
     print()
     print("📊 Summary:")
     print("• Total products in DB: 20,875")

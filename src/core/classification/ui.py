@@ -7,7 +7,6 @@ Separates business logic from basic product editing (product_editor.py).
 import os
 import re
 import sys
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 # Check if GUI is available (for headless CI environments)
@@ -34,10 +33,22 @@ if TYPE_CHECKING:
     # Type checking imports for PyQt6
     from PyQt6.QtCore import Qt, pyqtSignal
     from PyQt6.QtGui import QFont
-    from PyQt6.QtWidgets import (QApplication, QCheckBox, QFrame, QGridLayout,
-                                 QHBoxLayout, QLabel, QLineEdit, QMainWindow,
-                                 QMessageBox, QPushButton, QScrollArea,
-                                 QSplitter, QVBoxLayout, QWidget)
+    from PyQt6.QtWidgets import (
+        QApplication,
+        QCheckBox,
+        QFrame,
+        QGridLayout,
+        QHBoxLayout,
+        QLabel,
+        QLineEdit,
+        QMainWindow,
+        QMessageBox,
+        QPushButton,
+        QScrollArea,
+        QSplitter,
+        QVBoxLayout,
+        QWidget,
+    )
 
 if is_ci:
     GUI_AVAILABLE = False
@@ -47,11 +58,22 @@ else:
         # PyQt6 imports
         from PyQt6.QtCore import Qt, pyqtSignal
         from PyQt6.QtGui import QFont
-        from PyQt6.QtWidgets import (QApplication, QCheckBox, QFrame,
-                                     QGridLayout, QHBoxLayout, QLabel,
-                                     QLineEdit, QMainWindow, QMessageBox,
-                                     QPushButton, QScrollArea, QSplitter,
-                                     QVBoxLayout, QWidget)
+        from PyQt6.QtWidgets import (
+            QApplication,
+            QCheckBox,
+            QFrame,
+            QGridLayout,
+            QHBoxLayout,
+            QLabel,
+            QLineEdit,
+            QMainWindow,
+            QMessageBox,
+            QPushButton,
+            QScrollArea,
+            QSplitter,
+            QVBoxLayout,
+            QWidget,
+        )
     except ImportError as e:
         # GUI not available (headless environment)
         GUI_AVAILABLE = False
@@ -86,9 +108,7 @@ def get_facet_options_from_db(force_refresh=False):
 
     except (ImportError, ModuleNotFoundError) as e:
         # Handle relative import failures when run directly
-        print(
-            f"⚠️ Relative import failed (running standalone), using fallback defaults: {e}"
-        )
+        print(f"⚠️ Relative import failed (running standalone), using fallback defaults: {e}")
         # Fallback defaults if JSON files don't exist or are corrupted
         default_categories = {
             "Dog Food": ["Dry Dog Food", "Wet Dog Food", "Raw Dog Food", "Dog Treats"],
@@ -232,9 +252,7 @@ def assign_classification_batch(products_list):
     Returns:
         List of product_info dictionaries with classifications assigned
     """
-    print(
-        f"🏷️ Classification Assignment (UI): Processing {len(products_list)} products..."
-    )
+    print(f"🏷️ Classification Assignment (UI): Processing {len(products_list)} products...")
     # Always use the interactive batch UI
     results = edit_classification_in_batch(products_list)
     print(
@@ -317,9 +335,7 @@ if GUI_AVAILABLE:
 
             self.selected_scroll = QScrollArea()
             self.selected_scroll.setWidgetResizable(True)
-            self.selected_scroll.setHorizontalScrollBarPolicy(
-                Qt.ScrollBarPolicy.ScrollBarAlwaysOff
-            )
+            self.selected_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
             self.selected_scroll.setMinimumHeight(200)
             self.selected_scroll.setMaximumHeight(300)
 
@@ -336,9 +352,7 @@ if GUI_AVAILABLE:
             if not query:
                 self.current_options = self.all_options[:]
             else:
-                self.current_options = [
-                    opt for opt in self.all_options if query in opt.lower()
-                ]
+                self.current_options = [opt for opt in self.all_options if query in opt.lower()]
             self.update_display()
 
         def update_display(self):
@@ -419,9 +433,7 @@ if GUI_AVAILABLE:
             self.load_product_into_ui(0)  # type: ignore
 
     def setup_ui(self):
-        self.setWindowTitle(
-            f"Batch Classification Editor - {len(self.products_list)} Products"
-        )
+        self.setWindowTitle(f"Batch Classification Editor - {len(self.products_list)} Products")
         # Launch maximized
         self.showMaximized()
 
@@ -545,9 +557,7 @@ if GUI_AVAILABLE:
         category_label.setFont(QFont("Arial", 14, QFont.Weight.Bold))
         category_layout.addWidget(category_label)
 
-        self.category_multi_select = MultiSelectWidget(
-            "Category", self.category_options
-        )
+        self.category_multi_select = MultiSelectWidget("Category", self.category_options)
         self.category_multi_select.selection_changed.connect(self.on_category_changed)
         category_layout.addWidget(self.category_multi_select)
         selection_splitter.addWidget(category_widget)
@@ -559,9 +569,7 @@ if GUI_AVAILABLE:
         type_label.setFont(QFont("Arial", 14, QFont.Weight.Bold))
         type_layout.addWidget(type_label)
 
-        self.type_multi_select = MultiSelectWidget(
-            "Product Type", self.all_product_types
-        )
+        self.type_multi_select = MultiSelectWidget("Product Type", self.all_product_types)
         type_layout.addWidget(self.type_multi_select)
         selection_splitter.addWidget(type_widget)
 
@@ -754,9 +762,7 @@ if GUI_AVAILABLE:
         self.product_sku_label.setText(f"SKU: {sku}")
 
         # Update product details
-        self.detail_labels["brand"].setText(
-            product.get("Product_Field_16", "N/A")
-        )  # Brand
+        self.detail_labels["brand"].setText(product.get("Product_Field_16", "N/A"))  # Brand
         self.detail_labels["price"].setText(product.get("Price", "N/A"))
         self.detail_labels["weight"].setText(product.get("Weight", "N/A"))
 
@@ -764,9 +770,7 @@ if GUI_AVAILABLE:
         images_text = product.get("Images", "")
         if images_text:
             image_urls = [url.strip() for url in images_text.split(",") if url.strip()]
-            self.detail_labels["images"].setText(
-                f"{len(image_urls)} image(s) available"
-            )
+            self.detail_labels["images"].setText(f"{len(image_urls)} image(s) available")
             # Try to load the first image
             self.load_product_image(image_urls[0] if image_urls else None)
         else:
@@ -834,7 +838,7 @@ if GUI_AVAILABLE:
                     }
                 """
                 )
-            except Exception as e:
+            except Exception:
                 self.image_display.setText("Failed to load image")
                 self.image_display.setStyleSheet(
                     """
@@ -932,9 +936,7 @@ def edit_classification_in_batch(products_list):
     In headless environments, returns products unchanged.
     """
     if not GUI_AVAILABLE:
-        print(
-            "⚠️ GUI not available (headless environment), returning products unchanged"
-        )
+        print("⚠️ GUI not available (headless environment), returning products unchanged")
         return products_list
 
     # Import facet options only
@@ -962,9 +964,7 @@ def edit_classification_in_batch(products_list):
 
                 # Add product types from consolidated data
                 if "product_type_options" in consolidated:
-                    additional_product_types.update(
-                        consolidated["product_type_options"]
-                    )
+                    additional_product_types.update(consolidated["product_type_options"])
 
                 # Add pages from consolidated data
                 if "product_on_pages_options" in consolidated:
@@ -992,9 +992,7 @@ def edit_classification_in_batch(products_list):
                     CATEGORY_PRODUCT_TYPES[generic_cat] = []
                 if ptype not in CATEGORY_PRODUCT_TYPES[generic_cat]:
                     CATEGORY_PRODUCT_TYPES[generic_cat].append(ptype)
-                    print(
-                        f"EDITOR DEBUG: Added product type '{ptype}' to category '{generic_cat}'"
-                    )
+                    print(f"EDITOR DEBUG: Added product type '{ptype}' to category '{generic_cat}'")
 
         # Add new pages to PRODUCT_ON_PAGES_OPTIONS
         for page in additional_pages:
@@ -1068,12 +1066,8 @@ if __name__ == "__main__":
 
     print("Launching classification UI demo with pre-filled data...")
     print("DEMO001 should show 'Dog Food' and 'Pet Supplies' pre-selected in Category")
-    print(
-        "DEMO001 should show 'Dry Dog Food' and 'Premium Dog Food' pre-selected in Product Type"
-    )
-    print(
-        "DEMO001 should show 'Dog Food Shop All' and 'Premium Products' pre-selected in Pages"
-    )
+    print("DEMO001 should show 'Dry Dog Food' and 'Premium Dog Food' pre-selected in Product Type")
+    print("DEMO001 should show 'Dog Food Shop All' and 'Premium Products' pre-selected in Pages")
     print("DEMO002 should show 'Cat Supplies' pre-selected in Category")
     print("DEMO003 should show no pre-selections (empty checkboxes)")
     print()

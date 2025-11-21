@@ -1,6 +1,5 @@
 import os
 import shutil
-import sys
 
 import win32com.client
 
@@ -12,8 +11,6 @@ gen_py_cache = os.path.join(os.getenv("LOCALAPPDATA"), "Temp", "gen_py")
 if os.path.exists(gen_py_cache):
     print(f"🧹 Detected corrupted COM cache. Removing: {gen_py_cache}")
     shutil.rmtree(gen_py_cache, ignore_errors=True)
-
-import win32com.client  # now safe to import
 
 
 def convert_xlsx_to_xls_with_excel(results_folder=None):
@@ -44,14 +41,10 @@ def convert_xlsx_to_xls_with_excel(results_folder=None):
                 xls_path = os.path.join(folder, filename.replace(".xlsx", ".xls"))
                 try:
                     wb = excel.Workbooks.Open(xlsx_path)
-                    wb.SaveAs(
-                        xls_path, FileFormat=56
-                    )  # 56 = Excel 97-2003 Workbook (*.xls)
+                    wb.SaveAs(xls_path, FileFormat=56)  # 56 = Excel 97-2003 Workbook (*.xls)
                     wb.Close(False)
                     os.remove(xlsx_path)
-                    print(
-                        f"✅ Converted and deleted: {filename} → {os.path.basename(xls_path)}"
-                    )
+                    print(f"✅ Converted and deleted: {filename} → {os.path.basename(xls_path)}")
                     converted_count += 1
                 except Exception as e:
                     print(f"❌ Error converting {filename}: {e}")

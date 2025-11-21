@@ -61,21 +61,17 @@ class TestValidationPerformance:
         memory_delta = final_memory - initial_memory
 
         # Performance assertions
-        assert (
-            elapsed_time < 300.0
-        ), f"Processing 5000 records took {elapsed_time:.2f}s (>5 min)"
-        assert (
-            memory_delta < 500.0
-        ), f"Memory usage increased by {memory_delta:.2f}MB (>500MB)"
+        assert elapsed_time < 300.0, f"Processing 5000 records took {elapsed_time:.2f}s (>5 min)"
+        assert memory_delta < 500.0, f"Memory usage increased by {memory_delta:.2f}MB (>500MB)"
 
         # Quality assertions
         avg_score = sum(results) / len(results)
         high_quality_count = sum(1 for score in results if score >= 85.0)
 
         assert avg_score >= 85.0, f"Average quality score too low: {avg_score:.2f}"
-        assert high_quality_count == len(
-            results
-        ), f"Only {high_quality_count}/{len(results)} records are high quality"
+        assert high_quality_count == len(results), (
+            f"Only {high_quality_count}/{len(results)} records are high quality"
+        )
 
         print(
             f"Performance results: {elapsed_time:.2f}s, {memory_delta:.2f}MB memory, avg score: {avg_score:.2f}"
@@ -123,14 +119,10 @@ class TestValidationPerformance:
         memory_growth = final_memory - initial_memory
         peak_growth = max_memory - initial_memory
 
-        assert (
-            memory_growth < 50.0
-        ), f"Memory grew by {memory_growth:.2f}MB during test (>50MB)"
+        assert memory_growth < 50.0, f"Memory grew by {memory_growth:.2f}MB during test (>50MB)"
         assert peak_growth < 100.0, f"Peak memory growth {peak_growth:.2f}MB (>100MB)"
 
-        print(
-            f"Memory stability: growth {memory_growth:.2f}MB, peak {peak_growth:.2f}MB"
-        )
+        print(f"Memory stability: growth {memory_growth:.2f}MB, peak {peak_growth:.2f}MB")
 
     def test_concurrent_performance_simulation(self):
         """Simulate concurrent validation scenarios."""
@@ -188,14 +180,10 @@ class TestValidationPerformance:
         assert len(results) == num_workers, "Not all workers completed"
 
         total_scores = sum(len(scores) for scores in results.values())
-        assert (
-            total_scores == num_workers * records_per_worker
-        ), "Not all records were scored"
+        assert total_scores == num_workers * records_per_worker, "Not all records were scored"
 
         # Performance check
-        assert (
-            elapsed_time < 60.0
-        ), f"Concurrent processing took {elapsed_time:.2f}s (>1 min)"
+        assert elapsed_time < 60.0, f"Concurrent processing took {elapsed_time:.2f}s (>1 min)"
 
         print(f"Concurrent performance: {elapsed_time:.2f}s for {total_scores} records")
 
@@ -237,6 +225,4 @@ def test_individual_scoring_speed():
     assert max_time < 20.0, f"Max scoring time {max_time:.2f}ms (>20ms)"
     assert p95_time < 10.0, f"95th percentile {p95_time:.2f}ms (>10ms)"
 
-    print(
-        f"Speed test: avg {avg_time:.2f}ms, max {max_time:.2f}ms, p95 {p95_time:.2f}ms"
-    )
+    print(f"Speed test: avg {avg_time:.2f}ms, max {max_time:.2f}ms, p95 {p95_time:.2f}ms")

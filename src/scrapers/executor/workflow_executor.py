@@ -2,29 +2,26 @@
 Workflow executor for scraper automation using Selenium WebDriver.
 """
 
-import logging
+import json
 import random
 import re
 import time
-import json
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any
 
-from selenium.common.exceptions import (NoSuchElementException,
-                                        TimeoutException, WebDriverException)
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-from src.core.anti_detection_manager import (AntiDetectionConfig,
-                                                AntiDetectionManager)
 from src.core.adaptive_retry_strategy import AdaptiveRetryStrategy
+from src.core.anti_detection_manager import AntiDetectionManager
 from src.core.failure_analytics import FailureAnalytics
-from src.core.failure_classifier import FailureClassifier, FailureType, FailureContext
+from src.core.failure_classifier import FailureClassifier, FailureContext, FailureType
 from src.core.settings_manager import SettingsManager
-from src.scrapers.models.config import (ScraperConfig, SelectorConfig,
-                                        WorkflowStep)
-from src.utils.scraping.browser import ScraperBrowser, create_browser
 from src.scrapers.actions.registry import ActionRegistry
+from src.scrapers.models.config import ScraperConfig, WorkflowStep
+from src.utils.scraping.browser import ScraperBrowser, create_browser
+
 
 class WorkflowExecutor:
     """
@@ -38,7 +35,7 @@ class WorkflowExecutor:
         self,
         config: ScraperConfig,
         headless: bool = True,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
     ):
         """
         Initialize the workflow executor.
@@ -53,7 +50,7 @@ class WorkflowExecutor:
         self.browser: ScraperBrowser
         self.results = {}
         self.selectors = {selector.name: selector for selector in config.selectors}
-        self.anti_detection_manager: Optional[AntiDetectionManager] = None
+        self.anti_detection_manager: AntiDetectionManager | None = None
         self.adaptive_retry_strategy = AdaptiveRetryStrategy(
             history_file=f"data/retry_history_{config.name}.json"
         )
@@ -66,14 +63,17 @@ class WorkflowExecutor:
 
         # Log environment details for debugging
         import os
-        self.is_ci = os.getenv('CI') == 'true'
+
+        self.is_ci = os.getenv("CI") == "true"
 
         # Adjust timeout for CI environment (headless browsers need more time)
         if self.is_ci and self.timeout < 60:
             self.timeout = 60
             logger.info(f"Adjusted timeout for CI environment: {self.timeout}s")
 
-        logger.info(f"Initializing workflow executor - CI: {self.is_ci}, Headless: {headless}, Timeout: {self.timeout}")
+        logger.info(
+            f"Initializing workflow executor - CI: {self.is_ci}, Headless: {headless}, Timeout: {self.timeout}"
+        )
 
         # Initialize browser
         try:
@@ -87,9 +87,13 @@ class WorkflowExecutor:
             # Log browser capabilities for debugging
             try:
                 capabilities = self.browser.driver.capabilities
-                browser_version = capabilities.get('browserVersion', 'unknown')
-                chrome_version = capabilities.get('chrome', {}).get('chromedriverVersion', 'unknown')
-                logger.info(f"Browser capabilities - Chrome: {browser_version}, ChromeDriver: {chrome_version}")
+                browser_version = capabilities.get("browserVersion", "unknown")
+                chrome_version = capabilities.get("chrome", {}).get(
+                    "chromedriverVersion", "unknown"
+                )
+                logger.info(
+                    f"Browser capabilities - Chrome: {browser_version}, ChromeDriver: {chrome_version}"
+                )
             except Exception as cap_e:
                 logger.debug(f"Could not get browser capabilities: {cap_e}")
 
@@ -103,9 +107,7 @@ class WorkflowExecutor:
                 self.anti_detection_manager = AntiDetectionManager(
                     self.browser, config.anti_detection, config.name
                 )
-                logger.info(
-                    f"Anti-detection manager initialized for scraper: {self.config.name}"
-                )
+                logger.info(f"Anti-detection manager initialized for scraper: {self.config.name}")
             except Exception as e:
                 logger.warning(f"Failed to initialize anti-detection manager: {e}")
                 self.anti_detection_manager = None
@@ -114,7 +116,9 @@ class WorkflowExecutor:
         self.first_navigation_done = False
         self.workflow_stopped = False
 
-    def execute_workflow(self, test_skus: Optional[List[str]] = None, quit_browser: bool = True) -> Dict[str, Any]:
+    def execute_workflow(
+        self, test_skus: list[str] | None = None, quit_browser: bool = True
+    ) -> dict[str, Any]:
         """
         Execute the complete workflow defined in the configuration.
 
@@ -133,7 +137,7 @@ class WorkflowExecutor:
 
             for i, step in enumerate(self.config.workflows, 1):
                 if self.workflow_stopped:
-                    logger.info(f"Workflow stopped due to condition, skipping remaining steps.")
+                    logger.info("Workflow stopped due to condition, skipping remaining steps.")
                     break
                 logger.info(f"Step {i}/{len(self.config.workflows)}: Executing {step.action}")
                 self._execute_step(step)
@@ -154,7 +158,7 @@ class WorkflowExecutor:
             if quit_browser and self.browser:
                 self.browser.quit()
 
-    def execute_steps(self, steps: List[Any]) -> Dict[str, Any]:
+    def execute_steps(self, steps: list[Any]) -> dict[str, Any]:
         """
         Execute specific workflow steps.
 
@@ -172,7 +176,7 @@ class WorkflowExecutor:
 
             for step in steps:
                 if self.workflow_stopped:
-                    logger.info(f"Workflow stopped due to condition, skipping remaining steps.")
+                    logger.info("Workflow stopped due to condition, skipping remaining steps.")
                     break
                 self._execute_step(step)
 
@@ -208,8 +212,10 @@ class WorkflowExecutor:
         # Pre-action anti-detection hook
         if self.anti_detection_manager:
             # Skip rate limiting detection for the first navigation to avoid false positives
-            skip_rate_limit_check = (action == "navigate" and not self.first_navigation_done)
-            if not self.anti_detection_manager.pre_action_hook(action, params, skip_rate_limit_check=skip_rate_limit_check):
+            skip_rate_limit_check = action == "navigate" and not self.first_navigation_done
+            if not self.anti_detection_manager.pre_action_hook(
+                action, params, skip_rate_limit_check=skip_rate_limit_check
+            ):
                 raise WorkflowExecutionError(
                     f"Pre-action anti-detection check failed for '{action}'"
                 )
@@ -221,34 +227,33 @@ class WorkflowExecutor:
             if action_class:
                 action_instance = action_class(self)
                 action_instance.execute(params)
+            # Fallback for legacy actions not yet migrated or unknown actions
+            elif action == "detect_captcha":
+                self._action_detect_captcha(params)
+            elif action == "handle_blocking":
+                self._action_handle_blocking(params)
+            elif action == "rate_limit":
+                self._action_rate_limit(params)
+            elif action == "simulate_human":
+                self._action_simulate_human(params)
+            elif action == "rotate_session":
+                self._action_rotate_session(params)
+            elif action == "validate_http_status":
+                self._action_validate_http_status(params)
+            elif action == "check_no_results":
+                self._action_check_no_results(params)
+            elif action == "conditional_skip":
+                self._action_conditional_skip(params)
+            elif action == "scroll":
+                self._action_scroll(params)
+            elif action == "extract_from_json":
+                self._action_extract_from_json(params)
+            elif action == "conditional_click":
+                self._action_conditional_click(params)
+            elif action == "verify":
+                self._action_verify(params)
             else:
-                # Fallback for legacy actions not yet migrated or unknown actions
-                if action == "detect_captcha":
-                    self._action_detect_captcha(params)
-                elif action == "handle_blocking":
-                    self._action_handle_blocking(params)
-                elif action == "rate_limit":
-                    self._action_rate_limit(params)
-                elif action == "simulate_human":
-                    self._action_simulate_human(params)
-                elif action == "rotate_session":
-                    self._action_rotate_session(params)
-                elif action == "validate_http_status":
-                    self._action_validate_http_status(params)
-                elif action == "check_no_results":
-                    self._action_check_no_results(params)
-                elif action == "conditional_skip":
-                    self._action_conditional_skip(params)
-                elif action == "scroll":
-                    self._action_scroll(params)
-                elif action == "extract_from_json":
-                    self._action_extract_from_json(params)
-                elif action == "conditional_click":
-                    self._action_conditional_click(params)
-                elif action == "verify":
-                    self._action_verify(params)
-                else:
-                    raise WorkflowExecutionError(f"Unknown action: {action}")
+                raise WorkflowExecutionError(f"Unknown action: {action}")
 
             success = True
 
@@ -259,7 +264,7 @@ class WorkflowExecutor:
                 site_name=self.config.name,
                 duration=duration,
                 action=action,
-                session_id=getattr(self.browser, 'session_id', None)
+                session_id=getattr(self.browser, "session_id", None),
             )
 
             # Record success for learning
@@ -273,15 +278,17 @@ class WorkflowExecutor:
                     retry_count=retry_count,
                     context={"params": params},
                     success_after_retry=True,
-                    final_success=True
+                    final_success=True,
                 )
 
         except Exception as e:
             # Classify the failure to determine retry strategy
             try:
                 failure_context = self.failure_classifier.classify_exception(e, {"action": action})
-                logger.debug(f"Failure classified: {failure_context.failure_type.value} "
-                            f"(confidence: {failure_context.confidence})")
+                logger.debug(
+                    f"Failure classified: {failure_context.failure_type.value} "
+                    f"(confidence: {failure_context.confidence})"
+                )
 
                 # For wait_for timeouts, check if page indicates no results
                 if action == "wait_for" and isinstance(e, TimeoutException):
@@ -292,10 +299,14 @@ class WorkflowExecutor:
                         page_failure_context = self.failure_classifier.classify_page_content(
                             self.browser.driver, page_context
                         )
-                        if (page_failure_context.failure_type == FailureType.NO_RESULTS and
-                            page_failure_context.confidence > failure_context.confidence):
-                            logger.debug(f"Reclassified failure from {failure_context.failure_type.value} "
-                                       f"to {page_failure_context.failure_type.value} based on page content")
+                        if (
+                            page_failure_context.failure_type == FailureType.NO_RESULTS
+                            and page_failure_context.confidence > failure_context.confidence
+                        ):
+                            logger.debug(
+                                f"Reclassified failure from {failure_context.failure_type.value} "
+                                f"to {page_failure_context.failure_type.value} based on page content"
+                            )
                             failure_context = page_failure_context
                     except Exception as page_classify_e:
                         logger.debug(f"Could not classify page content: {page_classify_e}")
@@ -307,22 +318,20 @@ class WorkflowExecutor:
                     failure_type=FailureType.NETWORK_ERROR,
                     confidence=0.5,
                     details={"classification_error": str(classify_e)},
-                    recovery_strategy="retry"
+                    recovery_strategy="retry",
                 )
 
             # Get adaptive retry configuration
             retry_count = params.get("retry_count", 0)
             adaptive_config = self.adaptive_retry_strategy.get_adaptive_config(
-                failure_context.failure_type,
-                self.config.name,
-                retry_count
+                failure_context.failure_type, self.config.name, retry_count
             )
 
             # Check if we should retry
             should_retry = (
-                retry_count < adaptive_config.max_retries and
-                failure_context.failure_type != FailureType.PAGE_NOT_FOUND and
-                failure_context.failure_type != FailureType.NO_RESULTS
+                retry_count < adaptive_config.max_retries
+                and failure_context.failure_type != FailureType.PAGE_NOT_FOUND
+                and failure_context.failure_type != FailureType.NO_RESULTS
             )
 
             if should_retry:
@@ -339,7 +348,9 @@ class WorkflowExecutor:
                 # Try anti-detection error handling as fallback
                 if self.anti_detection_manager:
                     if self.anti_detection_manager.handle_error(e, action, retry_count):
-                        logger.info(f"Anti-detection error handling succeeded for '{action}', retrying...")
+                        logger.info(
+                            f"Anti-detection error handling succeeded for '{action}', retrying..."
+                        )
                     else:
                         logger.debug(f"Anti-detection error handling failed for '{action}'")
 
@@ -355,12 +366,12 @@ class WorkflowExecutor:
                         "exception": str(e),
                         "params": params,
                         "failure_details": failure_context.details,
-                        "confidence": failure_context.confidence
+                        "confidence": failure_context.confidence,
                     },
                     success_after_retry=False,
                     final_success=False,
-                    session_id=getattr(self.browser, 'session_id', None),
-                    user_agent=getattr(self.browser, 'user_agent', None)
+                    session_id=getattr(self.browser, "session_id", None),
+                    user_agent=getattr(self.browser, "user_agent", None),
                 )
 
                 # Record the failure for learning
@@ -373,10 +384,10 @@ class WorkflowExecutor:
                         "exception": str(e),
                         "params": params,
                         "failure_details": failure_context.details,
-                        "confidence": failure_context.confidence
+                        "confidence": failure_context.confidence,
                     },
                     success_after_retry=False,  # Will be updated if retry succeeds
-                    final_success=False
+                    final_success=False,
                 )
 
                 # Increment retry count and retry
@@ -395,12 +406,12 @@ class WorkflowExecutor:
                     "exception": str(e),
                     "params": params,
                     "failure_details": failure_context.details,
-                    "confidence": failure_context.confidence
+                    "confidence": failure_context.confidence,
                 },
                 success_after_retry=False,
                 final_success=False,
-                session_id=getattr(self.browser, 'session_id', None),
-                user_agent=getattr(self.browser, 'user_agent', None)
+                session_id=getattr(self.browser, "session_id", None),
+                user_agent=getattr(self.browser, "user_agent", None),
             )
 
             self.adaptive_retry_strategy.record_failure(
@@ -412,10 +423,10 @@ class WorkflowExecutor:
                     "exception": str(e),
                     "params": params,
                     "failure_details": failure_context.details,
-                    "confidence": failure_context.confidence
+                    "confidence": failure_context.confidence,
                 },
                 success_after_retry=False,
-                final_success=False
+                final_success=False,
             )
 
             # Store failure context in results for debugging/analysis
@@ -424,7 +435,7 @@ class WorkflowExecutor:
                 "confidence": failure_context.confidence,
                 "details": failure_context.details,
                 "recovery_strategy": failure_context.recovery_strategy,
-                "retries_attempted": retry_count
+                "retries_attempted": retry_count,
             }
 
             raise WorkflowExecutionError(f"Failed to execute step '{action}': {e}")
@@ -433,7 +444,7 @@ class WorkflowExecutor:
             if self.anti_detection_manager:
                 self.anti_detection_manager.post_action_hook(action, params, success)
 
-    def _action_navigate(self, params: Dict[str, Any]):
+    def _action_navigate(self, params: dict[str, Any]):
         """Navigate to a URL."""
         url = params.get("url")
         if not url:
@@ -454,7 +465,7 @@ class WorkflowExecutor:
         # Mark that first navigation is done
         self.first_navigation_done = True
 
-    def _check_http_status_after_navigation(self, url: str, params: Dict[str, Any]):
+    def _check_http_status_after_navigation(self, url: str, params: dict[str, Any]):
         """Check HTTP status after navigation and handle errors."""
         if not self.config.http_status:
             return
@@ -487,29 +498,33 @@ class WorkflowExecutor:
         if status_code in warning_codes:
             logger.warning(f"HTTP redirect status {status_code} detected for {url}")
 
-    def _action_wait_for(self, params: Dict[str, Any]):
+    def _action_wait_for(self, params: dict[str, Any]):
         """Wait for an element to be present."""
         selector_param = params.get("selector")
         timeout = params.get("timeout", self.timeout)
 
         if not selector_param:
-            raise WorkflowExecutionError(
-                "Wait_for action requires 'selector' parameter"
-            )
+            raise WorkflowExecutionError("Wait_for action requires 'selector' parameter")
 
         selectors = selector_param if isinstance(selector_param, list) else [selector_param]
-        
-        logger.debug(f"Waiting for any of elements: {selectors} (timeout: {timeout}s, CI: {self.is_ci})")
+
+        logger.debug(
+            f"Waiting for any of elements: {selectors} (timeout: {timeout}s, CI: {self.is_ci})"
+        )
 
         start_time = time.time()
         try:
-            conditions = [EC.presence_of_element_located((self._get_locator_type(s), s)) for s in selectors]
+            conditions = [
+                EC.presence_of_element_located((self._get_locator_type(s), s)) for s in selectors
+            ]
             WebDriverWait(self.browser.driver, timeout).until(EC.any_of(*conditions))
             wait_duration = time.time() - start_time
             logger.info(f"✅ Element found after {wait_duration:.2f}s from selectors: {selectors}")
         except TimeoutException:
             wait_duration = time.time() - start_time
-            logger.warning(f"⏰ TIMEOUT: Element not found within {timeout}s (waited {wait_duration:.2f}s): {selectors}")
+            logger.warning(
+                f"⏰ TIMEOUT: Element not found within {timeout}s (waited {wait_duration:.2f}s): {selectors}"
+            )
             logger.debug(f"Current page URL: {self.browser.driver.current_url}")
             logger.debug(f"Page title: {self.browser.driver.title}")
 
@@ -533,21 +548,21 @@ class WorkflowExecutor:
                             except:
                                 pass
                         if similar_selectors:
-                            logger.debug(f"Found similar elements for {selector}: {similar_selectors[:5]}")
+                            logger.debug(
+                                f"Found similar elements for {selector}: {similar_selectors[:5]}"
+                            )
             except Exception as debug_e:
                 logger.debug(f"Could not analyze page elements: {debug_e}")
 
-            raise WorkflowExecutionError(
-                f"Element not found within {timeout}s: {selectors}"
-            )
+            raise WorkflowExecutionError(f"Element not found within {timeout}s: {selectors}")
 
-    def _action_wait(self, params: Dict[str, Any]):
+    def _action_wait(self, params: dict[str, Any]):
         """Simple wait/delay."""
         seconds = params.get("seconds", params.get("timeout", 1))
         logger.debug(f"Waiting for {seconds} seconds")
         time.sleep(seconds)
 
-    def _action_extract_single(self, params: Dict[str, Any]):
+    def _action_extract_single(self, params: dict[str, Any]):
         """Extract a single value using a selector."""
         field_name = params.get("field")
         selector_name = params.get("selector")
@@ -559,14 +574,10 @@ class WorkflowExecutor:
 
         selector_config = self.selectors.get(selector_name)
         if not selector_config:
-            raise WorkflowExecutionError(
-                f"Selector '{selector_name}' not found in config"
-            )
+            raise WorkflowExecutionError(f"Selector '{selector_name}' not found in config")
 
         try:
-            element = self.browser.driver.find_element(
-                By.CSS_SELECTOR, selector_config.selector
-            )
+            element = self.browser.driver.find_element(By.CSS_SELECTOR, selector_config.selector)
             value = self._extract_value_from_element(element, selector_config.attribute)
             self.results[field_name] = value
             logger.debug(f"Extracted {field_name}: {value}")
@@ -574,7 +585,7 @@ class WorkflowExecutor:
             logger.warning(f"Element not found for field: {field_name}")
             self.results[field_name] = None
 
-    def _action_extract_multiple(self, params: Dict[str, Any]):
+    def _action_extract_multiple(self, params: dict[str, Any]):
         """Extract multiple values using a selector."""
         field_name = params.get("field")
         selector_name = params.get("selector")
@@ -586,19 +597,13 @@ class WorkflowExecutor:
 
         selector_config = self.selectors.get(selector_name)
         if not selector_config:
-            raise WorkflowExecutionError(
-                f"Selector '{selector_name}' not found in config"
-            )
+            raise WorkflowExecutionError(f"Selector '{selector_name}' not found in config")
 
         try:
-            elements = self.browser.driver.find_elements(
-                By.CSS_SELECTOR, selector_config.selector
-            )
+            elements = self.browser.driver.find_elements(By.CSS_SELECTOR, selector_config.selector)
             values = []
             for element in elements:
-                value = self._extract_value_from_element(
-                    element, selector_config.attribute
-                )
+                value = self._extract_value_from_element(element, selector_config.attribute)
                 if value:
                     values.append(value)
             self.results[field_name] = values
@@ -614,7 +619,7 @@ class WorkflowExecutor:
         else:
             return By.CSS_SELECTOR
 
-    def _action_extract(self, params: Dict[str, Any]):
+    def _action_extract(self, params: dict[str, Any]):
         """Extract multiple fields at once (legacy compatibility)."""
         fields = params.get("fields", [])
         logger.debug(f"Starting extract action for fields: {fields}")
@@ -632,9 +637,7 @@ class WorkflowExecutor:
                     )
                     values = []
                     for element in elements:
-                        value = self._extract_value_from_element(
-                            element, selector_config.attribute
-                        )
+                        value = self._extract_value_from_element(element, selector_config.attribute)
                         if value:
                             values.append(value)
                     # Deduplicate values while preserving order
@@ -649,9 +652,7 @@ class WorkflowExecutor:
                     element = self.browser.driver.find_element(
                         locator_type, selector_config.selector
                     )
-                    value = self._extract_value_from_element(
-                        element, selector_config.attribute
-                    )
+                    value = self._extract_value_from_element(element, selector_config.attribute)
                     self.results[field_name] = value
                 logger.debug(f"Extracted {field_name}: {self.results[field_name]}")
             except NoSuchElementException:
@@ -659,16 +660,14 @@ class WorkflowExecutor:
                 self.results[field_name] = [] if selector_config.multiple else None
         logger.info(f"Extract action completed. Results: {self.results}")
 
-    def _action_input_text(self, params: Dict[str, Any]):
+    def _action_input_text(self, params: dict[str, Any]):
         """Input text into a form field."""
         selector = params.get("selector")
         text = params.get("text")
         clear_first = params.get("clear_first", True)
 
         if not selector or text is None:
-            raise WorkflowExecutionError(
-                "Input_text requires 'selector' and 'text' parameters"
-            )
+            raise WorkflowExecutionError("Input_text requires 'selector' and 'text' parameters")
 
         try:
             element = self.browser.driver.find_element(By.CSS_SELECTOR, selector)
@@ -679,7 +678,7 @@ class WorkflowExecutor:
         except NoSuchElementException:
             raise WorkflowExecutionError(f"Input element not found: {selector}")
 
-    def _action_click(self, params: Dict[str, Any]):
+    def _action_click(self, params: dict[str, Any]):
         """Click on an element with proper WebDriverWait and retry logic."""
         selector = params.get("selector")
         filter_text = params.get("filter_text")
@@ -692,7 +691,9 @@ class WorkflowExecutor:
         locator_type = self._get_locator_type(selector)
         max_retries = params.get("max_retries", 3 if self.is_ci else 1)  # More retries in CI
 
-        logger.debug(f"Attempting to click element: {selector} (locator: {locator_type}, CI: {self.is_ci}, max_retries: {max_retries})")
+        logger.debug(
+            f"Attempting to click element: {selector} (locator: {locator_type}, CI: {self.is_ci}, max_retries: {max_retries})"
+        )
 
         # Initial wait for at least one element to be present
         try:
@@ -707,28 +708,41 @@ class WorkflowExecutor:
         # Now find elements and perform filtering and click
         try:
             elements = self.browser.driver.find_elements(locator_type, selector)
-            
+
             if not elements:
                 raise NoSuchElementException(f"No elements found for selector: {selector}")
 
             filtered_elements = elements
             if filter_text:
-                filtered_elements = [el for el in filtered_elements if re.search(filter_text, el.text, re.IGNORECASE)]
-            
+                filtered_elements = [
+                    el for el in filtered_elements if re.search(filter_text, el.text, re.IGNORECASE)
+                ]
+
             if filter_text_exclude:
-                filtered_elements = [el for el in filtered_elements if not re.search(filter_text_exclude, el.text, re.IGNORECASE)]
+                filtered_elements = [
+                    el
+                    for el in filtered_elements
+                    if not re.search(filter_text_exclude, el.text, re.IGNORECASE)
+                ]
 
             if not filtered_elements:
-                raise NoSuchElementException(f"No elements remaining after filtering for selector: {selector}")
+                raise NoSuchElementException(
+                    f"No elements remaining after filtering for selector: {selector}"
+                )
 
             if index >= len(filtered_elements):
-                raise WorkflowExecutionError(f"Index {index} out of bounds for filtered elements (count: {len(filtered_elements)}) for selector: {selector}")
+                raise WorkflowExecutionError(
+                    f"Index {index} out of bounds for filtered elements (count: {len(filtered_elements)}) for selector: {selector}"
+                )
 
             element_to_click = filtered_elements[index]
 
             # Scroll element into view if needed
             try:
-                self.browser.driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'center'});", element_to_click)
+                self.browser.driver.execute_script(
+                    "arguments[0].scrollIntoView({block: 'center', inline: 'center'});",
+                    element_to_click,
+                )
                 time.sleep(0.5)  # Brief pause after scrolling
             except Exception as scroll_e:
                 logger.debug(f"Could not scroll element into view: {scroll_e}")
@@ -746,7 +760,7 @@ class WorkflowExecutor:
         except Exception as e:
             raise WorkflowExecutionError(f"Failed to click element after waiting: {e}")
 
-    def _action_login(self, params: Dict[str, Any]):
+    def _action_login(self, params: dict[str, Any]):
         """Execute login workflow with credentials."""
         # Merge login details from config into params
         if self.config.login:
@@ -776,8 +790,12 @@ class WorkflowExecutor:
         success_indicator = params.get("success_indicator")
 
         # Debug logging for credentials
-        logger.debug(f"Login params for {scraper_name}: username={'***' if username else 'None'}, password={'***' if password else 'None'}, url={login_url}")
-        logger.debug(f"Login fields: username_field={username_field}, password_field={password_field}, submit_button={submit_button}")
+        logger.debug(
+            f"Login params for {scraper_name}: username={'***' if username else 'None'}, password={'***' if password else 'None'}, url={login_url}"
+        )
+        logger.debug(
+            f"Login fields: username_field={username_field}, password_field={password_field}, submit_button={submit_button}"
+        )
 
         if not all(
             [
@@ -789,7 +807,9 @@ class WorkflowExecutor:
                 submit_button,
             ]
         ):
-            logger.error(f"Missing login parameters for {scraper_name}: username={bool(username)}, password={bool(password)}, url={bool(login_url)}, username_field={bool(username_field)}, password_field={bool(password_field)}, submit_button={bool(submit_button)}")
+            logger.error(
+                f"Missing login parameters for {scraper_name}: username={bool(username)}, password={bool(password)}, url={bool(login_url)}, username_field={bool(username_field)}, password_field={bool(password_field)}, submit_button={bool(submit_button)}"
+            )
             raise WorkflowExecutionError(
                 "Login action requires username, password, url, username_field, password_field, and submit_button parameters"
             )
@@ -802,9 +822,7 @@ class WorkflowExecutor:
 
         # Input username
         try:
-            username_element = self.browser.driver.find_element(
-                By.CSS_SELECTOR, username_field
-            )
+            username_element = self.browser.driver.find_element(By.CSS_SELECTOR, username_field)
             username_element.clear()
             username_element.send_keys(str(username))
             logger.debug("Entered username")
@@ -813,9 +831,7 @@ class WorkflowExecutor:
 
         # Input password
         try:
-            password_element = self.browser.driver.find_element(
-                By.CSS_SELECTOR, password_field
-            )
+            password_element = self.browser.driver.find_element(By.CSS_SELECTOR, password_field)
             password_element.clear()
             password_element.send_keys(str(password))
             logger.debug("Entered password")
@@ -824,9 +840,7 @@ class WorkflowExecutor:
 
         # Click submit button
         try:
-            submit_element = self.browser.driver.find_element(
-                By.CSS_SELECTOR, submit_button
-            )
+            submit_element = self.browser.driver.find_element(By.CSS_SELECTOR, submit_button)
             submit_element.click()
             logger.debug("Clicked submit button")
         except NoSuchElementException:
@@ -861,26 +875,26 @@ class WorkflowExecutor:
             )
 
             # Check if failure was detected with sufficient confidence
-            if failure_context.failure_type.value == "login_failed" and failure_context.confidence > 0.5:
+            if (
+                failure_context.failure_type.value == "login_failed"
+                and failure_context.confidence > 0.5
+            ):
                 logger.error(f"Login failure detected: {failure_context.details}")
                 raise WorkflowExecutionError(
                     f"Login failed - detected failure indicators: {failure_context.details}"
                 )
             elif failure_context.confidence > 0.3:
-                logger.warning(f"Potential login failure detected (confidence: {failure_context.confidence}): {failure_context.details}")
+                logger.warning(
+                    f"Potential login failure detected (confidence: {failure_context.confidence}): {failure_context.details}"
+                )
 
-    def _action_detect_captcha(self, params: Dict[str, Any]):
+    def _action_detect_captcha(self, params: dict[str, Any]):
         """Detect CAPTCHA presence on current page."""
-        if (
-            not self.anti_detection_manager
-            or not self.anti_detection_manager.captcha_detector
-        ):
+        if not self.anti_detection_manager or not self.anti_detection_manager.captcha_detector:
             logger.warning("CAPTCHA detection not enabled")
             return
 
-        detected = self.anti_detection_manager.captcha_detector.detect_captcha(
-            self.browser.driver
-        )
+        detected = self.anti_detection_manager.captcha_detector.detect_captcha(self.browser.driver)
         self.results["captcha_detected"] = detected
 
         if detected:
@@ -893,18 +907,13 @@ class WorkflowExecutor:
         else:
             logger.debug("No CAPTCHA detected on current page")
 
-    def _action_handle_blocking(self, params: Dict[str, Any]):
+    def _action_handle_blocking(self, params: dict[str, Any]):
         """Handle blocking pages."""
-        if (
-            not self.anti_detection_manager
-            or not self.anti_detection_manager.blocking_handler
-        ):
+        if not self.anti_detection_manager or not self.anti_detection_manager.blocking_handler:
             logger.warning("Blocking handling not enabled")
             return
 
-        handled = self.anti_detection_manager.blocking_handler.handle_blocking(
-            self.browser.driver
-        )
+        handled = self.anti_detection_manager.blocking_handler.handle_blocking(self.browser.driver)
         self.results["blocking_handled"] = handled
 
         if handled:
@@ -912,12 +921,9 @@ class WorkflowExecutor:
         else:
             logger.warning("Failed to handle blocking page")
 
-    def _action_rate_limit(self, params: Dict[str, Any]):
+    def _action_rate_limit(self, params: dict[str, Any]):
         """Apply rate limiting delay."""
-        if (
-            not self.anti_detection_manager
-            or not self.anti_detection_manager.rate_limiter
-        ):
+        if not self.anti_detection_manager or not self.anti_detection_manager.rate_limiter:
             logger.warning("Rate limiting not enabled")
             return
 
@@ -931,12 +937,9 @@ class WorkflowExecutor:
             self.anti_detection_manager.rate_limiter.apply_delay()
             logger.debug("Applied intelligent rate limiting")
 
-    def _action_simulate_human(self, params: Dict[str, Any]):
+    def _action_simulate_human(self, params: dict[str, Any]):
         """Simulate human-like behavior."""
-        if (
-            not self.anti_detection_manager
-            or not self.anti_detection_manager.human_simulator
-        ):
+        if not self.anti_detection_manager or not self.anti_detection_manager.human_simulator:
             logger.warning("Human behavior simulation not enabled")
             return
 
@@ -956,16 +959,11 @@ class WorkflowExecutor:
         else:
             # Random human-like pause
             time.sleep(random.uniform(1, duration))
-            logger.debug(
-                f"Simulated random human behavior for {random.uniform(1, duration):.2f}s"
-            )
+            logger.debug(f"Simulated random human behavior for {random.uniform(1, duration):.2f}s")
 
-    def _action_rotate_session(self, params: Dict[str, Any]):
+    def _action_rotate_session(self, params: dict[str, Any]):
         """Force session rotation."""
-        if (
-            not self.anti_detection_manager
-            or not self.anti_detection_manager.session_manager
-        ):
+        if not self.anti_detection_manager or not self.anti_detection_manager.session_manager:
             logger.warning("Session rotation not enabled")
             return
 
@@ -979,7 +977,7 @@ class WorkflowExecutor:
         else:
             logger.warning("Failed to rotate session")
 
-    def _action_validate_http_status(self, params: Dict[str, Any]):
+    def _action_validate_http_status(self, params: dict[str, Any]):
         """Validate HTTP status of current page."""
         expected_status = params.get("expected_status")
         fail_on_error = params.get("fail_on_error", True)
@@ -1021,7 +1019,7 @@ class WorkflowExecutor:
             else:
                 logger.warning(error_msg)
 
-    def _action_check_no_results(self, params: Dict[str, Any]):
+    def _action_check_no_results(self, params: dict[str, Any]):
         """
         Explicitly check if the current page indicates a 'no results' scenario.
         Sets 'no_results_found' in self.results to True if detected.
@@ -1088,23 +1086,19 @@ class WorkflowExecutor:
                 f"Confidence: {failure_context.confidence:.2f})."
             )
 
-    def _action_conditional_skip(self, params: Dict[str, Any]):
+    def _action_conditional_skip(self, params: dict[str, Any]):
         """
         Conditionally skip the rest of the workflow based on a flag in self.results.
         """
         if_flag = params.get("if_flag")
         if not if_flag:
-            raise WorkflowExecutionError(
-                "conditional_skip action requires 'if_flag' parameter"
-            )
+            raise WorkflowExecutionError("conditional_skip action requires 'if_flag' parameter")
 
         if self.results.get(if_flag):
-            logger.info(
-                f"Condition '{if_flag}' is true, stopping workflow execution."
-            )
+            logger.info(f"Condition '{if_flag}' is true, stopping workflow execution.")
             self.workflow_stopped = True
 
-    def _action_scroll(self, params: Dict[str, Any]):
+    def _action_scroll(self, params: dict[str, Any]):
         """Scroll the page."""
         direction = params.get("direction", "down")
         amount = params.get("amount")
@@ -1112,8 +1106,12 @@ class WorkflowExecutor:
 
         if selector:
             try:
-                element = self.browser.driver.find_element(self._get_locator_type(selector), selector)
-                self.browser.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
+                element = self.browser.driver.find_element(
+                    self._get_locator_type(selector), selector
+                )
+                self.browser.driver.execute_script(
+                    "arguments[0].scrollIntoView({block: 'center'});", element
+                )
                 logger.debug(f"Scrolled to element: {selector}")
             except NoSuchElementException:
                 raise WorkflowExecutionError(f"Scroll target element not found: {selector}")
@@ -1132,23 +1130,25 @@ class WorkflowExecutor:
                 self.browser.driver.execute_script(f"window.scrollBy(0, -{scroll_amount});")
                 logger.debug(f"Scrolled up by {scroll_amount} pixels")
 
-    def _action_extract_from_json(self, params: Dict[str, Any]):
+    def _action_extract_from_json(self, params: dict[str, Any]):
         """Extract data from a JSON object within a <script> tag."""
         selector = params.get("selector")
         json_path = params.get("json_path")
         field_name = params.get("field")
 
         if not all([selector, json_path, field_name]):
-            raise WorkflowExecutionError("extract_from_json requires 'selector', 'json_path', and 'field' parameters")
+            raise WorkflowExecutionError(
+                "extract_from_json requires 'selector', 'json_path', and 'field' parameters"
+            )
 
         try:
             script_element = self.browser.driver.find_element(By.CSS_SELECTOR, selector)
-            json_string = script_element.get_attribute('textContent')
-            
+            json_string = script_element.get_attribute("textContent")
+
             data = json.loads(json_string)
-            
+
             # Simple dot-notation path extraction
-            path_parts = json_path.split('.')
+            path_parts = json_path.split(".")
             current_data = data
             for part in path_parts:
                 if isinstance(current_data, dict) and part in current_data:
@@ -1157,12 +1157,15 @@ class WorkflowExecutor:
                     current_data = current_data[int(part)]
                 else:
                     raise KeyError(f"Path part '{part}' not found in JSON")
-            
+
             # Convert protocol-relative URLs to full URLs for Images field
             if field_name == "Images" and isinstance(current_data, list):
-                current_data = [url if url.startswith(('http://', 'https://')) else f'https:{url}' 
-                              for url in current_data if isinstance(url, str)]
-            
+                current_data = [
+                    url if url.startswith(("http://", "https://")) else f"https:{url}"
+                    for url in current_data
+                    if isinstance(url, str)
+                ]
+
             self.results[field_name] = current_data
             logger.debug(f"Extracted from JSON for {field_name}: {current_data}")
 
@@ -1173,20 +1176,20 @@ class WorkflowExecutor:
             logger.warning(f"Failed to extract from JSON: {e}")
             self.results[field_name] = None
 
-    def _action_conditional_click(self, params: Dict[str, Any]):
+    def _action_conditional_click(self, params: dict[str, Any]):
         """Click on an element only if it exists, without failing the workflow."""
         selector = params.get("selector")
         if not selector:
             raise WorkflowExecutionError("conditional_click requires 'selector' parameter")
 
         locator_type = self._get_locator_type(selector)
-        
+
         try:
             # Check for element presence with a very short timeout
             WebDriverWait(self.browser.driver, 2).until(
                 EC.presence_of_element_located((locator_type, selector))
             )
-            
+
             # If present, attempt the click using the main click action
             logger.info(f"Conditional element '{selector}' found. Attempting to click.")
             self._action_click(params)
@@ -1195,9 +1198,11 @@ class WorkflowExecutor:
             logger.info(f"Conditional element '{selector}' not found. Skipping click.")
         except Exception as e:
             # Catch other exceptions from _action_click but log as warning
-            logger.warning(f"Conditional click on '{selector}' failed with an unexpected error: {e}")
+            logger.warning(
+                f"Conditional click on '{selector}' failed with an unexpected error: {e}"
+            )
 
-    def _action_verify(self, params: Dict[str, Any]):
+    def _action_verify(self, params: dict[str, Any]):
         """Verify a value on the page against an expected value."""
         selector = params.get("selector")
         attribute = params.get("attribute", "text")
@@ -1206,7 +1211,9 @@ class WorkflowExecutor:
         on_failure = params.get("on_failure", "fail_workflow")
 
         if not all([selector, expected_value]):
-            raise WorkflowExecutionError("Verify action requires 'selector' and 'expected_value' parameters")
+            raise WorkflowExecutionError(
+                "Verify action requires 'selector' and 'expected_value' parameters"
+            )
 
         try:
             locator_type = self._get_locator_type(selector)
@@ -1222,15 +1229,17 @@ class WorkflowExecutor:
             elif match_mode == "contains":
                 match = str(expected_value) in str(actual_value)
             elif match_mode == "fuzzy_number":
-                expected_digits = re.sub(r'\D', '', str(expected_value))
-                actual_digits = re.sub(r'\D', '', str(actual_value))
+                expected_digits = re.sub(r"\D", "", str(expected_value))
+                actual_digits = re.sub(r"\D", "", str(actual_value))
                 if expected_digits and actual_digits:
                     match = int(expected_digits) == int(actual_digits)
             else:
                 raise WorkflowExecutionError(f"Unknown match_mode: {match_mode}")
 
             if match:
-                logger.info(f"✅ Verification successful for selector '{selector}'. Found '{actual_value}', expected '{expected_value}' (mode: {match_mode}).")
+                logger.info(
+                    f"✅ Verification successful for selector '{selector}'. Found '{actual_value}', expected '{expected_value}' (mode: {match_mode})."
+                )
             else:
                 error_msg = f"Verification failed for selector '{selector}'. Found '{actual_value}', expected '{expected_value}' (mode: {match_mode})."
                 if on_failure == "fail_workflow":
@@ -1245,9 +1254,7 @@ class WorkflowExecutor:
             else:
                 logger.warning(error_msg)
 
-    def _extract_value_from_element(
-        self, element, attribute: Optional[str]
-    ) -> Optional[str]:
+    def _extract_value_from_element(self, element, attribute: str | None) -> str | None:
         """
         Extract value from a web element based on attribute.
 
@@ -1269,6 +1276,6 @@ class WorkflowExecutor:
             logger.warning(f"Failed to extract value from element: {e}")
             return None
 
-    def get_results(self) -> Dict[str, Any]:
+    def get_results(self) -> dict[str, Any]:
         """Get the current execution results."""
         return self.results.copy()

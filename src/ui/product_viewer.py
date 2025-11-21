@@ -1,4 +1,3 @@
-import json
 import os
 import sqlite3
 import sys
@@ -10,12 +9,24 @@ project_root = os.path.dirname(os.path.dirname(current_dir))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox,
-                             QComboBox, QGroupBox, QHBoxLayout, QHeaderView,
-                             QLabel, QLineEdit, QMainWindow, QMessageBox,
-                             QPushButton, QTableWidget, QTableWidgetItem,
-                             QVBoxLayout, QWidget)
+from PyQt6.QtWidgets import (
+    QAbstractItemView,
+    QApplication,
+    QCheckBox,
+    QComboBox,
+    QGroupBox,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QLineEdit,
+    QMainWindow,
+    QMessageBox,
+    QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
+    QVBoxLayout,
+    QWidget,
+)
 
 try:
     # Try relative import first (when run as part of package)
@@ -30,11 +41,8 @@ except ImportError:
 
 # Database path - find it relative to project root
 import os
-from pathlib import Path
 
-PROJECT_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DB_PATH = Path(PROJECT_ROOT) / "data" / "databases" / "products.db"
 
 
@@ -52,9 +60,7 @@ class ProductViewer(QMainWindow):
         except (ImportError, ModuleNotFoundError):
             print("CRITICAL: Could not import stylesheet. UI will be unstyled.")
             # Fallback to a very basic theme if the import fails
-            self.setStyleSheet(
-                "QMainWindow { background-color: #1e1e1e; color: #ffffff; }"
-            )
+            self.setStyleSheet("QMainWindow { background-color: #1e1e1e; color: #ffffff; }")
 
         # Database connection
         self.conn = None
@@ -434,7 +440,9 @@ class ProductViewer(QMainWindow):
 
             # Add category filter
             if self.category_filter:
-                query += " AND (Category LIKE ? OR Category LIKE ? OR Category LIKE ? OR Category = ?)"
+                query += (
+                    " AND (Category LIKE ? OR Category LIKE ? OR Category LIKE ? OR Category = ?)"
+                )
                 # Match: "|Category|", "Category|", "|Category", "Category"
                 category_param = self.category_filter
                 params.extend(
@@ -516,14 +524,11 @@ class ProductViewer(QMainWindow):
                 product_type_display = product_type or ""
                 pages_display = product_on_pages or ""
                 special_order_display = (
-                    "Yes"
-                    if special_order and str(special_order).lower().strip() == "yes"
-                    else "No"
+                    "Yes" if special_order and str(special_order).lower().strip() == "yes" else "No"
                 )
                 disabled_display = (
                     "Yes"
-                    if product_disabled
-                    and str(product_disabled).lower().strip() == "checked"
+                    if product_disabled and str(product_disabled).lower().strip() == "checked"
                     else "No"
                 )
                 last_updated_display = last_updated or ""
@@ -570,9 +575,7 @@ class ProductViewer(QMainWindow):
                 category_str = row[0]
                 if category_str:
                     # Split by "|" and strip whitespace
-                    category_parts = [
-                        cat.strip() for cat in category_str.split("|") if cat.strip()
-                    ]
+                    category_parts = [cat.strip() for cat in category_str.split("|") if cat.strip()]
                     categories.update(category_parts)
             categories = sorted(list(categories))
 
@@ -585,9 +588,7 @@ class ProductViewer(QMainWindow):
                 product_type_str = row[0]
                 if product_type_str:
                     # Split by "|" and strip whitespace
-                    type_parts = [
-                        pt.strip() for pt in product_type_str.split("|") if pt.strip()
-                    ]
+                    type_parts = [pt.strip() for pt in product_type_str.split("|") if pt.strip()]
                     product_types.update(type_parts)
             product_types = sorted(list(product_types))
 
@@ -668,9 +669,7 @@ class ProductViewer(QMainWindow):
 
     def update_pagination(self):
         """Update pagination controls."""
-        total_pages = max(
-            1, (self.total_products + self.page_size - 1) // self.page_size
-        )
+        total_pages = max(1, (self.total_products + self.page_size - 1) // self.page_size)
         current_page_display = self.current_page + 1
 
         self.page_label.setText(f"Page {current_page_display} of {total_pages}")
@@ -727,9 +726,7 @@ class ProductViewer(QMainWindow):
 
     def next_page(self):
         """Go to next page."""
-        total_pages = max(
-            1, (self.total_products + self.page_size - 1) // self.page_size
-        )
+        total_pages = max(1, (self.total_products + self.page_size - 1) // self.page_size)
         if self.current_page < total_pages - 1:
             self.current_page += 1
             self.load_products()
@@ -749,9 +746,7 @@ class ProductViewer(QMainWindow):
             products_data = self.load_products_data(skus)
 
             if not products_data:
-                QMessageBox.critical(
-                    self, "Error", "Failed to load product data from database"
-                )
+                QMessageBox.critical(self, "Error", "Failed to load product data from database")
                 return
 
             # Call the batch editor with product data
@@ -815,9 +810,7 @@ class ProductViewer(QMainWindow):
                 image_urls = []
                 if images:
                     # Split by comma and strip whitespace
-                    raw_images = [
-                        url.strip() for url in str(images).split(",") if url.strip()
-                    ]
+                    raw_images = [url.strip() for url in str(images).split(",") if url.strip()]
                     # Convert relative paths to full URLs
                     base_url = "https://www.baystatepet.com/media/"
                     for img in raw_images:
@@ -834,9 +827,7 @@ class ProductViewer(QMainWindow):
                     """Split by |, remove duplicates while preserving order, rejoin with |"""
                     if not value:
                         return ""
-                    parts = [
-                        part.strip() for part in str(value).split("|") if part.strip()
-                    ]
+                    parts = [part.strip() for part in str(value).split("|") if part.strip()]
                     unique_parts = list(
                         dict.fromkeys(parts)
                     )  # Preserve order while removing duplicates

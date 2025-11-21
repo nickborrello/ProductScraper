@@ -2,10 +2,11 @@
 Unit tests for FailureClassifier NO_RESULTS detection
 """
 
-import pytest
 from unittest.mock import MagicMock, Mock
 
-from src.core.failure_classifier import FailureClassifier, FailureType, FailureContext
+import pytest
+
+from src.core.failure_classifier import FailureClassifier, FailureType
 
 
 class TestFailureClassifierNoResults:
@@ -28,9 +29,13 @@ class TestFailureClassifierNoResults:
     def test_no_results_selectors_detection(self, classifier, mock_driver):
         """Test detection of NO_RESULTS via CSS selectors."""
         # Test with no-results class selector
-        mock_driver.find_elements.side_effect = lambda by, selector: [
-            Mock()  # Return element for no-results selector
-        ] if selector == "[class*='no-results']" else []
+        mock_driver.find_elements.side_effect = (
+            lambda by, selector: [
+                Mock()  # Return element for no-results selector
+            ]
+            if selector == "[class*='no-results']"
+            else []
+        )
 
         result = classifier.classify_page_content(mock_driver, {})
 
@@ -59,11 +64,14 @@ class TestFailureClassifierNoResults:
         result = classifier.classify_page_content(mock_driver, {})
 
         assert result.failure_type == FailureType.NO_RESULTS
-        assert result.confidence >= 0.5  # Title match with reduced weight but multiple patterns, and now better classification
+        assert (
+            result.confidence >= 0.5
+        )  # Title match with reduced weight but multiple patterns, and now better classification
         assert result.details["title_match"] is True
 
     def test_no_results_multiple_patterns_confidence(self, classifier, mock_driver):
         """Test confidence scoring with multiple NO_RESULTS patterns."""
+
         # Mock multiple selector matches
         def find_elements_side_effect(by, selector):
             if selector in ["[class*='no-results']", ".no-products"]:
@@ -80,15 +88,21 @@ class TestFailureClassifierNoResults:
 
     def test_no_results_partial_text_match(self, classifier, mock_driver):
         """Test partial text matches for NO_RESULTS."""
-        mock_driver.page_source = "<html><body>Your search returned no results. No matching products found.</body></html>"
+        mock_driver.page_source = (
+            "<html><body>Your search returned no results. No matching products found.</body></html>"
+        )
 
         result = classifier.classify_page_content(mock_driver, {})
         assert result.failure_type == FailureType.NO_RESULTS
-        assert result.confidence >= 0.5  # Should exceed threshold with multiple matches and now better classification
+        assert (
+            result.confidence >= 0.5
+        )  # Should exceed threshold with multiple matches and now better classification
 
     def test_no_results_case_insensitive_matching(self, classifier, mock_driver):
         """Test case-insensitive text pattern matching."""
-        mock_driver.page_source = "<html><body>NO RESULTS FOUND. NO MATCHING PRODUCTS FOUND.</body></html>"
+        mock_driver.page_source = (
+            "<html><body>NO RESULTS FOUND. NO MATCHING PRODUCTS FOUND.</body></html>"
+        )
 
         result = classifier.classify_page_content(mock_driver, {})
         assert result.failure_type == FailureType.NO_RESULTS
@@ -138,13 +152,17 @@ class TestFailureClassifierNoResults:
         """Test handling of exceptions during selector checking."""
         mock_driver.find_elements.side_effect = Exception("Selector error")
         # Use content that matches multiple patterns to exceed threshold
-        mock_driver.page_source = "<html><body>No results found. No matching products found.</body></html>"
+        mock_driver.page_source = (
+            "<html><body>No results found. No matching products found.</body></html>"
+        )
 
         result = classifier.classify_page_content(mock_driver, {})
 
         # Should still work via text patterns despite selector exception
         assert result.failure_type == FailureType.NO_RESULTS
-        assert result.confidence >= 0.5  # Should still work via text patterns despite selector exception, with better confidence
+        assert (
+            result.confidence >= 0.5
+        )  # Should still work via text patterns despite selector exception, with better confidence
 
     def test_no_results_text_pattern_confidence_calculation(self, classifier):
         """Test confidence calculation for text pattern matching."""
@@ -155,9 +173,7 @@ class TestFailureClassifierNoResults:
         ]
 
         # Test single match
-        confidence = classifier._calculate_text_match_confidence(
-            "no results found", patterns
-        )
+        confidence = classifier._calculate_text_match_confidence("no results found", patterns)
         assert confidence == 0.7  # Fixed confidence for any match
 
         # Test multiple matches still returns the fixed confidence
@@ -167,9 +183,7 @@ class TestFailureClassifierNoResults:
         assert confidence == 0.7  # Should still be the fixed confidence
 
         # Test no matches
-        confidence = classifier._calculate_text_match_confidence(
-            "regular content", patterns
-        )
+        confidence = classifier._calculate_text_match_confidence("regular content", patterns)
         assert confidence == 0.0
 
     def test_no_results_integration_with_page_content(self, classifier, mock_driver):
@@ -190,9 +204,9 @@ class TestFailureClassifierNoResults:
         mock_driver.title = "No Results Found - Product Search"
 
         # Mock selector match
-        mock_driver.find_elements.side_effect = lambda by, selector: [
-            Mock()
-        ] if selector == "[class*='no-results']" else []
+        mock_driver.find_elements.side_effect = (
+            lambda by, selector: [Mock()] if selector == "[class*='no-results']" else []
+        )
 
         result = classifier.classify_page_content(mock_driver, {})
 
@@ -231,7 +245,9 @@ class TestFailureClassifierNoResults:
     def test_no_results_with_status_code_context(self, classifier, mock_driver):
         """Test NO_RESULTS detection with HTTP status code context."""
         # Use content that triggers NO_RESULTS
-        mock_driver.page_source = "<html><body>No results found. No matching products found.</body></html>"
+        mock_driver.page_source = (
+            "<html><body>No results found. No matching products found.</body></html>"
+        )
 
         # High-confidence status codes take precedence over content-based detection
         result = classifier.classify_page_content(mock_driver, {"status_code": 404})

@@ -1,4 +1,3 @@
-import os
 import sqlite3
 from pathlib import Path
 
@@ -30,9 +29,9 @@ if DB_PATH.exists():
 
         print(f"Total products: {total}")
         if total > 0:
-            print(f"With Category: {has_category} ({has_category/total*100:.1f}%)")
-            print(f"With Product Type: {has_type} ({has_type/total*100:.1f}%)")
-            print(f"With Product On Pages: {has_pages} ({has_pages/total*100:.1f}%)")
+            print(f"With Category: {has_category} ({has_category / total * 100:.1f}%)")
+            print(f"With Product Type: {has_type} ({has_type / total * 100:.1f}%)")
+            print(f"With Product On Pages: {has_pages} ({has_pages / total * 100:.1f}%)")
         else:
             print("With Category: 0 (0.0%)")
             print("With Product Type: 0 (0.0%)")

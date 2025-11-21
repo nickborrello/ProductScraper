@@ -2,15 +2,11 @@
 Integration tests for running scrapers locally and validating output.
 """
 
-import json
 import os
-import shutil
 import sys
-import tempfile
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional
-from unittest.mock import patch
+from typing import Any
 
 import pytest
 
@@ -27,21 +23,15 @@ from tests.fixtures.scraper_validator import ScraperValidator
 class ScraperIntegrationTester:
     """Integration tester for running scrapers locally."""
 
-    def __init__(self, test_data_path: Optional[str] = None):
+    def __init__(self, test_data_path: str | None = None):
         """Initialize the integration tester."""
         self.project_root = PROJECT_ROOT
         # No longer need test_data_path for JSON, but keep for compatibility
         self.validator = ScraperValidator()
 
-    def get_test_skus(self, scraper_name: str, max_skus: int = 1) -> List[str]:
+    def get_test_skus(self, scraper_name: str, max_skus: int = 1) -> list[str]:
         """Get test SKUs for a scraper from its YAML config."""
-        config_path = (
-            self.project_root
-            / "src"
-            / "scrapers"
-            / "configs"
-            / f"{scraper_name}.yaml"
-        )
+        config_path = self.project_root / "src" / "scrapers" / "configs" / f"{scraper_name}.yaml"
         if not config_path.exists():
             return ["035585499741"]  # Default fallback
 
@@ -50,7 +40,7 @@ class ScraperIntegrationTester:
         skus = config.test_skus or ["035585499741"]
         return skus[:max_skus]  # Return only first max_skus
 
-    def get_available_scrapers(self) -> List[str]:
+    def get_available_scrapers(self) -> list[str]:
         """Get list of available scraper names."""
         configs_dir = self.project_root / "src" / "scrapers" / "configs"
         scrapers = []
@@ -65,8 +55,8 @@ class ScraperIntegrationTester:
         return sorted(scrapers)
 
     def run_scraper_locally(
-        self, scraper_name: str, skus: List[str], headless: Optional[bool] = None
-    ) -> Dict[str, Any]:
+        self, scraper_name: str, skus: list[str], headless: bool | None = None
+    ) -> dict[str, Any]:
         """
         Run a scraper locally with given SKUs.
 
@@ -79,9 +69,11 @@ class ScraperIntegrationTester:
             Dict with results and any errors
         """
         if headless is None:
-            headless = os.getenv('SCRAPER_HEADLESS', 'true').lower() == 'true'
+            headless = os.getenv("SCRAPER_HEADLESS", "true").lower() == "true"
 
-        print(f"DEBUG: Starting scraper execution for {scraper_name} with SKUs {skus}, headless={headless}")
+        print(
+            f"DEBUG: Starting scraper execution for {scraper_name} with SKUs {skus}, headless={headless}"
+        )
 
         results = {
             "scraper": scraper_name,
@@ -99,11 +91,7 @@ class ScraperIntegrationTester:
             print(f"DEBUG: Loading config for {scraper_name}")
             # Load YAML config
             config_path = (
-                self.project_root
-                / "src"
-                / "scrapers"
-                / "configs"
-                / f"{scraper_name}.yaml"
+                self.project_root / "src" / "scrapers" / "configs" / f"{scraper_name}.yaml"
             )
             parser = ScraperConfigParser()
             config = parser.load_from_file(config_path)
@@ -111,7 +99,7 @@ class ScraperIntegrationTester:
 
             products = []
             for i, sku in enumerate(skus):
-                print(f"DEBUG: Processing SKU {sku} ({i+1}/{len(skus)}) for {scraper_name}")
+                print(f"DEBUG: Processing SKU {sku} ({i + 1}/{len(skus)}) for {scraper_name}")
                 try:
                     # Clone config and replace {sku} placeholders
                     import copy
@@ -119,15 +107,15 @@ class ScraperIntegrationTester:
                     sku_config = copy.deepcopy(config)
                     for step in sku_config.workflows:
                         if step.action == "navigate" and "url" in step.params:
-                            step.params["url"] = step.params["url"].replace(
-                                "{sku}", sku
-                            )
+                            step.params["url"] = step.params["url"].replace("{sku}", sku)
 
                     print(f"DEBUG: Starting workflow execution for SKU {sku}")
                     # Run workflow
                     executor = WorkflowExecutor(sku_config, headless=headless)
                     workflow_result = executor.execute_workflow()
-                    print(f"DEBUG: Workflow execution completed for SKU {sku}, success={workflow_result.get('success', False)}")
+                    print(
+                        f"DEBUG: Workflow execution completed for SKU {sku}, success={workflow_result.get('success', False)}"
+                    )
 
                     if workflow_result["success"]:
                         # Extract product data
@@ -144,7 +132,9 @@ class ScraperIntegrationTester:
                     print(f"DEBUG: Exception scraping SKU {sku}: {e}")
 
             results["execution_time"] = time.time() - start_time
-            print(f"DEBUG: Scraper {scraper_name} execution completed in {results['execution_time']:.2f}s")
+            print(
+                f"DEBUG: Scraper {scraper_name} execution completed in {results['execution_time']:.2f}s"
+            )
 
             if products:
                 results["products"] = products
@@ -162,8 +152,8 @@ class ScraperIntegrationTester:
         return results
 
     def test_single_scraper(
-        self, scraper_name: str, skus: Optional[List[str]] = None
-    ) -> Dict[str, Any]:
+        self, scraper_name: str, skus: list[str] | None = None
+    ) -> dict[str, Any]:
         """
         Test a single scraper with validation.
 
@@ -181,10 +171,10 @@ class ScraperIntegrationTester:
         if not isinstance(skus, list):
             skus = [str(skus)]
 
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"TESTING SCRAPER: {scraper_name.upper()}")
         print(f"SKUs: {skus}")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
 
         # Run the scraper
         run_results = self.run_scraper_locally(scraper_name, skus)
@@ -201,8 +191,7 @@ class ScraperIntegrationTester:
             "scraper": scraper_name,
             "run_results": run_results,
             "validation_results": validation_results,
-            "overall_success": run_results["success"]
-            and not validation_results.get("errors", []),
+            "overall_success": run_results["success"] and not validation_results.get("errors", []),
         }
 
         # Print summary
@@ -210,7 +199,9 @@ class ScraperIntegrationTester:
 
         return test_results
 
-    def test_all_scrapers(self, skip_failing: bool = True, skip_login_required: bool = False) -> Dict[str, Any]:
+    def test_all_scrapers(
+        self, skip_failing: bool = True, skip_login_required: bool = False
+    ) -> dict[str, Any]:
         """
         Test all available scrapers.
 
@@ -231,7 +222,9 @@ class ScraperIntegrationTester:
             scrapers = [s for s in scrapers if s not in login_required_scrapers]
             skipped_count = original_count - len(scrapers)
             if skipped_count > 0:
-                print(f"SKIP: Skipping {skipped_count} login-requiring scrapers: {', '.join(login_required_scrapers)}")
+                print(
+                    f"SKIP: Skipping {skipped_count} login-requiring scrapers: {', '.join(login_required_scrapers)}"
+                )
 
         results = {
             "total_scrapers": len(scrapers),
@@ -242,9 +235,9 @@ class ScraperIntegrationTester:
             "skipped_login_scrapers": skipped_count,
         }
 
-        print(f"\n{'='*80}")
+        print(f"\n{'=' * 80}")
         print(f"RUNNING INTEGRATION TESTS FOR ALL {len(scrapers)} SCRAPERS")
-        print(f"{'='*80}")
+        print(f"{'=' * 80}")
 
         for scraper_name in scrapers:
             try:
@@ -275,25 +268,25 @@ class ScraperIntegrationTester:
         # Generate summary
         results["summary"] = self._generate_summary(results)
 
-        print(f"\n{'='*80}")
+        print(f"\n{'=' * 80}")
         print("FINAL SUMMARY")
-        print(f"{'='*80}")
+        print(f"{'=' * 80}")
         print(f"Total Scrapers: {results['total_scrapers']}")
         print(f"Successful: {results['successful_scrapers']}")
         print(f"Failed: {results['failed_scrapers']}")
         print(f"Success Rate: {results['summary']['success_rate']:.1f}%")
 
         if results["failed_scrapers"] > 0:
-            print(f"\nFAILED SCRAPERS:")
+            print("\nFAILED SCRAPERS:")
             for name, result in results["scraper_results"].items():
                 if not result.get("overall_success", False):
                     print(f"  • {name}")
         else:
-            print(f"\nALL SCRAPERS PASSED INTEGRATION TESTS")
+            print("\nALL SCRAPERS PASSED INTEGRATION TESTS")
 
         return results
 
-    def _print_test_summary(self, test_results: Dict[str, Any]) -> None:
+    def _print_test_summary(self, test_results: dict[str, Any]) -> None:
         """Print a summary of test results for a single scraper."""
         scraper = test_results["scraper"]
         run_results = test_results["run_results"]
@@ -303,10 +296,10 @@ class ScraperIntegrationTester:
 
         # Run results
         if run_results["success"]:
-            print(f"SUCCESS: Execution")
+            print("SUCCESS: Execution")
             print(f"   Products found: {len(run_results['products'])}")
         else:
-            print(f"FAILED: Execution")
+            print("FAILED: Execution")
             for error in run_results["errors"][:3]:
                 print(f"   • {error}")
 
@@ -322,11 +315,9 @@ class ScraperIntegrationTester:
             # Print field coverage
             field_coverage = validation_results.get("field_coverage", {})
             if field_coverage:
-                print(f"   Field Coverage:")
+                print("   Field Coverage:")
                 for field, coverage in field_coverage.items():
-                    status = (
-                        "PASS" if coverage == 100.0 else "WARN" if coverage > 0 else "FAIL"
-                    )
+                    status = "PASS" if coverage == 100.0 else "WARN" if coverage > 0 else "FAIL"
                     print(f"     {status} {field}: {coverage:.1f}%")
 
             if validation_results.get("errors"):
@@ -335,18 +326,16 @@ class ScraperIntegrationTester:
                     print(f"     - {error}")
             if validation_results.get("warnings"):
                 print(f"   Warnings: {len(validation_results['warnings'])}")
-                for warning in validation_results["warnings"][
-                    :3
-                ]:  # Show first 3 warnings
+                for warning in validation_results["warnings"][:3]:  # Show first 3 warnings
                     print(f"     - {warning}")
 
         # Overall result
         if test_results["overall_success"]:
-            print(f"OVERALL: PASSED")
+            print("OVERALL: PASSED")
         else:
-            print(f"OVERALL: FAILED")
+            print("OVERALL: FAILED")
 
-    def _generate_summary(self, results: Dict[str, Any]) -> Dict[str, Any]:
+    def _generate_summary(self, results: dict[str, Any]) -> dict[str, Any]:
         """Generate a summary of all test results."""
         summary = {
             "total_scrapers": results["total_scrapers"],
@@ -370,9 +359,7 @@ class ScraperIntegrationTester:
 
             # Collect common errors
             run_errors = test_result.get("run_results", {}).get("errors", [])
-            validation_errors = test_result.get("validation_results", {}).get(
-                "errors", []
-            )
+            validation_errors = test_result.get("validation_results", {}).get("errors", [])
 
             for error in run_errors + validation_errors:
                 if error in summary["common_errors"]:
@@ -381,9 +368,7 @@ class ScraperIntegrationTester:
                     summary["common_errors"][error] = 1
 
             # Collect quality scores
-            score = test_result.get("validation_results", {}).get(
-                "data_quality_score", 0
-            )
+            score = test_result.get("validation_results", {}).get("data_quality_score", 0)
             if score > 0:
                 quality_scores.append(score)
 
@@ -416,13 +401,12 @@ class TestScraperIntegration:
 
         # Cleanup after test
         for item in cleanup_items:
-            if hasattr(item, 'cleanup'):
+            if hasattr(item, "cleanup"):
                 item.cleanup()
-            elif hasattr(item, 'close'):
+            elif hasattr(item, "close"):
                 item.close()
-            elif hasattr(item, 'quit'):
+            elif hasattr(item, "quit"):
                 item.quit()
-
 
     def test_get_available_scrapers(self, available_scrapers):
         """Test that we can discover available scrapers."""
@@ -432,17 +416,21 @@ class TestScraperIntegration:
         print(f"Found scrapers: {available_scrapers}")
 
     @pytest.mark.integration
-    @pytest.mark.parametrize("scraper_name", [
-        "amazon",  # Most reliable for testing
-        "central_pet",
-        "coastal",
-        "mazuri",
-    ])
+    @pytest.mark.parametrize(
+        "scraper_name",
+        [
+            "amazon",  # Most reliable for testing
+            "central_pet",
+            "coastal",
+            "mazuri",
+        ],
+    )
     def test_scraper_execution_parametrized(self, tester, scraper_name):
         """Test running individual scrapers with parametrization."""
         # Skip login-requiring scrapers in CI
         import os
-        if os.getenv('CI') == 'true' and scraper_name in {"orgill", "petfoodex", "phillips"}:
+
+        if os.getenv("CI") == "true" and scraper_name in {"orgill", "petfoodex", "phillips"}:
             pytest.skip(f"Skipping {scraper_name} in CI (requires login)")
 
         result = tester.test_single_scraper(scraper_name)
@@ -458,11 +446,10 @@ class TestScraperIntegration:
     def test_single_scraper_with_timeout(self, tester):
         """Test running a single scraper with timeout handling."""
         print("DEBUG: Starting test_single_scraper_with_timeout")
-        import time
         import threading
-        from typing import Any, Dict
+        from typing import Any
 
-        result: Dict[str, Any] = {"completed": False, "data": None, "error": None}
+        result: dict[str, Any] = {"completed": False, "data": None, "error": None}
 
         def run_scraper():
             try:
@@ -502,18 +489,20 @@ class TestScraperIntegration:
         print("DEBUG: Starting test_all_scrapers_integration")
         # For CI/CD, skip login-requiring scrapers; locally, test all
         import os
-        skip_login = os.getenv('CI') == 'true'  # Skip in CI environment
+
+        skip_login = os.getenv("CI") == "true"  # Skip in CI environment
         print(f"DEBUG: skip_login_required={skip_login}")
 
-        import time
         import threading
-        from typing import Any, Dict
+        from typing import Any
 
-        result: Dict[str, Any] = {"completed": False, "data": None, "error": None}
+        result: dict[str, Any] = {"completed": False, "data": None, "error": None}
 
         def run_all_scrapers():
             try:
-                scraper_results = tester.test_all_scrapers(skip_failing=True, skip_login_required=skip_login)
+                scraper_results = tester.test_all_scrapers(
+                    skip_failing=True, skip_login_required=skip_login
+                )
                 result["completed"] = True
                 result["data"] = scraper_results
                 print("DEBUG: test_all_scrapers execution completed")
@@ -554,15 +543,15 @@ class TestScraperIntegration:
         print(f"DEBUG: Starting test_scraper_headless_modes with headless={headless}")
         # Only test amazon for mode testing
         import os
-        if not headless and os.getenv('CI') == 'true':
+
+        if not headless and os.getenv("CI") == "true":
             print("DEBUG: Skipping non-headless test in CI environment")
             pytest.skip("Skipping non-headless test in CI environment")
 
-        import time
         import threading
-        from typing import Any, Dict
+        from typing import Any
 
-        result: Dict[str, Any] = {"completed": False, "data": None, "error": None}
+        result: dict[str, Any] = {"completed": False, "data": None, "error": None}
 
         def run_scraper():
             try:
@@ -596,7 +585,9 @@ class TestScraperIntegration:
             assert "scraper" in result["data"]
             assert result["data"]["scraper"] == "amazon"
             assert "success" in result["data"]
-            print(f"DEBUG: test_scraper_headless_modes completed successfully for headless={headless}")
+            print(
+                f"DEBUG: test_scraper_headless_modes completed successfully for headless={headless}"
+            )
 
     @pytest.mark.integration
     def test_no_results_browser_response_simulation(self, tester):
@@ -682,33 +673,34 @@ class TestScraperIntegration:
         )
 
         # Verify config has validation section (may be stored as extra field due to arbitrary_types_allowed)
-        assert hasattr(config, 'validation') or hasattr(config, '__dict__')
-        validation_data = getattr(config, 'validation', None) or config.__dict__.get('validation')
+        assert hasattr(config, "validation") or hasattr(config, "__dict__")
+        validation_data = getattr(config, "validation", None) or config.__dict__.get("validation")
 
         if validation_data:
             # Verify no_results validation exists
-            assert 'no_results_selectors' in validation_data
-            assert validation_data['no_results_selectors'] is not None
-            assert len(validation_data['no_results_selectors']) > 0
+            assert "no_results_selectors" in validation_data
+            assert validation_data["no_results_selectors"] is not None
+            assert len(validation_data["no_results_selectors"]) > 0
 
-            assert 'no_results_text_patterns' in validation_data
-            assert validation_data['no_results_text_patterns'] is not None
-            assert len(validation_data['no_results_text_patterns']) > 0
+            assert "no_results_text_patterns" in validation_data
+            assert validation_data["no_results_text_patterns"] is not None
+            assert len(validation_data["no_results_text_patterns"]) > 0
 
             # Verify the selectors and patterns are reasonable
-            assert ".s-no-results" in validation_data['no_results_selectors']
-            assert "#no-results" in validation_data['no_results_selectors']
-            assert "no results found" in validation_data['no_results_text_patterns']
-            assert "your search returned no results" in validation_data['no_results_text_patterns']
+            assert ".s-no-results" in validation_data["no_results_selectors"]
+            assert "#no-results" in validation_data["no_results_selectors"]
+            assert "no results found" in validation_data["no_results_text_patterns"]
+            assert "your search returned no results" in validation_data["no_results_text_patterns"]
         else:
             # If validation section is not loaded, at least verify the YAML file contains it
             import yaml
-            with open(tester.project_root / "src" / "scrapers" / "configs" / "amazon.yaml", 'r') as f:
+
+            with open(tester.project_root / "src" / "scrapers" / "configs" / "amazon.yaml") as f:
                 raw_config = yaml.safe_load(f)
 
-            assert 'validation' in raw_config
-            assert 'no_results_selectors' in raw_config['validation']
-            assert 'no_results_text_patterns' in raw_config['validation']
+            assert "validation" in raw_config
+            assert "no_results_selectors" in raw_config["validation"]
+            assert "no_results_text_patterns" in raw_config["validation"]
 
     @pytest.mark.integration
     def test_no_results_end_to_end_with_real_config(self, tester):
@@ -752,8 +744,6 @@ if __name__ == "__main__":
         if results["failed_scrapers"] > 0:
             sys.exit(1)
     else:
-        print(
-            "Use --scraper <name> to test a specific scraper or --all to test all scrapers"
-        )
+        print("Use --scraper <name> to test a specific scraper or --all to test all scrapers")
         print(f"Available scrapers: {tester.get_available_scrapers()}")
         sys.exit(1)

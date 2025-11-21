@@ -6,23 +6,33 @@ for CSS selector generation, testing, and YAML configuration creation.
 """
 
 import json
-import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
 from urllib.parse import urlparse
 
-import yaml
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QFont
-from PyQt6.QtWidgets import (QCheckBox, QComboBox, QDialog, QDialogButtonBox,
-                             QGroupBox, QHBoxLayout, QLabel, QLineEdit,
-                             QMessageBox, QProgressBar, QPushButton,
-                             QTableWidget, QTableWidgetItem, QTabWidget,
-                             QTextEdit, QVBoxLayout, QWidget, QWizard,
-                             QWizardPage)
+from PyQt6.QtWidgets import (
+    QCheckBox,
+    QComboBox,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QProgressBar,
+    QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
+    QTabWidget,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+    QWizard,
+    QWizardPage,
+)
 
-from src.scrapers.models.config import (ScraperConfig, SelectorConfig,
-                                        WorkflowStep)
+from src.scrapers.models.config import ScraperConfig, SelectorConfig, WorkflowStep
 from src.scrapers.parser.yaml_parser import ScraperConfigParser
 from src.scrapers.selector_storage import SelectorManager
 from src.ui.styling import STYLESHEET
@@ -32,11 +42,12 @@ if TYPE_CHECKING:
     from src.core.classification.llm_classifier import LLMProductClassifier
 
 try:
-    from src.core.classification.llm_classifier import \
-        get_llm_classifier  # type: ignore
+    from src.core.classification.llm_classifier import get_llm_classifier  # type: ignore
 except ImportError:
 
-    def get_llm_classifier(model_name=None, product_taxonomy=None, product_pages=None) -> Optional["LLMProductClassifier"]:  # type: ignore
+    def get_llm_classifier(
+        model_name=None, product_taxonomy=None, product_pages=None
+    ) -> Optional["LLMProductClassifier"]:  # type: ignore
         return None
 
 
@@ -152,8 +163,7 @@ class UrlInputPage(QWizardPage):
     def isComplete(self):
         """Check if page is complete."""
         return (
-            super().isComplete()
-            and self.typed_wizard.get_wizard_data("page_content") is not None
+            super().isComplete() and self.typed_wizard.get_wizard_data("page_content") is not None
         )
 
 
@@ -163,9 +173,7 @@ class SelectorGenerationPage(QWizardPage):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setTitle("Step 2: Generate Selectors")
-        self.setSubTitle(
-            "Use AI analysis or visually select elements to generate CSS selectors"
-        )
+        self.setSubTitle("Use AI analysis or visually select elements to generate CSS selectors")
         self.setup_ui()
 
     @property
@@ -193,9 +201,7 @@ class SelectorGenerationPage(QWizardPage):
 
         self.selectors_table = QTableWidget()
         self.selectors_table.setColumnCount(4)
-        self.selectors_table.setHorizontalHeaderLabels(
-            ["Field", "Selector", "Attribute", "Source"]
-        )
+        self.selectors_table.setHorizontalHeaderLabels(["Field", "Selector", "Attribute", "Source"])
         self.selectors_table.horizontalHeader().setStretchLastSection(True)  # type: ignore
         self.selectors_table.setAlternatingRowColors(True)
         selectors_layout.addWidget(self.selectors_table)
@@ -307,7 +313,7 @@ class SelectorGenerationPage(QWizardPage):
         self.ai_thread.error.connect(self.on_generation_error)
         self.ai_thread.start()
 
-    def on_selectors_generated(self, selectors: Dict[str, Dict[str, Any]]):
+    def on_selectors_generated(self, selectors: dict[str, dict[str, Any]]):
         """Handle successful selector generation."""
         self.generate_btn.setEnabled(True)
         self.progress_bar.setVisible(False)
@@ -348,9 +354,7 @@ class SelectorGenerationPage(QWizardPage):
         """Handle selector generation error."""
         self.generate_btn.setEnabled(True)
         self.progress_bar.setVisible(False)
-        QMessageBox.critical(
-            self, "Error", f"Failed to generate selectors: {error_msg}"
-        )
+        QMessageBox.critical(self, "Error", f"Failed to generate selectors: {error_msg}")
 
     def add_manual_selector(self):
         """Add a manual selector to the table."""
@@ -384,9 +388,7 @@ class SelectorGenerationPage(QWizardPage):
         self.selector_input.clear()
 
         # Update wizard data
-        suggested_selectors = (
-            self.typed_wizard.get_wizard_data("suggested_selectors", {}) or {}
-        )
+        suggested_selectors = self.typed_wizard.get_wizard_data("suggested_selectors", {}) or {}
         suggested_selectors[field] = {
             "selector": selector,
             "attribute": attribute,
@@ -396,13 +398,13 @@ class SelectorGenerationPage(QWizardPage):
 
         self.completeChanged.emit()
 
-    def get_selectors(self) -> Dict[str, Dict[str, Any]]:
+    def get_selectors(self) -> dict[str, dict[str, Any]]:
         """Get all selectors from the table, preserving extra metadata."""
         selectors = {}
-        
+
         # Get original suggestions to preserve metadata like 'processing'
         suggested = self.typed_wizard.get_wizard_data("suggested_selectors", {}) or {}
-        
+
         for row in range(self.selectors_table.rowCount()):
             field_item = self.selectors_table.item(row, 0)
             selector_item = self.selectors_table.item(row, 1)
@@ -416,20 +418,15 @@ class SelectorGenerationPage(QWizardPage):
                 if selector.strip():
                     # Start with original data if available to keep 'processing' info
                     field_data = suggested.get(field, {}).copy()
-                    
+
                     # Update with current table values (in case user edited them)
-                    field_data.update({
-                        "selector": selector,
-                        "attribute": attribute
-                    })
-                    
+                    field_data.update({"selector": selector, "attribute": attribute})
+
                     selectors[field] = field_data
 
         return selectors
 
-    def on_visual_selector_selected(
-        self, selector: str, attribute: str, field_name: str
-    ):
+    def on_visual_selector_selected(self, selector: str, attribute: str, field_name: str):
         """Handle selector selection from visual picker."""
         # Add to table
         row_count = self.selectors_table.rowCount()
@@ -450,9 +447,7 @@ class SelectorGenerationPage(QWizardPage):
         self.selectors_table.setItem(row_count, 3, source_item)
 
         # Update wizard data
-        suggested_selectors = (
-            self.typed_wizard.get_wizard_data("suggested_selectors", {}) or {}
-        )
+        suggested_selectors = self.typed_wizard.get_wizard_data("suggested_selectors", {}) or {}
         suggested_selectors[field_name] = {
             "selector": selector,
             "attribute": attribute,
@@ -475,9 +470,7 @@ class SelectorGenerationPage(QWizardPage):
 
     def isComplete(self):
         """Check if page is complete."""
-        suggested_selectors = (
-            self.typed_wizard.get_wizard_data("suggested_selectors", {}) or {}
-        )
+        suggested_selectors = self.typed_wizard.get_wizard_data("suggested_selectors", {}) or {}
         return super().isComplete() and len(suggested_selectors) > 0
 
 
@@ -535,7 +528,7 @@ class SelectorTestingPage(QWizardPage):
             selectors = prev_page.get_selectors()
             self.populate_results_table(selectors)
 
-    def populate_results_table(self, selectors: Dict[str, Dict[str, Any]]):
+    def populate_results_table(self, selectors: dict[str, dict[str, Any]]):
         """Populate the results table with selectors."""
         self.results_table.setRowCount(len(selectors))
         for row, (field_name, selector_info) in enumerate(selectors.items()):
@@ -578,7 +571,7 @@ class SelectorTestingPage(QWizardPage):
         self.test_thread.finished.connect(self.on_testing_finished)
         self.test_thread.start()
 
-    def get_selectors_from_table(self) -> Dict[str, Dict[str, Any]]:
+    def get_selectors_from_table(self) -> dict[str, dict[str, Any]]:
         """Get selectors from the results table."""
         selectors = {}
         for row in range(self.results_table.rowCount()):
@@ -619,7 +612,7 @@ class SelectorTestingPage(QWizardPage):
         status = "✅ Success" if success else "❌ Failed"
         self.update_progress(row, status, extracted_value)
 
-    def on_testing_finished(self, results: Dict[str, Any]):
+    def on_testing_finished(self, results: dict[str, Any]):
         """Handle completion of all tests."""
         self.test_all_btn.setEnabled(True)
         self.progress_bar.setVisible(False)
@@ -627,9 +620,7 @@ class SelectorTestingPage(QWizardPage):
         # Update summary
         total = len(results)
         successful = sum(1 for r in results.values() if r.get("success", False))
-        self.summary_label.setText(
-            f"Testing complete: {successful}/{total} selectors successful"
-        )
+        self.summary_label.setText(f"Testing complete: {successful}/{total} selectors successful")
 
         # Store results for next page
         self.typed_wizard.test_results = results
@@ -725,9 +716,7 @@ class ConfigurationSavingPage(QWizardPage):
                             name=field_name,
                             selector=selector_info.get("selector", ""),
                             attribute=selector_info.get("attribute", "text"),
-                            multiple=field_name.endswith(
-                                "s"
-                            ),  # Plural fields are multiple
+                            multiple=field_name.endswith("s"),  # Plural fields are multiple
                         )
                         selectors.append(selector_config)
 
@@ -735,79 +724,96 @@ class ConfigurationSavingPage(QWizardPage):
             workflows = []
             if self.create_workflow_cb.isChecked():
                 workflows.append(WorkflowStep(action="navigate", params={"url": url}))
-                workflows.append(WorkflowStep(action="wait", params={"selector": "body", "timeout": 5}))
-                
+                workflows.append(
+                    WorkflowStep(action="wait", params={"selector": "body", "timeout": 5})
+                )
+
                 # Generate steps for each field
                 if self.typed_wizard.test_results:
                     for field_name, result in self.typed_wizard.test_results.items():
                         if not result.get("success", False):
                             continue
-                            
+
                         selector_info = result.get("selector_info", {})
                         processing = selector_info.get("processing", {})
                         selector = selector_info.get("selector")
-                        
+
                         if processing and processing.get("type") == "json":
                             # JSON Extraction
                             temp_field = f"{field_name}_raw_json"
-                            workflows.append(WorkflowStep(
-                                action="extract_single", 
-                                params={
-                                    "field": temp_field, 
-                                    "selector": selector
-                                }
-                            ))
-                            workflows.append(WorkflowStep(
-                                action="extract_from_json",
-                                params={
-                                    "source_field": temp_field,
-                                    "target_field": field_name,
-                                    "json_path": processing.get("path")
-                                }
-                            ))
+                            workflows.append(
+                                WorkflowStep(
+                                    action="extract_single",
+                                    params={"field": temp_field, "selector": selector},
+                                )
+                            )
+                            workflows.append(
+                                WorkflowStep(
+                                    action="extract_from_json",
+                                    params={
+                                        "source_field": temp_field,
+                                        "target_field": field_name,
+                                        "json_path": processing.get("path"),
+                                    },
+                                )
+                            )
                         else:
                             # Standard extraction
-                            is_multiple = selector_config.multiple if 'selector_config' in locals() else field_name.endswith("s")
+                            is_multiple = (
+                                selector_config.multiple
+                                if "selector_config" in locals()
+                                else field_name.endswith("s")
+                            )
                             action = "extract_multiple" if is_multiple else "extract_single"
-                            
-                            workflows.append(WorkflowStep(
-                                action=action,
-                                params={
-                                    "field": field_name,
-                                    "selector": selector
-                                }
-                            ))
-                            
+
+                            workflows.append(
+                                WorkflowStep(
+                                    action=action,
+                                    params={"field": field_name, "selector": selector},
+                                )
+                            )
+
                             # Post-processing
                             if processing:
                                 p_type = processing.get("type")
                                 if p_type == "weight":
-                                    workflows.append(WorkflowStep(
-                                        action="parse_weight",
-                                        params={"field": field_name}
-                                    ))
+                                    workflows.append(
+                                        WorkflowStep(
+                                            action="parse_weight", params={"field": field_name}
+                                        )
+                                    )
                                 elif p_type == "regex":
-                                    workflows.append(WorkflowStep(
-                                        action="transform_value",
-                                        params={
-                                            "field": field_name,
-                                            "transformations": [{
-                                                "type": "regex_extract",
-                                                "pattern": processing.get("pattern"),
-                                                "group": processing.get("group", 1)
-                                            }]
-                                        }
-                                    ))
+                                    workflows.append(
+                                        WorkflowStep(
+                                            action="transform_value",
+                                            params={
+                                                "field": field_name,
+                                                "transformations": [
+                                                    {
+                                                        "type": "regex_extract",
+                                                        "pattern": processing.get("pattern"),
+                                                        "group": processing.get("group", 1),
+                                                    }
+                                                ],
+                                            },
+                                        )
+                                    )
                                 elif p_type == "price":
-                                    workflows.append(WorkflowStep(
-                                        action="transform_value",
-                                        params={
-                                            "field": field_name,
-                                            "transformations": [
-                                                {"type": "replace", "pattern": "[^0-9.]", "replacement": ""}
-                                            ]
-                                        }
-                                    ))
+                                    workflows.append(
+                                        WorkflowStep(
+                                            action="transform_value",
+                                            params={
+                                                "field": field_name,
+                                                "transformations": [
+                                                    {
+                                                        "type": "replace",
+                                                        "pattern": "[^0-9.]",
+                                                        "replacement": "",
+                                                    }
+                                                ],
+                                            },
+                                        )
+                                    )
 
             # Create config
             config = ScraperConfig(
@@ -831,7 +837,7 @@ class ConfigurationSavingPage(QWizardPage):
             self.yaml_preview.setPlainText(yaml_content)
 
         except Exception as e:
-            self.yaml_preview.setPlainText(f"Error generating YAML: {str(e)}")
+            self.yaml_preview.setPlainText(f"Error generating YAML: {e!s}")
 
     def save_configuration(self):
         """Save the configuration to file and storage."""
@@ -874,9 +880,7 @@ class ConfigurationSavingPage(QWizardPage):
             self.completeChanged.emit()
 
         except Exception as e:
-            QMessageBox.critical(
-                self, "Error", f"Failed to save configuration: {str(e)}"
-            )
+            QMessageBox.critical(self, "Error", f"Failed to save configuration: {e!s}")
 
     def save_selectors_to_storage(self, config: ScraperConfig):
         """Save successful selectors to storage for learning."""
@@ -931,7 +935,7 @@ class ScraperBuilderDialog(QWizard):
         }
 
         # Additional attributes for wizard state
-        self.test_results: Optional[Dict[str, Any]] = None
+        self.test_results: dict[str, Any] | None = None
         self.config_saved: bool = False
 
         # Set window properties
@@ -1074,7 +1078,7 @@ Return only valid JSON.
         except Exception as e:
             self.error.emit(str(e))
 
-    def create_fallback_selectors(self) -> Dict[str, Dict[str, Any]]:
+    def create_fallback_selectors(self) -> dict[str, dict[str, Any]]:
         """Create fallback selectors when AI fails."""
         return {
             "product_name": {
@@ -1103,7 +1107,7 @@ class SelectorTestingThread(QThread):
     result = pyqtSignal(int, bool, str)  # row, success, value
     finished = pyqtSignal(dict)
 
-    def __init__(self, page_content: str, selectors: Dict[str, Dict[str, Any]]):
+    def __init__(self, page_content: str, selectors: dict[str, dict[str, Any]]):
         super().__init__()
         self.page_content = page_content
         self.selectors = selectors
@@ -1139,9 +1143,7 @@ class SelectorTestingThread(QThread):
                             extracted_value = value[:200] if value else "No value found"
                         else:
                             success = bool(value)
-                            extracted_value = (
-                                str(value)[:200] if value else "No value found"
-                            )
+                            extracted_value = str(value)[:200] if value else "No value found"
                     else:
                         success = False
                         extracted_value = "Selector not found"
@@ -1161,7 +1163,7 @@ class SelectorTestingThread(QThread):
                 }
 
             except Exception as e:
-                error_msg = f"Error: {str(e)}"
+                error_msg = f"Error: {e!s}"
                 self.progress.emit(row, "❌ Error", error_msg)
                 self.result.emit(row, False, error_msg)
                 results[field_name] = {

@@ -1,21 +1,16 @@
 import json
 import os
 import tempfile
-from datetime import datetime, timezone
-from unittest.mock import mock_open, patch
 
 import pytest
 
 # Add project root to sys.path
-PROJECT_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import sys
 
 sys.path.insert(0, PROJECT_ROOT)
 
-from src.scrapers.selector_storage import (SelectorData, SelectorManager,
-                                           SelectorStorage)
+from src.scrapers.selector_storage import SelectorData, SelectorManager, SelectorStorage
 
 
 @pytest.fixture
@@ -282,9 +277,7 @@ class TestSelectorStorage:
     def test_get_fallback_chain(self, temp_storage_path):
         """Test getting fallback chain."""
         storage = SelectorStorage(temp_storage_path)
-        storage.set_selector(
-            "example.com", "title", ".title", fallbacks=[".name", ".header"]
-        )
+        storage.set_selector("example.com", "title", ".title", fallbacks=[".name", ".header"])
 
         chain = storage.get_fallback_chain("example.com", "title")
 
@@ -430,9 +423,7 @@ class TestSelectorManager:
     def test_get_selector_with_fallbacks(self, temp_storage_path):
         """Test getting selector with fallbacks."""
         manager = SelectorManager(temp_storage_path)
-        manager.storage.set_selector(
-            "example.com", "title", ".title", fallbacks=[".alt"]
-        )
+        manager.storage.set_selector("example.com", "title", ".title", fallbacks=[".alt"])
 
         chain = manager.get_selector_with_fallbacks("example.com", "title")
 
@@ -478,9 +469,7 @@ class TestSelectorManager:
         manager = SelectorManager(temp_storage_path)
         manager.storage.set_selector("example.com", "good", ".good", confidence=0.9)
         manager.storage.set_selector("example.com", "bad", ".bad", confidence=0.1)
-        manager.storage.set_selector(
-            "other.com", "also_bad", ".also-bad", confidence=0.2
-        )
+        manager.storage.set_selector("other.com", "also_bad", ".also-bad", confidence=0.2)
 
         manager.cleanup_low_confidence_selectors(threshold=0.3)
 

@@ -10,7 +10,7 @@ import logging
 import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, Optional, List
+from typing import Any
 
 from selenium.common.exceptions import (
     NoSuchElementException,
@@ -41,7 +41,7 @@ class FailureContext:
 
     failure_type: FailureType
     confidence: float  # 0.0 to 1.0
-    details: Dict[str, Any]
+    details: dict[str, Any]
     recovery_strategy: str
 
 
@@ -55,8 +55,8 @@ class FailureClassifier:
 
     def __init__(
         self,
-        site_specific_no_results_selectors: Optional[List[str]] = None,
-        site_specific_no_results_text_patterns: Optional[List[str]] = None,
+        site_specific_no_results_selectors: list[str] | None = None,
+        site_specific_no_results_text_patterns: list[str] | None = None,
     ):
         """Initialize the failure classifier with default detection patterns."""
         self.site_specific_no_results_selectors = (
@@ -192,9 +192,7 @@ class FailureClassifier:
             },
         }
 
-    def classify_exception(
-        self, exception: Exception, context: Dict[str, Any]
-    ) -> FailureContext:
+    def classify_exception(self, exception: Exception, context: dict[str, Any]) -> FailureContext:
         """
         Classify a failure based on an exception.
 
@@ -284,9 +282,7 @@ class FailureClassifier:
             recovery_strategy="retry",
         )
 
-    def classify_page_content(
-        self, driver, context: Dict[str, Any]
-    ) -> FailureContext:
+    def classify_page_content(self, driver, context: dict[str, Any]) -> FailureContext:
         """
         Classify a failure based on page content analysis.
 
@@ -341,7 +337,9 @@ class FailureClassifier:
                     page_title, current_text_patterns
                 )
                 if title_confidence > 0:
-                    confidence = max(confidence, title_confidence * 0.8)  # Title matches are strong indicators
+                    confidence = max(
+                        confidence, title_confidence * 0.8
+                    )  # Title matches are strong indicators
                     details["title_match"] = True
 
                 # Check for HTTP status if available
@@ -354,12 +352,14 @@ class FailureClassifier:
                         details["status_code_match"] = context["status_code"]
 
                 # Prioritize NO_RESULTS if it was a waited_for_element_timeout
-                if failure_type == FailureType.NO_RESULTS and context.get("waited_for_element_timeout"):
-                    if confidence > 0: # If any NO_RESULTS pattern matched
-                        confidence = max(confidence, 0.9) # Give high confidence
+                if failure_type == FailureType.NO_RESULTS and context.get(
+                    "waited_for_element_timeout"
+                ):
+                    if confidence > 0:  # If any NO_RESULTS pattern matched
+                        confidence = max(confidence, 0.9)  # Give high confidence
                         details["triggered_by_wait_for_timeout"] = True
-                    elif best_match is None: # If no other failure type matched yet
-                         # If it was a wait_for timeout and no patterns matched, still give a decent NO_RESULTS confidence
+                    elif best_match is None:  # If no other failure type matched yet
+                        # If it was a wait_for timeout and no patterns matched, still give a decent NO_RESULTS confidence
                         confidence = max(confidence, 0.6)
                         details["triggered_by_wait_for_timeout"] = True
                         details["no_explicit_pattern_match"] = True
@@ -367,13 +367,17 @@ class FailureClassifier:
                 if confidence > best_confidence:
                     best_confidence = confidence
                     best_match = failure_type
-                    details.update({
-                        "matched_selectors": current_selectors,
-                        "matched_patterns": current_text_patterns,
-                    })
+                    details.update(
+                        {
+                            "matched_selectors": current_selectors,
+                            "matched_patterns": current_text_patterns,
+                        }
+                    )
                     best_details = details
 
-            if best_match and best_confidence > 0.3: # Lower threshold to catch more potential failures
+            if (
+                best_match and best_confidence > 0.3
+            ):  # Lower threshold to catch more potential failures
                 return FailureContext(
                     failure_type=best_match,
                     confidence=best_confidence,
@@ -386,9 +390,14 @@ class FailureClassifier:
             if context.get("waited_for_element_timeout"):
                 return FailureContext(
                     failure_type=FailureType.NO_RESULTS,
-                    confidence=0.5, # Moderate confidence since it timed out but no explicit pattern
-                    details={"no_explicit_failure_detected": True, "triggered_by_wait_for_timeout": True},
-                    recovery_strategy=self.failure_patterns[FailureType.NO_RESULTS]["recovery_strategy"],
+                    confidence=0.5,  # Moderate confidence since it timed out but no explicit pattern
+                    details={
+                        "no_explicit_failure_detected": True,
+                        "triggered_by_wait_for_timeout": True,
+                    },
+                    recovery_strategy=self.failure_patterns[FailureType.NO_RESULTS][
+                        "recovery_strategy"
+                    ],
                 )
 
             # No clear failure detected, return a very low confidence generic NETWORK_ERROR
@@ -429,7 +438,7 @@ class FailureClassifier:
 
         for pattern in patterns:
             if re.search(pattern, text, re.IGNORECASE):
-                return 0.7 # High confidence for *any* text pattern match
+                return 0.7  # High confidence for *any* text pattern match
         return 0.0
 
     def _check_status_code(self, status_code: int, failure_type: FailureType) -> float:

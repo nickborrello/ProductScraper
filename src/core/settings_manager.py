@@ -4,9 +4,9 @@ Handles application configuration using QSettings for cross-platform storage.
 """
 
 import os
-from typing import Any, Dict, Optional
+from typing import Any
 
-from PyQt6.QtCore import QSettings, QStandardPaths
+from PyQt6.QtCore import QSettings
 
 
 class SettingsManager:
@@ -17,13 +17,13 @@ class SettingsManager:
         # Scraper Credentials
         "petfood_username": "",
         "petfood_password": "",
-    "phillips_username": "",
-    "phillips_password": "",
-    "orgill_username": "",
-    "orgill_password": "",
-    "petfoodex_username": "",
-    "petfoodex_password": "",
-    "headless_scraping": True,
+        "phillips_username": "",
+        "phillips_password": "",
+        "orgill_username": "",
+        "orgill_password": "",
+        "petfoodex_username": "",
+        "petfoodex_password": "",
+        "headless_scraping": True,
         # ShopSite API Credentials
         "shopsite_client_id": "",
         "shopsite_secret_key": "",
@@ -69,14 +69,14 @@ class SettingsManager:
 
             settings_file = Path(__file__).parent.parent.parent / "settings.json"
             if settings_file.exists():
-                with open(settings_file, "r") as f:
+                with open(settings_file) as f:
                     json_settings = json.load(f)
 
                 # Load values from JSON (always override with JSON values for consistency)
                 for key, value in json_settings.items():
                     if key in self.DEFAULTS:
                         self.set(key, value)
-        except Exception as e:
+        except Exception:
             # Silently ignore JSON loading errors
             pass
 
@@ -130,7 +130,7 @@ class SettingsManager:
         self.settings.setValue(key, value)
         self.settings.sync()
 
-    def get_all(self) -> Dict[str, Any]:
+    def get_all(self) -> dict[str, Any]:
         """Get all settings as a dictionary."""
         all_settings = {}
         for key in self.DEFAULTS.keys():
@@ -142,7 +142,7 @@ class SettingsManager:
         for key, value in self.DEFAULTS.items():
             self.set(key, value)
 
-    def export_settings(self) -> Dict[str, Any]:
+    def export_settings(self) -> dict[str, Any]:
         """Export settings for backup/sharing (excludes sensitive data)."""
         all_settings = self.get_all()
         # Remove sensitive data from export
@@ -160,7 +160,7 @@ class SettingsManager:
                 all_settings[key] = "***REDACTED***"
         return all_settings
 
-    def import_settings(self, settings_dict: Dict[str, Any]):
+    def import_settings(self, settings_dict: dict[str, Any]):
         """Import settings from a dictionary."""
         for key, value in settings_dict.items():
             if key in self.DEFAULTS and value != "***REDACTED***":
@@ -187,9 +187,8 @@ class SettingsManager:
         """Get Petfoodex credentials as (username, password)."""
         return self.get("petfood_username"), self.get("petfood_password")
 
-
     @property
-    def shopsite_credentials(self) -> Dict[str, str]:
+    def shopsite_credentials(self) -> dict[str, str]:
         """Get ShopSite credentials as dictionary."""
         return {
             "client_id": self.get("shopsite_client_id"),
@@ -220,7 +219,7 @@ class SettingsManager:
         return self.get("debug_mode")
 
     @property
-    def selenium_settings(self) -> Dict[str, Any]:
+    def selenium_settings(self) -> dict[str, Any]:
         """Get Selenium settings."""
         return {
             "headless": self.get("selenium_headless"),

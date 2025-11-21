@@ -10,10 +10,10 @@ import logging
 import threading
 import time
 from collections import defaultdict, deque
-from dataclasses import dataclass, asdict, field
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from dataclasses import asdict, dataclass, field
+from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 from src.core.failure_classifier import FailureType
 
@@ -27,27 +27,27 @@ class FailureRecord:
     site_name: str
     failure_type: FailureType
     timestamp: float
-    duration: Optional[float] = None
-    action: Optional[str] = None
+    duration: float | None = None
+    action: str | None = None
     retry_count: int = 0
-    context: Optional[Dict[str, Any]] = None
+    context: dict[str, Any] | None = None
     success_after_retry: bool = False
     final_success: bool = False
-    session_id: Optional[str] = None
-    user_agent: Optional[str] = None
-    ip_address: Optional[str] = None
+    session_id: str | None = None
+    user_agent: str | None = None
+    ip_address: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         data = asdict(self)
-        data['failure_type'] = self.failure_type.value
+        data["failure_type"] = self.failure_type.value
         return data
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'FailureRecord':
+    def from_dict(cls, data: dict[str, Any]) -> "FailureRecord":
         """Create from dictionary."""
         data_copy = data.copy()
-        data_copy['failure_type'] = FailureType(data_copy['failure_type'])
+        data_copy["failure_type"] = FailureType(data_copy["failure_type"])
         return cls(**data_copy)
 
 
@@ -60,9 +60,9 @@ class SiteMetrics:
     success_rate: float = 1.0
     failure_rate: float = 0.0
     avg_duration: float = 0.0
-    failure_types: Dict[str, int] = field(default_factory=lambda: defaultdict(int))
+    failure_types: dict[str, int] = field(default_factory=lambda: defaultdict(int))
     recent_failures: int = 0
-    last_failure_time: Optional[float] = None
+    last_failure_time: float | None = None
     health_score: float = 1.0  # 0.0 to 1.0, higher is better
 
 
@@ -75,10 +75,7 @@ class FailureAnalytics:
     """
 
     def __init__(
-        self,
-        max_records: int = 10000,
-        retention_days: int = 30,
-        data_dir: str = "data/analytics"
+        self, max_records: int = 10000, retention_days: int = 30, data_dir: str = "data/analytics"
     ):
         """
         Initialize the failure analytics system.
@@ -107,27 +104,26 @@ class FailureAnalytics:
         self._load_data()
 
         # Start background cleanup thread
-        self._cleanup_thread = threading.Thread(
-            target=self._background_cleanup,
-            daemon=True
-        )
+        self._cleanup_thread = threading.Thread(target=self._background_cleanup, daemon=True)
         self._cleanup_thread.start()
 
-        logger.info(f"FailureAnalytics initialized with max_records={max_records}, retention={retention_days} days")
+        logger.info(
+            f"FailureAnalytics initialized with max_records={max_records}, retention={retention_days} days"
+        )
 
     def record_failure(
         self,
         site_name: str,
         failure_type: FailureType,
-        duration: Optional[float] = None,
-        action: Optional[str] = None,
+        duration: float | None = None,
+        action: str | None = None,
         retry_count: int = 0,
-        context: Optional[Dict[str, Any]] = None,
+        context: dict[str, Any] | None = None,
         success_after_retry: bool = False,
         final_success: bool = False,
-        session_id: Optional[str] = None,
-        user_agent: Optional[str] = None,
-        ip_address: Optional[str] = None
+        session_id: str | None = None,
+        user_agent: str | None = None,
+        ip_address: str | None = None,
     ) -> None:
         """
         Record a failure occurrence with detailed context.
@@ -157,7 +153,7 @@ class FailureAnalytics:
             final_success=final_success,
             session_id=session_id,
             user_agent=user_agent,
-            ip_address=ip_address
+            ip_address=ip_address,
         )
 
         with self._lock:
@@ -171,7 +167,10 @@ class FailureAnalytics:
             self._update_failure_patterns(site_name, failure_type, action)
 
         # Lightweight logging - only log significant failures
-        if retry_count >= 3 or failure_type in [FailureType.ACCESS_DENIED, FailureType.RATE_LIMITED]:
+        if retry_count >= 3 or failure_type in [
+            FailureType.ACCESS_DENIED,
+            FailureType.RATE_LIMITED,
+        ]:
             logger.warning(
                 f"Failure recorded: {site_name} - {failure_type.value} "
                 f"(retries: {retry_count}, action: {action})"
@@ -180,9 +179,9 @@ class FailureAnalytics:
     def record_success(
         self,
         site_name: str,
-        duration: Optional[float] = None,
-        action: Optional[str] = None,
-        session_id: Optional[str] = None
+        duration: float | None = None,
+        action: str | None = None,
+        session_id: str | None = None,
     ) -> None:
         """
         Record a successful operation.
@@ -215,7 +214,7 @@ class FailureAnalytics:
         with self._lock:
             return self._site_metrics[site_name]
 
-    def get_all_site_metrics(self) -> Dict[str, SiteMetrics]:
+    def get_all_site_metrics(self) -> dict[str, SiteMetrics]:
         """
         Get metrics for all sites.
 
@@ -226,10 +225,8 @@ class FailureAnalytics:
             return dict(self._site_metrics)
 
     def get_failure_patterns(
-        self,
-        site_name: Optional[str] = None,
-        hours: int = 24
-    ) -> Dict[str, Dict[str, int]]:
+        self, site_name: str | None = None, hours: int = 24
+    ) -> dict[str, dict[str, int]]:
         """
         Get failure patterns for analysis.
 
@@ -252,11 +249,7 @@ class FailureAnalytics:
                     result[site] = dict(patterns)
                 return result
 
-    def generate_report(
-        self,
-        site_name: Optional[str] = None,
-        hours: int = 24
-    ) -> Dict[str, Any]:
+    def generate_report(self, site_name: str | None = None, hours: int = 24) -> dict[str, Any]:
         """
         Generate a comprehensive analytics report.
 
@@ -272,9 +265,9 @@ class FailureAnalytics:
         with self._lock:
             # Filter recent records
             recent_records = [
-                r for r in self._records
-                if r.timestamp >= cutoff_time and
-                (site_name is None or r.site_name == site_name)
+                r
+                for r in self._records
+                if r.timestamp >= cutoff_time and (site_name is None or r.site_name == site_name)
             ]
 
             if not recent_records:
@@ -282,7 +275,7 @@ class FailureAnalytics:
                     "period_hours": hours,
                     "total_failures": 0,
                     "insights": ["No failure data available for the specified period"],
-                    "recommendations": []
+                    "recommendations": [],
                 }
 
             # Analyze failure patterns
@@ -311,7 +304,9 @@ class FailureAnalytics:
             # Calculate summary statistics
             total_failures = len(recent_records)
             avg_retry_count = sum(r.retry_count for r in recent_records) / total_failures
-            success_after_retry_rate = sum(1 for r in recent_records if r.success_after_retry) / total_failures
+            success_after_retry_rate = (
+                sum(1 for r in recent_records if r.success_after_retry) / total_failures
+            )
 
             return {
                 "period_hours": hours,
@@ -323,7 +318,7 @@ class FailureAnalytics:
                 "success_after_retry_rate": round(success_after_retry_rate, 3),
                 "insights": insights,
                 "recommendations": recommendations,
-                "generated_at": datetime.now().isoformat()
+                "generated_at": datetime.now().isoformat(),
             }
 
     def get_health_score(self, site_name: str) -> float:
@@ -346,10 +341,7 @@ class FailureAnalytics:
             recent_failure_rate = min(metrics.recent_failures / max(metrics.total_requests, 1), 1.0)
 
             # Weight factors (success rate is most important)
-            health_score = (
-                success_rate * 0.7 +
-                (1.0 - recent_failure_rate) * 0.3
-            )
+            health_score = success_rate * 0.7 + (1.0 - recent_failure_rate) * 0.3
 
             return round(health_score, 3)
 
@@ -376,10 +368,7 @@ class FailureAnalytics:
         metrics.health_score = self.get_health_score(site_name)
 
     def _update_failure_patterns(
-        self,
-        site_name: str,
-        failure_type: FailureType,
-        action: Optional[str]
+        self, site_name: str, failure_type: FailureType, action: str | None
     ) -> None:
         """Update failure pattern tracking."""
         key = f"{failure_type.value}_{action or 'unknown'}"
@@ -387,11 +376,11 @@ class FailureAnalytics:
 
     def _generate_insights(
         self,
-        records: List[FailureRecord],
-        failure_counts: Dict[str, int],
-        site_failures: Dict[str, int],
-        action_failures: Dict[str, int]
-    ) -> List[str]:
+        records: list[FailureRecord],
+        failure_counts: dict[str, int],
+        site_failures: dict[str, int],
+        action_failures: dict[str, int],
+    ) -> list[str]:
         """Generate insights from failure data."""
         insights = []
 
@@ -406,17 +395,13 @@ class FailureAnalytics:
         # Problematic sites
         if site_failures:
             worst_site = max(site_failures.items(), key=lambda x: x[1])
-            insights.append(
-                f"Most problematic site: {worst_site[0]} "
-                f"({worst_site[1]} failures)"
-            )
+            insights.append(f"Most problematic site: {worst_site[0]} ({worst_site[1]} failures)")
 
         # Problematic actions
         if action_failures:
             worst_action = max(action_failures.items(), key=lambda x: x[1])
             insights.append(
-                f"Most problematic action: {worst_action[0]} "
-                f"({worst_action[1]} failures)"
+                f"Most problematic action: {worst_action[0]} ({worst_action[1]} failures)"
             )
 
         # Retry success rate
@@ -438,26 +423,23 @@ class FailureAnalytics:
 
         if hour_counts:
             peak_hour = max(hour_counts.items(), key=lambda x: x[1])
-            insights.append(
-                f"Peak failure hour: {peak_hour[0]:02d}:00 "
-                f"({peak_hour[1]} failures)"
-            )
+            insights.append(f"Peak failure hour: {peak_hour[0]:02d}:00 ({peak_hour[1]} failures)")
 
         return insights
 
     def _generate_recommendations(
         self,
-        failure_counts: Dict[str, int],
-        site_failures: Dict[str, int],
-        action_failures: Dict[str, int],
-        type_action_combinations: Dict[str, int]
-    ) -> List[str]:
+        failure_counts: dict[str, int],
+        site_failures: dict[str, int],
+        action_failures: dict[str, int],
+        type_action_combinations: dict[str, int],
+    ) -> list[str]:
         """Generate actionable recommendations based on failure patterns."""
         recommendations = []
 
         # Rate limiting recommendations
-        if failure_counts.get('rate_limited', 0) > 0:
-            rate_limited_pct = failure_counts['rate_limited'] / sum(failure_counts.values())
+        if failure_counts.get("rate_limited", 0) > 0:
+            rate_limited_pct = failure_counts["rate_limited"] / sum(failure_counts.values())
             if rate_limited_pct > 0.3:
                 recommendations.append(
                     "High rate limiting detected. Consider increasing delays between requests "
@@ -465,8 +447,8 @@ class FailureAnalytics:
                 )
 
         # CAPTCHA recommendations
-        if failure_counts.get('captcha_detected', 0) > 0:
-            captcha_pct = failure_counts['captcha_detected'] / sum(failure_counts.values())
+        if failure_counts.get("captcha_detected", 0) > 0:
+            captcha_pct = failure_counts["captcha_detected"] / sum(failure_counts.values())
             if captcha_pct > 0.2:
                 recommendations.append(
                     "Frequent CAPTCHA detection. Consider implementing automated CAPTCHA solving "
@@ -474,7 +456,7 @@ class FailureAnalytics:
                 )
 
         # Access denied recommendations
-        if failure_counts.get('access_denied', 0) > 0:
+        if failure_counts.get("access_denied", 0) > 0:
             recommendations.append(
                 "Access denied errors detected. Consider rotating user agents, IP addresses, "
                 "and implementing session management strategies."
@@ -489,13 +471,16 @@ class FailureAnalytics:
                 )
 
         # Action-specific recommendations
-        if action_failures.get('login', 0) > 5:
+        if action_failures.get("login", 0) > 5:
             recommendations.append(
                 "Login failures detected. Verify credentials and consider implementing "
                 "credential rotation or alternative authentication methods."
             )
 
-        if action_failures.get('extract_single', 0) > action_failures.get('extract_multiple', 0) * 2:
+        if (
+            action_failures.get("extract_single", 0)
+            > action_failures.get("extract_multiple", 0) * 2
+        ):
             recommendations.append(
                 "High single element extraction failures. Consider reviewing selectors "
                 "and implementing more robust element waiting strategies."
@@ -531,16 +516,18 @@ class FailureAnalytics:
             # Reset recent failure counters periodically
             for metrics in self._site_metrics.values():
                 # Reset recent failures counter every few hours
-                if metrics.last_failure_time and time.time() - metrics.last_failure_time > 7200:  # 2 hours
+                if (
+                    metrics.last_failure_time and time.time() - metrics.last_failure_time > 7200
+                ):  # 2 hours
                     metrics.recent_failures = max(0, metrics.recent_failures - 1)
 
     def _load_data(self) -> None:
         """Load persisted analytics data."""
         try:
             if self.records_file.exists():
-                with open(self.records_file, 'r') as f:
+                with open(self.records_file) as f:
                     records_data = json.load(f)
-                    for record_data in records_data[-self.max_records:]:  # Load last N records
+                    for record_data in records_data[-self.max_records :]:  # Load last N records
                         record = FailureRecord.from_dict(record_data)
                         self._records.append(record)
                         self._update_site_metrics(record.site_name, record)
@@ -550,11 +537,11 @@ class FailureAnalytics:
                 logger.info(f"Loaded {len(self._records)} failure records from disk")
 
             if self.metrics_file.exists():
-                with open(self.metrics_file, 'r') as f:
+                with open(self.metrics_file) as f:
                     metrics_data = json.load(f)
                     for site, data in metrics_data.items():
                         # Convert failure_types back to defaultdict
-                        data['failure_types'] = defaultdict(int, data.get('failure_types', {}))
+                        data["failure_types"] = defaultdict(int, data.get("failure_types", {}))
                         self._site_metrics[site] = SiteMetrics(**data)
                 logger.info(f"Loaded metrics for {len(self._site_metrics)} sites from disk")
 
@@ -566,7 +553,7 @@ class FailureAnalytics:
         try:
             # Save records
             records_data = [record.to_dict() for record in self._records]
-            with open(self.records_file, 'w') as f:
+            with open(self.records_file, "w") as f:
                 json.dump(records_data, f, indent=2)
 
             # Save metrics
@@ -574,10 +561,10 @@ class FailureAnalytics:
             for site, metrics in self._site_metrics.items():
                 data = asdict(metrics)
                 # Convert defaultdict to regular dict for JSON serialization
-                data['failure_types'] = dict(metrics.failure_types)
+                data["failure_types"] = dict(metrics.failure_types)
                 metrics_data[site] = data
 
-            with open(self.metrics_file, 'w') as f:
+            with open(self.metrics_file, "w") as f:
                 json.dump(metrics_data, f, indent=2)
 
         except Exception as e:

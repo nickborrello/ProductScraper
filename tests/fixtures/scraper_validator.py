@@ -2,9 +2,8 @@
 Scraper output validation utilities for testing and debugging.
 """
 
-import json
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import pandas as pd
 
@@ -35,9 +34,7 @@ class ScraperValidator:
             "orgill": ["SKU", "Name", "Brand", "Weight", "Image URLs"],
         }
 
-    def validate_product_data(
-        self, products: List[Dict], scraper_name: str
-    ) -> Dict[str, Any]:
+    def validate_product_data(self, products: list[dict], scraper_name: str) -> dict[str, Any]:
         """
         Validate a list of product dictionaries from a scraper.
 
@@ -70,9 +67,7 @@ class ScraperValidator:
 
         for i, product in enumerate(products):
             if not isinstance(product, dict):
-                results["errors"].append(
-                    f"Product {i}: Not a dictionary (type: {type(product)})"
-                )
+                results["errors"].append(f"Product {i}: Not a dictionary (type: {type(product)})")
                 results["invalid_products"] += 1
                 continue
 
@@ -85,9 +80,7 @@ class ScraperValidator:
                 if field not in product or product[field] is None:
                     product_errors.append(f"Missing required field: {field}")
                     product_valid = False
-                elif str(product[field]).strip() in self.common_rules.get(
-                    "invalid_values", []
-                ):
+                elif str(product[field]).strip() in self.common_rules.get("invalid_values", []):
                     product_errors.append(
                         f"Invalid value for required field {field}: '{product[field]}'"
                     )
@@ -101,48 +94,30 @@ class ScraperValidator:
 
                     # Field-specific validation
                     if field == "SKU" and not self._validate_sku(product[field]):
-                        product_warnings.append(
-                            f"SKU format may be invalid: {product[field]}"
-                        )
+                        product_warnings.append(f"SKU format may be invalid: {product[field]}")
 
                     elif field == "Price" and not self._validate_price(product[field]):
-                        product_warnings.append(
-                            f"Price format may be invalid: {product[field]}"
-                        )
+                        product_warnings.append(f"Price format may be invalid: {product[field]}")
 
-                    elif field == "Images" and not self._validate_images(
-                        product[field]
-                    ):
-                        product_warnings.append(
-                            f"Images format may be invalid: {product[field]}"
-                        )
+                    elif field == "Images" and not self._validate_images(product[field]):
+                        product_warnings.append(f"Images format may be invalid: {product[field]}")
 
-                    elif field == "Weight" and not self._validate_weight(
-                        product[field]
-                    ):
-                        product_warnings.append(
-                            f"Weight format may be invalid: {product[field]}"
-                        )
+                    elif field == "Weight" and not self._validate_weight(product[field]):
+                        product_warnings.append(f"Weight format may be invalid: {product[field]}")
 
             if product_valid:
                 results["valid_products"] += 1
             else:
                 results["invalid_products"] += 1
-                results["errors"].extend(
-                    [f"Product {i}: {err}" for err in product_errors]
-                )
+                results["errors"].extend([f"Product {i}: {err}" for err in product_errors])
 
             if product_warnings:
-                results["warnings"].extend(
-                    [f"Product {i}: {warn}" for warn in product_warnings]
-                )
+                results["warnings"].extend([f"Product {i}: {warn}" for warn in product_warnings])
 
         # Calculate field coverage percentages
         results["field_coverage"] = {
             field: (
-                (count / results["total_products"]) * 100
-                if results["total_products"] > 0
-                else 0
+                (count / results["total_products"]) * 100 if results["total_products"] > 0 else 0
             )
             for field, count in field_counts.items()
         }
@@ -155,15 +130,11 @@ class ScraperValidator:
                 if results["field_coverage"]
                 else 0
             )
-            results["data_quality_score"] = (
-                valid_ratio * 0.6 + (field_coverage_avg / 100) * 0.4
-            )
+            results["data_quality_score"] = valid_ratio * 0.6 + (field_coverage_avg / 100) * 0.4
 
         return results
 
-    def validate_dataframe_output(
-        self, df: pd.DataFrame, scraper_name: str
-    ) -> Dict[str, Any]:
+    def validate_dataframe_output(self, df: pd.DataFrame, scraper_name: str) -> dict[str, Any]:
         """
         Validate pandas DataFrame output from scraper.
 
@@ -191,17 +162,13 @@ class ScraperValidator:
         # Check for expected columns
         missing_columns = set(expected_fields) - set(df.columns)
         if missing_columns:
-            results["warnings"].append(
-                f"Missing expected columns: {list(missing_columns)}"
-            )
+            results["warnings"].append(f"Missing expected columns: {list(missing_columns)}")
 
         # Check for required columns
         required_fields = self.common_rules.get("required_fields", [])
         missing_required = set(required_fields) - set(df.columns)
         if missing_required:
-            results["errors"].append(
-                f"Missing required columns: {list(missing_required)}"
-            )
+            results["errors"].append(f"Missing required columns: {list(missing_required)}")
 
         # Validate each row
         for idx, row in df.iterrows():
@@ -212,9 +179,7 @@ class ScraperValidator:
                     if pd.isna(value) or str(value).strip() in self.common_rules.get(
                         "invalid_values", []
                     ):
-                        row_errors.append(
-                            f"Row {idx}: Invalid {field} value: '{value}'"
-                        )
+                        row_errors.append(f"Row {idx}: Invalid {field} value: '{value}'")
 
             if row_errors:
                 results["errors"].extend(row_errors)
@@ -278,11 +243,11 @@ class ScraperValidator:
         # Reasonable weight range for pet products
         return 0.01 <= weight_value <= 1000.0
 
-    def print_validation_report(self, results: Dict[str, Any]) -> None:
+    def print_validation_report(self, results: dict[str, Any]) -> None:
         """Print a formatted validation report."""
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"VALIDATION REPORT: {results['scraper'].upper()}")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
 
         print(f"Total Products: {results['total_products']}")
         print(f"Valid Products: {results['valid_products']}")
@@ -293,7 +258,7 @@ class ScraperValidator:
             print(f"DataFrame Shape: {results['dataframe_shape']}")
 
         if results["field_coverage"]:
-            print(f"\nField Coverage:")
+            print("\nField Coverage:")
             for field, coverage in results["field_coverage"].items():
                 print(f"  {field}: {coverage:.1f}%")
 
@@ -313,10 +278,10 @@ class ScraperValidator:
 
         # Overall assessment
         if results["errors"]:
-            print(f"\n❌ VALIDATION FAILED - Fix errors before deployment")
+            print("\n❌ VALIDATION FAILED - Fix errors before deployment")
         elif results["warnings"]:
-            print(f"\n⚠️  VALIDATION PASSED WITH WARNINGS - Review warnings")
+            print("\n⚠️  VALIDATION PASSED WITH WARNINGS - Review warnings")
         else:
-            print(f"\n✅ VALIDATION PASSED - Ready for deployment")
+            print("\n✅ VALIDATION PASSED - Ready for deployment")
 
-        print(f"{'='*60}\n")
+        print(f"{'=' * 60}\n")

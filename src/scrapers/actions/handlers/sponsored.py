@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from selenium.webdriver.common.by import By
 
@@ -8,14 +8,15 @@ from src.scrapers.actions.registry import ActionRegistry
 
 logger = logging.getLogger(__name__)
 
+
 @ActionRegistry.register("check_sponsored")
 class CheckSponsoredAction(BaseAction):
     """Action to check if an element is sponsored/ad content."""
 
-    def execute(self, params: Dict[str, Any]) -> None:
+    def execute(self, params: dict[str, Any]) -> None:
         selector = params.get("selector")
         result_field = params.get("result_field", "is_sponsored")
-        
+
         if not selector:
             self.executor.results[result_field] = False
             return

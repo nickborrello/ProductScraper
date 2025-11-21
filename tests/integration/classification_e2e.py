@@ -2,9 +2,7 @@ import os
 import sys
 
 # Add project root to the Python path to allow imports from src
-PROJECT_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
@@ -72,9 +70,7 @@ def run_full_classification_test():
         print("-" * 50)
     except Exception as e:
         print(f"❌ ERROR: Automatic classification failed: {e}")
-        print(
-            "Please ensure the selected classification method is configured correctly."
-        )
+        print("Please ensure the selected classification method is configured correctly.")
         print("For 'local_llm', make sure Ollama is installed and running.")
         print("For 'llm', ensure your OpenRouter API key is in settings.json.")
         return

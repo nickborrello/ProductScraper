@@ -1,22 +1,30 @@
 import os
 import sqlite3
-import time
-import traceback
+
 # Database setup
 from pathlib import Path
 
-import pandas as pd
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
-from PyQt6.QtGui import QCloseEvent, QFont, QPixmap
-from PyQt6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
-                             QDialogButtonBox, QFormLayout, QFrame, QGroupBox,
-                             QHBoxLayout, QLabel, QLineEdit, QMainWindow,
-                             QMessageBox, QPushButton, QScrollArea,
-                             QVBoxLayout, QWidget)
-
-PROJECT_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+from PyQt6.QtGui import QFont, QPixmap
+from PyQt6.QtWidgets import (
+    QApplication,
+    QCheckBox,
+    QComboBox,
+    QDialog,
+    QDialogButtonBox,
+    QFormLayout,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMainWindow,
+    QMessageBox,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
 )
+
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DB_PATH = Path(PROJECT_ROOT) / "data" / "databases" / "products.db"
 
 
@@ -81,9 +89,7 @@ class ProductEditor(QMainWindow):
         except (ImportError, ModuleNotFoundError):
             print("CRITICAL: Could not import stylesheet. UI will be unstyled.")
             # Fallback to a very basic theme if the import fails
-            self.setStyleSheet(
-                "QMainWindow { background-color: #1e1e1e; color: #ffffff; }"
-            )
+            self.setStyleSheet("QMainWindow { background-color: #1e1e1e; color: #ffffff; }")
 
         # Build UI
         self._init_ui()
@@ -297,9 +303,7 @@ class ProductEditor(QMainWindow):
 
         if is_consolidated:
             input_names = product["_consolidated_data"].get("name_options", [])
-            self.input_name_label.setText(
-                f"Input Name: {input_names[0] if input_names else 'N/A'}"
-            )
+            self.input_name_label.setText(f"Input Name: {input_names[0] if input_names else 'N/A'}")
             self.input_name_label.setVisible(True)
         else:
             self.input_name_label.setVisible(False)
@@ -372,9 +376,7 @@ class ProductEditor(QMainWindow):
 
         # Checkboxes
         self.special_order_check.setChecked(product.get("Special Order") == "yes")
-        self.product_disabled_check.setChecked(
-            product.get("Product Disabled") == "checked"
-        )
+        self.product_disabled_check.setChecked(product.get("Product Disabled") == "checked")
 
         # Update UI
         self.update_progress_display(index)
@@ -429,9 +431,7 @@ class ProductEditor(QMainWindow):
 
     def show_current_image(self):
         """Display current image."""
-        if not self.current_images or self.current_image_index >= len(
-            self.current_images
-        ):
+        if not self.current_images or self.current_image_index >= len(self.current_images):
             self.image_label.setText("No image")
             self.image_label.setPixmap(QPixmap())
             self.update_image_controls()
@@ -470,8 +470,7 @@ class ProductEditor(QMainWindow):
         """Load image from URL."""
         try:
             from PyQt6.QtCore import QEventLoop, QUrl
-            from PyQt6.QtNetwork import (QNetworkAccessManager, QNetworkReply,
-                                         QNetworkRequest)
+            from PyQt6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
 
             manager = QNetworkAccessManager()
             request = QNetworkRequest(QUrl(url))
@@ -509,21 +508,15 @@ class ProductEditor(QMainWindow):
 
         self.prev_img_btn.setEnabled(has_imgs and idx > 0)
         self.next_img_btn.setEnabled(has_imgs and idx < len(self.current_images) - 1)
-        self.left_pos_btn.setEnabled(
-            has_imgs and len(self.current_images) > 1 and idx > 0
-        )
+        self.left_pos_btn.setEnabled(has_imgs and len(self.current_images) > 1 and idx > 0)
         self.right_pos_btn.setEnabled(
-            has_imgs
-            and len(self.current_images) > 1
-            and idx < len(self.current_images) - 1
+            has_imgs and len(self.current_images) > 1 and idx < len(self.current_images) - 1
         )
         self.edit_img_btn.setEnabled(has_imgs)
         self.remove_img_btn.setEnabled(has_imgs)
 
         if has_imgs:
-            self.img_counter_label.setText(
-                f"Image {idx + 1} of {len(self.current_images)}"
-            )
+            self.img_counter_label.setText(f"Image {idx + 1} of {len(self.current_images)}")
         else:
             self.img_counter_label.setText("No images")
 
@@ -567,9 +560,7 @@ class ProductEditor(QMainWindow):
                 self.show_current_image()
 
     def edit_image(self):
-        if self.current_images and 0 <= self.current_image_index < len(
-            self.current_images
-        ):
+        if self.current_images and 0 <= self.current_image_index < len(self.current_images):
             dialog = ImageDialog(self.current_images[self.current_image_index], self)
             if dialog.exec() == QDialog.DialogCode.Accepted:
                 url = dialog.get_url()
@@ -581,9 +572,7 @@ class ProductEditor(QMainWindow):
                     self.show_current_image()
 
     def remove_image(self):
-        if self.current_images and 0 <= self.current_image_index < len(
-            self.current_images
-        ):
+        if self.current_images and 0 <= self.current_image_index < len(self.current_images):
             self.current_images.pop(self.current_image_index)
             if (
                 self.current_image_index >= len(self.current_images)
@@ -605,9 +594,7 @@ class ProductEditor(QMainWindow):
         product["Product Disabled"] = (
             "checked" if self.product_disabled_check.isChecked() else "uncheck"
         )
-        product["Image URLs"] = (
-            self.current_images.copy() if self.current_images else []
-        )
+        product["Image URLs"] = self.current_images.copy() if self.current_images else []
 
     def prev_product(self):
         self.save_current_product()
@@ -647,9 +634,7 @@ class ProductEditor(QMainWindow):
         if self.is_single_product:
             self.progress_label.setText(f"Editing: {sku}")
         else:
-            self.progress_label.setText(
-                f"Product {index + 1} of {len(self.products_list)}: {sku}"
-            )
+            self.progress_label.setText(f"Product {index + 1} of {len(self.products_list)}: {sku}")
 
     def finish_editing(self):
         self.save_current_product()
@@ -792,9 +777,7 @@ def load_products_from_db(skus):
                     "Product On Pages": pages or "",
                     "Special Order": "yes" if special == "yes" else "",
                     "Image URLs": img_list,
-                    "Product Disabled": (
-                        "checked" if disabled == "checked" else "uncheck"
-                    ),
+                    "Product Disabled": ("checked" if disabled == "checked" else "uncheck"),
                 }
             )
 

@@ -5,9 +5,10 @@ Supports multiple CAPTCHA solving services including 2Captcha, Anti-Captcha, etc
 
 import logging
 import time
-import requests
-from typing import Dict, Optional, Any, Tuple
 from enum import Enum
+from typing import Any
+
+import requests
 from selenium.webdriver.common.by import By
 
 logger = logging.getLogger(__name__)
@@ -15,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 class CaptchaType(Enum):
     """Supported CAPTCHA types."""
+
     RECAPTCHA_V2 = "recaptcha_v2"
     RECAPTCHA_V3 = "recaptcha_v3"
     HCAPTCHA = "hcaptcha"
@@ -23,6 +25,7 @@ class CaptchaType(Enum):
 
 class CaptchaService(Enum):
     """Supported CAPTCHA solving services."""
+
     TWOCAPTCHA = "2captcha"
     ANTICAPTCHA = "anti-captcha"
     CAPSOLVER = "capsolver"
@@ -117,7 +120,7 @@ class CaptchaSolver:
             logger.error(f"CAPTCHA solving failed: {e}")
             return False
 
-    def _detect_captcha(self, driver, url: str) -> Tuple[CaptchaType, Dict[str, Any]]:
+    def _detect_captcha(self, driver, url: str) -> tuple[CaptchaType, dict[str, Any]]:
         """
         Detect CAPTCHA type and extract required parameters.
 
@@ -137,16 +140,13 @@ class CaptchaSolver:
                     elements = driver.find_elements(By.CSS_SELECTOR, selector)
                     if elements:
                         element = elements[0]
-                        site_key = (
-                            element.get_attribute("data-sitekey") or
-                            driver.execute_script("""
+                        site_key = element.get_attribute("data-sitekey") or driver.execute_script("""
                                 var recaptcha = document.querySelector('.g-recaptcha');
                                 if (recaptcha) {
                                     return recaptcha.getAttribute('data-sitekey');
                                 }
                                 return null;
                             """)
-                        )
                         if site_key:
                             return CaptchaType.RECAPTCHA_V2, {
                                 "site_key": site_key,
@@ -157,8 +157,8 @@ class CaptchaSolver:
 
             # Check for reCAPTCHA v3
             try:
-                recaptcha_v3_script = driver.find_elements(By.CSS_SELECTOR,
-                    "script[src*='recaptcha/api.js']"
+                recaptcha_v3_script = driver.find_elements(
+                    By.CSS_SELECTOR, "script[src*='recaptcha/api.js']"
                 )
                 if recaptcha_v3_script:
                     # Look for site key in script or global variables
@@ -206,7 +206,9 @@ class CaptchaSolver:
             logger.error(f"CAPTCHA detection failed: {e}")
             return CaptchaType.UNKNOWN, {}
 
-    def _submit_captcha(self, captcha_type: CaptchaType, params: Dict[str, Any], url: str) -> Optional[str]:
+    def _submit_captcha(
+        self, captcha_type: CaptchaType, params: dict[str, Any], url: str
+    ) -> str | None:
         """
         Submit CAPTCHA to solving service.
 
@@ -228,7 +230,9 @@ class CaptchaSolver:
             logger.error(f"CAPTCHA submission failed: {e}")
             return None
 
-    def _submit_2captcha(self, captcha_type: CaptchaType, params: Dict[str, Any], url: str) -> Optional[str]:
+    def _submit_2captcha(
+        self, captcha_type: CaptchaType, params: dict[str, Any], url: str
+    ) -> str | None:
         """Submit CAPTCHA to 2Captcha service."""
         data = {
             "key": self.config.api_key,
@@ -254,7 +258,9 @@ class CaptchaSolver:
             logger.error(f"2Captcha submission failed: {result}")
             return None
 
-    def _submit_anti_captcha(self, captcha_type: CaptchaType, params: Dict[str, Any], url: str) -> Optional[str]:
+    def _submit_anti_captcha(
+        self, captcha_type: CaptchaType, params: dict[str, Any], url: str
+    ) -> str | None:
         """Submit CAPTCHA to Anti-Captcha service."""
         task_data = {
             "type": "RecaptchaV2TaskProxyless",
@@ -273,7 +279,9 @@ class CaptchaSolver:
             "task": task_data,
         }
 
-        response = self.session.post(self.endpoints[CaptchaService.ANTICAPTCHA]["submit"], json=data)
+        response = self.session.post(
+            self.endpoints[CaptchaService.ANTICAPTCHA]["submit"], json=data
+        )
         result = response.json()
 
         if result.get("errorId") == 0:
@@ -282,7 +290,9 @@ class CaptchaSolver:
             logger.error(f"Anti-Captcha submission failed: {result}")
             return None
 
-    def _submit_capsolver(self, captcha_type: CaptchaType, params: Dict[str, Any], url: str) -> Optional[str]:
+    def _submit_capsolver(
+        self, captcha_type: CaptchaType, params: dict[str, Any], url: str
+    ) -> str | None:
         """Submit CAPTCHA to CapSolver service."""
         task_data = {
             "type": "ReCaptchaV2TaskProxyLess",
@@ -311,7 +321,7 @@ class CaptchaSolver:
             logger.error(f"CapSolver submission failed: {result}")
             return None
 
-    def _wait_for_solution(self, task_id: str) -> Optional[str]:
+    def _wait_for_solution(self, task_id: str) -> str | None:
         """
         Wait for CAPTCHA solution from service.
 
@@ -335,7 +345,7 @@ class CaptchaSolver:
         logger.error("CAPTCHA solution timeout")
         return None
 
-    def _retrieve_solution(self, task_id: str) -> Optional[str]:
+    def _retrieve_solution(self, task_id: str) -> str | None:
         """Retrieve solution from solving service."""
         try:
             if self.config.service == CaptchaService.TWOCAPTCHA:
@@ -352,7 +362,7 @@ class CaptchaSolver:
             logger.error(f"Solution retrieval failed: {e}")
             return None
 
-    def _retrieve_2captcha(self, task_id: str) -> Optional[str]:
+    def _retrieve_2captcha(self, task_id: str) -> str | None:
         """Retrieve solution from 2Captcha."""
         params = {
             "key": self.config.api_key,
@@ -361,7 +371,9 @@ class CaptchaSolver:
             "json": 1,
         }
 
-        response = self.session.get(self.endpoints[CaptchaService.TWOCAPTCHA]["retrieve"], params=params)
+        response = self.session.get(
+            self.endpoints[CaptchaService.TWOCAPTCHA]["retrieve"], params=params
+        )
         result = response.json()
 
         if result.get("status") == 1:
@@ -372,14 +384,16 @@ class CaptchaSolver:
             logger.error(f"2Captcha retrieval failed: {result}")
             return None
 
-    def _retrieve_anti_captcha(self, task_id: str) -> Optional[str]:
+    def _retrieve_anti_captcha(self, task_id: str) -> str | None:
         """Retrieve solution from Anti-Captcha."""
         data = {
             "clientKey": self.config.api_key,
             "taskId": int(task_id),
         }
 
-        response = self.session.post(self.endpoints[CaptchaService.ANTICAPTCHA]["retrieve"], json=data)
+        response = self.session.post(
+            self.endpoints[CaptchaService.ANTICAPTCHA]["retrieve"], json=data
+        )
         result = response.json()
 
         if result.get("errorId") == 0:
@@ -395,14 +409,16 @@ class CaptchaSolver:
             logger.error(f"Anti-Captcha retrieval failed: {result}")
             return None
 
-    def _retrieve_capsolver(self, task_id: str) -> Optional[str]:
+    def _retrieve_capsolver(self, task_id: str) -> str | None:
         """Retrieve solution from CapSolver."""
         data = {
             "clientKey": self.config.api_key,
             "taskId": task_id,
         }
 
-        response = self.session.post(self.endpoints[CaptchaService.CAPSOLVER]["retrieve"], json=data)
+        response = self.session.post(
+            self.endpoints[CaptchaService.CAPSOLVER]["retrieve"], json=data
+        )
         result = response.json()
 
         if result.get("errorId") == 0:
@@ -418,7 +434,9 @@ class CaptchaSolver:
             logger.error(f"CapSolver retrieval failed: {result}")
             return None
 
-    def _apply_solution(self, driver, captcha_type: CaptchaType, solution: str, params: Dict[str, Any]) -> bool:
+    def _apply_solution(
+        self, driver, captcha_type: CaptchaType, solution: str, params: dict[str, Any]
+    ) -> bool:
         """
         Apply CAPTCHA solution to the page.
 

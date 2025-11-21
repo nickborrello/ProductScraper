@@ -1,21 +1,17 @@
 import os
 import sys
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
 # Add project root to sys.path
-PROJECT_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, PROJECT_ROOT)
 
 from selenium.webdriver.common.by import By
 
-from src.scrapers.executor.workflow_executor import (WorkflowExecutionError,
-                                                      WorkflowExecutor)
-from src.scrapers.models.config import (LoginConfig, ScraperConfig,
-                                         SelectorConfig, WorkflowStep)
+from src.scrapers.executor.workflow_executor import WorkflowExecutionError, WorkflowExecutor
+from src.scrapers.models.config import LoginConfig, ScraperConfig, SelectorConfig, WorkflowStep
 
 
 @pytest.fixture
@@ -33,9 +29,7 @@ def sample_config():
                 attribute="text",
                 multiple=False,
             ),
-            SelectorConfig(
-                name="price", selector=".price", attribute="text", multiple=False
-            ),
+            SelectorConfig(name="price", selector=".price", attribute="text", multiple=False),
             SelectorConfig(
                 name="image_urls",
                 selector=".product-image img",
@@ -44,12 +38,8 @@ def sample_config():
             ),
         ],
         workflows=[
-            WorkflowStep(
-                action="navigate", params={"url": "https://example.com/products"}
-            ),
-            WorkflowStep(
-                action="wait_for", params={"selector": ".product-list", "timeout": 10}
-            ),
+            WorkflowStep(action="navigate", params={"url": "https://example.com/products"}),
+            WorkflowStep(action="wait_for", params={"selector": ".product-list", "timeout": 10}),
             WorkflowStep(
                 action="extract",
                 params={"fields": ["product_name", "price", "image_urls"]},
@@ -116,9 +106,7 @@ class TestWorkflowExecutor:
             "src.scrapers.executor.workflow_executor.create_browser",
             side_effect=Exception("Browser failed"),
         ):
-            with pytest.raises(
-                WorkflowExecutionError, match="Failed to initialize browser"
-            ):
+            with pytest.raises(WorkflowExecutionError, match="Failed to initialize browser"):
                 WorkflowExecutor(sample_config)
 
     def test_execute_workflow_success(
@@ -147,18 +135,14 @@ class TestWorkflowExecutor:
         # Verify browser was quit
         mock_browser.quit.assert_called_once()
 
-    def test_execute_workflow_step_failure(
-        self, sample_config, mock_create_browser, mock_browser
-    ):
+    def test_execute_workflow_step_failure(self, sample_config, mock_create_browser, mock_browser):
         """Test workflow execution failure on a step."""
         # Make navigate action fail
         mock_browser.get.side_effect = Exception("Navigation failed")
 
         executor = WorkflowExecutor(sample_config, headless=True)
 
-        with pytest.raises(
-            WorkflowExecutionError, match="Failed to execute step 'navigate'"
-        ):
+        with pytest.raises(WorkflowExecutionError, match="Failed to execute step 'navigate'"):
             executor.execute_workflow()
 
         # Browser should still be quit
@@ -182,11 +166,8 @@ class TestWorkflowExecutor:
         ):
             executor._action_navigate({})
 
-    def test_action_wait_for_success(
-        self, sample_config, mock_create_browser, mock_browser
-    ):
+    def test_action_wait_for_success(self, sample_config, mock_create_browser, mock_browser):
         """Test successful wait_for action."""
-        from selenium.webdriver.support.ui import WebDriverWait
 
         executor = WorkflowExecutor(sample_config, headless=True)
 
@@ -196,18 +177,14 @@ class TestWorkflowExecutor:
         # Verify WebDriverWait was called correctly
         # This is tricky to test directly, but we can verify no exception was raised
 
-    def test_action_wait_for_timeout(
-        self, sample_config, mock_create_browser, mock_browser
-    ):
+    def test_action_wait_for_timeout(self, sample_config, mock_create_browser, mock_browser):
         """Test wait_for action that times out."""
         from selenium.common.exceptions import TimeoutException
 
         executor = WorkflowExecutor(sample_config, headless=True)
 
         # Mock WebDriverWait to raise TimeoutException
-        with patch(
-            "src.scrapers.executor.workflow_executor.WebDriverWait"
-        ) as mock_wait:
+        with patch("src.scrapers.executor.workflow_executor.WebDriverWait") as mock_wait:
             mock_wait.return_value.until.side_effect = TimeoutException()
 
             # Error message should reflect actual timeout (60s in CI, 30s locally)
@@ -227,9 +204,7 @@ class TestWorkflowExecutor:
         ):
             executor._action_wait_for({})
 
-    def test_action_extract_single_success(
-        self, sample_config, mock_create_browser, mock_browser
-    ):
+    def test_action_extract_single_success(self, sample_config, mock_create_browser, mock_browser):
         """Test successful extract_single action."""
         executor = WorkflowExecutor(sample_config, headless=True)
 
@@ -241,9 +216,7 @@ class TestWorkflowExecutor:
         executor._action_extract_single(params)
 
         assert executor.results["product_name"] == "Product Name"
-        mock_browser.driver.find_element.assert_called_once_with(
-            "css selector", ".product-title"
-        )
+        mock_browser.driver.find_element.assert_called_once_with("css selector", ".product-title")
 
     def test_action_extract_single_element_not_found(
         self, sample_config, mock_create_browser, mock_browser
@@ -279,9 +252,7 @@ class TestWorkflowExecutor:
             "css selector", ".product-image img"
         )
 
-    def test_action_input_text_success(
-        self, sample_config, mock_create_browser, mock_browser
-    ):
+    def test_action_input_text_success(self, sample_config, mock_create_browser, mock_browser):
         """Test successful input_text action."""
         executor = WorkflowExecutor(sample_config, headless=True)
 
@@ -294,9 +265,7 @@ class TestWorkflowExecutor:
         mock_element.clear.assert_called_once()
         mock_element.send_keys.assert_called_once_with("testuser")
 
-    def test_action_input_text_no_clear(
-        self, sample_config, mock_create_browser, mock_browser
-    ):
+    def test_action_input_text_no_clear(self, sample_config, mock_create_browser, mock_browser):
         """Test input_text action without clearing first."""
         executor = WorkflowExecutor(sample_config, headless=True)
 
@@ -309,9 +278,7 @@ class TestWorkflowExecutor:
         mock_element.clear.assert_not_called()
         mock_element.send_keys.assert_called_once_with("testuser")
 
-    def test_action_click_success(
-        self, sample_config, mock_create_browser, mock_browser
-    ):
+    def test_action_click_success(self, sample_config, mock_create_browser, mock_browser):
         """Test successful click action."""
         executor = WorkflowExecutor(sample_config, headless=True)
 
@@ -322,8 +289,10 @@ class TestWorkflowExecutor:
 
         params = {"selector": ".button", "wait_after": 1}
 
-        with patch("src.scrapers.executor.workflow_executor.WebDriverWait") as mock_wait, \
-             patch.object(executor.browser.driver, "execute_script") as mock_script:
+        with (
+            patch("src.scrapers.executor.workflow_executor.WebDriverWait") as mock_wait,
+            patch.object(executor.browser.driver, "execute_script") as mock_script,
+        ):
             mock_wait.return_value.until.return_value = mock_element
             mock_script.return_value = None
 
@@ -341,9 +310,7 @@ class TestWorkflowExecutor:
         result = executor._extract_value_from_element(mock_element, "text")
         assert result == "Sample Text"
 
-    def test_extract_value_from_element_attribute(
-        self, sample_config, mock_create_browser
-    ):
+    def test_extract_value_from_element_attribute(self, sample_config, mock_create_browser):
         """Test extracting attribute from element."""
         executor = WorkflowExecutor(sample_config, headless=True)
 
@@ -354,9 +321,7 @@ class TestWorkflowExecutor:
         assert result == "https://example.com/image.jpg"
         mock_element.get_attribute.assert_called_once_with("src")
 
-    def test_extract_value_from_element_none_attribute(
-        self, sample_config, mock_create_browser
-    ):
+    def test_extract_value_from_element_none_attribute(self, sample_config, mock_create_browser):
         """Test extracting text when attribute is None."""
         executor = WorkflowExecutor(sample_config, headless=True)
 
@@ -385,7 +350,10 @@ class TestWorkflowExecutor:
 
         steps = [
             WorkflowStep(action="navigate", params={"url": "https://example.com"}),
-            WorkflowStep(action="extract_single", params={"field": "product_name", "selector": "product_name"})
+            WorkflowStep(
+                action="extract_single",
+                params={"field": "product_name", "selector": "product_name"},
+            ),
         ]
 
         result = executor.execute_steps(steps)
@@ -421,7 +389,9 @@ class TestWorkflowExecutor:
             executor._action_wait({})
             mock_sleep.assert_called_once_with(1)
 
-    def test_action_extract_brand_processing(self, sample_config, mock_create_browser, mock_browser):
+    def test_action_extract_brand_processing(
+        self, sample_config, mock_create_browser, mock_browser
+    ):
         """Test extract_single with brand field processing."""
         executor = WorkflowExecutor(sample_config, headless=True)
 
@@ -434,7 +404,9 @@ class TestWorkflowExecutor:
 
         assert executor.results["Brand"] == "Premium Foods"
 
-    def test_action_extract_weight_processing(self, sample_config, mock_create_browser, mock_browser):
+    def test_action_extract_weight_processing(
+        self, sample_config, mock_create_browser, mock_browser
+    ):
         """Test extract_single with weight field processing."""
         executor = WorkflowExecutor(sample_config, headless=True)
 
@@ -447,7 +419,9 @@ class TestWorkflowExecutor:
 
         assert executor.results["Weight"] == "25.00 lbs"
 
-    def test_action_extract_weight_ounces_conversion(self, sample_config, mock_create_browser, mock_browser):
+    def test_action_extract_weight_ounces_conversion(
+        self, sample_config, mock_create_browser, mock_browser
+    ):
         """Test extract_single with weight ounces to pounds conversion."""
         executor = WorkflowExecutor(sample_config, headless=True)
 
@@ -460,7 +434,9 @@ class TestWorkflowExecutor:
 
         assert executor.results["Weight"] == "2.00 lbs"
 
-    def test_action_extract_multiple_brand_processing(self, sample_config, mock_create_browser, mock_browser):
+    def test_action_extract_multiple_brand_processing(
+        self, sample_config, mock_create_browser, mock_browser
+    ):
         """Test extract_multiple with brand field processing."""
         executor = WorkflowExecutor(sample_config, headless=True)
 
@@ -474,7 +450,9 @@ class TestWorkflowExecutor:
 
         assert executor.results["Brand"] == ["Store A", "Store B"]
 
-    def test_action_extract_multiple_weight_processing(self, sample_config, mock_create_browser, mock_browser):
+    def test_action_extract_multiple_weight_processing(
+        self, sample_config, mock_create_browser, mock_browser
+    ):
         """Test extract_multiple with weight field processing."""
         executor = WorkflowExecutor(sample_config, headless=True)
 
@@ -530,11 +508,11 @@ class TestWorkflowExecutor:
                 password_field="#password",
                 submit_button="#submit",
                 success_indicator=".dashboard",
-                failure_indicators=None
+                failure_indicators=None,
             ),
             anti_detection=None,
             http_status=None,
-            test_skus=None
+            test_skus=None,
         )
 
         with patch("src.scrapers.executor.workflow_executor.WebDriverWait") as mock_wait:
@@ -543,10 +521,14 @@ class TestWorkflowExecutor:
             executor = WorkflowExecutor(login_config, headless=True)
 
             # Mock settings manager get method for credentials
-            with patch.object(executor.settings, 'get', side_effect=lambda key, default="": {
-                "phillips_username": "testuser",
-                "phillips_password": "testpass"
-            }.get(key, default)):
+            with patch.object(
+                executor.settings,
+                "get",
+                side_effect=lambda key, default="": {
+                    "phillips_username": "testuser",
+                    "phillips_password": "testpass",
+                }.get(key, default),
+            ):
                 params = {"scraper_name": "phillips"}
                 executor._action_login(params)
 
@@ -554,10 +536,18 @@ class TestWorkflowExecutor:
         """Test login action with missing credentials."""
         executor = WorkflowExecutor(sample_config, headless=True)
 
-        params = {"username": "", "password": "", "url": "https://example.com/login",
-                 "username_field": "#user", "password_field": "#pass", "submit_button": "#submit"}
+        params = {
+            "username": "",
+            "password": "",
+            "url": "https://example.com/login",
+            "username_field": "#user",
+            "password_field": "#pass",
+            "submit_button": "#submit",
+        }
 
-        with pytest.raises(WorkflowExecutionError, match="Login action requires username, password"):
+        with pytest.raises(
+            WorkflowExecutionError, match="Login action requires username, password"
+        ):
             executor._action_login(params)
 
     def test_action_detect_captcha_no_manager(self, sample_config, mock_create_browser):
@@ -612,6 +602,7 @@ class TestWorkflowExecutor:
     def test_anti_detection_pre_action_hook_failure(self, sample_config, mock_create_browser):
         """Test pre-action anti-detection hook failure."""
         from unittest.mock import Mock
+
         mock_anti_detection = Mock()
         mock_anti_detection.pre_action_hook.return_value = False
 
@@ -623,7 +614,9 @@ class TestWorkflowExecutor:
         with pytest.raises(WorkflowExecutionError, match="Pre-action anti-detection check failed"):
             executor._execute_step(step)
 
-    def test_anti_detection_error_handling_retry(self, sample_config, mock_create_browser, mock_browser):
+    def test_anti_detection_error_handling_retry(
+        self, sample_config, mock_create_browser, mock_browser
+    ):
         """Test anti-detection error handling with retry."""
         mock_anti_detection = Mock()
         mock_anti_detection.handle_error.return_value = True  # Retry
@@ -715,16 +708,25 @@ class TestWorkflowExecutor:
         executor = WorkflowExecutor(sample_config, headless=True)
 
         # Mock the failure classifier
-        with patch.object(executor.failure_classifier, 'classify_exception', return_value=mock_failure_context):
+        with patch.object(
+            executor.failure_classifier, "classify_exception", return_value=mock_failure_context
+        ):
             # Mock adaptive retry strategy to return config that would normally allow retries
             mock_config = Mock()
             mock_config.max_retries = 3
-            with patch.object(executor.adaptive_retry_strategy, 'get_adaptive_config', return_value=mock_config):
-                with patch.object(executor.adaptive_retry_strategy, 'calculate_delay', return_value=1.0):
+            with patch.object(
+                executor.adaptive_retry_strategy, "get_adaptive_config", return_value=mock_config
+            ):
+                with patch.object(
+                    executor.adaptive_retry_strategy, "calculate_delay", return_value=1.0
+                ):
                     # Make extract_single fail
                     mock_browser.driver.find_element.side_effect = Exception("No results found")
 
-                    step = WorkflowStep(action="extract_single", params={"field": "product_name", "selector": "product_name"})
+                    step = WorkflowStep(
+                        action="extract_single",
+                        params={"field": "product_name", "selector": "product_name"},
+                    )
 
                     # Should not retry and should raise exception
                     with pytest.raises(WorkflowExecutionError):
@@ -733,7 +735,9 @@ class TestWorkflowExecutor:
                     # Verify browser.get was not called again (no retry)
                     assert mock_browser.driver.find_element.call_count == 1
 
-    def test_no_results_failure_context_storage(self, sample_config, mock_create_browser, mock_browser):
+    def test_no_results_failure_context_storage(
+        self, sample_config, mock_create_browser, mock_browser
+    ):
         """Test that failure context is correctly stored in workflow results for NO_RESULTS."""
         from src.core.failure_classifier import FailureType
 
@@ -747,15 +751,22 @@ class TestWorkflowExecutor:
         executor = WorkflowExecutor(sample_config, headless=True)
 
         # Mock the failure classifier
-        with patch.object(executor.failure_classifier, 'classify_exception', return_value=mock_failure_context):
+        with patch.object(
+            executor.failure_classifier, "classify_exception", return_value=mock_failure_context
+        ):
             # Mock adaptive retry strategy to prevent retries
             mock_config = Mock()
             mock_config.max_retries = 0
-            with patch.object(executor.adaptive_retry_strategy, 'get_adaptive_config', return_value=mock_config):
+            with patch.object(
+                executor.adaptive_retry_strategy, "get_adaptive_config", return_value=mock_config
+            ):
                 # Make extract_single fail
                 mock_browser.driver.find_element.side_effect = Exception("No results found")
 
-                step = WorkflowStep(action="extract_single", params={"field": "product_name", "selector": "product_name"})
+                step = WorkflowStep(
+                    action="extract_single",
+                    params={"field": "product_name", "selector": "product_name"},
+                )
 
                 with pytest.raises(WorkflowExecutionError):
                     executor._execute_step(step)
@@ -782,16 +793,25 @@ class TestWorkflowExecutor:
         executor = WorkflowExecutor(sample_config, headless=True)
 
         # Mock the failure classifier and analytics
-        with patch.object(executor.failure_classifier, 'classify_exception', return_value=mock_failure_context):
-            with patch.object(executor.failure_analytics, 'record_failure') as mock_record_failure:
+        with patch.object(
+            executor.failure_classifier, "classify_exception", return_value=mock_failure_context
+        ):
+            with patch.object(executor.failure_analytics, "record_failure") as mock_record_failure:
                 # Mock adaptive retry strategy to prevent retries
                 mock_config = Mock()
                 mock_config.max_retries = 0
-                with patch.object(executor.adaptive_retry_strategy, 'get_adaptive_config', return_value=mock_config):
+                with patch.object(
+                    executor.adaptive_retry_strategy,
+                    "get_adaptive_config",
+                    return_value=mock_config,
+                ):
                     # Make extract_single fail
                     mock_browser.driver.find_element.side_effect = Exception("No results found")
 
-                    step = WorkflowStep(action="extract_single", params={"field": "product_name", "selector": "product_name"})
+                    step = WorkflowStep(
+                        action="extract_single",
+                        params={"field": "product_name", "selector": "product_name"},
+                    )
 
                     with pytest.raises(WorkflowExecutionError):
                         executor._execute_step(step)
@@ -807,7 +827,9 @@ class TestWorkflowExecutor:
                     assert "failure_details" in call_args[1]["context"]
                     assert call_args[1]["context"]["failure_details"]["no_results_detected"] is True
 
-    def test_no_results_vs_other_failures_retry_logic(self, sample_config, mock_create_browser, mock_browser):
+    def test_no_results_vs_other_failures_retry_logic(
+        self, sample_config, mock_create_browser, mock_browser
+    ):
         """Test differentiation between NO_RESULTS and other failure types in retry logic."""
         from src.core.failure_classifier import FailureType
 
@@ -818,15 +840,22 @@ class TestWorkflowExecutor:
         no_results_context.failure_type = FailureType.NO_RESULTS
         no_results_context.confidence = 0.8
 
-        with patch.object(executor.failure_classifier, 'classify_exception', return_value=no_results_context):
-            with patch.object(executor.adaptive_retry_strategy, 'get_adaptive_config') as mock_get_config:
+        with patch.object(
+            executor.failure_classifier, "classify_exception", return_value=no_results_context
+        ):
+            with patch.object(
+                executor.adaptive_retry_strategy, "get_adaptive_config"
+            ) as mock_get_config:
                 mock_config = Mock()
                 mock_config.max_retries = 3  # Would normally retry
                 mock_get_config.return_value = mock_config
 
                 mock_browser.driver.find_element.side_effect = Exception("No results")
 
-                step = WorkflowStep(action="extract_single", params={"field": "product_name", "selector": "product_name"})
+                step = WorkflowStep(
+                    action="extract_single",
+                    params={"field": "product_name", "selector": "product_name"},
+                )
 
                 with pytest.raises(WorkflowExecutionError):
                     executor._execute_step(step)
@@ -842,17 +871,29 @@ class TestWorkflowExecutor:
         network_context.failure_type = FailureType.NETWORK_ERROR
         network_context.confidence = 0.8
 
-        with patch.object(executor.failure_classifier, 'classify_exception', return_value=network_context):
-            with patch.object(executor.adaptive_retry_strategy, 'get_adaptive_config') as mock_get_config:
-                with patch.object(executor.adaptive_retry_strategy, 'calculate_delay', return_value=0.1):
+        with patch.object(
+            executor.failure_classifier, "classify_exception", return_value=network_context
+        ):
+            with patch.object(
+                executor.adaptive_retry_strategy, "get_adaptive_config"
+            ) as mock_get_config:
+                with patch.object(
+                    executor.adaptive_retry_strategy, "calculate_delay", return_value=0.1
+                ):
                     mock_config = Mock()
                     mock_config.max_retries = 1
                     mock_get_config.return_value = mock_config
 
                     # Make it fail once, then succeed
-                    mock_browser.driver.find_element.side_effect = [Exception("Network error"), Mock()]
+                    mock_browser.driver.find_element.side_effect = [
+                        Exception("Network error"),
+                        Mock(),
+                    ]
 
-                    step = WorkflowStep(action="extract_single", params={"field": "product_name", "selector": "product_name"})
+                    step = WorkflowStep(
+                        action="extract_single",
+                        params={"field": "product_name", "selector": "product_name"},
+                    )
 
                     # Should succeed after retry
                     executor._execute_step(step)
@@ -860,7 +901,9 @@ class TestWorkflowExecutor:
                     # Verify it was called twice (initial + 1 retry)
                     assert mock_browser.driver.find_element.call_count == 2
 
-    def test_no_results_detection_integration(self, sample_config, mock_create_browser, mock_browser):
+    def test_no_results_detection_integration(
+        self, sample_config, mock_create_browser, mock_browser
+    ):
         """Test integration with failure classifier for NO_RESULTS detection during extraction actions."""
         from src.core.failure_classifier import FailureType
 
@@ -872,16 +915,27 @@ class TestWorkflowExecutor:
         mock_failure_context.confidence = 0.85
         mock_failure_context.details = {"exception_analysis": True, "no_results_indicated": True}
 
-        with patch.object(executor.failure_classifier, 'classify_exception', return_value=mock_failure_context):
-            with patch.object(executor.failure_analytics, 'record_failure') as mock_record_failure:
+        with patch.object(
+            executor.failure_classifier, "classify_exception", return_value=mock_failure_context
+        ):
+            with patch.object(executor.failure_analytics, "record_failure") as mock_record_failure:
                 # Mock adaptive retry strategy to prevent retries
                 mock_config = Mock()
                 mock_config.max_retries = 0
-                with patch.object(executor.adaptive_retry_strategy, 'get_adaptive_config', return_value=mock_config):
+                with patch.object(
+                    executor.adaptive_retry_strategy,
+                    "get_adaptive_config",
+                    return_value=mock_config,
+                ):
                     # Make extract_single fail with an exception that should be classified as NO_RESULTS
-                    mock_browser.driver.find_element.side_effect = Exception("No products found matching your search criteria")
+                    mock_browser.driver.find_element.side_effect = Exception(
+                        "No products found matching your search criteria"
+                    )
 
-                    step = WorkflowStep(action="extract_single", params={"field": "product_name", "selector": "product_name"})
+                    step = WorkflowStep(
+                        action="extract_single",
+                        params={"field": "product_name", "selector": "product_name"},
+                    )
 
                     with pytest.raises(WorkflowExecutionError):
                         executor._execute_step(step)
@@ -891,4 +945,6 @@ class TestWorkflowExecutor:
                     call_args = mock_record_failure.call_args
                     assert call_args[1]["failure_type"] == FailureType.NO_RESULTS
                     assert call_args[1]["context"]["failure_details"]["exception_analysis"] is True
-                    assert call_args[1]["context"]["failure_details"]["no_results_indicated"] is True
+                    assert (
+                        call_args[1]["context"]["failure_details"]["no_results_indicated"] is True
+                    )

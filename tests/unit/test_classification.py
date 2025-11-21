@@ -1,22 +1,22 @@
 import os
 import sys
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import patch
 
 import pytest
 
 # Add project root to path
-PROJECT_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 # Import classification module
-from src.core.classification.ui import (assign_classification_batch,
-                                        assign_classification_single,
-                                        clear_facet_cache,
-                                        edit_classification_in_batch,
-                                        get_facet_options_from_db)
+from src.core.classification.ui import (
+    assign_classification_batch,
+    assign_classification_single,
+    clear_facet_cache,
+    edit_classification_in_batch,
+    get_facet_options_from_db,
+)
 
 
 class TestClassification:
@@ -73,9 +73,7 @@ class TestClassification:
         product = sample_products[0].copy()
 
         # Mock the edit_classification_in_batch function
-        with patch(
-            "src.core.classification.ui.edit_classification_in_batch"
-        ) as mock_edit:
+        with patch("src.core.classification.ui.edit_classification_in_batch") as mock_edit:
             mock_edit.return_value = [product]
 
             result = assign_classification_single(product)
@@ -88,9 +86,7 @@ class TestClassification:
         products = sample_products.copy()
 
         # Mock the edit_classification_in_batch function
-        with patch(
-            "src.core.classification.ui.edit_classification_in_batch"
-        ) as mock_edit:
+        with patch("src.core.classification.ui.edit_classification_in_batch") as mock_edit:
             mock_edit.return_value = products
 
             result = assign_classification_batch(products)
@@ -186,9 +182,7 @@ class TestClassification:
 
         # Test parsing empty strings
         empty_category_str = ""
-        empty_categories = [
-            c.strip() for c in empty_category_str.split("|") if c.strip()
-        ]
+        empty_categories = [c.strip() for c in empty_category_str.split("|") if c.strip()]
         assert empty_categories == []
 
         # Test parsing with extra whitespace

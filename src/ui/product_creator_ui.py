@@ -9,7 +9,6 @@ Usage:
     create_and_save_products(products, site='MySite', output_dir='./output')
 """
 
-import os
 from datetime import datetime
 from pathlib import Path
 
@@ -40,16 +39,14 @@ def _map_product_to_shopsite_row(product, date_string):
         "Graphic": f"{brand}/{file_name}" if brand else file_name,
         "More Information Graphic": f"{brand}/{file_name}" if brand else file_name,
         "Product Field 1": f"new{date_string}",
-        "Product Field 11": (
-            "yes" if product.get("Special Order", "").lower() == "yes" else ""
-        ),
+        "Product Field 11": ("yes" if product.get("Special Order", "").lower() == "yes" else ""),
     }
 
     # Add up to 5 More Information Image columns
     image_urls = product.get("Image URLs", []) or []
     for i in range(1, 6):
         if i - 1 < len(image_urls) and image_urls[i - 1]:
-            local_image_path = f"{brand}/{sku.replace('.jpg','')}-{i}.jpg"
+            local_image_path = f"{brand}/{sku.replace('.jpg', '')}-{i}.jpg"
             row[f"More Information Image {i}"] = local_image_path
         else:
             row[f"More Information Image {i}"] = "none"
@@ -79,7 +76,7 @@ def create_and_save_products(products_list, site, output_dir=None):
     base_dir.mkdir(parents=True, exist_ok=True)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    out_path = base_dir / f"{site.replace(' ','_').lower()}_{timestamp}.xlsx"
+    out_path = base_dir / f"{site.replace(' ', '_').lower()}_{timestamp}.xlsx"
 
     date_string = datetime.now().strftime("%m%d%y")
     rows = []
@@ -95,7 +92,7 @@ def append_row_to_site_file(row: dict, site: str, output_dir=None):
     """Append a single mapped ShopSite row to the site's spreadsheet (like master.save_incremental_results)."""
     base_dir = Path(output_dir) if output_dir else (Path(__file__).parent / "output")
     base_dir.mkdir(parents=True, exist_ok=True)
-    site_file = base_dir / f"{site.replace(' ','-').lower()}.xlsx"
+    site_file = base_dir / f"{site.replace(' ', '-').lower()}.xlsx"
 
     # Determine columns used by master.save_incremental_results
     more_info_cols = [f"More Information Image {i}" for i in range(1, 6)]

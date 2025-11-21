@@ -3,7 +3,6 @@ Unit tests for local storage simulation classes.
 """
 
 import json
-import os
 import shutil
 import tempfile
 from pathlib import Path
@@ -41,7 +40,7 @@ class TestLocalDataset:
         assert len(files) == 1
 
         # Check file contents
-        with open(files[0], "r") as f:
+        with open(files[0]) as f:
             saved_data = json.load(f)
             assert saved_data == data
 

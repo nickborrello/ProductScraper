@@ -1,16 +1,14 @@
 import os
 import sys
-from unittest.mock import MagicMock, Mock, call, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 # Add project root to sys.path to allow imports from the main project directory
-PROJECT_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, PROJECT_ROOT)
 
-from src.scrapers.main import run_db_refresh, run_scraping
+from src.scrapers.main import run_db_refresh
 
 # --- Test Fixtures ---
 
