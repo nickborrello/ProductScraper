@@ -33,7 +33,7 @@ class LoginAction(BaseAction):
 
         username = params.get("username")  # type: ignore
         password = params.get("password")  # type: ignore
-        
+
         # Ensure credentials are strings
         if username is not None:
             username = str(username)

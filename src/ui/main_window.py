@@ -153,7 +153,9 @@ except ImportError as e:
     print(f"Error importing scraper functions: {e}")
 
     # Provide dummy functions if the import fails, so the GUI can still load.
-    def run_scraping(file_path: str, selected_sites: list[str] | None = None, **kwargs: Any) -> None:
+    def run_scraping(
+        file_path: str, selected_sites: list[str] | None = None, **kwargs: Any
+    ) -> None:
         """Dummy function for scraping if import fails."""
         log_callback = kwargs.get("log_callback")
         if log_callback:

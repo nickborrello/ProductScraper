@@ -737,12 +737,18 @@ class ProductViewer(QMainWindow):
         try:
             # Import the editor function
             try:
-                edit_func = __import__('src.ui.product_editor', fromlist=['edit_products_in_batch']).edit_products_in_batch
+                edit_func = __import__(
+                    "src.ui.product_editor", fromlist=["edit_products_in_batch"]
+                ).edit_products_in_batch
             except ImportError:
                 try:
-                    edit_func = __import__('product_editor', fromlist=['edit_products_in_batch']).edit_products_in_batch
+                    edit_func = __import__(
+                        "product_editor", fromlist=["edit_products_in_batch"]
+                    ).edit_products_in_batch
                 except ImportError:
-                    edit_func = __import__('product_editor', fromlist=['edit_products_in_batch']).edit_products_in_batch
+                    edit_func = __import__(
+                        "product_editor", fromlist=["edit_products_in_batch"]
+                    ).edit_products_in_batch
 
             # Get selected SKUs
             skus = list(self.selected_products)

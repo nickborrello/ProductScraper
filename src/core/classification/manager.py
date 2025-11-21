@@ -35,66 +35,47 @@ from typing import Any, Optional, cast
 src_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 if src_dir not in sys.path:
-
     sys.path.insert(0, src_dir)
-
 
 
 # Import settings manager
 
 try:
-
     from src.core.settings_manager import settings
-
-
 
     _settings_available = True
 
 except ImportError:
-
     try:
-
         # Fallback for when run as standalone
 
         from ..settings_manager import settings  # type: ignore
 
-
-
         _settings_available = True
 
     except ImportError:
-
         # Last resort - try to load from settings.json directly
 
         import json
         from pathlib import Path
 
-
-
         config_path = Path(__file__).parent.parent.parent.parent / "settings.json"
 
         if config_path.exists():
-
             with open(config_path) as f:
-
                 _config = json.load(f)
 
                 _classification_method = _config.get("classification_method", "llm")
 
         else:
-
             _classification_method = "llm"
 
         _settings_available = False
 
 
-
 # Database path instead of Excel
 
 DB_PATH = Path(__file__).parent.parent.parent.parent / "data" / "databases" / "products.db"
-
-
-
 
 
 # Unified prompts for all LLM classifiers
@@ -130,7 +111,6 @@ CRITICAL: You must respond with valid JSON only. No explanations, no markdown, n
 """
 
 
-
 UNIFIED_SINGLE_PRODUCT_JSON_FORMAT = """
 
 Return classifications in this exact JSON format:
@@ -148,7 +128,6 @@ Return classifications in this exact JSON format:
 
 
 Example valid response: {{"category": "Dog Food", "product_type": "Dry Dog Food|Adult Dog Food", "product_on_pages": "Dog Food|All Pets|Pet Supplies"}}"""
-
 
 
 UNIFIED_BATCH_JSON_FORMAT = """Return classifications in this exact JSON format:
@@ -190,21 +169,11 @@ UNIFIED_BATCH_JSON_FORMAT = """Return classifications in this exact JSON format:
 CRITICAL: Respond with valid JSON only. No explanations, no markdown, no additional text."""
 
 
-
-
-
 RECOMMEND_COLS = [
-
     ("Category", "Category"),
-
     ("Product_Type", "Product Type"),
-
     ("Product_On_Pages", "Product On Pages"),
-
 ]
-
-
-
 
 
 # Centralized product taxonomy - shared between all classifiers
@@ -212,9 +181,7 @@ RECOMMEND_COLS = [
 GENERAL_PRODUCT_TAXONOMY = get_product_taxonomy()
 
 
-
 def get_product_pages() -> list[str]:
-
     """
 
     Load product pages from JSON file
@@ -230,13 +197,10 @@ def get_product_pages() -> list[str]:
     pages_file = Path(__file__).parent.parent.parent.parent / "src" / "data" / "product_pages.json"
 
     try:
-
         with open(pages_file, encoding="utf-8") as f:
-
             return cast(list[str], json.load(f))
 
     except (OSError, json.JSONDecodeError) as e:
-
         print(f"[WARNING] Error loading product pages file: {e}")
 
         return []
@@ -317,13 +281,13 @@ def classify_products_batch(
                     # Wait, let's check llm_classifier.classify_products_batch
                     # It returns list of classification results (category, type, etc).
                     # So we need to merge them with original products.
-                    
+
                     # CORRECT LOGIC:
                     for product, result in zip(batch, batch_results, strict=True):
-                         product_copy = product.copy()
-                         product_copy.update(result) # type: ignore
-                         classified_products.append(product_copy)
-                
+                        product_copy = product.copy()
+                        product_copy.update(result)  # type: ignore
+                        classified_products.append(product_copy)
+
                 # But wait, existing code was:
                 # classified_products.extend(batch_results)
                 # If batch_results is just categories, we lose Name/Brand/etc!
@@ -332,7 +296,7 @@ def classify_products_batch(
                 # It returns [{"category":..., "product_type":...}, ...]
                 # So yes, the original code was likely returning JUST classifications.
                 # I should fix this to return full product info.
-                
+
                 print(
                     f"[SUCCESS] LLM batch classification complete! Processed {len(classified_products)} products\n"
                 )
@@ -354,9 +318,12 @@ def classify_products_batch(
                 # Fall through to individual processing
 
         try:
-            classifier = cast(Any, get_local_llm_classifier(
-                product_taxonomy=GENERAL_PRODUCT_TAXONOMY, product_pages=PRODUCT_PAGES
-            ))
+            classifier = cast(
+                Any,
+                get_local_llm_classifier(
+                    product_taxonomy=GENERAL_PRODUCT_TAXONOMY, product_pages=PRODUCT_PAGES
+                ),
+            )
             if classifier:
                 # Create batches with merging logic for last small batch
                 batch_size = 15

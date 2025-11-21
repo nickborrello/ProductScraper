@@ -857,10 +857,10 @@ class ConfigurationSavingPage(QWizardPage):
                         current_selector = selector.selector
                         selector_string: str
                         if isinstance(current_selector, list):
-                             selector_string = str(current_selector[0]) if current_selector else ""
+                            selector_string = str(current_selector[0]) if current_selector else ""
                         else:
-                             selector_string = str(current_selector)
-                        
+                            selector_string = str(current_selector)
+
                         manager.learn_selector(
                             domain=domain,
                             field_name=selector.name,
@@ -1095,7 +1095,7 @@ class SelectorTestingThread(QThread):
         for row, (field_name, selector_info) in enumerate(self.selectors.items()):
             raw_selector = selector_info.get("selector", "")
             final_selector: str = ""
-            
+
             if isinstance(raw_selector, list):
                 final_selector = str(raw_selector[0]) if raw_selector else ""
             else:

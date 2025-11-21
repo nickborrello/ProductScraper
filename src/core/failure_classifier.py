@@ -369,10 +369,13 @@ class FailureClassifier:
                     best_confidence = confidence
                     best_match = failure_type
                     details.update(
-                        cast(dict[str, Any], {
-                            "matched_selectors": current_selectors,
-                            "matched_patterns": current_text_patterns,
-                        })
+                        cast(
+                            dict[str, Any],
+                            {
+                                "matched_selectors": current_selectors,
+                                "matched_patterns": current_text_patterns,
+                            },
+                        )
                     )
                     best_details = details
 
@@ -384,7 +387,9 @@ class FailureClassifier:
                     failure_type=best_match,
                     confidence=best_confidence,
                     details=best_details,
-                    recovery_strategy=cast(str, self.failure_patterns[best_match]["recovery_strategy"]),
+                    recovery_strategy=cast(
+                        str, self.failure_patterns[best_match]["recovery_strategy"]
+                    ),
                 )
 
             # If a wait_for_element_timeout occurred but no patterns matched above threshold,
@@ -397,9 +402,9 @@ class FailureClassifier:
                         "no_explicit_failure_detected": True,
                         "triggered_by_wait_for_timeout": True,
                     },
-                    recovery_strategy=cast(str, self.failure_patterns[FailureType.NO_RESULTS][
-                        "recovery_strategy"
-                    ]),
+                    recovery_strategy=cast(
+                        str, self.failure_patterns[FailureType.NO_RESULTS]["recovery_strategy"]
+                    ),
                 )
 
             # No clear failure detected, return a very low confidence generic NETWORK_ERROR

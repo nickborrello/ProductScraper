@@ -654,8 +654,12 @@ class RateLimiter:
     def apply_backoff_delay(self) -> None:
         """Apply exponential backoff delay."""
         self.consecutive_failures += 1
-        backoff_delay = float(self.config.rate_limit_max_delay * float(2**self.consecutive_failures))  # type: ignore
-        logger.info(f"Applying backoff delay: {backoff_delay:.2f}s (failure #{self.consecutive_failures})")
+        backoff_delay = float(
+            self.config.rate_limit_max_delay * float(2**self.consecutive_failures)
+        )  # type: ignore
+        logger.info(
+            f"Applying backoff delay: {backoff_delay:.2f}s (failure #{self.consecutive_failures})"
+        )
         time.sleep(backoff_delay)
 
     def update_after_action(self, success: bool) -> None:

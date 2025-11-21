@@ -151,7 +151,9 @@ class ScraperValidator:
 
         return results
 
-    def validate_dataframe_output(self, df: pd.DataFrame, scraper_name: str) -> DataFrameValidationResults:
+    def validate_dataframe_output(
+        self, df: pd.DataFrame, scraper_name: str
+    ) -> DataFrameValidationResults:
         """
         Validate pandas DataFrame output from scraper.
 

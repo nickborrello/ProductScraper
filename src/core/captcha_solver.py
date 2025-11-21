@@ -374,7 +374,8 @@ class CaptchaSolver:
         }
 
         response = self.session.get(
-            self.endpoints[CaptchaService.TWOCAPTCHA]["retrieve"], params=params  # type: ignore
+            self.endpoints[CaptchaService.TWOCAPTCHA]["retrieve"],
+            params=params,  # type: ignore
         )
         result = response.json()
 
