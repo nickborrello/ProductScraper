@@ -13,7 +13,7 @@ warnings.warn(
     "Please migrate to the new modular scraper system using YAML configurations. "
     "See docs/SCRAPER_MIGRATION_GUIDE.md for migration instructions.",
     DeprecationWarning,
-    stacklevel=2
+    stacklevel=2,
 )
 
 # Ensure project root is on sys.path before importing local packages to avoid shadowing
@@ -90,10 +90,7 @@ class ScrapingProgressTracker:
             # Calculate progress as: current SKU / total SKUs for current site
             site_progress = (
                 min(
-                    round(
-                            (self.current_sku_index / self.total_skus_current_site)
-                            * 100
-                        ),
+                    round((self.current_sku_index / self.total_skus_current_site) * 100),
                     100,
                 )
                 if self.total_skus_current_site > 0
@@ -110,16 +107,18 @@ class ScrapingProgressTracker:
             elapsed = time.time() - self.start_time
             elapsed_str = self._format_time(elapsed)
             processed_str = f"{self.total_processed_skus}/{self.total_input_skus}"
-            current_op = f"{self.current_site}: {status_message}" if status_message else self.current_site
+            current_op = (
+                f"{self.current_site}: {status_message}" if status_message else self.current_site
+            )
             eta_str = self._calculate_eta()
-            
+
             metrics = {
-                'elapsed': elapsed_str,
-                'processed': processed_str,
-                'current_op': current_op,
-                'eta': eta_str
+                "elapsed": elapsed_str,
+                "processed": processed_str,
+                "current_op": current_op,
+                "eta": eta_str,
             }
-            
+
             if hasattr(self.metrics_callback, "emit"):
                 self.metrics_callback.emit(metrics)
             else:
@@ -146,9 +145,9 @@ class ScrapingProgressTracker:
                 total_estimated = elapsed / progress
                 remaining = total_estimated - elapsed
                 if remaining < 3600:  # Less than 1 hour
-                    return f"{remaining/60:.1f}m"
+                    return f"{remaining / 60:.1f}m"
                 else:  # More than 1 hour
-                    return f"{remaining/3600:.1f}h"
+                    return f"{remaining / 3600:.1f}h"
         return "--"
 
     def complete_site(self):
@@ -175,9 +174,7 @@ class ScrapingProgressTracker:
 
         # Calculate progress as: processed SKUs / total input SKUs
         if self.total_input_skus > 0:
-            overall_progress = min(
-                self.total_processed_skus / self.total_input_skus, 1.0
-            )
+            overall_progress = min(self.total_processed_skus / self.total_input_skus, 1.0)
         else:
             overall_progress = 0.0
         overall_percent = overall_progress * 100
@@ -185,9 +182,7 @@ class ScrapingProgressTracker:
         # Calculate site progress
         site_progress = 0.0
         if self.total_skus_current_site > 0:
-            site_progress = min(
-                self.current_sku_index / self.total_skus_current_site, 1.0
-            )
+            site_progress = min(self.current_sku_index / self.total_skus_current_site, 1.0)
         site_percent = site_progress * 100
 
         # Calculate ETA
@@ -199,17 +194,17 @@ class ScrapingProgressTracker:
             if remaining_progress > 0:
                 eta_seconds = (elapsed / overall_progress) * remaining_progress
                 if eta_seconds < 3600:  # Less than 1 hour
-                    eta_str = f" ETA: {eta_seconds/60:.1f}m"
+                    eta_str = f" ETA: {eta_seconds / 60:.1f}m"
                 else:  # More than 1 hour
-                    eta_str = f" ETA: {eta_seconds/3600:.1f}h"
+                    eta_str = f" ETA: {eta_seconds / 3600:.1f}h"
 
         # Format elapsed time
         if elapsed < 60:
             elapsed_str = f"{elapsed:.0f}s"
         elif elapsed < 3600:
-            elapsed_str = f"{elapsed/60:.1f}m"
+            elapsed_str = f"{elapsed / 60:.1f}m"
         else:
-            elapsed_str = f"{elapsed/3600:.1f}h"
+            elapsed_str = f"{elapsed / 3600:.1f}h"
 
         # Build progress bar
         bar_width = 20
@@ -245,7 +240,9 @@ def get_browser(site, headless_settings=None, force_headless=False):
             unique_profile = f"{site.replace(' ', '_')}_{timestamp}"
 
             # Get headless preference for this site
-            headless = force_headless or (headless_settings.get(site, True) if headless_settings else True)
+            headless = force_headless or (
+                headless_settings.get(site, True) if headless_settings else True
+            )
 
             # Check if site has its own init_browser function
             try:
@@ -269,9 +266,7 @@ def get_browser(site, headless_settings=None, force_headless=False):
                 pass  # Fall back to standard initialization
 
             # Standard browser initialization
-            options = get_standard_chrome_options(
-                headless=headless, profile_suffix=unique_profile
-            )
+            options = get_standard_chrome_options(headless=headless, profile_suffix=unique_profile)
             from selenium.webdriver.chrome.service import Service as ChromeService
 
             service = ChromeService(log_path=os.devnull)
@@ -307,6 +302,7 @@ class ModularScraper:
         """Load the YAML configuration."""
         try:
             from src.scrapers.parser.yaml_parser import ScraperConfigParser
+
             parser = ScraperConfigParser()
             self.config = parser.load_from_file(self.config_path)
             assert self.config is not None
@@ -321,7 +317,7 @@ class ModularScraper:
             Dict with 'username' and 'password' keys, or None if not available
         """
         assert self.config is not None
-        scraper_name = self.config.name.lower().replace(' ', '_')
+        scraper_name = self.config.name.lower().replace(" ", "_")
         username_key = f"{scraper_name}_username"
         password_key = f"{scraper_name}_password"
 
@@ -348,7 +344,9 @@ class ModularScraper:
 
         credentials = self._get_credentials()
         if not credentials:
-            raise Exception(f"Login required for {self.config.name} but credentials not found in environment variables")
+            raise Exception(
+                f"Login required for {self.config.name} but credentials not found in environment variables"
+            )
 
         try:
             # Create login workflow step
@@ -429,6 +427,7 @@ class ModularScraper:
 
                     # Reconstruct config
                     from src.scrapers.models.config import ScraperConfig
+
                     sku_config = ScraperConfig(**config_dict_copy)  # type: ignore
 
                     # Update executor config for this SKU
@@ -558,9 +557,11 @@ def discover_scrapers():
     config_dir = os.path.join(PROJECT_ROOT, "src", "scrapers", "config")
     if os.path.exists(config_dir):
         for file_name in os.listdir(config_dir):
-            if file_name.endswith(('.yaml', '.yml')) and file_name != 'sample_config.yaml':
+            if file_name.endswith((".yaml", ".yml")) and file_name != "sample_config.yaml":
                 config_path = os.path.join(config_dir, file_name)
-                scraper_name = file_name.replace('.yaml', '').replace('.yml', '').replace('_', ' ').title()
+                scraper_name = (
+                    file_name.replace(".yaml", "").replace(".yml", "").replace("_", " ").title()
+                )
 
                 try:
                     # Create a ModularScraper instance
@@ -569,11 +570,16 @@ def discover_scrapers():
                     # Create a wrapper function that matches the expected interface
                     def create_scraper_func(scraper_instance):
                         def scrape_func(skus, progress_callback=None, headless=True):
-                            return scraper_instance.scrape_products(skus, progress_callback, headless)
+                            return scraper_instance.scrape_products(
+                                skus, progress_callback, headless
+                            )
+
                         return scrape_func
 
                     scraping_options[scraper_name] = create_scraper_func(modular_scraper)
-                    headless_settings[scraper_name] = True  # Default to headless for modular scrapers
+                    headless_settings[scraper_name] = (
+                        True  # Default to headless for modular scrapers
+                    )
 
                 except Exception as e:
                     print(f"Failed to load modular scraper from {config_path}: {e}")

@@ -13,13 +13,7 @@ def loose_parse_urls(url_field):
         return []
 
     # Clean up common formatting
-    cleaned = (
-        str(url_field)
-        .replace("[", "")
-        .replace("]", "")
-        .replace('"', "")
-        .replace("'", "")
-    )
+    cleaned = str(url_field).replace("[", "").replace("]", "").replace('"', "").replace("'", "")
     # Split on newlines, commas, or semicolons
     parts = re.split(r"[\n,;]", cleaned)
     # Return valid HTTP URLs
@@ -60,9 +54,7 @@ def scrape_excel(SKU, driver=None, file_path=None, excel_data=None):
             df["Price"] = df["LIST_PRICE"]
             print("💰 Renamed LIST_PRICE -> Price")
         if "DESCRIPTION1" in df.columns and "DESCRIPTION2" in df.columns:
-            df["Name"] = (
-                df["DESCRIPTION1"].astype(str) + " " + df["DESCRIPTION2"].astype(str)
-            )
+            df["Name"] = df["DESCRIPTION1"].astype(str) + " " + df["DESCRIPTION2"].astype(str)
             print("📝 Combined DESCRIPTION1 and DESCRIPTION2 -> Name")
         elif "DESCRIPTION1" in df.columns:
             df["Name"] = df["DESCRIPTION1"].astype(str)
@@ -75,9 +67,7 @@ def scrape_excel(SKU, driver=None, file_path=None, excel_data=None):
         normalized_cols = ["SKU", "Name", "Price", "Brand", "Weight", "Image URLs"]
         missing = [col for col in normalized_cols if col not in df.columns]
         if missing:
-            log_error(
-                f"Missing required columns: {', '.join(missing)}. Please fix the input file."
-            )
+            log_error(f"Missing required columns: {', '.join(missing)}. Please fix the input file.")
             return None
         # Only keep the required columns
         df = df[normalized_cols]
@@ -101,9 +91,7 @@ def scrape_excel(SKU, driver=None, file_path=None, excel_data=None):
         for col in required_cols:
             val = row.get(col, None)
             if pd.isna(val) or str(val).strip() == "":
-                print(
-                    f"⚠️ Excel: SKU {SKU} missing required field '{col}'. Setting to N/A."
-                )
+                print(f"⚠️ Excel: SKU {SKU} missing required field '{col}'. Setting to N/A.")
                 row[col] = "N/A" if col != "Image URLs" else []
 
         # Build product info from Excel row data
@@ -155,15 +143,11 @@ def get_product_info(file_path, sku):
                 data[col] = ""
                 added_cols.append(col)
         if added_cols:
-            print(
-                f"⚠️ Excel: Added missing columns to spreadsheet: {', '.join(added_cols)}"
-            )
+            print(f"⚠️ Excel: Added missing columns to spreadsheet: {', '.join(added_cols)}")
             try:
                 if file_path.endswith(".xlsx"):
                     # Save and flush to ensure changes are written
-                    with pd.ExcelWriter(
-                        file_path, engine="openpyxl", mode="w"
-                    ) as writer:
+                    with pd.ExcelWriter(file_path, engine="openpyxl", mode="w") as writer:
                         data.to_excel(writer, index=False)
                         writer.book.save(file_path)
                 elif file_path.endswith(".csv"):

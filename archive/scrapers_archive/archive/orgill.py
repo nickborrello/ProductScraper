@@ -2,9 +2,7 @@ import os
 import sys
 
 # Ensure project root is on sys.path before importing local packages
-PROJECT_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
@@ -39,9 +37,7 @@ BASE_SEARCH_URL = "https://www.orgill.com/SearchResultN.aspx?ddlhQ={SKU}"
 def init_browser(profile_suffix="default", headless=False):
     # Use standard Chrome options
 
-    chrome_options = get_standard_chrome_options(
-        headless=headless, profile_suffix=profile_suffix
-    )
+    chrome_options = get_standard_chrome_options(headless=headless, profile_suffix=profile_suffix)
 
     # Disable auto-fill to prevent form pre-population
     chrome_options.add_argument("--disable-blink-features=Autofill")
@@ -89,9 +85,7 @@ def login(driver, log_callback=None):
     else:
         print("Orgill: Waiting for username field...")
     username_field = WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located(
-            (By.ID, "cphMainContent_ctl00_loginOrgillxs_UserName")
-        )
+        EC.presence_of_element_located((By.ID, "cphMainContent_ctl00_loginOrgillxs_UserName"))
     )
     driver.execute_script("arguments[0].value = '';", username_field)
     username_field.send_keys(settings.orgill_credentials[0])
@@ -105,9 +99,7 @@ def login(driver, log_callback=None):
     else:
         print("Orgill: Waiting for password field...")
     password_field = WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located(
-            (By.ID, "cphMainContent_ctl00_loginOrgillxs_Password")
-        )
+        EC.presence_of_element_located((By.ID, "cphMainContent_ctl00_loginOrgillxs_Password"))
     )
     driver.execute_script("arguments[0].value = '';", password_field)
     password_field.send_keys(settings.orgill_credentials[1])
@@ -134,17 +126,12 @@ def login(driver, log_callback=None):
 
     for selector_type, selector_value in consent_selectors:
         try:
-            if (
-                selector_type == By.CLASS_NAME
-                and selector_value == "termly-styles-buttons-bb7ad2"
-            ):
+            if selector_type == By.CLASS_NAME and selector_value == "termly-styles-buttons-bb7ad2":
                 # Special handling for banner container - find accept button inside
                 banner = WebDriverWait(driver, 2).until(
                     EC.presence_of_element_located((selector_type, selector_value))
                 )
-                accept_btn = banner.find_element(
-                    By.XPATH, ".//button[contains(text(), 'Accept')]"
-                )
+                accept_btn = banner.find_element(By.XPATH, ".//button[contains(text(), 'Accept')]")
                 driver.execute_script("arguments[0].click();", accept_btn)
                 print("Orgill: Clicked accept button inside banner")
             else:
@@ -178,9 +165,7 @@ def login(driver, log_callback=None):
 
     print("Orgill: Attempting to click login button...")
     login_button = WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable(
-            (By.ID, "cphMainContent_ctl00_loginOrgillxs_LoginButton")
-        )
+        EC.element_to_be_clickable((By.ID, "cphMainContent_ctl00_loginOrgillxs_LoginButton"))
     )
 
     # Try multiple click methods
@@ -202,9 +187,7 @@ def login(driver, log_callback=None):
     # After successful login, handle password expiration popup if present
     try:
         skip_button = WebDriverWait(driver, 5).until(
-            EC.element_to_be_clickable(
-                (By.ID, "lvwOrgill_PrivateHeaderV8_btnPWDAlertSkip")
-            )
+            EC.element_to_be_clickable((By.ID, "lvwOrgill_PrivateHeaderV8_btnPWDAlertSkip"))
         )
         skip_button.click()
         print("Orgill: Password expiration popup detected and skipped.")
@@ -214,9 +197,7 @@ def login(driver, log_callback=None):
 
 def load_cookies(driver):
     try:
-        cookie_path = os.path.join(
-            PROJECT_ROOT, "data", "cookies", "orgill_cookies.pkl"
-        )
+        cookie_path = os.path.join(PROJECT_ROOT, "data", "cookies", "orgill_cookies.pkl")
         if not os.path.exists(cookie_path):
             return
         with open(cookie_path, "rb") as f:
@@ -240,7 +221,10 @@ def save_cookies(driver):
     except:
         pass
 
-def scrape_orgill(skus, browser=None, log_callback=None, progress_tracker=None, status_callback=None):
+
+def scrape_orgill(
+    skus, browser=None, log_callback=None, progress_tracker=None, status_callback=None
+):
     """Scrape Orgill products for multiple SKUs."""
     if not skus:
         return []
@@ -258,9 +242,7 @@ def scrape_orgill(skus, browser=None, log_callback=None, progress_tracker=None, 
     else:
         driver = create_browser("Orgill", headless=HEADLESS)
         if driver is None:
-            display_error(
-                "Could not create browser for Orgill", log_callback=log_callback
-            )
+            display_error("Could not create browser for Orgill", log_callback=log_callback)
             return products
 
     try:
@@ -294,9 +276,7 @@ def scrape_orgill(skus, browser=None, log_callback=None, progress_tracker=None, 
                 pass
 
     successful_products = [p for p in products if p]
-    display_scraping_summary(
-        successful_products, start_time, "Orgill", log_callback=log_callback
-    )
+    display_scraping_summary(successful_products, start_time, "Orgill", log_callback=log_callback)
 
     return products
 
@@ -323,15 +303,9 @@ def scrape_single_product(SKU, driver, log_callback=None):
         # Wait for page to load and check for either product or error
         WebDriverWait(driver, 10).until(
             EC.any_of(
-                EC.presence_of_element_located(
-                    (By.ID, "cphMainContent_ctl00_lblDescription")
-                ),
-                EC.presence_of_element_located(
-                    (By.ID, "cphMainContent_ctl00_lblErrorMessage")
-                ),
-                EC.presence_of_element_located(
-                    (By.ID, "cphMainContent_ctl00_lblSearchSubHeader")
-                ),
+                EC.presence_of_element_located((By.ID, "cphMainContent_ctl00_lblDescription")),
+                EC.presence_of_element_located((By.ID, "cphMainContent_ctl00_lblErrorMessage")),
+                EC.presence_of_element_located((By.ID, "cphMainContent_ctl00_lblSearchSubHeader")),
             )
         )
 
@@ -340,18 +314,14 @@ def scrape_single_product(SKU, driver, log_callback=None):
 
         # Check for 'Found 0 results' in subheader span
         try:
-            subheader = driver.find_element(
-                By.ID, "cphMainContent_ctl00_lblSearchSubHeader"
-            )
+            subheader = driver.find_element(By.ID, "cphMainContent_ctl00_lblSearchSubHeader")
             if subheader and "Found 0 results" in subheader.text:
                 return None
         except Exception:
             pass
 
         try:
-            error_element = driver.find_element(
-                By.ID, "cphMainContent_ctl00_lblErrorMessage"
-            )
+            error_element = driver.find_element(By.ID, "cphMainContent_ctl00_lblErrorMessage")
             if "No product(s) found." in error_element.text:
                 return None
         except:
@@ -389,9 +359,7 @@ def scrape_single_product(SKU, driver, log_callback=None):
             pass
 
         try:
-            name_element = driver.find_element(
-                By.ID, "cphMainContent_ctl00_lblDescription"
-            )
+            name_element = driver.find_element(By.ID, "cphMainContent_ctl00_lblDescription")
 
             # Wait a bit longer and check if element has text content
             for _attempt in range(5):
@@ -413,50 +381,36 @@ def scrape_single_product(SKU, driver, log_callback=None):
             product_info["Name"] = "N/A"  # Placeholder instead of failing
 
         try:
-            vendor_element = driver.find_element(
-                By.ID, "cphMainContent_ctl00_lblVendorName"
-            )
+            vendor_element = driver.find_element(By.ID, "cphMainContent_ctl00_lblVendorName")
             product_info["Brand"] = clean_string(vendor_element.text)
         except Exception as e:
             display_error(f"Error extracting brand: {e}", log_callback=log_callback)
 
         # If brand was found and is in the name, remove it
-        if (
-            product_info.get("Brand")
-            and product_info.get("Name")
-            and product_info["Name"] != "N/A"
-        ):
+        if product_info.get("Brand") and product_info.get("Name") and product_info["Name"] != "N/A":
             brand_name = product_info["Brand"]
             name_lower = product_info["Name"].lower()
             brand_lower = brand_name.lower()
-            if name_lower.startswith(brand_lower + " ") or name_lower.startswith(
-                brand_lower + "-"
-            ):
+            if name_lower.startswith(brand_lower + " ") or name_lower.startswith(brand_lower + "-"):
                 product_info["Name"] = clean_string(
                     product_info["Name"][len(brand_name) :].lstrip(" -")
                 )
 
         try:
-            model_number_element = driver.find_element(
-                By.ID, "cphMainContent_ctl00_lblModelNumber"
-            )
+            model_number_element = driver.find_element(By.ID, "cphMainContent_ctl00_lblModelNumber")
             model_number = clean_string(model_number_element.text)
             if model_number:
                 product_info["Name"] = re.sub(
                     rf"\b{re.escape(model_number)}\b", "", product_info["Name"]
                 )
-                product_info["Name"] = re.sub(
-                    r"\s{2,}", " ", product_info["Name"]
-                ).strip()
+                product_info["Name"] = re.sub(r"\s{2,}", " ", product_info["Name"]).strip()
         except Exception:
             # Model number is optional, don't display error for missing element
             pass
 
         try:
             consent_btn = WebDriverWait(driver, 3).until(
-                EC.element_to_be_clickable(
-                    (By.CLASS_NAME, "termly-styles-button-d3um1t")
-                )
+                EC.element_to_be_clickable((By.CLASS_NAME, "termly-styles-button-d3um1t"))
             )
             driver.execute_script("arguments[0].click();", consent_btn)
             time.sleep(0.5)
@@ -529,13 +483,9 @@ def scrape_single_product(SKU, driver, log_callback=None):
         # After performing the search for the SKU
         try:
             WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located(
-                    (By.ID, "cphMainContent_ctl00_lblSearchSubHeader")
-                )
+                EC.presence_of_element_located((By.ID, "cphMainContent_ctl00_lblSearchSubHeader"))
             )
-            subheader = driver.find_element(
-                By.ID, "cphMainContent_ctl00_lblSearchSubHeader"
-            )
+            subheader = driver.find_element(By.ID, "cphMainContent_ctl00_lblSearchSubHeader")
             if subheader and "Found 0 results" in subheader.text:
                 return None
         except Exception:
@@ -614,9 +564,7 @@ if __name__ == "__main__":
 
             @patch("scrapers.orgill.WebDriverWait")
             @patch("scrapers.orgill.EC")
-            def test_multiple_results_content_count_greater_than_one(
-                self, mock_ec, mock_wait
-            ):
+            def test_multiple_results_content_count_greater_than_one(self, mock_ec, mock_wait):
                 """Test handling when content count > 1 (multiple results)"""
                 # Mock WebDriverWait to avoid actual waiting
                 mock_wait_instance = Mock()
@@ -650,16 +598,12 @@ if __name__ == "__main__":
             @patch("scrapers.orgill.WebDriverWait")
             @patch("scrapers.orgill.EC")
             @patch("scrapers.orgill.time.sleep")  # Mock sleep to speed up tests
-            def test_single_product_redirect_no_content_count(
-                self, mock_sleep, mock_ec, mock_wait
-            ):
+            def test_single_product_redirect_no_content_count(self, mock_sleep, mock_ec, mock_wait):
                 """Test handling when redirected to product page (no content count element)"""
                 # Mock WebDriverWait to avoid actual waiting
                 mock_wait_instance = Mock()
                 mock_wait.return_value = mock_wait_instance
-                mock_wait_instance.until = (
-                    Mock()
-                )  # This will make WebDriverWait.until() succeed
+                mock_wait_instance.until = Mock()  # This will make WebDriverWait.until() succeed
 
                 with patch("scrapers.orgill.webdriver.Chrome") as mock_chrome:
                     mock_driver = Mock()
@@ -674,9 +618,7 @@ if __name__ == "__main__":
                             By.ID,
                             "cphMainContent_ctl00_lblContentCount",
                         ):
-                            raise Exception(
-                                "Element not found"
-                            )  # Content count not present
+                            raise Exception("Element not found")  # Content count not present
                         elif (by, value) == (
                             By.ID,
                             "cphMainContent_ctl00_lblDescription",
@@ -718,9 +660,7 @@ if __name__ == "__main__":
                     mock_driver.find_elements.return_value = [mock_img]
 
                     # Mock execute_script for innerHTML
-                    mock_driver.execute_script = Mock(
-                        return_value="Test Product Name MODEL123"
-                    )
+                    mock_driver.execute_script = Mock(return_value="Test Product Name MODEL123")
 
                     result = scrape_single_product(self.test_sku, mock_driver)
 

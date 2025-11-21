@@ -25,9 +25,7 @@ TEST_SKU = "791611038437"  # SKU that previously had empty brand
 
 
 def wait_for_element(driver, by, selector, timeout=15):
-    return WebDriverWait(driver, timeout).until(
-        EC.presence_of_element_located((by, selector))
-    )
+    return WebDriverWait(driver, timeout).until(EC.presence_of_element_located((by, selector)))
 
 
 def scrape_bradley_caldwell(skus, log_callback=None, progress_tracker=None, status_callback=None):
@@ -56,9 +54,7 @@ def scrape_bradley_caldwell(skus, log_callback=None, progress_tracker=None, stat
             product_info = scrape_single_product(sku, driver, log_callback=log_callback)
             if product_info:
                 products.append(product_info)
-                display_product_result(
-                    product_info, i, len(skus), log_callback=log_callback
-                )
+                display_product_result(product_info, i, len(skus), log_callback=log_callback)
             else:
                 products.append(None)
 
@@ -100,18 +96,14 @@ def scrape_single_product(SKU, driver, log_callback=None):
         try:
             WebDriverWait(driver, 20).until(
                 EC.any_of(
-                    EC.presence_of_element_located(
-                        (By.CSS_SELECTOR, "h1.product-name")
-                    ),
+                    EC.presence_of_element_located((By.CSS_SELECTOR, "h1.product-name")),
                     EC.presence_of_element_located(
                         (By.XPATH, "//h2[contains(text(), 'No products were found.')]")
                     ),
                 )
             )
         except TimeoutException:
-            error_msg = (
-                f"❌ TIMEOUT: Product page failed to load within 20s for SKU: {SKU}"
-            )
+            error_msg = f"❌ TIMEOUT: Product page failed to load within 20s for SKU: {SKU}"
             if log_callback:
                 log_callback(error_msg)
             else:
@@ -141,9 +133,7 @@ def scrape_single_product(SKU, driver, log_callback=None):
 
             product_info["Name"] = clean_string(name_element.text)
         except TimeoutException:
-            error_msg = (
-                f"❌ TIMEOUT: Product name element not found within 15s for SKU: {SKU}"
-            )
+            error_msg = f"❌ TIMEOUT: Product name element not found within 15s for SKU: {SKU}"
             if log_callback:
                 log_callback(error_msg)
             else:
@@ -203,9 +193,7 @@ def scrape_single_product(SKU, driver, log_callback=None):
         if brand_found and product_info["Brand"]:
             brand_name = product_info["Brand"]
             if brand_name.lower() in product_info["Name"].lower():
-                product_info["Name"] = clean_string(
-                    product_info["Name"].replace(brand_name, "")
-                )
+                product_info["Name"] = clean_string(product_info["Name"].replace(brand_name, ""))
 
         # Build complete product name from base name + color/size with shorter timeouts
         # Only add color/size if we have a base name
@@ -244,9 +232,7 @@ def scrape_single_product(SKU, driver, log_callback=None):
         # If no base name found, leave it empty (don't include just color/size)
 
         try:
-            weight_element = WebDriverWait(
-                driver, 3
-            ).until(  # Reduced timeout for optional weight
+            weight_element = WebDriverWait(driver, 3).until(  # Reduced timeout for optional weight
                 EC.presence_of_element_located(
                     (
                         By.XPATH,
@@ -256,13 +242,9 @@ def scrape_single_product(SKU, driver, log_callback=None):
             )
             weight_html = weight_element.get_attribute("innerHTML")
             if weight_html:
-                match = re.search(
-                    r"(\d*\.?\d+)\s*(lbs?|kg|oz)?", weight_html, re.IGNORECASE
-                )
+                match = re.search(r"(\d*\.?\d+)\s*(lbs?|kg|oz)?", weight_html, re.IGNORECASE)
                 if match:
-                    product_info["Weight"] = (
-                        f"{match.group(1)} {match.group(2) or ''}".strip()
-                    )
+                    product_info["Weight"] = f"{match.group(1)} {match.group(2) or ''}".strip()
                 else:
                     product_info["Weight"] = ""  # Return empty if not parseable
             else:

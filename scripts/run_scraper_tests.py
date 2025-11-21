@@ -38,49 +38,27 @@ Examples:
   python scripts/run_scraper_tests.py --all --verbose --coverage
   python scripts/run_scraper_tests.py --list
   python scripts/run_scraper_tests.py --scraper amazon --no-headless --timeout 600
-        """
+        """,
     )
 
     parser.add_argument(
-        '--scraper',
-        help='Run tests for specific scraper (e.g., amazon, central_pet)'
+        "--scraper", help="Run tests for specific scraper (e.g., amazon, central_pet)"
+    )
+    parser.add_argument("--all", action="store_true", help="Run tests for all available scrapers")
+    parser.add_argument(
+        "--headless", action="store_true", help="Run browser in headless mode (default in CI)"
     )
     parser.add_argument(
-        '--all',
-        action='store_true',
-        help='Run tests for all available scrapers'
+        "--no-headless",
+        action="store_true",
+        help="Run browser in non-headless mode (default locally)",
     )
+    parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output")
+    parser.add_argument("--coverage", action="store_true", help="Generate coverage report")
     parser.add_argument(
-        '--headless',
-        action='store_true',
-        help='Run browser in headless mode (default in CI)'
+        "--timeout", type=int, default=300, help="Test timeout in seconds (default: 300)"
     )
-    parser.add_argument(
-        '--no-headless',
-        action='store_true',
-        help='Run browser in non-headless mode (default locally)'
-    )
-    parser.add_argument(
-        '--verbose', '-v',
-        action='store_true',
-        help='Enable verbose output'
-    )
-    parser.add_argument(
-        '--coverage',
-        action='store_true',
-        help='Generate coverage report'
-    )
-    parser.add_argument(
-        '--timeout',
-        type=int,
-        default=300,
-        help='Test timeout in seconds (default: 300)'
-    )
-    parser.add_argument(
-        '--list',
-        action='store_true',
-        help='List available scrapers and exit'
-    )
+    parser.add_argument("--list", action="store_true", help="List available scrapers and exit")
 
     args = parser.parse_args()
 
@@ -117,22 +95,22 @@ Examples:
         headless = False
     else:
         # Default: headless in CI, non-headless locally
-        headless = os.getenv('CI') is not None
+        headless = os.getenv("CI") is not None
 
     # Set environment variable for tests
-    os.environ['SCRAPER_HEADLESS'] = str(headless).lower()
+    os.environ["SCRAPER_HEADLESS"] = str(headless).lower()
 
     # Build pytest arguments
     pytest_args: list[str] = [
-        'tests/integration/test_scraper_integration.py',
-        '--tb=short',
+        "tests/integration/test_scraper_integration.py",
+        "--tb=short",
     ]
 
     if args.verbose:
-        pytest_args.append('-v')
+        pytest_args.append("-v")
 
     if args.coverage:
-        pytest_args.extend(['--cov=src', '--cov-report=term-missing'])
+        pytest_args.extend(["--cov=src", "--cov-report=term-missing"])
 
     # Note: timeout is handled by individual test methods, not pytest globally
 
@@ -142,18 +120,21 @@ Examples:
             tester = ScraperIntegrationTester()
             available_scrapers = tester.get_available_scrapers()
             if args.scraper not in available_scrapers:
-                print(f"Error: Scraper '{args.scraper}' not found. Available scrapers: {', '.join(sorted(available_scrapers))}", file=sys.stderr)
+                print(
+                    f"Error: Scraper '{args.scraper}' not found. Available scrapers: {', '.join(sorted(available_scrapers))}",
+                    file=sys.stderr,
+                )
                 return 1
         except Exception as e:
             print(f"Error validating scraper: {e}", file=sys.stderr)
             return 1
 
         # Run specific scraper tests
-        pytest_args.extend(['-k', f'test_scraper_execution_parametrized and {args.scraper}'])
+        pytest_args.extend(["-k", f"test_scraper_execution_parametrized and {args.scraper}"])
 
     elif args.all:
         # Run all integration tests
-        pytest_args.extend(['-k', 'integration'])
+        pytest_args.extend(["-k", "integration"])
 
     # Print execution info
     print(f"Running scraper tests with headless={headless}")

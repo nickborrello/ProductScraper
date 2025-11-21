@@ -18,6 +18,7 @@ from src.utils.scraping.scraping import clean_string
 HEADLESS = True
 TEST_SKU = "035585499741"  # KONG Pull A Partz Pals Koala SM - test SKU for Central Pet
 
+
 def scrape_central(skus, log_callback=None, progress_tracker=None, status_callback=None):
     """Scrape Central Pet products for multiple SKUs."""
     products = []
@@ -28,9 +29,7 @@ def scrape_central(skus, log_callback=None, progress_tracker=None, status_callba
         status_callback("Scraping Central Pet...")
     with create_browser("Central Pet", headless=HEADLESS) as driver:
         if driver is None:
-            display_error(
-                "Could not create browser for Central Pet", log_callback=log_callback
-            )
+            display_error("Could not create browser for Central Pet", log_callback=log_callback)
             return products
 
         for i, sku in enumerate(skus, 1):
@@ -38,9 +37,7 @@ def scrape_central(skus, log_callback=None, progress_tracker=None, status_callba
             if product_info:
                 products.append(product_info)
                 # Display individual product result
-                display_product_result(
-                    product_info, i, len(skus), log_callback=log_callback
-                )
+                display_product_result(product_info, i, len(skus), log_callback=log_callback)
             else:
                 # Display error for failed product
                 products.append(None)  # Keep list aligned with SKUs
@@ -80,9 +77,7 @@ def scrape_single_product(UPC, driver, log_callback=None):
         # Accept cookie/terms if present (fast, no sleep)
         try:
             WebDriverWait(driver, 3).until(
-                EC.element_to_be_clickable(
-                    (By.XPATH, "//button[contains(text(), 'Accept')]")
-                )
+                EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Accept')]"))
             ).click()
         except Exception:
             pass
@@ -91,12 +86,8 @@ def scrape_single_product(UPC, driver, log_callback=None):
         try:
             WebDriverWait(driver, 6).until(
                 EC.any_of(
-                    EC.presence_of_element_located(
-                        (By.ID, "tst_productDetail_erpDescription")
-                    ),
-                    EC.presence_of_element_located(
-                        (By.CSS_SELECTOR, "span.no-results-found")
-                    ),
+                    EC.presence_of_element_located((By.ID, "tst_productDetail_erpDescription")),
+                    EC.presence_of_element_located((By.CSS_SELECTOR, "span.no-results-found")),
                 )
             )
         except Exception:
@@ -109,9 +100,7 @@ def scrape_single_product(UPC, driver, log_callback=None):
 
         # Robust no-results detection
         try:
-            no_results_elements = driver.find_elements(
-                By.CSS_SELECTOR, "span.no-results-found"
-            )
+            no_results_elements = driver.find_elements(By.CSS_SELECTOR, "span.no-results-found")
             for elem in no_results_elements:
                 if "No results found for" in elem.text:
                     return None
@@ -132,25 +121,17 @@ def scrape_single_product(UPC, driver, log_callback=None):
                 By.CSS_SELECTOR, "a[ng-if='vm.product.brand.detailPagePath']"
             )
             if brand_elements:
-                brand_name = (
-                    brand_elements[0].get_attribute("title") or brand_elements[0].text
-                )
-                product_info["Brand"] = (
-                    brand_name.strip() if brand_name else "No brand found"
-                )
+                brand_name = brand_elements[0].get_attribute("title") or brand_elements[0].text
+                product_info["Brand"] = brand_name.strip() if brand_name else "No brand found"
             else:
                 product_info["Brand"] = "No brand found"
         except Exception as e:
-            display_error(
-                f"Error extracting brand: {e}", UPC, log_callback=log_callback
-            )
+            display_error(f"Error extracting brand: {e}", UPC, log_callback=log_callback)
             product_info["Brand"] = "N/A"  # Placeholder instead of failing
 
         # Name extraction
         try:
-            name_element = driver.find_element(
-                By.ID, "tst_productDetail_erpDescription"
-            )
+            name_element = driver.find_element(By.ID, "tst_productDetail_erpDescription")
             product_info["Name"] = (
                 clean_string(name_element.text) if name_element else "No name found"
             )
@@ -182,9 +163,7 @@ def scrape_single_product(UPC, driver, log_callback=None):
 
         # Remove 'One Size' and 'Assorted' (case-insensitive, only at end, with optional spacing)
         # This regex will match these words at the end, even with extra spaces
-        name_clean = re.sub(
-            r"\s+(one\s+size|assorted)\s*$", "", name_clean, flags=re.IGNORECASE
-        )
+        name_clean = re.sub(r"\s+(one\s+size|assorted)\s*$", "", name_clean, flags=re.IGNORECASE)
 
         # Replace 'pk' (case-insensitive, as a word) with 'Pack'
         name_clean = re.sub(r"\bpk\b", "Pack", name_clean, flags=re.IGNORECASE)
@@ -201,9 +180,7 @@ def scrape_single_product(UPC, driver, log_callback=None):
                 "return arguments[0].innerHTML;", weight_element
             ).strip()
             product_info["Weight"] = (
-                f"{float(weight_text.replace('lb', '').strip()):.2f}"
-                if weight_text
-                else "N/A"
+                f"{float(weight_text.replace('lb', '').strip()):.2f}" if weight_text else "N/A"
             )
         except Exception:
             product_info["Weight"] = "N/A"
@@ -220,10 +197,7 @@ def scrape_single_product(UPC, driver, log_callback=None):
                     driver.execute_script("arguments[0].click();", thumbnail)
                     main_image_element = driver.find_element(By.ID, "mainProductImage")
                     main_image_url = main_image_element.get_attribute("ng-src")
-                    if (
-                        main_image_url
-                        and main_image_url not in product_info["Image URLs"]
-                    ):
+                    if main_image_url and main_image_url not in product_info["Image URLs"]:
                         product_info["Image URLs"].append(main_image_url)
             else:
                 main_image_element = driver.find_element(By.ID, "mainProductImage")

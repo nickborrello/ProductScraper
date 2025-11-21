@@ -19,9 +19,7 @@ from src.utils.scraping.browser import create_browser
 from src.utils.scraping.scraping import get_standard_chrome_options
 
 # Ensure project root is on sys.path
-PROJECT_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
@@ -37,9 +35,7 @@ def load_cookies(driver):
     try:
         import pickle
 
-        cookie_path = os.path.join(
-            PROJECT_ROOT, "data", "cookies", "phillips_cookies.pkl"
-        )
+        cookie_path = os.path.join(PROJECT_ROOT, "data", "cookies", "phillips_cookies.pkl")
         if not os.path.exists(cookie_path):
             return
         with open(cookie_path, "rb") as f:
@@ -69,9 +65,7 @@ def save_cookies(driver):
 def init_browser(profile_suffix="default", headless=True):
     # Use standard Chrome options
 
-    options = get_standard_chrome_options(
-        headless=headless, profile_suffix=profile_suffix
-    )
+    options = get_standard_chrome_options(headless=headless, profile_suffix=profile_suffix)
 
     # Use selenium_profiles directory for phillips with unique suffix
     user_data_dir = os.path.join(
@@ -112,9 +106,7 @@ def login(driver):
         EC.presence_of_element_located((By.ID, "passwordField"))
     ).send_keys(settings.phillips_credentials[1])
 
-    WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.ID, "send2Dsk"))
-    ).click()
+    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.ID, "send2Dsk"))).click()
 
     WebDriverWait(driver, 15).until(
         EC.presence_of_element_located((By.CSS_SELECTOR, "a.doLogout.cc_do_logout"))
@@ -122,7 +114,10 @@ def login(driver):
     # Save cookies after successful login
     save_cookies(driver)
 
-def scrape_phillips(skus, browser=None, log_callback=None, progress_tracker=None, status_callback=None):
+
+def scrape_phillips(
+    skus, browser=None, log_callback=None, progress_tracker=None, status_callback=None
+):
     """Scrape Phillips products for multiple SKUs."""
     if not skus:
         return []
@@ -142,9 +137,7 @@ def scrape_phillips(skus, browser=None, log_callback=None, progress_tracker=None
     else:
         driver = create_browser("Phillips", headless=HEADLESS)
         if driver is None:
-            display_error(
-                "Could not create browser for Phillips", log_callback=log_callback
-            )
+            display_error("Could not create browser for Phillips", log_callback=log_callback)
             return products
         if log_callback:
             log_callback("🌐 Phillips: Created new browser for scraping.")
@@ -169,9 +162,7 @@ def scrape_phillips(skus, browser=None, log_callback=None, progress_tracker=None
             product_info = scrape_single_product(sku, driver)
             if product_info:
                 products.append(product_info)
-                display_product_result(
-                    product_info, i, len(skus), log_callback=log_callback
-                )
+                display_product_result(product_info, i, len(skus), log_callback=log_callback)
             else:
                 products.append(None)
 
@@ -194,9 +185,7 @@ def scrape_phillips(skus, browser=None, log_callback=None, progress_tracker=None
                 pass
 
     successful_products = [p for p in products if p]
-    display_scraping_summary(
-        successful_products, start_time, "Phillips", log_callback=log_callback
-    )
+    display_scraping_summary(successful_products, start_time, "Phillips", log_callback=log_callback)
 
     return products
 
@@ -222,17 +211,13 @@ def scrape_single_product(SKU, driver, log_callback=None):
         driver.get(search_url)
 
         if SEARCH_URL_TEMPLATE.split("?")[0] not in driver.current_url:
-            display_error(
-                "Navigation to search URL failed. Aborting.", log_callback=log_callback
-            )
+            display_error("Navigation to search URL failed. Aborting.", log_callback=log_callback)
             return None
 
         # Wait for either product results or empty state message
         WebDriverWait(driver, 10).until(
             EC.any_of(
-                EC.presence_of_element_located(
-                    (By.CSS_SELECTOR, "div.cc_product_item")
-                ),
+                EC.presence_of_element_located((By.CSS_SELECTOR, "div.cc_product_item")),
                 EC.presence_of_element_located(
                     (By.CSS_SELECTOR, "div.plp-empty-state-message-container h3")
                 ),
@@ -247,9 +232,7 @@ def scrape_single_product(SKU, driver, log_callback=None):
             if "no results were found" in empty_text:
                 return None
 
-        product_elements = driver.find_elements(
-            By.CSS_SELECTOR, "div.cc_product_item.cc_row_item"
-        )
+        product_elements = driver.find_elements(By.CSS_SELECTOR, "div.cc_product_item.cc_row_item")
 
         for product in product_elements:
             try:
@@ -259,9 +242,7 @@ def scrape_single_product(SKU, driver, log_callback=None):
                 )
                 current_upc = upc_elem.text.strip()
                 if current_upc == SKU:
-                    name = product.find_element(
-                        By.CSS_SELECTOR, "a.cc_product_name"
-                    ).text.strip()
+                    name = product.find_element(By.CSS_SELECTOR, "a.cc_product_name").text.strip()
                     brand = product.find_element(
                         By.CSS_SELECTOR, "div.product-brand span"
                     ).text.strip()
@@ -275,9 +256,7 @@ def scrape_single_product(SKU, driver, log_callback=None):
 
                     # Check for critical missing data - return None if essential fields are missing
                     critical_fields_missing = any(
-                        value == "N/A"
-                        for value in product_info.values()
-                        if isinstance(value, str)
+                        value == "N/A" for value in product_info.values() if isinstance(value, str)
                     ) or not product_info.get("Image URLs")
 
                     if critical_fields_missing:
@@ -295,9 +274,7 @@ def scrape_single_product(SKU, driver, log_callback=None):
         return None
 
     except Exception as e:
-        display_error(
-            f"Exception while searching for SKU {SKU}: {e}", log_callback=log_callback
-        )
+        display_error(f"Exception while searching for SKU {SKU}: {e}", log_callback=log_callback)
         return None
 
 
@@ -307,5 +284,5 @@ if __name__ == "__main__":
     print("� Scraping Phillips...")
     results = scrape_phillips(test_skus)
     for i, result in enumerate(results):
-        print(f"✅ Result {i+1}: {result}")
+        print(f"✅ Result {i + 1}: {result}")
         print("-" * 60)

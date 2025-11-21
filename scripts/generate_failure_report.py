@@ -26,14 +26,12 @@ try:
 except ImportError:
     # Fallback for different execution contexts
     from src.core import failure_analytics
+
     FailureAnalytics = failure_analytics.FailureAnalytics
 
 
 def generate_report(
-    analytics: Any,
-    site_name: str | None = None,
-    hours: int = 24,
-    output_format: str = "text"
+    analytics: Any, site_name: str | None = None, hours: int = 24, output_format: str = "text"
 ) -> str:
     """
     Generate a failure analytics report.
@@ -69,38 +67,42 @@ def generate_report(
     lines.append(f"Success After Retry Rate: {report_data.get('success_after_retry_rate', 0):.1%}")
     lines.append("")
 
-    if report_data.get('failure_counts'):
+    if report_data.get("failure_counts"):
         lines.append("FAILURE TYPES:")
         lines.append("-" * 40)
-        for failure_type, count in report_data['failure_counts'].items():
+        for failure_type, count in report_data["failure_counts"].items():
             lines.append(f"  {failure_type}: {count}")
         lines.append("")
 
-    if report_data.get('site_failures') and not site_name:
+    if report_data.get("site_failures") and not site_name:
         lines.append("FAILURES BY SITE:")
         lines.append("-" * 40)
-        for site, count in sorted(report_data['site_failures'].items(), key=lambda x: x[1], reverse=True):
+        for site, count in sorted(
+            report_data["site_failures"].items(), key=lambda x: x[1], reverse=True
+        ):
             lines.append(f"  {site}: {count}")
         lines.append("")
 
-    if report_data.get('action_failures'):
+    if report_data.get("action_failures"):
         lines.append("FAILURES BY ACTION:")
         lines.append("-" * 40)
-        for action, count in sorted(report_data['action_failures'].items(), key=lambda x: x[1], reverse=True):
+        for action, count in sorted(
+            report_data["action_failures"].items(), key=lambda x: x[1], reverse=True
+        ):
             lines.append(f"  {action}: {count}")
         lines.append("")
 
-    if report_data.get('insights'):
+    if report_data.get("insights"):
         lines.append("KEY INSIGHTS:")
         lines.append("-" * 40)
-        for insight in report_data['insights']:
+        for insight in report_data["insights"]:
             lines.append(f"  • {insight}")
         lines.append("")
 
-    if report_data.get('recommendations'):
+    if report_data.get("recommendations"):
         lines.append("RECOMMENDATIONS:")
         lines.append("-" * 40)
-        for rec in report_data['recommendations']:
+        for rec in report_data["recommendations"]:
             lines.append(f"  • {rec}")
         lines.append("")
 
@@ -130,7 +132,7 @@ def generate_health_report(analytics: Any, output_format: str = "text") -> str:
                 "success_rate": metrics.success_rate,
                 "total_requests": metrics.total_requests,
                 "total_failures": metrics.total_failures,
-                "recent_failures": metrics.recent_failures
+                "recent_failures": metrics.recent_failures,
             }
         return json.dumps(health_data, indent=2)
 
@@ -145,10 +147,7 @@ def generate_health_report(analytics: Any, output_format: str = "text") -> str:
         return "\n".join(lines)
 
     # Sort by health score (worst first)
-    sorted_sites = sorted(
-        all_metrics.items(),
-        key=lambda x: analytics.get_health_score(x[0])
-    )
+    sorted_sites = sorted(all_metrics.items(), key=lambda x: analytics.get_health_score(x[0]))
 
     lines.append("<10>")
     lines.append("-" * 80)
@@ -157,7 +156,13 @@ def generate_health_report(analytics: Any, output_format: str = "text") -> str:
 
     for site, metrics in sorted_sites:
         health_score = analytics.get_health_score(site)
-        status = "🔴 CRITICAL" if health_score < 0.5 else "🟡 WARNING" if health_score < 0.8 else "🟢 HEALTHY"
+        status = (
+            "🔴 CRITICAL"
+            if health_score < 0.5
+            else "🟡 WARNING"
+            if health_score < 0.8
+            else "🟢 HEALTHY"
+        )
 
         lines.append(f"Site: {site}")
         lines.append(f"  Status: {status}")
@@ -176,31 +181,21 @@ def generate_health_report(analytics: Any, output_format: str = "text") -> str:
 def main():
     """Main entry point for the script."""
     parser = argparse.ArgumentParser(description="Generate failure analytics reports")
+    parser.add_argument("--site", "-s", help="Specific site to report on (default: all sites)")
     parser.add_argument(
-        "--site", "-s",
-        help="Specific site to report on (default: all sites)"
+        "--hours", "-H", type=int, default=24, help="Time window in hours (default: 24)"
     )
     parser.add_argument(
-        "--hours", "-H",
-        type=int,
-        default=24,
-        help="Time window in hours (default: 24)"
-    )
-    parser.add_argument(
-        "--format", "-f",
+        "--format",
+        "-f",
         choices=["text", "json"],
         default="text",
-        help="Output format (default: text)"
+        help="Output format (default: text)",
     )
     parser.add_argument(
-        "--health",
-        action="store_true",
-        help="Generate health report instead of failure report"
+        "--health", action="store_true", help="Generate health report instead of failure report"
     )
-    parser.add_argument(
-        "--output", "-o",
-        help="Output file (default: stdout)"
-    )
+    parser.add_argument("--output", "-o", help="Output file (default: stdout)")
 
     args = parser.parse_args()
 
@@ -213,15 +208,12 @@ def main():
             report = generate_health_report(analytics, args.format)
         else:
             report = generate_report(
-                analytics,
-                site_name=args.site,
-                hours=args.hours,
-                output_format=args.format
+                analytics, site_name=args.site, hours=args.hours, output_format=args.format
             )
 
         # Output report
         if args.output:
-            with open(args.output, 'w') as f:
+            with open(args.output, "w") as f:
                 f.write(report)
             print(f"Report saved to {args.output}")
         else:

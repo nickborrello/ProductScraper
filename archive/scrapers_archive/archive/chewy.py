@@ -46,7 +46,7 @@ def scrape_chewy(product_name, original_sku):
                 WebDriverWait(driver, 10).until(lambda d: "Chewy" in d.title)
                 break
             except Exception as e:
-                print(f"⚠️ Attempt {attempt+1} failed: {e}")
+                print(f"⚠️ Attempt {attempt + 1} failed: {e}")
                 time.sleep(5)
 
         WebDriverWait(driver, 10).until(
@@ -60,9 +60,7 @@ def scrape_chewy(product_name, original_sku):
         print("🧭 Please manually confirm the correct product page is loaded.")
         input("✅ Press ENTER to continue scraping...")
 
-        WebDriverWait(driver, 15).until(
-            EC.visibility_of_element_located((By.TAG_NAME, "h1"))
-        )
+        WebDriverWait(driver, 15).until(EC.visibility_of_element_located((By.TAG_NAME, "h1")))
 
         name_el = driver.find_element(By.TAG_NAME, "h1")
         product_info["Name"] = clean_string(name_el.text)
@@ -74,23 +72,17 @@ def scrape_chewy(product_name, original_sku):
             product_info["Brand"] = clean_string(brand_el.text)
         except:
             try:
-                brand_el = driver.find_element(
-                    By.CSS_SELECTOR, "span[data-testid='brand-name']"
-                )
+                brand_el = driver.find_element(By.CSS_SELECTOR, "span[data-testid='brand-name']")
                 product_info["Brand"] = clean_string(brand_el.text)
             except:
                 try:
-                    alt_brand_el = driver.find_element(
-                        By.CSS_SELECTOR, "a[href*='/brands/']"
-                    )
+                    alt_brand_el = driver.find_element(By.CSS_SELECTOR, "a[href*='/brands/']")
                     product_info["Brand"] = clean_string(alt_brand_el.text)
                 except:
                     pass
 
         try:
-            bullets = driver.find_elements(
-                By.CSS_SELECTOR, "ul[data-testid='product-bullets'] li"
-            )
+            bullets = driver.find_elements(By.CSS_SELECTOR, "ul[data-testid='product-bullets'] li")
             for bullet in bullets:
                 txt = bullet.text.lower()
                 match = re.search(r"(\d+\.?\d*)\s*(oz|lb|lbs|pounds?)", txt)
@@ -102,9 +94,7 @@ def scrape_chewy(product_name, original_sku):
 
         try:
             image_urls = set()
-            thumbs = driver.find_elements(
-                By.CSS_SELECTOR, "img[data-testid='product-thumbnail']"
-            )
+            thumbs = driver.find_elements(By.CSS_SELECTOR, "img[data-testid='product-thumbnail']")
             for thumb in thumbs:
                 src = thumb.get_attribute("src")
                 if src and "data:image" not in src:

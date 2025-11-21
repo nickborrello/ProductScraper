@@ -33,6 +33,7 @@ def clean_string(s):
     s = re.sub(r"\s{2,}", " ", s)
     return s.strip()
 
+
 def scrape_coastal_pet(skus, log_callback=None, progress_tracker=None, status_callback=None):
     """Scrape Coastal Pet products for multiple SKUs."""
     if not skus:
@@ -45,11 +46,11 @@ def scrape_coastal_pet(skus, log_callback=None, progress_tracker=None, status_ca
     if status_callback:
         status_callback("Scraping Coastal Pet...")
 
-    with create_browser("Coastal Pet", headless=HEADLESS, enable_devtools=ENABLE_DEVTOOLS) as driver:
+    with create_browser(
+        "Coastal Pet", headless=HEADLESS, enable_devtools=ENABLE_DEVTOOLS
+    ) as driver:
         if driver is None:
-            display_error(
-                "Could not create browser for Coastal Pet", log_callback=log_callback
-            )
+            display_error("Could not create browser for Coastal Pet", log_callback=log_callback)
             return products
 
         for i, sku in enumerate(skus, 1):
@@ -59,7 +60,9 @@ def scrape_coastal_pet(skus, log_callback=None, progress_tracker=None, status_ca
                 display_product_result(product_info, i, len(skus), log_callback=log_callback)
             else:
                 products.append(None)
-            display_scraping_progress(i, len(skus), start_time, "Coastal Pet", log_callback=log_callback)
+            display_scraping_progress(
+                i, len(skus), start_time, "Coastal Pet", log_callback=log_callback
+            )
             # Update progress tracker if provided
             if progress_tracker:
                 progress_tracker.update_sku_progress(
@@ -85,7 +88,7 @@ def scrape_single_product(SKU, driver, log_callback=None):
         driver.get(search_url)
         print(f"DEBUG: Searched URL: {search_url}")
         print(f"DEBUG: Page title: {driver.title}")
-        
+
         # Debug mode: pause for dev tools inspection
         if DEBUG_MODE:
             print("🔍 DEBUG MODE: Browser is paused for dev tools inspection")
@@ -94,7 +97,7 @@ def scrape_single_product(SKU, driver, log_callback=None):
             print("📋 Copy the dev tools URL from the address bar and send it to me")
             print("⏸️  Press Enter in the terminal when ready to continue...")
             input()
-        
+
         # Check if we got search results or an error page
         page_text = driver.page_source.lower()
         if "no results" in page_text or "not found" in page_text:
@@ -157,7 +160,7 @@ def scrape_single_product(SKU, driver, log_callback=None):
 if __name__ == "__main__":
     # Enable debug mode when running from file
     DEBUG_MODE = True
-    
+
     test_sku = "076484648649"
     print(f"🔍 Scraping Coastal Pet for SKU: {test_sku}")
     results = scrape_coastal_pet([test_sku])

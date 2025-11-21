@@ -79,9 +79,7 @@ def scrape_single_product(SKU, driver):
                 )
             )
         except Exception:
-            print(
-                f"DEBUG: Timeout waiting for search results. Page title: {driver.title}"
-            )
+            print(f"DEBUG: Timeout waiting for search results. Page title: {driver.title}")
             print(f"DEBUG: Current URL: {driver.current_url}")
             print(
                 f"DEBUG: Page source contains 'results': {'results' in driver.page_source.lower()}"
@@ -91,10 +89,7 @@ def scrape_single_product(SKU, driver):
 
         # Check for no results messages
         page_source_lower = driver.page_source.lower()
-        if any(
-            phrase in page_source_lower
-            for phrase in ["no results", "no products", "0 items"]
-        ):
+        if any(phrase in page_source_lower for phrase in ["no results", "no products", "0 items"]):
             print(f"DEBUG: No results found for SKU {SKU}")
             return None
 
@@ -130,7 +125,7 @@ def scrape_single_product(SKU, driver):
                 for i, link in enumerate(links[:5]):  # Show first 5 links
                     href = link.get_attribute("href")
                     text = link.text.strip()
-                    print(f"DEBUG: Link {i+1}: {href} (text: '{text}')")
+                    print(f"DEBUG: Link {i + 1}: {href} (text: '{text}')")
                 display_error("No product link found.")
                 return None
 
@@ -160,9 +155,7 @@ def scrape_single_product(SKU, driver):
 
             # Wait longer for the gallery to load and be interactive
             WebDriverWait(driver, 15).until(
-                EC.presence_of_element_located(
-                    (By.CSS_SELECTOR, "div.gallery-placeholder")
-                )
+                EC.presence_of_element_located((By.CSS_SELECTOR, "div.gallery-placeholder"))
             )
             print("DEBUG: Gallery placeholder found")
 
@@ -187,13 +180,13 @@ def scrape_single_product(SKU, driver):
             image_url = None
             for i, selector in enumerate(image_selectors):
                 try:
-                    print(f"DEBUG: Trying selector {i+1}: {selector}")
+                    print(f"DEBUG: Trying selector {i + 1}: {selector}")
                     images = driver.find_elements(By.CSS_SELECTOR, selector)
                     print(f"DEBUG: Found {len(images)} images with this selector")
 
                     for j, image_element in enumerate(images):
                         src = image_element.get_attribute("src")
-                        print(f"DEBUG: Image {j+1} src: {src}")
+                        print(f"DEBUG: Image {j + 1} src: {src}")
 
                         if src and src.startswith("http") and "nassau-candy" in src:
                             image_url = src
@@ -216,7 +209,7 @@ def scrape_single_product(SKU, driver):
                 for i, img in enumerate(all_images[:10]):  # Check first 10 images
                     src = img.get_attribute("src")
                     alt = img.get_attribute("alt")
-                    print(f"DEBUG: Image {i+1}: src='{src}' alt='{alt}'")
+                    print(f"DEBUG: Image {i + 1}: src='{src}' alt='{alt}'")
 
                     if (
                         src
@@ -224,9 +217,7 @@ def scrape_single_product(SKU, driver):
                         and src.startswith("http")
                     ):
                         image_url = src
-                        print(
-                            f"DEBUG: Found suitable image in last resort: {image_url}"
-                        )
+                        print(f"DEBUG: Found suitable image in last resort: {image_url}")
                         break
 
             if image_url:
@@ -260,9 +251,7 @@ def scrape_single_product(SKU, driver):
                 )
                 print("DEBUG: Table content appears to be loaded")
             except Exception:
-                print(
-                    "DEBUG: Warning - couldn't confirm table content loaded, proceeding anyway"
-                )
+                print("DEBUG: Warning - couldn't confirm table content loaded, proceeding anyway")
 
             # Give a bit more time for all dynamic content to settle
             import time
@@ -296,7 +285,7 @@ def scrape_single_product(SKU, driver):
                     if not value:
                         value = value_elem.get_attribute("innerText").strip()
 
-                    print(f"DEBUG: Row {i+1} (th/td): '{label}' = '{value}'")
+                    print(f"DEBUG: Row {i + 1} (th/td): '{label}' = '{value}'")
                 except Exception:
                     # Alternative structure: td with data-th attribute
                     try:
@@ -313,9 +302,7 @@ def scrape_single_product(SKU, driver):
                                 if not value:
                                     value = td.get_attribute("innerText").strip()
 
-                                print(
-                                    f"DEBUG: Row {i+1} (data-th): '{label}' = '{value}'"
-                                )
+                                print(f"DEBUG: Row {i + 1} (data-th): '{label}' = '{value}'")
                                 break
                         else:
                             continue
@@ -341,9 +328,7 @@ def scrape_single_product(SKU, driver):
             if "Brand" not in product_info:
                 print("DEBUG: Trying direct selector for brand...")
                 try:
-                    brand_element = spec_table.find_element(
-                        By.CSS_SELECTOR, 'td[data-th="Brand"]'
-                    )
+                    brand_element = spec_table.find_element(By.CSS_SELECTOR, 'td[data-th="Brand"]')
                     brand_value = brand_element.text.strip()
                     product_info["Brand"] = brand_value
                     print(f"DEBUG: Found brand with direct selector: '{brand_value}'")

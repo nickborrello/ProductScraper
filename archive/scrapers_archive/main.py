@@ -10,7 +10,7 @@ warnings.warn(
     "Please migrate to the new modular scraper system using YAML configurations. "
     "See docs/SCRAPER_MIGRATION_GUIDE.md for migration instructions.",
     DeprecationWarning,
-    stacklevel=2
+    stacklevel=2,
 )
 
 # Try to import PyQt6 for GUI file dialogs, fall back to text-based if not available
@@ -59,18 +59,29 @@ if not is_gui_mode:
 
 # --- Core Logic Functions ---
 
-def run_scraping(file_path, progress_callback=None, log_callback=None, interactive=True, selected_sites=None, editor_callback=None, status_callback=None, confirmation_callback=None, metrics_callback=None):
+
+def run_scraping(
+    file_path,
+    progress_callback=None,
+    log_callback=None,
+    interactive=True,
+    selected_sites=None,
+    editor_callback=None,
+    status_callback=None,
+    confirmation_callback=None,
+    metrics_callback=None,
+):
     """Handles the entire scraping process for a given file."""
     # Determine log function
     if log_callback is None:
         log = print
-    elif hasattr(log_callback, 'emit'):
+    elif hasattr(log_callback, "emit"):
         # If it's a Qt signal object, use emit method
         log = log_callback.emit
     else:
         # If it's already a callable (like emit method or function), use it directly
         log = log_callback
-    
+
     log(f"🚀 run_scraping called with file: {file_path}")
 
     if not PRODUCT_SCRAPER_AVAILABLE:
@@ -109,7 +120,17 @@ def run_scraping(file_path, progress_callback=None, log_callback=None, interacti
 
     # Run scraper
     log("🚀 Starting scraper...")
-    scraper = ProductScraper(file_path, interactive=interactive, selected_sites=selected_sites, log_callback=log_callback, progress_callback=progress_callback, editor_callback=editor_callback, status_callback=status_callback, confirmation_callback=confirmation_callback, metrics_callback=metrics_callback)
+    scraper = ProductScraper(
+        file_path,
+        interactive=interactive,
+        selected_sites=selected_sites,
+        log_callback=log_callback,
+        progress_callback=progress_callback,
+        editor_callback=editor_callback,
+        status_callback=status_callback,
+        confirmation_callback=confirmation_callback,
+        metrics_callback=metrics_callback,
+    )
     if progress_callback:
         progress_callback.emit(40)
     scraper.run()
@@ -117,12 +138,19 @@ def run_scraping(file_path, progress_callback=None, log_callback=None, interacti
         progress_callback.emit(90)
     log("✅ Product scraping completed!")
 
-def run_db_refresh(progress_callback=None, log_callback=None, editor_callback=None, status_callback=None, metrics_callback=None):
+
+def run_db_refresh(
+    progress_callback=None,
+    log_callback=None,
+    editor_callback=None,
+    status_callback=None,
+    metrics_callback=None,
+):
     """Processes the downloaded XML and refreshes the database, with callbacks."""
     # Determine log function
     if log_callback is None:
         log = print
-    elif hasattr(log_callback, 'emit'):
+    elif hasattr(log_callback, "emit"):
         # If it's a Qt signal object, use emit method
         log = log_callback.emit
     else:
@@ -132,9 +160,7 @@ def run_db_refresh(progress_callback=None, log_callback=None, editor_callback=No
     if progress_callback:
         progress_callback.emit(10)
 
-    xml_path = os.path.join(
-        PROJECT_ROOT, "data", "databases", "shopsite_products_cleaned.xml"
-    )
+    xml_path = os.path.join(PROJECT_ROOT, "data", "databases", "shopsite_products_cleaned.xml")
 
     if not os.path.exists(xml_path):
         log(f"❌ XML file not found: {xml_path}")
@@ -158,24 +184,32 @@ def run_db_refresh(progress_callback=None, log_callback=None, editor_callback=No
         raise
 
 
-def run_shopsite_xml_download(progress_callback=None, log_callback=None, editor_callback=None, status_callback=None, metrics_callback=None):
+def run_shopsite_xml_download(
+    progress_callback=None,
+    log_callback=None,
+    editor_callback=None,
+    status_callback=None,
+    metrics_callback=None,
+):
     """Downloads and saves XML from ShopSite."""
     # Determine log function
     if log_callback is None:
         log = print
-    elif hasattr(log_callback, 'emit'):
+    elif hasattr(log_callback, "emit"):
         # If it's a Qt signal object, use emit method
         log = log_callback.emit
     else:
         # If it's already a callable (like emit method or function), use it directly
         log = log_callback
-    
+
     log("🌐 Downloading XML from ShopSite...")
     if progress_callback:
         progress_callback.emit(10)
-    
+
     try:
-        success, message = import_from_shopsite_xml(save_excel=True, save_to_db=False, interactive=False, log_callback=log_callback)
+        success, message = import_from_shopsite_xml(
+            save_excel=True, save_to_db=False, interactive=False, log_callback=log_callback
+        )
         log(message)
         if success:
             log("💡 XML downloaded. Use 'Refresh from XML' to process it into the database.")
@@ -187,22 +221,28 @@ def run_shopsite_xml_download(progress_callback=None, log_callback=None, editor_
         raise
 
 
-def run_shopsite_publish(progress_callback=None, log_callback=None, editor_callback=None, status_callback=None, metrics_callback=None):
+def run_shopsite_publish(
+    progress_callback=None,
+    log_callback=None,
+    editor_callback=None,
+    status_callback=None,
+    metrics_callback=None,
+):
     """Publishes changes to ShopSite by regenerating website content."""
     # Determine log function
     if log_callback is None:
         log = print
-    elif hasattr(log_callback, 'emit'):
+    elif hasattr(log_callback, "emit"):
         # If it's a Qt signal object, use emit method
         log = log_callback.emit
     else:
         # If it's already a callable (like emit method or function), use it directly
         log = log_callback
-    
+
     log("🚀 Publishing changes to ShopSite...")
     if progress_callback:
         progress_callback.emit(10)
-    
+
     try:
         # Default options: regenerate everything
         success, message = publish_shopsite_changes(
@@ -211,7 +251,7 @@ def run_shopsite_publish(progress_callback=None, log_callback=None, editor_callb
             search_index=True,
             sitemap=True,
             full_regen=False,  # Use incremental by default
-            log_callback=log_callback
+            log_callback=log_callback,
         )
         log(message)
         if success:
@@ -223,9 +263,7 @@ def run_shopsite_publish(progress_callback=None, log_callback=None, editor_callb
         # The worker's error signal will catch this
         raise
     if not is_gui_mode:
-        xml_path = os.path.join(
-            PROJECT_ROOT, "data", "databases", "shopsite_products_cleaned.xml"
-        )
+        xml_path = os.path.join(PROJECT_ROOT, "data", "databases", "shopsite_products_cleaned.xml")
 
         if not os.path.exists(xml_path):
             if not is_gui_mode:
@@ -243,6 +281,7 @@ def run_shopsite_publish(progress_callback=None, log_callback=None, editor_callb
             if not is_gui_mode:
                 print(f"❌ XML processing failed: {e}")
 
+
 def validate_excel_columns(file_path, log_callback=None):
     """
     Validates required columns in the Excel file, adding them if missing.
@@ -251,7 +290,7 @@ def validate_excel_columns(file_path, log_callback=None):
     # Determine log function
     if log_callback is None:
         log = print
-    elif hasattr(log_callback, 'emit'):
+    elif hasattr(log_callback, "emit"):
         # If it's a Qt signal object, use emit method
         log = log_callback.emit
     else:

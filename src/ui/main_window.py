@@ -1095,7 +1095,9 @@ class MainWindow(QMainWindow):
         file_path = self.select_xml_file()
         if file_path:
             self.last_operation = "Database Refresh"
-            self.log_message(f"Starting database refresh from: {os.path.basename(file_path)}", "INFO")
+            self.log_message(
+                f"Starting database refresh from: {os.path.basename(file_path)}", "INFO"
+            )
             self._run_worker(run_db_refresh, file_path)
 
     def start_xml_download(self):

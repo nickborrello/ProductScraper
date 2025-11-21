@@ -22,6 +22,7 @@ def log_error(message, log_callback=None):
     else:
         print(f"Error: {message}")
 
+
 def scrape_mazuri(skus, log_callback=None, progress_tracker=None, status_callback=None):
     """Scrape Mazuri products for multiple SKUs."""
     products = []
@@ -74,9 +75,7 @@ def scrape_single_product(SKU, driver, log_callback=None):
         WebDriverWait(driver, 15).until(
             EC.any_of(
                 EC.presence_of_element_located((By.CSS_SELECTOR, "li.snize-product")),
-                EC.presence_of_element_located(
-                    (By.CSS_SELECTOR, "li.snize-no-products-found")
-                ),
+                EC.presence_of_element_located((By.CSS_SELECTOR, "li.snize-no-products-found")),
             )
         )
     except Exception as e:
@@ -88,9 +87,7 @@ def scrape_single_product(SKU, driver, log_callback=None):
 
     # Robust no-results detection
     try:
-        no_results_elements = driver.find_elements(
-            By.CSS_SELECTOR, "li.snize-no-products-found"
-        )
+        no_results_elements = driver.find_elements(By.CSS_SELECTOR, "li.snize-no-products-found")
         for elem in no_results_elements:
             if "didn't match any results" in elem.text:
                 return None
@@ -216,9 +213,7 @@ def scrape_single_product(SKU, driver, log_callback=None):
                 # Main image (from main display area)
                 main_img_tag = soup.find(
                     "img",
-                    id=re.compile(
-                        r"product-featured-image|main-product-image|product-image"
-                    ),
+                    id=re.compile(r"product-featured-image|main-product-image|product-image"),
                 )
                 if main_img_tag:
                     main_img_url = main_img_tag.get("src")
@@ -314,9 +309,7 @@ def scrape_single_product(SKU, driver, log_callback=None):
                         weight = m.group(1) if m else "N/A"
         if not weight:
             try:
-                weight_elem = soup.find(
-                    "select", class_=re.compile("single-option-selector")
-                )
+                weight_elem = soup.find("select", class_=re.compile("single-option-selector"))
                 if weight_elem:
                     selected_option = weight_elem.find("option", selected=True)
                     if selected_option:
@@ -347,9 +340,7 @@ def scrape_single_product(SKU, driver, log_callback=None):
             if len(image_list) < 7:
                 main_img_tag = soup.find(
                     "img",
-                    id=re.compile(
-                        r"product-featured-image|main-product-image|product-image"
-                    ),
+                    id=re.compile(r"product-featured-image|main-product-image|product-image"),
                 )
                 if main_img_tag:
                     main_img_url = main_img_tag.get("src")
@@ -376,9 +367,7 @@ def scrape_single_product(SKU, driver, log_callback=None):
                     break
             product_info["Image URLs"] = deduped_imgs
         except Exception as e:
-            log_error(
-                f"[{SKU}] Error extracting Image URLs: {e}", log_callback=log_callback
-            )
+            log_error(f"[{SKU}] Error extracting Image URLs: {e}", log_callback=log_callback)
         # Always return the required fields, even if some are missing
         # Print missing fields for debugging
         missing = []

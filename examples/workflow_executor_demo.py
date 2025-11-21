@@ -30,54 +30,16 @@ def demo_workflow_execution():
         "timeout": 10,
         "retries": 2,
         "selectors": [
-            {
-                "name": "page_title",
-                "selector": "h1",
-                "attribute": "text",
-                "multiple": False
-            },
-            {
-                "name": "json_data",
-                "selector": "pre",
-                "attribute": "text",
-                "multiple": False
-            }
+            {"name": "page_title", "selector": "h1", "attribute": "text", "multiple": False},
+            {"name": "json_data", "selector": "pre", "attribute": "text", "multiple": False},
         ],
         "workflows": [
-            {
-                "action": "navigate",
-                "params": {
-                    "url": "https://httpbin.org/html",
-                    "wait_after": 1
-                }
-            },
-            {
-                "action": "wait_for",
-                "params": {
-                    "selector": "h1",
-                    "timeout": 5
-                }
-            },
-            {
-                "action": "extract",
-                "params": {
-                    "fields": ["page_title"]
-                }
-            },
-            {
-                "action": "navigate",
-                "params": {
-                    "url": "https://httpbin.org/json",
-                    "wait_after": 1
-                }
-            },
-            {
-                "action": "extract",
-                "params": {
-                    "fields": ["json_data"]
-                }
-            }
-        ]
+            {"action": "navigate", "params": {"url": "https://httpbin.org/html", "wait_after": 1}},
+            {"action": "wait_for", "params": {"selector": "h1", "timeout": 5}},
+            {"action": "extract", "params": {"fields": ["page_title"]}},
+            {"action": "navigate", "params": {"url": "https://httpbin.org/json", "wait_after": 1}},
+            {"action": "extract", "params": {"fields": ["json_data"]}},
+        ],
     }
 
     try:
@@ -102,7 +64,7 @@ def demo_workflow_execution():
         print(f"Configuration: {result['config_name']}")
 
         print("\nEXTRACTED DATA:")
-        for key, value in result['results'].items():
+        for key, value in result["results"].items():
             if isinstance(value, str) and len(value) > 100:
                 print(f"{key}: {value[:100]}...")
             else:
@@ -128,9 +90,9 @@ def demo_error_handling():
         "workflows": [
             {
                 "action": "invalid_action",  # This will cause an error
-                "params": {}
+                "params": {},
             }
-        ]
+        ],
     }
 
     try:

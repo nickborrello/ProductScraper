@@ -4,9 +4,7 @@ import sys
 import time
 
 # Ensure project root is on sys.path
-PROJECT_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
@@ -50,9 +48,7 @@ def init_browser(profile_suffix="default", headless=True):
     """Initialize Chrome browser for Amazon scraping with proper profile management."""
     from src.utils.scraping.scraping import get_standard_chrome_options
 
-    chrome_options = get_standard_chrome_options(
-        headless=headless, profile_suffix=profile_suffix
-    )
+    chrome_options = get_standard_chrome_options(headless=headless, profile_suffix=profile_suffix)
 
     # Use selenium_profiles directory for Amazon with unique suffix
     user_data_dir = os.path.join(
@@ -143,13 +139,12 @@ def get_amazon_optimized_options(profile_suffix="default", headless=True):
 
 def init_browser_optimized(profile_suffix="default", headless=True):
     """Initialize optimized Chrome browser for Amazon scraping that blocks ads and images."""
-    chrome_options = get_amazon_optimized_options(
-        headless=headless, profile_suffix=profile_suffix
-    )
+    chrome_options = get_amazon_optimized_options(headless=headless, profile_suffix=profile_suffix)
 
     # Add service with error suppression
     service = Service(log_path=os.devnull)
     return webdriver.Chrome(service=service, options=chrome_options)
+
 
 def scrape_amazon(skus, log_callback=None, progress_tracker=None, status_callback=None):
     """Scrape Amazon products for multiple SKUs."""
@@ -170,24 +165,18 @@ def scrape_amazon(skus, log_callback=None, progress_tracker=None, status_callbac
 
     with browser_context as driver:
         if driver is None:
-            display_error(
-                "Could not create browser for Amazon", log_callback=log_callback
-            )
+            display_error("Could not create browser for Amazon", log_callback=log_callback)
             return products
 
         for i, sku in enumerate(skus, 1):
             product_info = scrape_single_product(sku, driver, log_callback=log_callback)
             if product_info:
                 products.append(product_info)
-                display_product_result(
-                    product_info, i, len(skus), log_callback=log_callback
-                )
+                display_product_result(product_info, i, len(skus), log_callback=log_callback)
             else:
                 products.append(None)
 
-            display_scraping_progress(
-                i, len(skus), start_time, "Amazon", log_callback=log_callback
-            )
+            display_scraping_progress(i, len(skus), start_time, "Amazon", log_callback=log_callback)
 
             # Update progress tracker if provided
             if progress_tracker:
@@ -200,9 +189,7 @@ def scrape_amazon(skus, log_callback=None, progress_tracker=None, status_callbac
                 time.sleep(1)  # Reduced from 2 seconds
 
     successful_products = [p for p in products if p]
-    display_scraping_summary(
-        successful_products, start_time, "Amazon", log_callback=log_callback
-    )
+    display_scraping_summary(successful_products, start_time, "Amazon", log_callback=log_callback)
 
     return products
 
@@ -226,9 +213,7 @@ def scrape_single_product(UPC_or_ASIN, driver, max_retries=0, log_callback=None)
                 direct_url = f"https://www.amazon.com/dp/{UPC_or_ASIN}"
                 driver.get(direct_url)
                 time.sleep(1)  # Reduced from 2 seconds
-                return _extract_product_data(
-                    driver, product_info, log_callback=log_callback
-                )
+                return _extract_product_data(driver, product_info, log_callback=log_callback)
             else:
                 # Try search URL
                 search_url = f"https://www.amazon.com/s?k={UPC_or_ASIN}"
@@ -365,9 +350,7 @@ def _has_no_search_results(driver, log_callback=None):
         try:
             # Count actual product result containers
             result_count = len(
-                driver.find_elements(
-                    By.CSS_SELECTOR, "div[data-component-type='s-search-result']"
-                )
+                driver.find_elements(By.CSS_SELECTOR, "div[data-component-type='s-search-result']")
             )
             if result_count == 0:
                 return True
@@ -409,9 +392,7 @@ def _has_no_search_results(driver, log_callback=None):
                             By.CSS_SELECTOR,
                             "div[data-component-type='s-search-result']",
                         )
-                        if section_total and len(section_sponsored) == len(
-                            section_total
-                        ):
+                        if section_total and len(section_sponsored) == len(section_total):
                             return True
                 except:
                     pass
@@ -719,14 +700,15 @@ def _extract_images(driver, log_callback=None):
                         if match:
                             image_id = match.group(1)
                             # Construct high-res URL
-                            high_res_url = f"https://m.media-amazon.com/images/I/{image_id}._AC_SL1500_.jpg"
+                            high_res_url = (
+                                f"https://m.media-amazon.com/images/I/{image_id}._AC_SL1500_.jpg"
+                            )
 
                             if (
                                 high_res_url not in image_urls
                                 and _is_valid_image_url(high_res_url)
                                 and _is_product_image(high_res_url)
                             ):
-
                                 image_urls.append(high_res_url)
 
                 except:
@@ -845,8 +827,7 @@ def _is_valid_image_url(url):
 
     # Skip Amazon placeholder images
     if any(
-        skip in url.lower()
-        for skip in ["grey-pixel", "transparent", "placeholder", "no-image"]
+        skip in url.lower() for skip in ["grey-pixel", "transparent", "placeholder", "no-image"]
     ):
         return False
 
@@ -934,9 +915,7 @@ if __name__ == "__main__":
     for i, result in enumerate(results):
         sku = test_skus[i]
         if result:
-            print(
-                f"  {i+1}. SKU {sku}: Found '{result.get('Name', 'Unknown')[:50]}...'"
-            )
+            print(f"  {i + 1}. SKU {sku}: Found '{result.get('Name', 'Unknown')[:50]}...'")
             print(f"     Full product data: {result}")
             # Print image URLs separately for debugging
             images = result.get("Image URLs", [])

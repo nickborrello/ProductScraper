@@ -20,17 +20,13 @@ from src.utils.scraping.browser import create_browser
 from src.utils.scraping.scraping import get_standard_chrome_options
 
 # Ensure project root is on sys.path
-PROJECT_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 load_dotenv()
 HEADLESS = False
-TEST_SKU = (
-    "855089008580"  # KONG Pull A Partz Pals Koala SM - test SKU for Pet Food Experts
-)
+TEST_SKU = "855089008580"  # KONG Pull A Partz Pals Koala SM - test SKU for Pet Food Experts
 
 LOGIN_URL = "https://orders.petfoodexperts.com/SignIn"
 HOME_URL = "https://orders.petfoodexperts.com/"
@@ -39,9 +35,7 @@ HOME_URL = "https://orders.petfoodexperts.com/"
 def init_browser(profile_suffix="default", headless=True):
     # Use standard Chrome options
 
-    chrome_options = get_standard_chrome_options(
-        headless=headless, profile_suffix=profile_suffix
-    )
+    chrome_options = get_standard_chrome_options(headless=headless, profile_suffix=profile_suffix)
 
     # Use selenium_profiles directory for petfoodex with unique suffix
     user_data_dir = os.path.join(
@@ -59,9 +53,7 @@ def load_cookies(driver):
     try:
         import pickle
 
-        cookie_path = os.path.join(
-            PROJECT_ROOT, "data", "cookies", "petfoodex_cookies.pkl"
-        )
+        cookie_path = os.path.join(PROJECT_ROOT, "data", "cookies", "petfoodex_cookies.pkl")
         if not os.path.exists(cookie_path):
             return
         with open(cookie_path, "rb") as f:
@@ -315,7 +307,10 @@ def parse_weight_from_name(name):
 
     return ""
 
-def scrape_petfood_experts(skus, browser=None, log_callback=None, progress_tracker=None, status_callback=None):
+
+def scrape_petfood_experts(
+    skus, browser=None, log_callback=None, progress_tracker=None, status_callback=None
+):
     """Scrape Pet Food Experts products for multiple SKUs."""
     if not skus:
         return []
@@ -347,9 +342,7 @@ def scrape_petfood_experts(skus, browser=None, log_callback=None, progress_track
             product_info = scrape_single_product(sku, driver, log_callback=log_callback)
             if product_info:
                 products.append(product_info)
-                display_product_result(
-                    product_info, i, len(skus), log_callback=log_callback
-                )
+                display_product_result(product_info, i, len(skus), log_callback=log_callback)
             else:
                 products.append(None)
 
@@ -417,15 +410,11 @@ def scrape_single_product(sku, driver, log_callback=None):
                 print(debug_msg)
             time.sleep(1)
             try:
-                brand_elem = driver.find_element(
-                    By.CSS_SELECTOR, "a.pf-detail-title span"
-                )
+                brand_elem = driver.find_element(By.CSS_SELECTOR, "a.pf-detail-title span")
             except:
                 brand_elem = None
             try:
-                name_elem = driver.find_element(
-                    By.CSS_SELECTOR, "div.pf-detail-heading h1"
-                )
+                name_elem = driver.find_element(By.CSS_SELECTOR, "div.pf-detail-heading h1")
             except:
                 name_elem = None
 
@@ -498,9 +487,7 @@ def scrape_single_product(sku, driver, log_callback=None):
             )
 
             if critical_fields_missing:
-                debug_msg = (
-                    f"DEBUG: Critical fields missing for SKU {sku}, returning None"
-                )
+                debug_msg = f"DEBUG: Critical fields missing for SKU {sku}, returning None"
                 if log_callback:
                     log_callback(debug_msg)
                 else:
@@ -523,9 +510,7 @@ def scrape_single_product(sku, driver, log_callback=None):
             By.CSS_SELECTOR, "label[data-test-selector='productListSortSelect-label']"
         ):
             # Look for product cards in search results - be more specific to avoid false positives
-            product_cards = driver.find_elements(
-                By.CSS_SELECTOR, ".pf-product-card, .product-card"
-            )
+            product_cards = driver.find_elements(By.CSS_SELECTOR, ".pf-product-card, .product-card")
             if product_cards:
                 debug_msg = f"DEBUG: Found {len(product_cards)} products in search results for SKU {sku}, but expected direct navigation to product page"
                 if log_callback:
@@ -536,7 +521,9 @@ def scrape_single_product(sku, driver, log_callback=None):
                 # For now, return None since we expect direct navigation for exact SKU matches
                 return None
             else:
-                debug_msg = f"DEBUG: On search results page but no product cards found for SKU {sku}"
+                debug_msg = (
+                    f"DEBUG: On search results page but no product cards found for SKU {sku}"
+                )
                 if log_callback:
                     log_callback(debug_msg)
                 else:
@@ -552,9 +539,7 @@ def scrape_single_product(sku, driver, log_callback=None):
             return None
 
     except Exception as e:
-        display_error(
-            f"PetFoodExperts scrape error for SKU {sku}: {e}", log_callback=log_callback
-        )
+        display_error(f"PetFoodExperts scrape error for SKU {sku}: {e}", log_callback=log_callback)
         return None
 
 

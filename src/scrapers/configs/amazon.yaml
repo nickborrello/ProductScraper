@@ -28,7 +28,7 @@ workflows:
       url: "https://www.amazon.com/s?k={sku}"
   - action: "wait_for"
     params:
-      selector: ".s-result-item, .s-no-results, #no-results, .s-search-no-results"
+      selector: ".s-result-item, .s-no-results, #no-results, .s-search-no-results, #noResultsTitle"
       timeout: 30
   - action: "check_no_results" # Check for no results after page load
     params:
