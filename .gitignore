@@ -76,7 +76,17 @@ results/
 # Pytest cache
 .pytest_cache/
 
+# Mypy cache
+.mypy_cache/
+
 # Python distribution files
 *.egg-info/
 dist/
 build/
+
+# Test output files
+coverage.xml
+ruff_report.json
+ruff_report.txt
+unit_test_output.txt
+test_output.txt
