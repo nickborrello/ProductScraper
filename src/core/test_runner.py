@@ -3,7 +3,9 @@ This module provides the core functionality for running scraper tests.
 """
 import asyncio
 from pathlib import Path
+
 import yaml
+
 
 class ScraperIntegrationTester:
     """
@@ -33,7 +35,7 @@ class ScraperIntegrationTester:
         if not config_path.exists():
             return ["035585499741"]  # Default fallback
 
-        with open(config_path, 'r', encoding='utf-8') as f:
+        with open(config_path, encoding='utf-8') as f:
             config_data = yaml.safe_load(f)
 
         skus = config_data.get("test_skus") or ["035585499741"]
