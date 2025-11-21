@@ -699,6 +699,8 @@ def import_from_shopsite_xml(
     interactive: bool = True,
     log_callback=None,
     progress_callback=None,
+    status_callback=None,
+    **kwargs,
 ) -> tuple[bool, str]:
     """
     Import products from ShopSite using Database Automated XML Download.
@@ -792,6 +794,8 @@ def publish_shopsite_changes(
     full_regen: bool = False,
     log_callback=None,
     progress_callback=None,
+    status_callback=None,
+    **kwargs,
 ) -> tuple[bool, str]:
     """
     Publish changes to ShopSite by regenerating website content.

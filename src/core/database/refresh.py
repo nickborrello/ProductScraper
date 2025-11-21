@@ -528,7 +528,14 @@ def process_xml_to_database(
         return False
 
 
-def refresh_database_from_xml(xml_file_path: str, db_path: str | None = None) -> tuple[bool, str]:
+def refresh_database_from_xml(
+    xml_file_path: str,
+    db_path: str | None = None,
+    log_callback=None,
+    progress_callback=None,
+    status_callback=None,
+    **kwargs,
+) -> tuple[bool, str]:
     """
     Refresh the local database with new XML data.
 
