@@ -1,9 +1,10 @@
 import os
 import sys
 import traceback
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from PyQt6.QtCore import QObject, Qt, QThread, QTimer, pyqtSignal
 from PyQt6.QtGui import QAction, QFont, QTextCursor
@@ -1006,13 +1007,18 @@ class MainWindow(QMainWindow):
 
     def open_editor_on_main_thread_sync(self, products_list, result_container, editor_type):
         """Open a specified editor on the main GUI thread (synchronous)."""
-        if editor_type == "product":
-            from src.ui.product_editor import edit_products_in_batch as editor_func  # type: ignore
+        editor_func: Callable[..., Any] | None = None
+        log_msg = ""
 
+        if editor_type == "product":
+            from src.ui.product_editor import edit_products_in_batch
+
+            editor_func = cast(Callable[..., Any], edit_products_in_batch)
             log_msg = "product editor"
         elif editor_type == "classification":
-            from src.core.classification.ui import edit_classification_in_batch as editor_func  # type: ignore
+            from src.core.classification.ui import edit_classification_in_batch
 
+            editor_func = cast(Callable[..., Any], edit_classification_in_batch)
             log_msg = "classification editor"
         else:
             self.log_message(f"❌ Unknown editor type requested: {editor_type}", "ERROR")
