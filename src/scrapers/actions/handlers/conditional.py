@@ -3,6 +3,7 @@ from typing import Any
 
 from src.scrapers.actions.base import BaseAction
 from src.scrapers.actions.registry import ActionRegistry
+from src.scrapers.exceptions import WorkflowExecutionError
 from src.scrapers.models.config import WorkflowStep
 
 logger = logging.getLogger(__name__)

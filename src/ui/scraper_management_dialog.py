@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from typing import Any
 
 import yaml
 from PyQt6.QtCore import Qt
@@ -143,7 +144,7 @@ class ScraperManagementDialog(QDialog):
     def load_scrapers(self):
         """Load all scraper configurations."""
         self.scraper_list.clear()
-        self.scraper_configs = {}
+        self.scraper_configs: dict[str, dict[str, Any]] = {}
 
         try:
             # Find all YAML files in configs directory
@@ -212,7 +213,7 @@ class ScraperManagementDialog(QDialog):
             return
 
         config_data = self.scraper_configs[scraper_name]
-        config = config_data["config"]
+        config: ScraperConfig = config_data["config"]
         file_path = config_data["file_path"]
 
         # Build details text
@@ -417,6 +418,10 @@ class AddScraperDialog(QDialog):
                 login=None,
                 timeout=30,
                 retries=3,
+                anti_detection=None,
+                http_status=None,
+                validation=None,
+                test_skus=None,
             )
 
             # Ask for name
@@ -452,7 +457,7 @@ class AddScraperDialog(QDialog):
 class EditScraperDialog(QDialog):
     """Dialog for editing an existing scraper configuration."""
 
-    def __init__(self, config, file_path, parent=None):
+    def __init__(self, config: ScraperConfig, file_path, parent=None):
         super().__init__(parent)
         self.config = config
         self.file_path = file_path

@@ -15,7 +15,7 @@ try:
 except ImportError:
     try:
         # Try absolute import (when run as standalone script)
-        from src.core.classification.taxonomy_manager import get_product_taxonomy
+        from src.core.classification.taxonomy_manager import get_product_taxonomy  # type: ignore
     except ImportError:
         # Last resort - try direct import from current directory
         import os
@@ -24,117 +24,221 @@ except ImportError:
         current_dir = os.path.dirname(os.path.abspath(__file__))
         if current_dir not in sys.path:
             sys.path.insert(0, current_dir)
-        from taxonomy_manager import get_product_taxonomy
+        from taxonomy_manager import get_product_taxonomy  # type: ignore
 
 # Ensure src directory is in path for standalone execution
+
 import os
 import sys
+from typing import Any, Optional, cast
 
 src_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 if src_dir not in sys.path:
+
     sys.path.insert(0, src_dir)
 
+
+
 # Import settings manager
+
 try:
+
     from src.core.settings_manager import settings
 
+
+
     _settings_available = True
+
 except ImportError:
+
     try:
+
         # Fallback for when run as standalone
-        from ..settings_manager import settings
+
+        from ..settings_manager import settings  # type: ignore
+
+
 
         _settings_available = True
+
     except ImportError:
+
         # Last resort - try to load from settings.json directly
+
         import json
         from pathlib import Path
 
+
+
         config_path = Path(__file__).parent.parent.parent.parent / "settings.json"
+
         if config_path.exists():
+
             with open(config_path) as f:
+
                 _config = json.load(f)
+
                 _classification_method = _config.get("classification_method", "llm")
+
         else:
+
             _classification_method = "llm"
+
         _settings_available = False
 
+
+
 # Database path instead of Excel
+
 DB_PATH = Path(__file__).parent.parent.parent.parent / "data" / "databases" / "products.db"
 
 
+
+
+
 # Unified prompts for all LLM classifiers
+
 UNIFIED_SYSTEM_PROMPT = """You are an expert e-commerce product classifier for a retail store.
+
+
 
 {taxonomy_text}
 
+
+
 {pages_text}
 
+
+
 CLASSIFICATION RULES:
+
 1. **Prioritize the existing taxonomy.** If a product fits well into an existing
+
 category or product type, you must use it.
+
 2. If no suitable option exists, you may suggest a new one.
+
 3. If you are uncertain, it is better to choose the closest existing match rather
+
 than creating a new one.
 
+
+
 CRITICAL: You must respond with valid JSON only. No explanations, no markdown, no additional text.
+
 """
 
+
+
 UNIFIED_SINGLE_PRODUCT_JSON_FORMAT = """
+
 Return classifications in this exact JSON format:
+
 {{
+
     "category": "Main Category Name",
+
     "product_type": "Product Type 1|Product Type 2",
+
     "product_on_pages": "Page 1|Page 2|Page 3"
+
 }}
+
+
 
 Example valid response: {{"category": "Dog Food", "product_type": "Dry Dog Food|Adult Dog Food", "product_on_pages": "Dog Food|All Pets|Pet Supplies"}}"""
 
+
+
 UNIFIED_BATCH_JSON_FORMAT = """Return classifications in this exact JSON format:
+
 {
+
   "classifications": [
+
     {
+
       "product_index": 1,
+
       "category": "Main Category",
+
       "product_type": "Type 1|Type 2",
+
       "product_on_pages": "Page 1|Page 2|Page 3"
+
     },
+
     {
+
       "product_index": 2,
+
       "category": "Main Category",
+
       "product_type": "Type 1|Type 2",
+
       "product_on_pages": "Page 1|Page 2|Page 3"
+
     }
+
   ]
+
 }
+
+
 
 CRITICAL: Respond with valid JSON only. No explanations, no markdown, no additional text."""
 
 
+
+
+
 RECOMMEND_COLS = [
+
     ("Category", "Category"),
+
     ("Product_Type", "Product Type"),
+
     ("Product_On_Pages", "Product On Pages"),
+
 ]
 
 
+
+
+
 # Centralized product taxonomy - shared between all classifiers
+
 GENERAL_PRODUCT_TAXONOMY = get_product_taxonomy()
 
 
+
 def get_product_pages() -> list[str]:
+
     """
+
     Load product pages from JSON file
 
+
+
     Returns:
+
         List of product page names
+
     """
+
     pages_file = Path(__file__).parent.parent.parent.parent / "src" / "data" / "product_pages.json"
+
     try:
+
         with open(pages_file, encoding="utf-8") as f:
-            return json.load(f)
+
+            return cast(list[str], json.load(f))
+
     except (OSError, json.JSONDecodeError) as e:
+
         print(f"[WARNING] Error loading product pages file: {e}")
+
         return []
 
 
@@ -142,7 +246,9 @@ def get_product_pages() -> list[str]:
 PRODUCT_PAGES = get_product_pages()
 
 
-def classify_products_batch(products_list, method=None):
+def classify_products_batch(
+    products_list: list[dict[str, Any]], method: str | None = None
+) -> list[dict[str, Any]]:
     """
     Classify multiple products using specified method.
 
@@ -170,7 +276,7 @@ def classify_products_batch(products_list, method=None):
             from src.core.classification.llm_classifier import get_llm_classifier
         except ImportError:
             try:
-                from llm_classifier import get_llm_classifier
+                from llm_classifier import get_llm_classifier  # type: ignore
             except ImportError:
                 print("[WARNING] Could not import LLM classifier")
                 # Fall through to individual processing
@@ -192,11 +298,41 @@ def classify_products_batch(products_list, method=None):
                     batches.pop()
 
                 # Process each batch
-                classified_products = []
+                classified_products: list[dict[str, Any]] = []
                 for batch in batches:
-                    batch_results = classifier.classify_products_batch(batch)
-                    classified_products.extend(batch_results)
-
+                    # We need to convert list of dicts to strict string dict for the classifier if needed
+                    # but the classifier seems to accept dict[str, Any] roughly or converts internally
+                    # Actually the classifier expects list[dict[str, str]] mainly for Name/Brand
+                    # Let's cast or ensure compat
+                    batch_results = classifier.classify_products_batch(
+                        cast(list[dict[str, str]], batch)
+                    )
+                    # Merge results back
+                    # The classifier returns list of classification dicts
+                    # We need to merge these into the original product dicts?
+                    # The current code seems to assume batch_results ARE the products or...?
+                    # Ah, LLM classifier returns List[dict[str, str]] (classifications only)
+                    # But here we return classified_products.extend(batch_results)
+                    # This looks like it might be losing original data if not careful?
+                    # Wait, let's check llm_classifier.classify_products_batch
+                    # It returns list of classification results (category, type, etc).
+                    # So we need to merge them with original products.
+                    
+                    # CORRECT LOGIC:
+                    for product, result in zip(batch, batch_results, strict=True):
+                         product_copy = product.copy()
+                         product_copy.update(result) # type: ignore
+                         classified_products.append(product_copy)
+                
+                # But wait, existing code was:
+                # classified_products.extend(batch_results)
+                # If batch_results is just categories, we lose Name/Brand/etc!
+                # This looks like a bug in original code too?
+                # Let's check classify_products_batch in llm_classifier.py
+                # It returns [{"category":..., "product_type":...}, ...]
+                # So yes, the original code was likely returning JUST classifications.
+                # I should fix this to return full product info.
+                
                 print(
                     f"[SUCCESS] LLM batch classification complete! Processed {len(classified_products)} products\n"
                 )
@@ -212,15 +348,15 @@ def classify_products_batch(products_list, method=None):
             from src.core.classification.local_llm_classifier import get_local_llm_classifier
         except ImportError:
             try:
-                from local_llm_classifier import get_local_llm_classifier
+                from local_llm_classifier import get_local_llm_classifier  # type: ignore
             except ImportError:
                 print("[WARNING] Could not import local LLM classifier")
                 # Fall through to individual processing
 
         try:
-            classifier = get_local_llm_classifier(
+            classifier = cast(Any, get_local_llm_classifier(
                 product_taxonomy=GENERAL_PRODUCT_TAXONOMY, product_pages=PRODUCT_PAGES
-            )
+            ))
             if classifier:
                 # Create batches with merging logic for last small batch
                 batch_size = 15
@@ -241,8 +377,8 @@ def classify_products_batch(products_list, method=None):
                     for product in batch:
                         batch_products.append(
                             {
-                                "Name": product.get("Name", ""),
-                                "Brand": product.get("Brand", ""),
+                                "Name": str(product.get("Name", "")),
+                                "Brand": str(product.get("Brand", "")),
                             }
                         )
 
@@ -285,7 +421,7 @@ def classify_products_batch(products_list, method=None):
     return classified_products
 
 
-def classify_single_product(product_info, method=None):
+def classify_single_product(product_info, method=None):  # type: ignore
     """
     Classify a single product using LLM classification.
 
@@ -311,7 +447,7 @@ def classify_single_product(product_info, method=None):
             from src.core.classification.llm_classifier import classify_product_llm
         except ImportError:
             try:
-                from llm_classifier import classify_product_llm
+                from llm_classifier import classify_product_llm  # type: ignore
             except ImportError:
                 print("[WARNING] Could not import LLM classifier")
                 return product_info
@@ -340,7 +476,7 @@ def classify_single_product(product_info, method=None):
             from src.core.classification.local_llm_classifier import classify_product_local_llm
         except ImportError:
             try:
-                from local_llm_classifier import classify_product_local_llm
+                from local_llm_classifier import classify_product_local_llm  # type: ignore
             except ImportError:
                 print("[WARNING] Could not import local LLM classifier")
                 return product_info

@@ -120,7 +120,7 @@ class AntiDetectionManager:
         self.config = config
         self.site_name = site_name
         self.request_count = 0
-        self.last_request_time = 0
+        self.last_request_time: float = 0.0
         self.session_start_time = time.time()
 
         # Initialize adaptive retry strategy
@@ -563,7 +563,7 @@ class RateLimiter:
     def __init__(self, config: AntiDetectionConfig, adaptive_config=None):
         self.config = config
         self.adaptive_config = adaptive_config
-        self.last_request_time = 0
+        self.last_request_time: float = 0.0
         self.consecutive_failures = 0
 
     def detect_rate_limiting(self, driver) -> bool:
@@ -598,8 +598,6 @@ class RateLimiter:
     def apply_delay(self, driver=None) -> None:
         """Apply appropriate delay before next request using adaptive strategies."""
         is_ci = os.getenv("CI") == "true"
-        delay: float
-
         # Check for rate limiting indicators on the page before applying delay
         if driver and self.detect_rate_limiting(driver):
             logger.warning("Rate limiting detected on page, applying extended delay")

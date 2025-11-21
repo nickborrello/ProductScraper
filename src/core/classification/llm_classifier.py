@@ -184,7 +184,7 @@ class LLMProductClassifier:
                 http_ok = 200
                 if response.status_code == http_ok:
                     result = response.json()
-                    return result["choices"][0]["message"]["content"]
+                    return str(result["choices"][0]["message"]["content"])
                 else:
                     logger.error(
                         f"OpenRouter API error (attempt {attempt + 1}): "

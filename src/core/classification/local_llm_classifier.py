@@ -6,7 +6,7 @@ import json
 import os
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import ollama
 
@@ -59,8 +59,8 @@ class LocalLLMProductClassifier:
                 model_name = os.getenv("OLLAMA_MODEL", OLLAMA_MODEL)
 
         self.model_name = model_name or OLLAMA_MODEL
-        self.conversation_history = []
-        self.classification_cache = {}  # Cache for classifications
+        self.conversation_history: list[dict[str, str]] = []
+        self.classification_cache: dict[str, dict[str, str]] = {}  # Cache for classifications
         self.cache_file = cache_file or Path.home() / ".cache" / "productscraper_ollama_cache.json"
         self.cache_file.parent.mkdir(parents=True, exist_ok=True)
         self._load_cache()
@@ -167,7 +167,7 @@ class LocalLLMProductClassifier:
                         "num_predict": MAX_TOKENS,
                     },
                 )
-                return response["message"]["content"]
+                return str(response["message"]["content"])
             except Exception as e:
                 print(f"Ollama API call failed (attempt {attempt + 1}): {e}")
                 if attempt < max_retries - 1:
@@ -471,7 +471,7 @@ def get_local_llm_classifier(
     model_name: str | None = None,
     product_taxonomy: dict[str, list[str]] | None = None,
     product_pages: list[str] | None = None,
-) -> LocalLLMProductClassifier:
+) -> Optional["LocalLLMProductClassifier"]:
     """Get or create local LLM classifier instance."""
     global _local_llm_classifier
     if _local_llm_classifier is None:

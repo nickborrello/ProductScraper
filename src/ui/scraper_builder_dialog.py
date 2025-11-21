@@ -47,7 +47,8 @@ try:
 except ImportError:
 
     def get_llm_classifier(
-        model_name=None, product_taxonomy=None, product_pages=None
+        product_taxonomy: dict[str, list[str]] | None = None,
+        product_pages: list[str] | None = None,
     ) -> Optional["LLMProductClassifier"]:  # type: ignore
         return None
 
@@ -203,7 +204,9 @@ class SelectorGenerationPage(QWizardPage):
         self.selectors_table = QTableWidget()
         self.selectors_table.setColumnCount(4)
         self.selectors_table.setHorizontalHeaderLabels(["Field", "Selector", "Attribute", "Source"])
-        self.selectors_table.horizontalHeader().setStretchLastSection(True)
+        header = self.selectors_table.horizontalHeader()
+        if header is not None:
+            header.setStretchLastSection(True)
         self.selectors_table.setAlternatingRowColors(True)
         selectors_layout.addWidget(self.selectors_table)
 
@@ -511,7 +514,9 @@ class SelectorTestingPage(QWizardPage):
         self.results_table.setHorizontalHeaderLabels(
             ["Field", "Selector", "Status", "Extracted Value"]
         )
-        self.results_table.horizontalHeader().setStretchLastSection(True)
+        header = self.results_table.horizontalHeader()
+        if header is not None:
+            header.setStretchLastSection(True)
         self.results_table.setAlternatingRowColors(True)
         results_layout.addWidget(self.results_table)
 
@@ -788,6 +793,9 @@ class ConfigurationSavingPage(QWizardPage):
                 timeout=30,
                 retries=3,
                 anti_detection=None,
+                http_status=None,
+                validation=None,
+                test_skus=None,
             )
 
             yaml_content = yaml.safe_dump(
@@ -845,10 +853,18 @@ class ConfigurationSavingPage(QWizardPage):
                 if self.typed_wizard.test_results:
                     test_result = self.typed_wizard.test_results.get(selector.name, {})
                     if test_result.get("success", False):
+                        # Force selector to be string
+                        current_selector = selector.selector
+                        selector_string: str
+                        if isinstance(current_selector, list):
+                             selector_string = str(current_selector[0]) if current_selector else ""
+                        else:
+                             selector_string = str(current_selector)
+                        
                         manager.learn_selector(
                             domain=domain,
                             field_name=selector.name,
-                            selector=selector.selector,
+                            selector=selector_string,
                             success=True,
                         )
 
@@ -879,7 +895,7 @@ class ScraperBuilderDialog(QWizard):
         self.addPage(ConfigurationSavingPage())
 
         # Initialize wizard data storage
-        self._wizard_data = {
+        self._wizard_data: dict[str, Any] = {
             "page_content": None,
             "suggested_selectors": {},
             "test_results": {},
@@ -1077,13 +1093,20 @@ class SelectorTestingThread(QThread):
             soup = None
 
         for row, (field_name, selector_info) in enumerate(self.selectors.items()):
-            selector = selector_info.get("selector", "")
+            raw_selector = selector_info.get("selector", "")
+            final_selector: str = ""
+            
+            if isinstance(raw_selector, list):
+                final_selector = str(raw_selector[0]) if raw_selector else ""
+            else:
+                final_selector = str(raw_selector)
+
             attribute = selector_info.get("attribute", "text")
 
             try:
                 if soup:
                     # Use BeautifulSoup for proper parsing
-                    elements = soup.select(selector)
+                    elements = soup.select(final_selector)
                     if elements:
                         if attribute == "text":
                             value = elements[0].get_text(strip=True)
@@ -1101,7 +1124,7 @@ class SelectorTestingThread(QThread):
                         extracted_value = "Selector not found"
                 else:
                     # Simple regex fallback
-                    success = selector in self.page_content
+                    success = final_selector in self.page_content
                     extracted_value = "Found" if success else "Not found"
 
                 status = "✅ Success" if success else "❌ Failed"

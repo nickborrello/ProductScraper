@@ -104,7 +104,7 @@ class ScraperIntegrationTester:
             run_results = await self.testing_client.run_scraper(scraper_name, skus)
 
         # Validate results
-        validation_results = {}
+        validation_results: Any = {}
         if run_results["success"] and run_results["products"]:
             validation_results = self.validator.validate_product_data(
                 run_results["products"], scraper_name
@@ -139,7 +139,7 @@ class ScraperIntegrationTester:
         """
         if scrapers is None:
             scrapers = self.get_available_scrapers()
-        results = {
+        results: dict[str, Any] = {
             "total_scrapers": len(scrapers),
             "successful_scrapers": 0,
             "failed_scrapers": 0,

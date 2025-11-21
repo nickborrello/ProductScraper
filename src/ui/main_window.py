@@ -3,6 +3,7 @@ import sys
 import traceback
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 from PyQt6.QtCore import QObject, Qt, QThread, QTimer, pyqtSignal
 from PyQt6.QtGui import QAction, QFont, QTextCursor
@@ -152,7 +153,7 @@ except ImportError as e:
     print(f"Error importing scraper functions: {e}")
 
     # Provide dummy functions if the import fails, so the GUI can still load.
-    def run_scraping(*args, **kwargs):
+    def run_scraping(file_path: str, selected_sites: list[str] | None = None, **kwargs: Any) -> None:
         """Dummy function for scraping if import fails."""
         log_callback = kwargs.get("log_callback")
         if log_callback:
@@ -161,27 +162,31 @@ except ImportError as e:
             else:
                 log_callback("Error: Scraping logic not found.")
 
-    def run_db_refresh(*args, **kwargs) -> tuple[bool, str]:
+    def run_db_refresh(xml_file_path: str, db_path: str | None = None) -> tuple[bool, str]:
         """Dummy function for DB refresh if import fails."""
-        log_callback = kwargs.get("log_callback")
-        if log_callback:
-            if hasattr(log_callback, "emit"):
-                log_callback.emit("Error: DB refresh logic not found.")
-            else:
-                log_callback("Error: DB refresh logic not found.")
+        # Extract log_callback from where it might be passed (it's not in signature but might be expected by caller if they assume **kwargs)
+        # The original function signature is refresh_database_from_xml(xml_file_path: str, db_path: str | None = None)
+        # It does NOT take log_callback.
         return False, "Error: DB refresh logic not found."
 
-    def run_scraper_tests(*args, **kwargs) -> bool:
+    def run_scraper_tests(
+        run_integration: Any = False,
+        log_callback: Any = None,
+        progress_callback: Any = None,
+        status_callback: Any = None,
+        editor_callback: Any = None,
+        confirmation_callback: Any = None,
+        metrics_callback: Any = None,
+    ):
         """Dummy function for scraper tests if import fails."""
-        log_callback = kwargs.get("log_callback")
         if log_callback:
             if hasattr(log_callback, "emit"):
                 log_callback.emit("Error: Scraper test logic not found.")
             else:
                 log_callback("Error: Scraper test logic not found.")
-        return False
+        return False, "Error: Scraper test logic not found."
 
-    def run_scraper_integration_tests(*args, **kwargs):
+    def run_scraper_integration_tests(*args: Any, **kwargs: Any) -> Any:
         """Dummy function for scraper integration tests if import fails."""
         log_callback = kwargs.get("log_callback")
         if log_callback:
@@ -191,9 +196,14 @@ except ImportError as e:
                 log_callback("Error: Scraper integration test logic not found.")
         return False
 
-    def run_shopsite_xml_download(*args, **kwargs) -> tuple[bool, str]:
+    def run_shopsite_xml_download(
+        save_excel: bool = True,
+        save_to_db: bool = False,
+        interactive: bool = True,
+        log_callback: Any = None,
+        progress_callback: Any = None,
+    ) -> tuple[bool, str]:
         """Dummy function for ShopSite XML download if import fails."""
-        log_callback = kwargs.get("log_callback")
         if log_callback:
             if hasattr(log_callback, "emit"):
                 log_callback.emit("Error: ShopSite XML download logic not found.")
@@ -201,9 +211,16 @@ except ImportError as e:
                 log_callback("Error: ShopSite XML download logic not found.")
         return False, "Error: ShopSite XML download logic not found."
 
-    def run_shopsite_publish(*args, **kwargs) -> tuple[bool, str]:
+    def run_shopsite_publish(
+        html_pages: bool = True,
+        custom_pages: bool = True,
+        search_index: bool = True,
+        sitemap: bool = True,
+        full_regen: bool = False,
+        log_callback: Any = None,
+        progress_callback: Any = None,
+    ) -> tuple[bool, str]:
         """Dummy function for ShopSite publish if import fails."""
-        log_callback = kwargs.get("log_callback")
         if log_callback:
             if hasattr(log_callback, "emit"):
                 log_callback.emit("Error: ShopSite publish logic not found.")
@@ -286,7 +303,12 @@ class Worker(QThread):
 
         loop = QEventLoop()
         timer = QTimer()
-        timer.timeout.connect(lambda: result_container["done"] and loop.quit())
+
+        def check_done():
+            if result_container["done"]:
+                loop.quit()
+
+        timer.timeout.connect(check_done)
         timer.start(100)
         loop.exec()
         timer.stop()
@@ -983,11 +1005,13 @@ class MainWindow(QMainWindow):
     def open_editor_on_main_thread_sync(self, products_list, result_container, editor_type):
         """Open a specified editor on the main GUI thread (synchronous)."""
         if editor_type == "product":
-            from src.ui.product_editor import edit_products_in_batch as editor_func
+            from src.ui.product_editor import edit_products_in_batch as editor_func  # type: ignore
 
             log_msg = "product editor"
         elif editor_type == "classification":
-            from src.core.classification.ui import edit_classification_in_batch as editor_func
+            from src.core.classification.ui import (
+                edit_classification_in_batch as editor_func,  # type: ignore
+            )
 
             log_msg = "classification editor"
         else:
@@ -1385,9 +1409,9 @@ class MainWindow(QMainWindow):
         if dialog.exec() == QDialog.DialogCode.Accepted:
             selected_sites = []
             for i in range(list_widget.count()):
-                item = list_widget.item(i)
-                if item is not None and item.checkState() == Qt.CheckState.Checked:
-                    selected_sites.append(item.text())
+                site_item: QListWidgetItem | None = list_widget.item(i)
+                if site_item is not None and site_item.checkState() == Qt.CheckState.Checked:
+                    selected_sites.append(site_item.text())
             return selected_sites
         else:
             return []
