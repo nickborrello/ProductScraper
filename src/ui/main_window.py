@@ -1092,9 +1092,11 @@ class MainWindow(QMainWindow):
 
     def start_db_refresh(self):
         """Start database refresh from XML"""
-        self.last_operation = "Database Refresh"
-        self.log_message("Starting database refresh from XML...", "INFO")
-        self._run_worker(run_db_refresh)
+        file_path = self.select_xml_file()
+        if file_path:
+            self.last_operation = "Database Refresh"
+            self.log_message(f"Starting database refresh from: {os.path.basename(file_path)}", "INFO")
+            self._run_worker(run_db_refresh, file_path)
 
     def start_xml_download(self):
         """Download XML from ShopSite"""
@@ -1451,6 +1453,17 @@ class MainWindow(QMainWindow):
             "Select Excel File",
             os.path.join(project_root, "src", "data", "spreadsheets"),
             "Excel Files (*.xlsx *.xls);;All Files (*)",
+        )
+        return file_path
+
+    def select_xml_file(self):
+        """Open file dialog to select XML file"""
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Select XML File",
+            os.path.join(project_root, "data", "databases"),
+            "XML Files (*.xml);;All Files (*)",
         )
         return file_path
 
