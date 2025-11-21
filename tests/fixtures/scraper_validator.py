@@ -3,7 +3,7 @@ Scraper output validation utilities for testing and debugging.
 """
 
 import re
-from typing import Any
+from typing import Any, TypedDict
 
 import pandas as pd
 
@@ -11,6 +11,25 @@ MAX_SKU_LENGTH = 50
 MIN_WEIGHT = 0.01
 MAX_WEIGHT = 1000.0
 MAX_ERRORS_TO_SHOW = 10
+
+
+class ValidationResults(TypedDict):
+    scraper: str
+    total_products: int
+    valid_products: int
+    invalid_products: int
+    errors: list[str]
+    warnings: list[str]
+    field_coverage: dict[str, float]
+    data_quality_score: float
+
+
+class DataFrameValidationResults(TypedDict):
+    scraper: str
+    dataframe_shape: tuple[int, int]
+    columns: list[str]
+    errors: list[str]
+    warnings: list[str]
 
 
 class ScraperValidator:
@@ -40,7 +59,7 @@ class ScraperValidator:
         }
 
     def _validate_product_fields(
-        self, product: dict, expected_fields: list[str], field_counts: dict
+        self, product: dict, expected_fields: list[str], field_counts: dict[str, int]
     ) -> tuple[list[str], list[str]]:
         product_errors = []
         product_warnings = []
@@ -68,7 +87,7 @@ class ScraperValidator:
                     product_warnings.append(f"Weight format may be invalid: {product[field]}")
         return product_errors, product_warnings
 
-    def validate_product_data(self, products: list[dict], scraper_name: str) -> dict[str, Any]:
+    def validate_product_data(self, products: list[dict], scraper_name: str) -> ValidationResults:
         """
         Validate a list of product dictionaries from a scraper.
 
@@ -79,7 +98,7 @@ class ScraperValidator:
         Returns:
             Dict with validation results and any errors found
         """
-        results = {
+        results: ValidationResults = {
             "scraper": scraper_name,
             "total_products": len(products),
             "valid_products": 0,
@@ -132,7 +151,7 @@ class ScraperValidator:
 
         return results
 
-    def validate_dataframe_output(self, df: pd.DataFrame, scraper_name: str) -> dict[str, Any]:
+    def validate_dataframe_output(self, df: pd.DataFrame, scraper_name: str) -> DataFrameValidationResults:
         """
         Validate pandas DataFrame output from scraper.
 
@@ -143,7 +162,7 @@ class ScraperValidator:
         Returns:
             Dict with validation results
         """
-        results = {
+        results: DataFrameValidationResults = {
             "scraper": scraper_name,
             "dataframe_shape": df.shape,
             "columns": list(df.columns),

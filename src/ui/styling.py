@@ -418,7 +418,7 @@ class Worker(QThread):
         """Request editor on main thread and wait for result (synchronous from worker's perspective)"""
 
         # Create container for result
-        result_container = {{"result": None, "done": False}}
+        result_container = {"result": None, "done": False}
 
         # Emit signal to main thread with products and result container
         self.signals.request_editor_sync.emit(products_list, result_container)

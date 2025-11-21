@@ -6,6 +6,7 @@ Handles loading, updating, and refreshing product taxonomy from database.
 import json
 import sqlite3
 from pathlib import Path
+from typing import cast
 
 
 class TaxonomyManager:
@@ -45,7 +46,7 @@ class TaxonomyManager:
         if self.taxonomy_file.exists():
             try:
                 with open(self.taxonomy_file, encoding="utf-8") as f:
-                    return json.load(f)
+                    return cast(dict[str, list[str]], json.load(f))
             except (OSError, json.JSONDecodeError) as e:
                 print(f"⚠️ Error loading taxonomy file: {e}")
                 print("📝 Using default taxonomy...")
@@ -84,7 +85,7 @@ class TaxonomyManager:
         db_product_types = self._get_distinct_product_types_from_db()
 
         # Build taxonomy entirely from database
-        updated_taxonomy = {}
+        updated_taxonomy: dict[str, list[str]] = {}
         for category in db_categories:
             updated_taxonomy[category] = []
 
@@ -151,7 +152,7 @@ class TaxonomyManager:
         Returns:
             Dictionary mapping categories to sets of product types
         """
-        product_types = {}
+        product_types: dict[str, set[str]] = {}
 
         try:
             conn = sqlite3.connect(self.db_path)

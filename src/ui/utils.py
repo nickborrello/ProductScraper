@@ -2,6 +2,7 @@ import os
 import sys
 
 from PyQt6.QtWidgets import QApplication, QFileDialog
+from typing import cast
 
 # Ensure project root is on sys.path
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -25,7 +26,7 @@ def select_excel_file():
         )
 
         # Don't quit the app if it was created just for this dialog
-        if app and len(app.allWidgets()) == 0:
+        if app and len(cast(QApplication, app).allWidgets()) == 0:
             app.quit()
 
         return file_path if file_path else None

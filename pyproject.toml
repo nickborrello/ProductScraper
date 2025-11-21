@@ -35,7 +35,8 @@ dependencies = [
     "fake-useragent>=1.4.0",
     "pydantic>=2.0.0",
     "pyyaml>=6.0.0",
-    "ollama"
+    "ollama",
+    "mypy>=1.18.2",
 ]
 
 [project.optional-dependencies]

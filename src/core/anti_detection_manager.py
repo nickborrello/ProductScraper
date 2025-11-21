@@ -598,15 +598,16 @@ class RateLimiter:
     def apply_delay(self, driver=None) -> None:
         """Apply appropriate delay before next request using adaptive strategies."""
         is_ci = os.getenv("CI") == "true"
+        delay: float
 
         # Check for rate limiting indicators on the page before applying delay
         if driver and self.detect_rate_limiting(driver):
             logger.warning("Rate limiting detected on page, applying extended delay")
             # Get adaptive config for rate limiting
             if self.adaptive_config is not None:
-                extended_delay = self.adaptive_config.max_delay
+                extended_delay = float(self.adaptive_config.max_delay)
             else:
-                extended_delay = self.config.rate_limit_max_delay * 3  # 3x normal max delay
+                extended_delay = float(self.config.rate_limit_max_delay * 3)  # 3x normal max delay
             time.sleep(extended_delay)
             self.consecutive_failures += 1  # Treat as failure to increase future delays
             self.last_request_time = time.time()
@@ -616,31 +617,33 @@ class RateLimiter:
         time_since_last = current_time - self.last_request_time
 
         # Get adaptive configuration if available
+        min_delay: float
+        max_delay: float
         if self.adaptive_config is not None:
-            min_delay = self.adaptive_config.base_delay
-            max_delay = self.adaptive_config.max_delay
+            min_delay = float(self.adaptive_config.base_delay)
+            max_delay = float(self.adaptive_config.max_delay)
         # Use reduced delays in CI environment to prevent timeouts
         elif is_ci:
-            min_delay = min(self.config.rate_limit_min_delay, 0.5)  # Cap at 0.5s
-            max_delay = min(self.config.rate_limit_max_delay, 2.0)  # Cap at 2.0s
+            min_delay = float(min(self.config.rate_limit_min_delay, 0.5))  # Cap at 0.5s
+            max_delay = float(min(self.config.rate_limit_max_delay, 2.0))  # Cap at 2.0s
         else:
-            min_delay = self.config.rate_limit_min_delay
-            max_delay = self.config.rate_limit_max_delay
+            min_delay = float(self.config.rate_limit_min_delay)
+            max_delay = float(self.config.rate_limit_max_delay)
 
         # Increase delay based on consecutive failures
         if self.consecutive_failures > 0:
-            max_delay *= 2**self.consecutive_failures
+            max_delay *= float(2**self.consecutive_failures)
 
         required_delay = random.uniform(min_delay, max_delay)
 
         if time_since_last < required_delay:
-            delay = required_delay - time_since_last
+            applied_delay = required_delay - time_since_last  # type: ignore
             logger.debug(
                 f"Rate limiter - CI: {is_ci}, time_since_last: {time_since_last:.2f}s, "
-                f"required_delay: {required_delay:.2f}s, applying delay: {delay:.2f}s, "
+                f"required_delay: {required_delay:.2f}s, applying delay: {applied_delay:.2f}s, "
                 f"failures: {self.consecutive_failures}"
             )
-            time.sleep(delay)
+            time.sleep(applied_delay)
         else:
             logger.debug(
                 f"Rate limiter - CI: {is_ci}, no delay needed "
@@ -653,9 +656,9 @@ class RateLimiter:
     def apply_backoff_delay(self) -> None:
         """Apply exponential backoff delay."""
         self.consecutive_failures += 1
-        delay = self.config.rate_limit_max_delay * (2**self.consecutive_failures)
-        logger.info(f"Applying backoff delay: {delay:.2f}s (failure #{self.consecutive_failures})")
-        time.sleep(delay)
+        backoff_delay = float(self.config.rate_limit_max_delay * float(2**self.consecutive_failures))  # type: ignore
+        logger.info(f"Applying backoff delay: {backoff_delay:.2f}s (failure #{self.consecutive_failures})")
+        time.sleep(backoff_delay)
 
     def update_after_action(self, success: bool) -> None:
         """Update rate limiting state based on action result."""

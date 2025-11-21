@@ -92,9 +92,9 @@ class FailureAnalytics:
 
         # Thread-safe data structures
         self._lock = threading.RLock()
-        self._records = deque(maxlen=max_records)
-        self._site_metrics = defaultdict(lambda: SiteMetrics())
-        self._failure_patterns = defaultdict(lambda: defaultdict(int))
+        self._records: deque[FailureRecord] = deque(maxlen=max_records)
+        self._site_metrics: dict[str, SiteMetrics] = defaultdict(lambda: SiteMetrics())
+        self._failure_patterns: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
 
         # Analytics data files
         self.records_file = self.data_dir / "failure_records.json"
@@ -279,10 +279,10 @@ class FailureAnalytics:
                 }
 
             # Analyze failure patterns
-            failure_counts = defaultdict(int)
-            site_failures = defaultdict(int)
-            action_failures = defaultdict(int)
-            type_action_combinations = defaultdict(int)
+            failure_counts: dict[str, int] = defaultdict(int)
+            site_failures: dict[str, int] = defaultdict(int)
+            action_failures: dict[str, int] = defaultdict(int)
+            type_action_combinations: dict[str, int] = defaultdict(int)
 
             for record in recent_records:
                 failure_counts[record.failure_type.value] += 1
@@ -416,7 +416,7 @@ class FailureAnalytics:
                 )
 
         # Time-based patterns
-        hour_counts = defaultdict(int)
+        hour_counts: dict[int, int] = defaultdict(int)
         for record in records:
             hour = datetime.fromtimestamp(record.timestamp).hour
             hour_counts[hour] += 1

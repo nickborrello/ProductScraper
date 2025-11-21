@@ -7,7 +7,7 @@ PROJECT_ROOT = os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
 
-gen_py_cache = os.path.join(os.getenv("LOCALAPPDATA"), "Temp", "gen_py")
+gen_py_cache = os.path.join(str(os.getenv("LOCALAPPDATA")), "Temp", "gen_py")
 if os.path.exists(gen_py_cache):
     print(f"🧹 Detected corrupted COM cache. Removing: {gen_py_cache}")
     shutil.rmtree(gen_py_cache, ignore_errors=True)
@@ -15,7 +15,8 @@ if os.path.exists(gen_py_cache):
 
 def convert_xlsx_to_xls_with_excel(results_folder=None):
     # Use session-specific results folder or default to global spreadsheets folder
-    if results_folder:
+    if results_folder is not None:
+        assert isinstance(results_folder, str)
         folder = os.path.join(results_folder, "data")
     else:
         folder = os.path.join(PROJECT_ROOT, "src", "data", "spreadsheets")

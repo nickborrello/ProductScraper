@@ -306,7 +306,8 @@ class ShopSiteDatabase:
         """Get the total number of products in the database."""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute("SELECT COUNT(*) FROM products")
-            return cursor.fetchone()[0]
+            result = cursor.fetchone()
+            return int(result[0]) if result else 0
 
     def get_column_statistics(self) -> dict[str, int]:
         """
@@ -331,7 +332,8 @@ class ShopSiteDatabase:
                 cursor.execute(
                     f'SELECT COUNT(*) FROM products WHERE {column} IS NOT NULL AND {column} != ""'
                 )
-                count = cursor.fetchone()[0]
+                result = cursor.fetchone()
+                count = int(result[0]) if result else 0
                 stats[column] = count
 
         return stats

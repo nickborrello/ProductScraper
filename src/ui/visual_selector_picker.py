@@ -29,8 +29,8 @@ try:
     from PyQt6.QtWebEngineWidgets import QWebEnginePage, QWebEngineView  # type: ignore
 except ImportError:
     # PyQt6-WebEngine not available
-    QWebEngineView = None
-    QWebEnginePage = None
+    QWebEngineView = None  # type: ignore
+    QWebEnginePage = None  # type: ignore
 
 
 class VisualSelectorPicker(QWidget):
@@ -111,7 +111,7 @@ class VisualSelectorPicker(QWidget):
 
         # Web engine view
         self.web_view = QWebEngineView()
-        self.web_view.page().loadFinished.connect(self.on_page_load_finished)
+        self.web_view.page().loadFinished.connect(self.on_page_load_finished)  # type: ignore
         web_layout.addWidget(self.web_view)
 
         splitter.addWidget(web_group)
@@ -388,10 +388,10 @@ class VisualSelectorPicker(QWidget):
         """
 
         # Run the script
-        self.web_view.page().runJavaScript(script)
+        self.web_view.page().runJavaScript(script)  # type: ignore
 
         # Connect to JavaScript signals
-        self.web_view.page().javaScriptConsoleMessage = self.on_js_console_message
+        self.web_view.page().javaScriptConsoleMessage = self.on_js_console_message  # type: ignore
 
     def on_js_console_message(self, level, message, line, source):
         """Handle JavaScript console messages."""
@@ -407,21 +407,21 @@ class VisualSelectorPicker(QWidget):
     def start_selection_mode(self):
         """Start element selection mode."""
         script = "window.startSelection();"
-        self.web_view.page().runJavaScript(script)
+        self.web_view.page().runJavaScript(script)  # type: ignore
         self.select_mode_btn.setText("⏹️ Stop Selection")
         self.element_info.setPlainText("Click on elements in the web page to select them...")
 
     def stop_selection_mode(self):
         """Stop element selection mode."""
         script = "window.stopSelection();"
-        self.web_view.page().runJavaScript(script)
+        self.web_view.page().runJavaScript(script)  # type: ignore
         self.select_mode_btn.setChecked(False)
         self.select_mode_btn.setText("🎯 Start Selection")
 
     def clear_selection(self):
         """Clear current selection."""
         script = "window.clearSelection();"
-        self.web_view.page().runJavaScript(script)
+        self.web_view.page().runJavaScript(script)  # type: ignore
         self.element_info.setPlainText(
             "Selection cleared. Click 'Start Selection' to begin again..."
         )
@@ -478,7 +478,7 @@ class VisualSelectorPicker(QWidget):
                 self.validation_result.setPlainText(message)
                 self.selector_validated.emit(selector, False, "")
 
-        self.web_view.page().runJavaScript(script, handle_result)
+        self.web_view.page().runJavaScript(script, handle_result)  # type: ignore
 
     def add_selector(self):
         """Add the current selector to the scraper configuration."""
@@ -533,14 +533,15 @@ class SelectorJavaScriptBridge(QWidget if QWebEnginePage is None else QWebEngine
 def generate_css_selector(element_info: dict[str, Any]) -> str:
     """Generate a CSS selector from element information."""
     # This is a simplified version - the JavaScript version is more sophisticated
-    tag = element_info.get("tagName", "div")
+    tag = str(element_info.get("tagName", "div"))
     selector = tag
 
     if element_info.get("id"):
         selector = f"{tag}#{element_info['id']}"
 
     elif element_info.get("className"):
-        classes = element_info["className"].split()
+        class_name = str(element_info["className"])
+        classes = class_name.split()
         if classes:
             selector = f"{tag}.{'.'.join(classes)}"
 
@@ -564,7 +565,7 @@ def validate_selector_on_page(
         if attribute == "text":
             value = element.get_text(strip=True)
         else:
-            value = element.get(attribute, "")
+            value = str(element.get(attribute, ""))
 
         return {"valid": True, "value": value, "count": len(elements)}
 

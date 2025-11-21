@@ -10,7 +10,7 @@ import logging
 import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import Any, cast
 
 from selenium.common.exceptions import (
     NoSuchElementException,
@@ -256,7 +256,7 @@ class FailureClassifier:
                 continue  # Already handled above
 
             confidence = self._calculate_text_match_confidence(
-                exception_str, patterns["text_patterns"]
+                exception_str, cast(list[str], patterns["text_patterns"])
             )
             MIN_TEXT_CONFIDENCE = 0.5
             if confidence > MIN_TEXT_CONFIDENCE:
@@ -268,7 +268,7 @@ class FailureClassifier:
                         "exception_message": str(exception),
                         "matched_patterns": patterns["text_patterns"],
                     },
-                    recovery_strategy=patterns["recovery_strategy"],
+                    recovery_strategy=cast(str, patterns["recovery_strategy"]),
                 )
 
         # Default to network error for unknown exceptions
@@ -307,8 +307,8 @@ class FailureClassifier:
                 confidence = 0.0
                 details = {}
 
-                current_selectors = patterns["selectors"]
-                current_text_patterns = patterns["text_patterns"]
+                current_selectors = cast(list[str], patterns["selectors"])
+                current_text_patterns = cast(list[str], patterns["text_patterns"])
 
                 # Augment NO_RESULTS patterns with site-specific ones
                 if failure_type == FailureType.NO_RESULTS:
@@ -369,10 +369,10 @@ class FailureClassifier:
                     best_confidence = confidence
                     best_match = failure_type
                     details.update(
-                        {
+                        cast(dict[str, Any], {
                             "matched_selectors": current_selectors,
                             "matched_patterns": current_text_patterns,
-                        }
+                        })
                     )
                     best_details = details
 
@@ -384,7 +384,7 @@ class FailureClassifier:
                     failure_type=best_match,
                     confidence=best_confidence,
                     details=best_details,
-                    recovery_strategy=self.failure_patterns[best_match]["recovery_strategy"],
+                    recovery_strategy=cast(str, self.failure_patterns[best_match]["recovery_strategy"]),
                 )
 
             # If a wait_for_element_timeout occurred but no patterns matched above threshold,
@@ -397,9 +397,9 @@ class FailureClassifier:
                         "no_explicit_failure_detected": True,
                         "triggered_by_wait_for_timeout": True,
                     },
-                    recovery_strategy=self.failure_patterns[FailureType.NO_RESULTS][
+                    recovery_strategy=cast(str, self.failure_patterns[FailureType.NO_RESULTS][
                         "recovery_strategy"
-                    ],
+                    ]),
                 )
 
             # No clear failure detected, return a very low confidence generic NETWORK_ERROR
@@ -419,7 +419,7 @@ class FailureClassifier:
                 recovery_strategy="retry",
             )
 
-    def _check_selectors(self, driver, selectors: list) -> float:
+    def _check_selectors(self, driver, selectors: list[str]) -> float:
         """Check if any of the selectors are present on the page."""
         try:
             for selector in selectors:
@@ -433,7 +433,7 @@ class FailureClassifier:
         except Exception:
             return 0.0
 
-    def _calculate_text_match_confidence(self, text: str, patterns: list) -> float:
+    def _calculate_text_match_confidence(self, text: str, patterns: list[str]) -> float:
         """Calculate confidence score based on text pattern matching."""
         if not patterns:
             return 0.0

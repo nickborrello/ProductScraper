@@ -6,7 +6,7 @@ Supports multiple CAPTCHA solving services including 2Captcha, Anti-Captcha, etc
 import logging
 import time
 from enum import Enum
-from typing import Any
+from typing import Any, cast
 
 import requests
 from selenium.webdriver.common.by import By
@@ -255,7 +255,7 @@ class CaptchaSolver:
         result = response.json()
 
         if result.get("status") == 1:
-            return result.get("request")
+            return cast(str, result.get("request"))
         else:
             logger.error(f"2Captcha submission failed: {result}")
             return None
@@ -318,7 +318,7 @@ class CaptchaSolver:
         result = response.json()
 
         if result.get("errorId") == 0:
-            return result["taskId"]
+            return cast(str, result["taskId"])
         else:
             logger.error(f"CapSolver submission failed: {result}")
             return None
@@ -374,12 +374,12 @@ class CaptchaSolver:
         }
 
         response = self.session.get(
-            self.endpoints[CaptchaService.TWOCAPTCHA]["retrieve"], params=params
+            self.endpoints[CaptchaService.TWOCAPTCHA]["retrieve"], params=params  # type: ignore
         )
         result = response.json()
 
         if result.get("status") == 1:
-            return result.get("request")
+            return cast(str, result.get("request"))
         elif result.get("request") == "CAPCHA_NOT_READY":
             return None  # Still processing
         else:
@@ -401,7 +401,7 @@ class CaptchaSolver:
         if result.get("errorId") == 0:
             status = result.get("status")
             if status == "ready":
-                return result["solution"]["gRecaptchaResponse"]
+                return cast(str, result["solution"]["gRecaptchaResponse"])
             elif status == "processing":
                 return None  # Still processing
             else:
@@ -426,7 +426,7 @@ class CaptchaSolver:
         if result.get("errorId") == 0:
             status = result.get("status")
             if status == "ready":
-                return result["solution"]["gRecaptchaResponse"]
+                return cast(str, result["solution"]["gRecaptchaResponse"])
             elif status == "processing":
                 return None  # Still processing
             else:

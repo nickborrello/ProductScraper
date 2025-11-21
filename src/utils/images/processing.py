@@ -30,15 +30,15 @@ def init_selenium_driver():
 
 
 def process_image(content, img_name):
-    img = Image.open(BytesIO(content))
+    img: Image.Image = Image.open(BytesIO(content))
 
     # Convert transparent PNGs to RGB with white background
     if img.mode in ("RGBA", "LA"):
         background = Image.new("RGB", img.size, (255, 255, 255))
         background.paste(img, mask=img.split()[-1])  # Use alpha channel as mask
-        img = background
+        img = background  # type: ignore
     else:
-        img = img.convert("RGB")  # Ensure compatibility with JPEG
+        img = img.convert("RGB")  # Ensure compatibility with JPEG  # type: ignore
 
     width, height = img.size
 
@@ -49,12 +49,12 @@ def process_image(content, img_name):
         new_height = 1000
         new_width = int((width / height) * 1000)
 
-    img = img.resize((new_width, new_height), Image.LANCZOS)
+    img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
     new_img = Image.new("RGB", (1000, 1000), (255, 255, 255))
     paste_x = (1000 - new_width) // 2
     paste_y = (1000 - new_height) // 2
-    new_img.paste(img, (paste_x, paste_y))
+    new_img.paste(img, (paste_x, paste_y))  # type: ignore
     new_img.save(img_name, "JPEG", quality=95)
 
 

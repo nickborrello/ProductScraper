@@ -50,7 +50,7 @@ class ParseWeightAction(BaseAction):
             converted_value = value
             if normalized_unit != target_unit:
                 # Convert to grams first
-                grams = 0
+                grams = 0.0
                 if normalized_unit == "lb":
                     grams = value * 453.592
                 elif normalized_unit == "kg":

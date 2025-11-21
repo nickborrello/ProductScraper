@@ -25,7 +25,7 @@ class LocalKeyValueStore:
         self.store_id = store_id
         self.base_dir = Path(base_dir)
         self.storage_file = self.base_dir / f"{store_id}.json"
-        self._data = {}
+        self._data: dict[str, Any] = {}
         self._load_data()
 
     def _load_data(self):

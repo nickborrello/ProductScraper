@@ -26,7 +26,7 @@ class LocalDataset:
         self.base_dir = Path(base_dir)
         self.storage_dir = self.base_dir / dataset_id
         self.storage_dir.mkdir(parents=True, exist_ok=True)
-        self._cache = []
+        self._cache: list[dict[str, Any]] = []
         self._load_cache()
 
     def _load_cache(self):

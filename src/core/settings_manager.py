@@ -211,12 +211,12 @@ class SettingsManager:
                 os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
             )
             path = os.path.join(project_root, path)
-        return path
+        return str(path)
 
     @property
     def debug_mode(self) -> bool:
         """Get debug mode setting."""
-        return self.get("debug_mode")
+        return bool(self.get("debug_mode"))
 
     @property
     def selenium_settings(self) -> dict[str, Any]:

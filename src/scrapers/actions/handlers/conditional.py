@@ -27,6 +27,8 @@ class ConditionalAction(BaseAction):
 
         elif condition_type == "value_match":
             field = params.get("field")
+            if field is None:
+                raise WorkflowExecutionError("Conditional value_match requires 'field' parameter")
             value = params.get("value")
             actual = self.executor.results.get(field)
             condition_met = str(actual) == str(value)

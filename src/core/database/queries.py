@@ -17,7 +17,7 @@ class ProductDatabase:
             db_path = os.path.join(project_root, "data", "databases", "products.db")
 
         self.db_path = db_path
-        self.conn = None
+        self.conn: sqlite3.Connection | None = None
 
     def connect(self):
         """Connect to the database"""
@@ -35,11 +35,14 @@ class ProductDatabase:
 
     def get_product_count(self) -> int:
         """Get total number of products"""
+        assert self.conn is not None
         cursor = self.conn.execute("SELECT COUNT(*) FROM products")
-        return cursor.fetchone()[0]
+        result = cursor.fetchone()
+        return int(result[0]) if result else 0
 
     def get_sample_fields(self) -> list[str]:
         """Get list of available fields from database schema"""
+        assert self.conn is not None
         # Get column names from the database schema
         cursor = self.conn.execute("PRAGMA table_info(products)")
         columns_info = cursor.fetchall()
@@ -51,6 +54,7 @@ class ProductDatabase:
         Execute a custom SQL query on the products table
         Returns list of dictionaries with product data
         """
+        assert self.conn is not None
         try:
             # Add LIMIT if not present
             if "LIMIT" not in sql_query.upper():
@@ -75,6 +79,7 @@ class ProductDatabase:
         """
         Search for products where a specific field contains a value
         """
+        assert self.conn is not None
         # For the current schema, search in the appropriate column
         # Map common field names to database column names
         column_mapping = {

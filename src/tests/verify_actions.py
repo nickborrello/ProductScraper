@@ -1,13 +1,18 @@
-import os
-import sys
-import unittest
-from unittest.mock import MagicMock
+from typing import cast, type
+from src.scrapers.actions.base import BaseAction
 
 # Add project root to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 
 from src.scrapers.actions.registry import ActionRegistry
 from src.scrapers.executor.workflow_executor import WorkflowExecutor
+
+# Import action handlers to register them
+import src.scrapers.actions.handlers.combine_fields
+import src.scrapers.actions.handlers.transform_value
+import src.scrapers.actions.handlers.extract_from_json
+import src.scrapers.actions.handlers.parse_weight
+import src.scrapers.actions.handlers.verify
 
 
 class TestScraperActions(unittest.TestCase):
@@ -28,7 +33,7 @@ class TestScraperActions(unittest.TestCase):
 
     def test_combine_fields(self):
         """Test combine_fields action."""
-        action_cls = ActionRegistry.get_action_class("combine_fields")
+        action_cls = cast(type[BaseAction], ActionRegistry.get_action_class("combine_fields"))
         action = action_cls(self.mock_executor)
 
         self.mock_executor.results = {"brand": "Acme", "name": "Widget"}
@@ -42,7 +47,7 @@ class TestScraperActions(unittest.TestCase):
 
     def test_transform_value(self):
         """Test transform_value action."""
-        action_cls = ActionRegistry.get_action_class("transform_value")
+        action_cls = cast(type[BaseAction], ActionRegistry.get_action_class("transform_value"))
         action = action_cls(self.mock_executor)
 
         self.mock_executor.results = {"price": "$10.00"}
@@ -58,7 +63,7 @@ class TestScraperActions(unittest.TestCase):
 
     def test_extract_from_json(self):
         """Test extract_from_json action."""
-        action_cls = ActionRegistry.get_action_class("extract_from_json")
+        action_cls = ActionRegistry.get_action_class("extract_from_json")  # type: ignore
         action = action_cls(self.mock_executor)
 
         json_data = '{"product": {"price": 20.5}}'
@@ -73,7 +78,7 @@ class TestScraperActions(unittest.TestCase):
 
     def test_parse_weight(self):
         """Test parse_weight action."""
-        action_cls = ActionRegistry.get_action_class("parse_weight")
+        action_cls = ActionRegistry.get_action_class("parse_weight")  # type: ignore
         action = action_cls(self.mock_executor)
 
         self.mock_executor.results = {"weight": "16 oz"}
@@ -83,7 +88,7 @@ class TestScraperActions(unittest.TestCase):
 
     def test_verify_value(self):
         """Test verify_value action."""
-        action_cls = ActionRegistry.get_action_class("verify_value")
+        action_cls = ActionRegistry.get_action_class("verify_value")  # type: ignore
         action = action_cls(self.mock_executor)
 
         self.mock_executor.results = {"sku": "12345"}

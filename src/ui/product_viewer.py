@@ -2,6 +2,7 @@ import os
 import sqlite3
 import sys
 from pathlib import Path
+from typing import Any
 
 # Add project root to path for imports
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -29,17 +30,6 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-
-try:
-    # Try relative import first (when run as part of package)
-    from .product_editor import edit_products_in_batch
-except ImportError:
-    try:
-        # Try absolute import from src.ui (when run as standalone script)
-        from src.ui.product_editor import edit_products_in_batch
-    except ImportError:
-        # Last resort - import from current directory
-        from product_editor import edit_products_in_batch
 
 
 class ProductViewer(QMainWindow):
@@ -381,7 +371,9 @@ class ProductViewer(QMainWindow):
         self.current_page = 0
         self.load_products()
         # Reset scroll to top
-        self.table.verticalScrollBar().setValue(0)
+        scrollbar = self.table.verticalScrollBar()
+        if scrollbar is not None:
+            scrollbar.setValue(0)
 
     def on_filter_change(self, value=None):
         """Handle filter changes."""
@@ -394,7 +386,9 @@ class ProductViewer(QMainWindow):
         self.current_page = 0
         self.load_products()
         # Reset scroll to top
-        self.table.verticalScrollBar().setValue(0)
+        scrollbar = self.table.verticalScrollBar()
+        if scrollbar is not None:
+            scrollbar.setValue(0)
 
     def on_page_size_change(self):
         """Handle page size changes."""
@@ -402,7 +396,9 @@ class ProductViewer(QMainWindow):
         self.current_page = 0
         self.load_products()
         # Reset scroll to top
-        self.table.verticalScrollBar().setValue(0)
+        scrollbar = self.table.verticalScrollBar()
+        if scrollbar is not None:
+            scrollbar.setValue(0)
 
     def load_products(self):
         """Load products from database with current filters."""
@@ -421,7 +417,7 @@ class ProductViewer(QMainWindow):
                 WHERE Name IS NOT NULL
             """
 
-            params = []
+            params: list[Any] = []
 
             # Add search filter
             if self.search_term:
@@ -573,7 +569,7 @@ class ProductViewer(QMainWindow):
                     # Split by "|" and strip whitespace
                     category_parts = [cat.strip() for cat in category_str.split("|") if cat.strip()]
                     categories.update(category_parts)
-            categories = sorted(list(categories))
+            sorted_categories = sorted(list(categories))
 
             # Get distinct product types - split by "|" and collect unique values
             cursor.execute(
@@ -586,14 +582,14 @@ class ProductViewer(QMainWindow):
                     # Split by "|" and strip whitespace
                     type_parts = [pt.strip() for pt in product_type_str.split("|") if pt.strip()]
                     product_types.update(type_parts)
-            product_types = sorted(list(product_types))
+            sorted_product_types = sorted(list(product_types))
 
             # Update category combo - temporarily disconnect signal to avoid recursion
             self.category_combo.currentTextChanged.disconnect(self.on_filter_change)
             current_category = self.category_combo.currentData() or ""
             self.category_combo.clear()
             self.category_combo.addItem("All Categories", "")
-            for category in categories:
+            for category in sorted_categories:
                 self.category_combo.addItem(category, category)
             # Restore previous selection if it still exists
             if current_category:
@@ -607,7 +603,7 @@ class ProductViewer(QMainWindow):
             current_type = self.product_type_combo.currentData() or ""
             self.product_type_combo.clear()
             self.product_type_combo.addItem("All Types", "")
-            for product_type in product_types:
+            for product_type in sorted_product_types:
                 self.product_type_combo.addItem(product_type, product_type)
             # Restore previous selection if it still exists
             if current_type:
@@ -718,7 +714,9 @@ class ProductViewer(QMainWindow):
             self.current_page -= 1
             self.load_products()
             # Reset scroll to top
-            self.table.verticalScrollBar().setValue(0)
+            scrollbar = self.table.verticalScrollBar()
+            if scrollbar is not None:
+                scrollbar.setValue(0)
 
     def next_page(self):
         """Go to next page."""
@@ -727,7 +725,9 @@ class ProductViewer(QMainWindow):
             self.current_page += 1
             self.load_products()
             # Reset scroll to top
-            self.table.verticalScrollBar().setValue(0)
+            scrollbar = self.table.verticalScrollBar()
+            if scrollbar is not None:
+                scrollbar.setValue(0)
 
     def edit_selected_products(self):
         """Edit the selected products using the product editor."""
@@ -735,6 +735,15 @@ class ProductViewer(QMainWindow):
             return
 
         try:
+            # Import the editor function
+            try:
+                edit_func = __import__('src.ui.product_editor', fromlist=['edit_products_in_batch']).edit_products_in_batch
+            except ImportError:
+                try:
+                    edit_func = __import__('product_editor', fromlist=['edit_products_in_batch']).edit_products_in_batch
+                except ImportError:
+                    edit_func = __import__('product_editor', fromlist=['edit_products_in_batch']).edit_products_in_batch
+
             # Get selected SKUs
             skus = list(self.selected_products)
 
@@ -746,7 +755,7 @@ class ProductViewer(QMainWindow):
                 return
 
             # Call the batch editor with product data
-            edited_products = edit_products_in_batch(products_data)
+            edited_products = edit_func(products_data)
 
             if edited_products:
                 QMessageBox.information(

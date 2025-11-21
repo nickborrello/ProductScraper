@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 
 import pandas as pd
-import requests
+import requests  # type: ignore
 from dotenv import load_dotenv
 
 # Define project root
@@ -17,14 +17,14 @@ try:
     from ..field_mapping import REQUIRED_FIELDS, map_shopsite_fields
 except ImportError:
     # Fallback for standalone execution
-    from field_mapping import map_shopsite_fields
+    from field_mapping import map_shopsite_fields  # type: ignore
 
 # Import settings manager
 try:
     from ..settings_manager import SettingsManager
 except ImportError:
     # Fallback for standalone execution
-    from settings_manager import SettingsManager
+    from settings_manager import SettingsManager  # type: ignore
 
 # Load environment variables
 load_dotenv()
@@ -50,7 +50,8 @@ def get_product_count(db_path: str) -> int:
     """Get the total number of products in the database."""
     with sqlite3.connect(db_path) as conn:
         cursor = conn.execute("SELECT COUNT(*) FROM products")
-        return cursor.fetchone()[0]
+        result = cursor.fetchone()
+        return result[0] if result else 0
 
 
 def get_column_statistics(db_path: str) -> dict[str, int]:
@@ -346,7 +347,7 @@ class ShopSiteXMLClient:
 
 def save_dataframe_to_database(
     df: pd.DataFrame, db_path: str | None = None, clear_existing: bool = True
-) -> tuple[bool, str]:
+) -> tuple[bool, str | None]:
     """Save DataFrame directly to SQLite database."""
     try:
         if db_path is None:
@@ -765,8 +766,9 @@ def import_from_shopsite_xml(
                 results.append("Database: saved successfully")
                 # Print column statistics after successful database save
                 try:
-                    stats = get_column_statistics(db_path_used)
-                    print_column_statistics(stats, get_product_count(db_path_used))
+                    if db_path_used is not None:
+                        stats = get_column_statistics(db_path_used)
+                        print_column_statistics(stats, get_product_count(db_path_used))
                 except Exception as e:
                     logging.warning(f"⚠️ Could not generate database statistics: {e}")
             else:
@@ -925,8 +927,9 @@ def import_from_saved_xml(
                 results.append("Database: saved successfully")
                 # Print column statistics after successful database save
                 try:
-                    stats = get_column_statistics(db_path_used)
-                    print_column_statistics(stats, get_product_count(db_path_used))
+                    if db_path_used is not None:
+                        stats = get_column_statistics(db_path_used)
+                        print_column_statistics(stats, get_product_count(db_path_used))
                 except Exception as e:
                     logging.warning(f"⚠️ Could not generate database statistics: {e}")
             else:

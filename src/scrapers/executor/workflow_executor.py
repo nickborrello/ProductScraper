@@ -62,7 +62,7 @@ class WorkflowExecutor:
         self.config = config
         self.timeout = timeout or config.timeout
         self.browser: ScraperBrowser
-        self.results = {}
+        self.results = {}  # type: dict[str, Any]
         self.selectors = {selector.name: selector for selector in config.selectors}
         self.anti_detection_manager: AntiDetectionManager | None = None
         self.adaptive_retry_strategy = AdaptiveRetryStrategy(
@@ -837,6 +837,8 @@ class WorkflowExecutor:
 
         # Get credentials from settings manager
         scraper_name = self.config.name
+        username: str | None = None
+        password: str | None = None
         if scraper_name == "phillips":
             username, password = self.settings.phillips_credentials
             params["username"] = username
@@ -852,11 +854,11 @@ class WorkflowExecutor:
 
         username = params.get("username")
         password = params.get("password")
-        login_url = params.get("url")
-        username_field = params.get("username_field")
-        password_field = params.get("password_field")
-        submit_button = params.get("submit_button")
-        success_indicator = params.get("success_indicator")
+        login_url: str | None = params.get("url")
+        username_field: str | None = params.get("username_field")
+        password_field: str | None = params.get("password_field")
+        submit_button: str | None = params.get("submit_button")
+        success_indicator: str | None = params.get("success_indicator")
 
         # Debug logging for credentials
         logger.debug(
@@ -1211,13 +1213,13 @@ class WorkflowExecutor:
             )
 
         try:
-            script_element = self.browser.driver.find_element(By.CSS_SELECTOR, selector)
+            script_element = self.browser.driver.find_element(By.CSS_SELECTOR, selector)  # type: ignore
             json_string = script_element.get_attribute("textContent")
 
-            data = json.loads(json_string)
+            data = json.loads(json_string)  # type: ignore
 
             # Simple dot-notation path extraction
-            path_parts = json_path.split(".")
+            path_parts = json_path.split(".")  # type: ignore
             current_data = data
             for part in path_parts:
                 if isinstance(current_data, dict) and part in current_data:
@@ -1228,22 +1230,22 @@ class WorkflowExecutor:
                     raise KeyError(f"Path part '{part}' not found in JSON")
 
             # Convert protocol-relative URLs to full URLs for Images field
-            if field_name == "Images" and isinstance(current_data, list):
+            if field_name == "Images" and isinstance(current_data, list):  # type: ignore
                 current_data = [
                     url if url.startswith(("http://", "https://")) else f"https:{url}"
                     for url in current_data
                     if isinstance(url, str)
                 ]
 
-            self.results[field_name] = current_data
-            logger.debug(f"Extracted from JSON for {field_name}: {current_data}")
+            self.results[field_name] = current_data  # type: ignore
+            logger.debug(f"Extracted from JSON for {field_name}: {current_data}")  # type: ignore
 
         except NoSuchElementException:
-            logger.warning(f"Script element not found for JSON extraction: {selector}")
-            self.results[field_name] = None
+            logger.warning(f"Script element not found for JSON extraction: {selector}")  # type: ignore
+            self.results[field_name] = None  # type: ignore
         except (json.JSONDecodeError, KeyError) as e:
             logger.warning(f"Failed to extract from JSON: {e}")
-            self.results[field_name] = None
+            self.results[field_name] = None  # type: ignore
 
     def _action_conditional_click(self, params: dict[str, Any]):
         """Click on an element only if it exists, without failing the workflow."""
@@ -1251,24 +1253,24 @@ class WorkflowExecutor:
         if not selector:
             raise WorkflowExecutionError("conditional_click requires 'selector' parameter")
 
-        locator_type = self._get_locator_type(selector)
+        locator_type = self._get_locator_type(selector)  # type: ignore
 
         try:
             # Check for element presence with a very short timeout
             WebDriverWait(self.browser.driver, 2).until(
-                EC.presence_of_element_located((locator_type, selector))
+                EC.presence_of_element_located((locator_type, selector))  # type: ignore
             )
 
             # If present, attempt the click using the main click action
-            logger.info(f"Conditional element '{selector}' found. Attempting to click.")
+            logger.info(f"Conditional element '{selector}' found. Attempting to click.")  # type: ignore
             self._action_click(params)
 
         except TimeoutException:
-            logger.info(f"Conditional element '{selector}' not found. Skipping click.")
+            logger.info(f"Conditional element '{selector}' not found. Skipping click.")  # type: ignore
         except Exception as e:
             # Catch other exceptions from _action_click but log as warning
             logger.warning(
-                f"Conditional click on '{selector}' failed with an unexpected error: {e}"
+                f"Conditional click on '{selector}' failed with an unexpected error: {e}"  # type: ignore
             )
 
     def _action_verify(self, params: dict[str, Any]):
@@ -1285,8 +1287,8 @@ class WorkflowExecutor:
             )
 
         try:
-            locator_type = self._get_locator_type(selector)
-            element = self.browser.driver.find_element(locator_type, selector)
+            locator_type = self._get_locator_type(selector)  # type: ignore
+            element = self.browser.driver.find_element(locator_type, selector)  # type: ignore
             actual_value = self._extract_value_from_element(element, attribute)
 
             if actual_value is None:
@@ -1307,17 +1309,17 @@ class WorkflowExecutor:
 
             if match:
                 logger.info(
-                    f"✅ Verification successful for selector '{selector}'. Found '{actual_value}', expected '{expected_value}' (mode: {match_mode})."
+                    f"✅ Verification successful for selector '{selector}'. Found '{actual_value}', expected '{expected_value}' (mode: {match_mode})."  # type: ignore
                 )
             else:
-                error_msg = f"Verification failed for selector '{selector}'. Found '{actual_value}', expected '{expected_value}' (mode: {match_mode})."
+                error_msg = f"Verification failed for selector '{selector}'. Found '{actual_value}', expected '{expected_value}' (mode: {match_mode})."  # type: ignore
                 if on_failure == "fail_workflow":
                     raise WorkflowExecutionError(error_msg)
                 else:
                     logger.warning(error_msg)
 
         except (NoSuchElementException, ValueError) as e:
-            error_msg = f"Verification failed: could not find or extract value from selector '{selector}'. Reason: {e}"
+            error_msg = f"Verification failed: could not find or extract value from selector '{selector}'. Reason: {e}"  # type: ignore
             if on_failure == "fail_workflow":
                 raise WorkflowExecutionError(error_msg)
             else:
@@ -1336,11 +1338,13 @@ class WorkflowExecutor:
         """
         try:
             if attribute == "text" or attribute is None:
-                return element.text.strip()
+                return element.text.strip()  # type: ignore
             elif attribute in ["href", "src", "alt", "title", "value"]:
-                return element.get_attribute(attribute)
+                attr_value = element.get_attribute(attribute)
+                return str(attr_value) if attr_value is not None else None
             else:
-                return element.get_attribute(attribute)
+                attr_value = element.get_attribute(attribute)
+                return str(attr_value) if attr_value is not None else None
         except Exception as e:
             logger.warning(f"Failed to extract value from element: {e}")
             return None

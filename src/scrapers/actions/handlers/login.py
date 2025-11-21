@@ -1,5 +1,5 @@
 import logging
-from typing import Any
+from typing import Any, cast
 
 from src.scrapers.actions.base import BaseAction
 from src.scrapers.actions.registry import ActionRegistry
@@ -20,19 +20,25 @@ class LoginAction(BaseAction):
         scraper_name = self.executor.config.name
         if scraper_name == "phillips":
             username, password = self.executor.settings.phillips_credentials
-            params["username"] = username
-            params["password"] = password
+            params["username"] = username  # type: ignore
+            params["password"] = password  # type: ignore
         elif scraper_name == "orgill":
             username, password = self.executor.settings.orgill_credentials
-            params["username"] = username
-            params["password"] = password
+            params["username"] = username  # type: ignore
+            params["password"] = password  # type: ignore
         elif scraper_name == "petfoodex":
             username, password = self.executor.settings.petfoodex_credentials
-            params["username"] = username
-            params["password"] = password
+            params["username"] = username  # type: ignore
+            params["password"] = password  # type: ignore
 
-        username = params.get("username")
-        password = params.get("password")
+        username = params.get("username")  # type: ignore
+        password = params.get("password")  # type: ignore
+        
+        # Ensure credentials are strings
+        if username is not None:
+            username = str(username)
+        if password is not None:
+            password = str(password)
         login_url = params.get("url")
 
         # Use the executor's internal login method logic, but adapted

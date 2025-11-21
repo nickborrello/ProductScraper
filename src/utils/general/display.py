@@ -7,7 +7,7 @@ This utility helps with debugging, progress tracking, and consistent output form
 
 import time
 from collections.abc import Callable
-from typing import Any
+from typing import Any, cast
 
 
 def display_product_result(
@@ -26,6 +26,7 @@ def display_product_result(
         log_callback: Optional callback function for logging (defaults to print)
     """
     # Determine output function
+    output: Any
     if log_callback is None:
         output = print
     elif hasattr(log_callback, "emit"):
@@ -109,6 +110,7 @@ def display_scraping_progress(
         log_callback: Optional callback function for logging (defaults to print)
     """
     # Determine output function
+    output: Any
     if log_callback is None:
         output = print
     elif hasattr(log_callback, "emit"):
@@ -172,6 +174,7 @@ def display_scraping_summary(
         log_callback: Optional callback function for logging (defaults to print)
     """
     # Determine output function
+    output: Any
     if log_callback is None:
         output = print
     elif hasattr(log_callback, "emit"):
@@ -224,6 +227,7 @@ def display_error(
         log_callback: Optional callback function for logging (defaults to print)
     """
     # Determine output function
+    output: Any
     if log_callback is None:
         output = print
     elif hasattr(log_callback, "emit"):
@@ -250,6 +254,7 @@ def display_info(message: str, log_callback: Callable[[str], None] | None = None
         log_callback: Optional callback function for logging (defaults to print)
     """
     # Determine output function
+    output: Any
     if log_callback is None:
         output = print
     elif hasattr(log_callback, "emit"):
@@ -270,6 +275,7 @@ def display_success(message: str, log_callback: Callable[[str], None] | None = N
         log_callback: Optional callback function for logging (defaults to print)
     """
     # Determine output function
+    output: Any
     if log_callback is None:
         output = print
     elif hasattr(log_callback, "emit"):
@@ -290,6 +296,7 @@ def display_warning(message: str, log_callback: Callable[[str], None] | None = N
         log_callback: Optional callback function for logging (defaults to print)
     """
     # Determine output function
+    output: Any
     if log_callback is None:
         output = print
     elif hasattr(log_callback, "emit"):

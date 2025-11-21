@@ -27,7 +27,7 @@ def process_and_replace_image(path):
                 new_height = 1000
                 new_width = int((width / height) * 1000)
 
-            img = img.resize((new_width, new_height), Image.LANCZOS)
+            img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
             # Create white background canvas
             new_img = Image.new("RGB", (1000, 1000), (255, 255, 255))

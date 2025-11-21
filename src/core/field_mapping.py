@@ -57,7 +57,7 @@ def map_shopsite_fields(product_data):
     Returns:
         Dict with only the mapped fields needed by the editor
     """
-    mapped_product = {}
+    mapped_product: dict[str, str | list[str]] = {}
 
     # Map each editor field from possible ShopSite field names
     for editor_field, shopsite_fields in EDITOR_FIELD_MAPPING.items():

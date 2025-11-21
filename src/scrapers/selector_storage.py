@@ -98,7 +98,7 @@ class SelectorStorage:
         """Save selector data to JSON file."""
         self.metadata["last_modified"] = datetime.now(UTC).isoformat()
 
-        selectors_dict = {}
+        selectors_dict: dict[str, dict[str, Any]] = {}
         for domain, fields in self.data.items():
             selectors_dict[domain] = {}
             for field_name, selector_data in fields.items():
@@ -243,10 +243,10 @@ class SelectorManager:
 
     def cleanup_low_confidence_selectors(self, threshold: float = 0.2):
         """Remove selectors with confidence below threshold."""
-        domains_to_remove = []
+        domains_to_remove: list[str] = []
 
         for domain, fields in self.storage.data.items():
-            fields_to_remove = []
+            fields_to_remove: list[str] = []
 
             for field_name, selector_data in fields.items():
                 if selector_data.confidence < threshold:
@@ -261,7 +261,5 @@ class SelectorManager:
         for domain in domains_to_remove:
             del self.storage.data[domain]
 
-        if domains_to_remove or any(
-            fields_to_remove for fields_to_remove in [[] for _ in self.storage.data.values()]
-        ):
+        if domains_to_remove:
             self.storage.save()

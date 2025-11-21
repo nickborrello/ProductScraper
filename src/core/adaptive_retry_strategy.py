@@ -12,7 +12,7 @@ from collections import defaultdict
 from dataclasses import asdict, dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from src.core.failure_classifier import FailureType
 
@@ -293,19 +293,22 @@ class AdaptiveRetryStrategy:
                 k: v for k, v in self.failure_patterns.items() if k[0] == site_name
             }
 
-        analysis = {
+        analysis: dict[str, Any] = {
             "total_failures": len(self.failure_history),
             "patterns": {},
             "insights": [],
         }
 
+        patterns_dict = analysis["patterns"]
+        insights_list = analysis["insights"]
+
         for (site, failure_type), pattern in patterns_to_analyze.items():
             pattern_analysis = self._analyze_pattern(pattern)
-            analysis["patterns"][f"{site}_{failure_type.value}"] = pattern_analysis
+            patterns_dict[f"{site}_{failure_type.value}"] = pattern_analysis
 
             # Generate insights
             insights = self._generate_insights(pattern, pattern_analysis)
-            analysis["insights"].extend(insights)
+            insights_list.extend(insights)
 
         return analysis
 
@@ -325,7 +328,7 @@ class AdaptiveRetryStrategy:
                 last_occurrence=current_time,
             )
 
-        pattern = self.failure_patterns[key]
+        pattern: FailurePattern = self.failure_patterns[key]
 
         # Update counters
         pattern.total_occurrences += 1
@@ -375,7 +378,7 @@ class AdaptiveRetryStrategy:
             if r.site_name == record.site_name and r.failure_type == record.failure_type
         ]
         if failure_hours:
-            hour_counts = defaultdict(int)
+            hour_counts: dict[int, int] = defaultdict(int)
             for hour in failure_hours:
                 hour_counts[hour] += 1
             pattern.peak_failure_hour = max(hour_counts.keys(), key=lambda h: hour_counts[h])
@@ -517,7 +520,7 @@ class AdaptiveRetryStrategy:
         except Exception as e:
             logger.warning(f"Failed to load failure history: {e}")
 
-    def _save_history(self) -> None:
+    def _save_history(self) -> None:  # type: ignore
         """Save failure history to persistent storage."""
         if not self.history_file:
             return
@@ -527,13 +530,23 @@ class AdaptiveRetryStrategy:
             self.history_file.parent.mkdir(parents=True, exist_ok=True)
 
             # Convert records to dictionaries with enum handling
-            def serialize_record(record):
-                data = asdict(record)
-                # Convert enum to string in context
-                data["failure_context"]["failure_type"] = record.failure_type.value
+            def serialize_record(record: FailureRecord) -> dict[str, Any]:
+                context_dict = {
+                    "site_name": record.site_name,
+                    "action": record.action,
+                    "retry_count": record.retry_count,
+                    "context": record.failure_context.context,
+                    "failure_type": record.failure_type.value,
+                }
+                data: dict[str, Any] = {
+                    "timestamp": record.timestamp,
+                    "failure_context": context_dict,
+                    "success_after_retry": record.success_after_retry,
+                    "final_success": record.final_success,
+                }
                 return data
 
-            data = {
+            data: dict[str, Any] = {  # type: ignore
                 "failure_history": [
                     serialize_record(record) for record in self.failure_history[-1000:]
                 ],  # Keep last 1000

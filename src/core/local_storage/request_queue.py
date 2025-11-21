@@ -31,8 +31,8 @@ class LocalRequestQueue:
         self.pending_file = self.storage_dir / "pending.json"
         self.handled_file = self.storage_dir / "handled.json"
 
-        self._pending_requests = []
-        self._handled_requests = []
+        self._pending_requests: list[dict[str, Any]] = []
+        self._handled_requests: list[dict[str, Any]] = []
         self._load_requests()
 
     def _load_requests(self):
@@ -41,7 +41,7 @@ class LocalRequestQueue:
         if self.pending_file.exists():
             try:
                 with open(self.pending_file, encoding="utf-8") as f:
-                    data = json.load(f)
+                    data: dict[str, Any] = json.load(f)
                     self._pending_requests = data.get("requests", [])
             except (OSError, json.JSONDecodeError):
                 self._pending_requests = []
@@ -52,8 +52,8 @@ class LocalRequestQueue:
         if self.handled_file.exists():
             try:
                 with open(self.handled_file, encoding="utf-8") as f:
-                    data = json.load(f)
-                    self._handled_requests = data.get("requests", [])
+                    data_handled: dict[str, Any] = json.load(f)
+                    self._handled_requests = data_handled.get("requests", [])
             except (OSError, json.JSONDecodeError):
                 self._handled_requests = []
         else:
