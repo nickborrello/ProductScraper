@@ -668,7 +668,7 @@ class TestLocalLLMClassifier:
     )
     @patch("ollama.list")
     @patch("ollama.chat")
-    def test_comprehensive_product_classification(  # noqa: PLR0913
+    def test_comprehensive_product_classification(
         self,
         mock_chat,
         mock_list,

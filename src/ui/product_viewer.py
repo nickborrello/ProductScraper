@@ -11,7 +11,7 @@ if PROJECT_ROOT not in sys.path:
 
 DB_PATH = Path(PROJECT_ROOT) / "data" / "databases" / "products.db"
 
-from PyQt6.QtWidgets import (  # noqa: E402
+from PyQt6.QtWidgets import (
     QAbstractItemView,
     QApplication,
     QCheckBox,

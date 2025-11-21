@@ -8,9 +8,9 @@ import yaml
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, PROJECT_ROOT)
 
-from src.core.anti_detection_manager import AntiDetectionConfig  # noqa: E402
-from src.scrapers.models.config import ScraperConfig  # noqa: E402
-from src.scrapers.parser.yaml_parser import ScraperConfigParser  # noqa: E402
+from src.core.anti_detection_manager import AntiDetectionConfig
+from src.scrapers.models.config import ScraperConfig
+from src.scrapers.parser.yaml_parser import ScraperConfigParser
 
 # Constants
 TIMEOUT_DEFAULT = 30
@@ -167,7 +167,7 @@ timeout: "not_a_number"  # Invalid timeout
         yaml_file.write_text(invalid_yaml)
 
         # Should raise validation error
-        from pydantic import ValidationError  # noqa: PLC0415
+        from pydantic import ValidationError
 
         with pytest.raises(ValidationError):
             parser.load_from_file(str(yaml_file))

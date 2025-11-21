@@ -2,9 +2,10 @@ import os
 import sys
 import threading
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Callable
+from typing import Any
 
 # Add project root to path
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -50,8 +51,8 @@ class GranularScraperTester:
 
     def discover_scrapers(self) -> dict[str, Any]:
         """Discover all scraper modules dynamically."""
-        import glob  # noqa: PLC0415 - Dynamic import for scraper discovery
-        import importlib.util  # noqa: PLC0415
+        import glob
+        import importlib.util
 
         scrapers_dir = os.path.join(PROJECT_ROOT, "scrapers")
         scraper_files = glob.glob(os.path.join(scrapers_dir, "*.py"))
@@ -152,7 +153,7 @@ class GranularScraperTester:
         result.duration = time.time() - start_time
         return result
 
-    def validate_field(  # noqa: PLR0911 - Validation requires multiple return paths
+    def validate_field(
         self, product: dict, field_name: str, duration: float
     ) -> FieldTestResult:
         """Validate a specific field in the product data."""
@@ -349,7 +350,7 @@ class GranularScraperTester:
 
         return results
 
-    def print_summary(  # noqa: PLR0912 - Summary requires many conditional branches
+    def print_summary(
         self, results: dict[str, ScraperTestResult]
     ):
         """Print a detailed summary of test results."""

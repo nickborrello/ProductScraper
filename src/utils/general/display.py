@@ -48,7 +48,7 @@ def display_product_result(
     brand = product.get("Brand", "Unknown Brand")
 
     # Truncate long names for display
-    if len(name) > 60:  # noqa: PLR2004
+    if len(name) > 60:
         name = name[:57] + "..."
 
     output(f"📦 {progress}SKU: {sku}")
@@ -133,7 +133,7 @@ def display_scraping_progress(
             f"🔄 {scraper_name}: {current}/{total} products ({progress_pct:.1f}%) | "
             f"Rate: {rate:.1f}/sec | ETA: {eta:.0f}s"
         )
-    elif total <= 10 or current % max(1, total // 10) == 0 or current == total:  # noqa: PLR2004
+    elif total <= 10 or current % max(1, total // 10) == 0 or current == total:
         progress_pct = (current / total) * 100
         output(
             f"🔄 {scraper_name}: {current}/{total} products ({progress_pct:.1f}%) | "
@@ -150,7 +150,7 @@ _SUPPRESS_SUMMARY = False
 
 def set_suppress_summary(suppress: bool):
     """Set whether to suppress scraping summary output (used during testing)."""
-    global _SUPPRESS_SUMMARY  # noqa: PLW0603
+    global _SUPPRESS_SUMMARY
     _SUPPRESS_SUMMARY = suppress
 
 

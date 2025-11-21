@@ -32,7 +32,7 @@ class TestScraperValidation:
             ("low", LOW_QUALITY_SCORE, False),
         ],
     )
-    def test_record_quality_validation_parametrized(  # noqa: PLR0913
+    def test_record_quality_validation_parametrized(
         self,
         data_quality_scorer,
         quality_level,

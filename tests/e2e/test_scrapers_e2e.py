@@ -7,6 +7,7 @@ import os
 import sys
 import threading
 import time
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -16,7 +17,6 @@ from src.scrapers.executor.workflow_executor import WorkflowExecutor
 from src.scrapers.parser.yaml_parser import ScraperConfigParser
 from tests.fixtures.scraper_validator import ScraperValidator
 
-from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 
 

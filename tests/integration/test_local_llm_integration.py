@@ -57,7 +57,7 @@ class TestLocalLLMIntegration:
     @patch("ollama.chat")
     @patch("src.core.classification.local_llm_classifier.LocalLLMProductClassifier._load_cache")
     @patch("src.core.classification.local_llm_classifier.LocalLLMProductClassifier._save_cache")
-    def test_local_llm_method_integration(  # noqa: PLR0913
+    def test_local_llm_method_integration(
         self,
         mock_save_cache,
         mock_load_cache,
@@ -91,7 +91,7 @@ class TestLocalLLMIntegration:
     @patch("ollama.chat")
     @patch("src.core.classification.local_llm_classifier.LocalLLMProductClassifier._load_cache")
     @patch("src.core.classification.local_llm_classifier.LocalLLMProductClassifier._save_cache")
-    def test_batch_classification_integration(  # noqa: PLR0913
+    def test_batch_classification_integration(
         self,
         mock_save_cache,
         mock_load_cache,
@@ -147,7 +147,7 @@ class TestLocalLLMIntegration:
     @patch("ollama.chat")
     @patch("src.core.classification.local_llm_classifier.LocalLLMProductClassifier._load_cache")
     @patch("src.core.classification.local_llm_classifier.LocalLLMProductClassifier._save_cache")
-    def test_caching_integration(  # noqa: PLR0913
+    def test_caching_integration(
         self,
         mock_save_cache,
         mock_load_cache,

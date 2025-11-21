@@ -28,7 +28,7 @@ SIGNIFICANT_DELAY_THRESHOLD = 0.1
 class AntiDetectionConfig:
     """Configuration for anti-detection modules."""
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         enable_captcha_detection: bool = True,
         enable_rate_limiting: bool = True,
@@ -279,7 +279,7 @@ class AntiDetectionManager:
         except Exception as e:
             logger.error(f"Post-action hook failed: {e}")
 
-    def handle_error(self, error: Exception, action: str, retry_count: int = 0) -> bool:  # noqa: PLR0911
+    def handle_error(self, error: Exception, action: str, retry_count: int = 0) -> bool:
         """
         Handle errors with adaptive anti-detection recovery strategies.
 

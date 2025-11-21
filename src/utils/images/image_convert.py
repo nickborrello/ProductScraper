@@ -16,7 +16,7 @@ def select_folder():
 def process_and_replace_image(path):
     try:
         with Image.open(path) as img:
-            img = img.convert("RGB")  # noqa: PLW2901
+            img = img.convert("RGB")
             width, height = img.size
 
             # Resize proportionally to fit inside 1000x1000
@@ -27,7 +27,7 @@ def process_and_replace_image(path):
                 new_height = 1000
                 new_width = int((width / height) * 1000)
 
-            img = img.resize((new_width, new_height), Image.LANCZOS)  # noqa: PLW2901
+            img = img.resize((new_width, new_height), Image.LANCZOS)
 
             # Create white background canvas
             new_img = Image.new("RGB", (1000, 1000), (255, 255, 255))
