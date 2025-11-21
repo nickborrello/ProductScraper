@@ -233,6 +233,58 @@ STYLESHEET = f"""
         background-color: {SUCCESS_COLOR};
         image: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAiIGhlaWdodD0iNyIgdmlld0JveD0iMCAwIDEwIDciIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgMy41TDQuMDggNi41TDkgMSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48L3N2Zz4=);
     }}
+
+    /* Custom Button Styles */
+    QPushButton[class="success"] {{
+        background-color: {SUCCESS_COLOR};
+        color: white;
+        border: none;
+    }}
+    QPushButton[class="success"]:hover {{
+        background-color: #45a049;
+    }}
+    QPushButton[class="success"]:pressed {{
+        background-color: #3d8b40;
+    }}
+    QPushButton[class="primary"] {{
+        background-color: {ACCENT_COLOR};
+        color: white;
+        border: none;
+    }}
+    QPushButton[class="primary"]:hover {{
+        background-color: #1976D2;
+    }}
+    QPushButton[class="primary"]:pressed {{
+        background-color: #1565C0;
+    }}
+    QPushButton[class="danger"] {{
+        background-color: {ERROR_COLOR};
+        color: white;
+        border: none;
+    }}
+    QPushButton[class="danger"]:hover {{
+        background-color: #c82333;
+    }}
+    QPushButton[class="danger"]:pressed {{
+        background-color: #bd2130;
+    }}
+    QPushButton[class="secondary"] {{
+        background-color: #6c757d;
+        color: white;
+        border: none;
+    }}
+    QPushButton[class="secondary"]:hover {{
+        background-color: #5a6268;
+    }}
+    QPushButton[class="secondary"]:pressed {{
+        background-color: #545b62;
+    }}
+
+    /* Custom Label Styles */
+    QLabel[class="page-label"] {{
+        font-weight: bold;
+        font-size: 14px;
+    }}
 """
 
 

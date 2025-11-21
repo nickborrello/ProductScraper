@@ -265,18 +265,18 @@ class ProductEditor(QMainWindow):
             layout.addWidget(self.next_btn)
 
             self.delete_btn = QPushButton("Delete")
-            self.delete_btn.setStyleSheet("background-color: #f44336; color: white;")
+            self.delete_btn.setProperty("class", "danger")
             self.delete_btn.clicked.connect(self.delete_current_product)
             layout.addWidget(self.delete_btn)
 
         finish_text = "OK" if self.is_single_product else "Finish"
         self.finish_btn = QPushButton(finish_text)
-        self.finish_btn.setStyleSheet("background-color: #4CAF50; color: white;")
+        self.finish_btn.setProperty("class", "success")
         self.finish_btn.clicked.connect(self.finish_editing)
         layout.addWidget(self.finish_btn)
 
         self.cancel_btn = QPushButton("Cancel")
-        self.cancel_btn.setStyleSheet("background-color: #999; color: white;")
+        self.cancel_btn.setProperty("class", "secondary")
         self.cancel_btn.clicked.connect(self.cancel_editing)
         layout.addWidget(self.cancel_btn)
 

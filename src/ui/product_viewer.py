@@ -206,79 +206,18 @@ class ProductViewer(QMainWindow):
         button_layout.setContentsMargins(15, 15, 15, 15)
 
         self.edit_button = QPushButton("✏️ Edit Selected")
-        self.edit_button.setStyleSheet(
-            """
-            QPushButton {
-                background-color: #4CAF50;
-                color: white;
-                border: none;
-                border-radius: 6px;
-                padding: 10px 20px;
-                font-size: 12px;
-                font-weight: bold;
-                min-width: 120px;
-            }
-            QPushButton:hover {
-                background-color: #45a049;
-            }
-            QPushButton:pressed {
-                background-color: #3d8b40;
-            }
-            QPushButton:disabled {
-                background-color: #666666;
-                color: #999999;
-            }
-        """
-        )
+        self.edit_button.setProperty("class", "success")
         self.edit_button.clicked.connect(self.edit_selected_products)
         self.edit_button.setEnabled(False)
         button_layout.addWidget(self.edit_button)
 
         self.select_all_button = QPushButton("☑️ Select All")
-        self.select_all_button.setStyleSheet(
-            """
-            QPushButton {
-                background-color: #2196F3;
-                color: white;
-                border: none;
-                border-radius: 6px;
-                padding: 10px 20px;
-                font-size: 12px;
-                font-weight: bold;
-                min-width: 100px;
-            }
-            QPushButton:hover {
-                background-color: #1976D2;
-            }
-            QPushButton:pressed {
-                background-color: #1565C0;
-            }
-        """
-        )
+        self.select_all_button.setProperty("class", "primary")
         self.select_all_button.clicked.connect(self.select_all_visible)
         button_layout.addWidget(self.select_all_button)
 
         self.clear_selection_button = QPushButton("🗑️ Clear Selection")
-        self.clear_selection_button.setStyleSheet(
-            """
-            QPushButton {
-                background-color: #dc3545;
-                color: white;
-                border: none;
-                border-radius: 6px;
-                padding: 10px 20px;
-                font-size: 12px;
-                font-weight: bold;
-                min-width: 120px;
-            }
-            QPushButton:hover {
-                background-color: #c82333;
-            }
-            QPushButton:pressed {
-                background-color: #bd2130;
-            }
-        """
-        )
+        self.clear_selection_button.setProperty("class", "danger")
         self.clear_selection_button.clicked.connect(self.clear_selection)
         button_layout.addWidget(self.clear_selection_button)
 
@@ -292,61 +231,17 @@ class ProductViewer(QMainWindow):
         pagination_layout.setContentsMargins(15, 15, 15, 15)
 
         self.prev_button = QPushButton("◀ Previous")
-        self.prev_button.setStyleSheet(
-            """
-            QPushButton {
-                background-color: #6c757d;
-                color: white;
-                border: none;
-                border-radius: 6px;
-                padding: 8px 16px;
-                font-size: 12px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #5a6268;
-            }
-            QPushButton:pressed {
-                background-color: #545b62;
-            }
-            QPushButton:disabled {
-                background-color: #495057;
-                color: #6c757d;
-            }
-        """
-        )
+        self.prev_button.setProperty("class", "secondary")
         self.prev_button.clicked.connect(self.prev_page)
         self.prev_button.setEnabled(False)
         pagination_layout.addWidget(self.prev_button)
 
         self.page_label = QLabel("Page 1 of 1")
-        self.page_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+        self.page_label.setProperty("class", "page-label")
         pagination_layout.addWidget(self.page_label)
 
         self.next_button = QPushButton("Next ▶")
-        self.next_button.setStyleSheet(
-            """
-            QPushButton {
-                background-color: #6c757d;
-                color: white;
-                border: none;
-                border-radius: 6px;
-                padding: 8px 16px;
-                font-size: 12px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #5a6268;
-            }
-            QPushButton:pressed {
-                background-color: #545b62;
-            }
-            QPushButton:disabled {
-                background-color: #495057;
-                color: #6c757d;
-            }
-        """
-        )
+        self.next_button.setProperty("class", "secondary")
         self.next_button.clicked.connect(self.next_page)
         self.next_button.setEnabled(False)
         pagination_layout.addWidget(self.next_button)
