@@ -53,7 +53,7 @@ dev = [
 ]
 
 [project.scripts]
-productscraper = "src.main:main"
+productscraper = "src.ui.main_window:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

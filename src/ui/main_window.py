@@ -9,6 +9,7 @@ from typing import Any, cast
 from PyQt6.QtCore import QObject, Qt, QThread, QTimer, pyqtSignal
 from PyQt6.QtGui import QAction, QFont, QTextCursor
 from PyQt6.QtWidgets import (
+    QApplication,
     QCheckBox,
     QDialog,
     QFileDialog,
@@ -1665,3 +1666,13 @@ class MainWindow(QMainWindow):
         self._set_buttons_enabled(True)
         self.cancel_scraping_btn.setEnabled(False)  # Disable cancel button when worker finishes
         self.worker = None
+
+def main():
+    """Main function to run the GUI application."""
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec())
+
+if __name__ == "__main__":
+    main()
