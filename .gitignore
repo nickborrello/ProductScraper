@@ -78,6 +78,9 @@ results/
 # Mypy cache
 .mypy_cache/
 
+# Ruff cache
+.ruff_cache/
+
 # Python distribution files
 *.egg-info/
 dist/
