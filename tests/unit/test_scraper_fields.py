@@ -75,7 +75,7 @@ class GranularScraperTester:
                 if spec is None or spec.loader is None:
                     print(f"❌ Failed to load spec for {module_name}")
                     continue
-                
+
                 module = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(module)
                 modules[module_name] = module

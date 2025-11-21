@@ -488,13 +488,17 @@ class TestScraperConfig:
         # Invalid timeout type
         with pytest.raises(ValidationError):
             ScraperConfig(
-                name="Test", base_url="https://example.com", timeout="not_a_number"  # type: ignore
+                name="Test",
+                base_url="https://example.com",
+                timeout="not_a_number",  # type: ignore
             )
 
         # Invalid retries type
         with pytest.raises(ValidationError):
             ScraperConfig(
-                name="Test", base_url="https://example.com", retries="not_a_number"  # type: ignore
+                name="Test",
+                base_url="https://example.com",
+                retries="not_a_number",  # type: ignore
             )
 
     def test_selectors_validation(self):
@@ -503,9 +507,7 @@ class TestScraperConfig:
         # Valid selectors
         selectors = [
             SelectorConfig(name="valid", selector=".valid", attribute=None, multiple=False),
-            SelectorConfig(
-                name="another", selector="#another", attribute="href", multiple=False
-            ),
+            SelectorConfig(name="another", selector="#another", attribute="href", multiple=False),
         ]
 
         config = ScraperConfig(
