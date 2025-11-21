@@ -8,6 +8,7 @@ These instructions guide GitHub Copilot's behavior when working in this reposito
 - Use descriptive variable names and add comments for complex logic
 - Prefer modern Python features (f-strings, type hints, dataclasses)
 - Follow PEP 8 style guidelines and ensure code passes ruff linting as configured in pyproject.toml
+- **Pre-Commit Checks**: Always run `uv run ruff check src/ tests/` and `uv run ruff format src/ tests/` before committing to ensure code quality and formatting
 - Handle exceptions appropriately in web scraping code
 - Use logging instead of print statements for debugging
 - Test on products that have all the needed fields filled in, like 035585499741
@@ -306,23 +307,6 @@ The testing system validates:
    - Includes proper cross-sell relationships
    - Normalizes weights to LB units
 
-### Debugging Tips
-
-- **Logs**: Use Python logging instead of print statements
-- **Browser Profiles**: Save cookies and profiles for session persistence
-- **Network Inspection**: Check browser developer tools for failed requests
-- **Rate Limiting**: Implement delays between requests to avoid blocking
-
-### Pre-Deployment Checklist
-
-- [ ] All dependencies installed and working
-- [ ] Test SKUs scrape successfully
-- [ ] Output data structure matches expected format
-- [ ] Error handling works for edge cases
-- [ ] Browser runs in headless mode
-- [ ] No sensitive data in logs or output
-- [ ] Ready for Apify hosting deployment
-
 ## Scraper Testing and Debugging System
 
 The project includes a comprehensive testing system to ensure scrapers work properly. All testing must be done locally.
@@ -388,56 +372,6 @@ python test_scrapers.py --scraper amazon --verbose
    ```bash
    python test_scrapers.py --scraper <scraper_name> --verbose
    ```
-
-### Validation Checks
-
-The testing system validates:
-
-- **Data Format**: Required fields present (SKU, Name)
-- **Data Quality**: No invalid values (N/A, null, empty strings)
-- **Field Coverage**: Expected fields populated
-- **Weight Units**: Normalized to LB
-- **Image URLs**: Valid HTTP/HTTPS URLs
-- **Price Format**: Proper numeric format
-- **Cross-sell Data**: Pipe-separated format
-
-### Test Data
-
-Each scraper has predefined test SKUs that are known to work:
-
-- **amazon**: B07G5J5FYP, B08N5WRWNW, B07VDG2ZT4
-- **bradley**: 035585499741
-- **central_pet**: CP001, CP002
-- **coastal**: CO001, CO002
-- **mazuri**: MZ001, MZ002
-- **petfoodex**: PF001, PF002
-- **phillips**: PH001, PH002
-- **orgill**: OR001, OR002
-
-### Debugging Tips
-
-- **Check Logs**: Use `--verbose` flag to see scraper output
-- **Browser Issues**: Set `HEADLESS = False` in scraper code for visual debugging
-- **Network Problems**: Check browser developer tools for failed requests
-- **Data Issues**: Review validation errors for specific field problems
-- **Timeout Issues**: Increase timeout values for slow-loading sites
-
-### Pre-Deployment Checklist
-
-- [ ] All scrapers pass `python test_scrapers.py --all`
-- [ ] No validation errors in output data
-- [ ] Data quality score > 80% for all scrapers
-- [ ] All required fields populated for test SKUs
-- [ ] Browser runs successfully in headless mode
-- [ ] No sensitive information in logs
-- [ ] Dependencies properly listed in pyproject.toml
-
-## Code Patterns
-
-- Use context managers for file operations and database connections
-- Implement retry logic for network requests
-- Validate data before saving to prevent corrupted outputs
-- Separate scraping logic from data processing logic
 
 ## Database
 
