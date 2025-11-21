@@ -165,11 +165,20 @@ except ImportError as e:
             else:
                 log_callback("Error: Scraping logic not found.")
 
-    def run_db_refresh(xml_file_path: str, db_path: str | None = None) -> tuple[bool, str]:
+    def run_db_refresh(
+        xml_file_path: str,
+        db_path: str | None = None,
+        log_callback: Any = None,
+        progress_callback: Any = None,
+        status_callback: Any = None,
+        **kwargs: Any,
+    ) -> tuple[bool, str]:
         """Dummy function for DB refresh if import fails."""
-        # Extract log_callback from where it might be passed (it's not in signature but might be expected by caller if they assume **kwargs)
-        # The original function signature is refresh_database_from_xml(xml_file_path: str, db_path: str | None = None)
-        # It does NOT take log_callback.
+        if log_callback:
+            if hasattr(log_callback, "emit"):
+                log_callback.emit("Error: DB refresh logic not found.")
+            else:
+                log_callback("Error: DB refresh logic not found.")
         return False, "Error: DB refresh logic not found."
 
     def run_scraper_tests(
@@ -205,6 +214,8 @@ except ImportError as e:
         interactive: bool = True,
         log_callback: Any = None,
         progress_callback: Any = None,
+        status_callback: Any = None,
+        **kwargs: Any,
     ) -> tuple[bool, str]:
         """Dummy function for ShopSite XML download if import fails."""
         if log_callback:
@@ -222,6 +233,8 @@ except ImportError as e:
         full_regen: bool = False,
         log_callback: Any = None,
         progress_callback: Any = None,
+        status_callback: Any = None,
+        **kwargs: Any,
     ) -> tuple[bool, str]:
         """Dummy function for ShopSite publish if import fails."""
         if log_callback:
@@ -1087,7 +1100,7 @@ class MainWindow(QMainWindow):
         """Download XML from ShopSite"""
         self.last_operation = "XML Download"
         self.log_message("Downloading XML from ShopSite...", "INFO")
-        self._run_worker(run_shopsite_xml_download)
+        self._run_worker(run_shopsite_xml_download, interactive=False)
 
     def start_shopsite_publish(self):
         """Publish changes to ShopSite"""
