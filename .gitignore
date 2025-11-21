@@ -51,7 +51,12 @@ Thumbs.db
 *.log
 
 # Database and large data files
-src/data/
+src/data/adaptive_retry_*.json
+src/data/retry_history_*.json
+src/data/analytics/
+src/data/browser_profiles/
+src/data/databases/
+src/data/product_pages.json
 inventory/  # Legacy inventory folder if it still exists
 
 # Sensitive configuration files
@@ -59,9 +64,6 @@ config/secrets.json
 config/credentials.json
 *.key
 *.pem
-
-# Browser profiles (Selenium automation)
-src/data/browser_profiles/
 
 # Generated test result files
 src/scrapers/**/large_scale_test_results_*.json
