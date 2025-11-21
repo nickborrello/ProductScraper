@@ -67,9 +67,9 @@ class TestValidationPerformance:
         assert elapsed_time < max_processing_time, (
             f"Processing 5000 records took {elapsed_time:.2f}s (>5 min)"
         )
-        assert (
-            memory_delta < max_memory_increase
-        ), f"Memory usage increased by {memory_delta:.2f}MB (>500MB)"
+        assert memory_delta < max_memory_increase, (
+            f"Memory usage increased by {memory_delta:.2f}MB (>500MB)"
+        )
 
         # Quality assertions
         avg_score = sum(results) / len(results)
@@ -77,9 +77,9 @@ class TestValidationPerformance:
         high_quality_count = sum(1 for score in results if score >= quality_threshold)
 
         assert avg_score >= quality_threshold, f"Average quality score too low: {avg_score:.2f}"
-        assert high_quality_count == len(
-            results
-        ), f"Only {high_quality_count}/{len(results)} records are high quality"
+        assert high_quality_count == len(results), (
+            f"Only {high_quality_count}/{len(results)} records are high quality"
+        )
 
         print(
             f"Performance results: {elapsed_time:.2f}s, {memory_delta:.2f}MB memory, avg score:"
@@ -130,9 +130,9 @@ class TestValidationPerformance:
 
         max_memory_growth = 50.0  # MB
         max_peak_growth = 100.0  # MB
-        assert (
-            memory_growth < max_memory_growth
-        ), f"Memory grew by {memory_growth:.2f}MB during test (>50MB)"
+        assert memory_growth < max_memory_growth, (
+            f"Memory grew by {memory_growth:.2f}MB during test (>50MB)"
+        )
         assert peak_growth < max_peak_growth, f"Peak memory growth {peak_growth:.2f}MB (>100MB)"
 
         print(f"Memory stability: growth {memory_growth:.2f}MB, peak {peak_growth:.2f}MB")

@@ -37,7 +37,9 @@ def sample_config():
         ],
         workflows=[
             WorkflowStep(action="navigate", params={"url": "https://example.com/products"}),
-            WorkflowStep(action="wait_for", params={"selector": ".product-list", "timeout": wait_timeout}),
+            WorkflowStep(
+                action="wait_for", params={"selector": ".product-list", "timeout": wait_timeout}
+            ),
             WorkflowStep(
                 action="extract",
                 params={"fields": ["product_name", "price", "image_urls"]},
@@ -298,7 +300,6 @@ class TestWorkflowExecutor:
             executor._action_click(params)
 
         mock_element.click.assert_called_once()
-
 
     def test_extract_value_from_element_text(self, sample_config, mock_create_browser):
         """Test extracting text from element."""

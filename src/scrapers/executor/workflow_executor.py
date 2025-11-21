@@ -68,8 +68,12 @@ class WorkflowExecutor:
         self.adaptive_retry_strategy = AdaptiveRetryStrategy(
             history_file=f"data/retry_history_{config.name}.json"
         )
-        no_results_selectors = self.config.validation.no_results_selectors if self.config.validation else []
-        no_results_text_patterns = self.config.validation.no_results_text_patterns if self.config.validation else []
+        no_results_selectors = (
+            self.config.validation.no_results_selectors if self.config.validation else []
+        )
+        no_results_text_patterns = (
+            self.config.validation.no_results_text_patterns if self.config.validation else []
+        )
         self.failure_classifier = FailureClassifier(
             site_specific_no_results_selectors=no_results_selectors,
             site_specific_no_results_text_patterns=no_results_text_patterns,
@@ -607,7 +611,9 @@ class WorkflowExecutor:
         # Weight field processing
         elif field_name == "Weight":
             # Standardize weight format: "X.XX lbs"
-            match = re.search(r"([\d.]+)\s*(pound|pounds|lb|lbs|ounce|ounces|oz)", value, re.IGNORECASE)
+            match = re.search(
+                r"([\d.]+)\s*(pound|pounds|lb|lbs|ounce|ounces|oz)", value, re.IGNORECASE
+            )
             if match:
                 amount = float(match.group(1))
                 unit = match.group(2).lower()

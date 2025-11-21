@@ -633,7 +633,6 @@ class SelectorTestingPage(QWizardPage):
         return super().isComplete() and hasattr(self.typed_wizard, "test_results")
 
 
-
 class ConfigurationSavingPage(QWizardPage):
     """Fourth page: Save configuration as YAML."""
 
@@ -724,9 +723,7 @@ class ConfigurationSavingPage(QWizardPage):
                         self._add_processing_steps(workflows, field_name, processing)
         return workflows
 
-    def _add_processing_steps(
-        self, workflows: list, field_name: str, processing: dict
-    ) -> None:
+    def _add_processing_steps(self, workflows: list, field_name: str, processing: dict) -> None:
         """Add processing steps to the workflow."""
         p_type = processing.get("type")
         if p_type == "weight":

@@ -313,7 +313,9 @@ class TestScraperConfig:
         ]
         workflows = [
             WorkflowStep(action="navigate", params={"url": "https://example.com/products"}),
-            WorkflowStep(action="wait_for", params={"selector": ".products", "timeout": wait_timeout}),
+            WorkflowStep(
+                action="wait_for", params={"selector": ".products", "timeout": wait_timeout}
+            ),
             WorkflowStep(action="extract", params={"fields": ["product_name", "product_price"]}),
         ]
 
@@ -333,8 +335,12 @@ class TestScraperConfig:
         """Test ScraperConfig equality."""
         timeout = 45
         retries = 2
-        config1 = ScraperConfig(name="Test", base_url="https://example.com", timeout=timeout, retries=retries)
-        config2 = ScraperConfig(name="Test", base_url="https://example.com", timeout=timeout, retries=retries)
+        config1 = ScraperConfig(
+            name="Test", base_url="https://example.com", timeout=timeout, retries=retries
+        )
+        config2 = ScraperConfig(
+            name="Test", base_url="https://example.com", timeout=timeout, retries=retries
+        )
         config3 = ScraperConfig(name="Different", base_url="https://example.com")
 
         assert config1 == config2

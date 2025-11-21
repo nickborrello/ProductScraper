@@ -306,9 +306,7 @@ class LLMProductClassifier:
 
         return results
 
-    def _classify_batch_api_call(
-        self, products: list[dict[str, Any]]
-    ) -> list[dict[str, str]]:
+    def _classify_batch_api_call(self, products: list[dict[str, Any]]) -> list[dict[str, str]]:
         """Make a single API call for multiple products."""
         if not products:
             return []

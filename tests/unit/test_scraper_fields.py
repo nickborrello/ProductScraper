@@ -153,9 +153,7 @@ class GranularScraperTester:
         result.duration = time.time() - start_time
         return result
 
-    def validate_field(
-        self, product: dict, field_name: str, duration: float
-    ) -> FieldTestResult:
+    def validate_field(self, product: dict, field_name: str, duration: float) -> FieldTestResult:
         """Validate a specific field in the product data."""
         value = product.get(field_name)
 
@@ -350,9 +348,7 @@ class GranularScraperTester:
 
         return results
 
-    def print_summary(
-        self, results: dict[str, ScraperTestResult]
-    ):
+    def print_summary(self, results: dict[str, ScraperTestResult]):
         """Print a detailed summary of test results."""
         print("\n" + "=" * 80)
         print("📊 GRANULAR TEST RESULTS SUMMARY")

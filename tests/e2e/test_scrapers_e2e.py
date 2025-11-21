@@ -319,7 +319,9 @@ class ScraperIntegrationTester:
             if field_coverage:
                 print("   Field Coverage:")
                 for field, coverage in field_coverage.items():
-                    status = "PASS" if coverage == full_coverage else "WARN" if coverage > 0 else "FAIL"
+                    status = (
+                        "PASS" if coverage == full_coverage else "WARN" if coverage > 0 else "FAIL"
+                    )
                     print(f"     {status} {field}: {coverage:.1f}%")
 
             if validation_results.get("errors"):
@@ -589,15 +591,21 @@ class TestScraperIntegration:
         # Verify scraper execution
         # The scraper may return success=True with a product record indicating no_results_found=True
         if result["success"]:
-            assert len(result["products"]) == 1, f"Expected 1 product record, got {len(result['products'])}"
+            assert len(result["products"]) == 1, (
+                f"Expected 1 product record, got {len(result['products'])}"
+            )
             product = result["products"][0]
-            assert product.get("no_results_found") is True, f"Expected no_results_found=True, got {product}"
+            assert product.get("no_results_found") is True, (
+                f"Expected no_results_found=True, got {product}"
+            )
             assert product["SKU"] == fake_sku
         else:
             # Fallback to old behavior (failure)
             assert result["products"] == [], f"Expected empty products, got {result['products']}"
             assert len(result["errors"]) > 0, "Expected errors, got none"
-            assert "Failed to scrape SKU" in result["errors"][0], f"Expected 'Failed to scrape SKU' in error, got {result['errors'][0]}"
+            assert "Failed to scrape SKU" in result["errors"][0], (
+                f"Expected 'Failed to scrape SKU' in error, got {result['errors'][0]}"
+            )
 
         # Verify execution completed
         assert result["execution_time"] > 0

@@ -77,6 +77,7 @@ class TestFailureClassifierNoResults:
     def test_no_results_multiple_patterns_confidence(self, classifier, mock_driver):
         """Test confidence scoring with multiple NO_RESULTS patterns."""
         high_confidence_threshold = 0.8
+
         # Mock multiple selector matches
         def find_elements_side_effect(by, selector):
             if selector in ["[class*='no-results']", ".no-products"]:
@@ -89,7 +90,9 @@ class TestFailureClassifierNoResults:
         result = classifier.classify_page_content(mock_driver, {})
 
         assert result.failure_type == FailureType.NO_RESULTS
-        assert result.confidence >= high_confidence_threshold  # High confidence from multiple matches
+        assert (
+            result.confidence >= high_confidence_threshold
+        )  # High confidence from multiple matches
 
     def test_no_results_partial_text_match(self, classifier, mock_driver):
         """Test partial text matches for NO_RESULTS."""
@@ -123,7 +126,10 @@ class TestFailureClassifierNoResults:
         result = classifier.classify_page_content(mock_driver, {})
 
         # Should not classify as NO_RESULTS due to low confidence
-        assert result.failure_type != FailureType.NO_RESULTS or result.confidence < low_confidence_threshold
+        assert (
+            result.failure_type != FailureType.NO_RESULTS
+            or result.confidence < low_confidence_threshold
+        )
 
     def test_no_results_vs_other_failure_types(self, classifier, mock_driver):
         """Test differentiation between NO_RESULTS and other failure types."""
@@ -222,7 +228,9 @@ class TestFailureClassifierNoResults:
         result = classifier.classify_page_content(mock_driver, {})
 
         assert result.failure_type == FailureType.NO_RESULTS
-        assert result.confidence >= high_confidence_threshold  # High confidence from multiple indicators and new logic
+        assert (
+            result.confidence >= high_confidence_threshold
+        )  # High confidence from multiple indicators and new logic
         assert result.details["selector_match"] is True
         assert result.details["text_match"] is True
         assert result.details["title_match"] is True
@@ -277,4 +285,7 @@ class TestFailureClassifierNoResults:
         result = classifier.classify_page_content(mock_driver, {})
 
         # Should not classify as NO_RESULTS due to low confidence
-        assert result.failure_type != FailureType.NO_RESULTS or result.confidence < low_confidence_threshold
+        assert (
+            result.failure_type != FailureType.NO_RESULTS
+            or result.confidence < low_confidence_threshold
+        )

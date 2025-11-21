@@ -50,7 +50,9 @@ class ScraperValidator:
             if field not in product or product[field] is None:
                 product_errors.append(f"Missing required field: {field}")
             elif str(product[field]).strip() in self.common_rules.get("invalid_values", []):
-                product_errors.append(f"Invalid value for required field {field}: '{product[field]}'")
+                product_errors.append(
+                    f"Invalid value for required field {field}: '{product[field]}'"
+                )
 
         # Check expected fields and field-specific validation
         for field in expected_fields:
