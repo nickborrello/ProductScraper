@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-environment
+      
+      - name: Run Ruff (Linting)
+        run: uv run ruff check src/ tests/
+
+      - name: Run Ruff (Formatting)
+        run: uv run ruff format --check src/ tests/
+
+      - name: Run Mypy (Type Checking)
+        run: uv run mypy src/
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-environment
+
+      - name: Install security tools
+        run: uv pip install bandit safety
+
+      - name: Run Bandit
+        run: uv run bandit -r src/ -f json -o bandit-report.json || true
+
+      - name: Run Safety
+        run: uv run safety check || true
+
+  unit-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-environment
+
+      - name: Run Unit Tests
+        run: uv run pytest tests/unit/ -v --cov=src --cov-report=xml
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          flags: unittests

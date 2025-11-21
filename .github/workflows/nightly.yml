@@ -1,0 +1,53 @@
+name: Nightly / E2E
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # 2 AM UTC
+  workflow_dispatch:
+
+jobs:
+  e2e-test:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/astral-sh/uv:python3.11-bookworm-slim  # Or use your built image if pushed
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      # We need Chrome in the container. 
+      # Ideally, we use the Dockerfile we created, but for simplicity in this workflow, 
+      # we'll install dependencies or assume a pre-built image.
+      # For now, let's use the setup-environment action on the runner directly 
+      # but install Chrome.
+      
+      - name: Install Chrome
+        run: |
+          apt-get update && apt-get install -y wget gnupg
+          wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -
+          echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list
+          apt-get update && apt-get install -y google-chrome-stable
+
+      - uses: ./.github/actions/setup-environment
+
+      - name: Run E2E Tests
+        run: uv run pytest tests/e2e/ -v --headless
+        env:
+          SCRAPER_HEADLESS: true
+
+  performance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-environment
+
+      - name: Run Performance Tests
+        run: uv run pytest -m "performance" -v
+
+  data-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-environment
+
+      - name: Run Data Quality Checks
+        run: uv run pytest tests/integration/test_data_quality.py -v

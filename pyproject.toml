@@ -42,9 +42,11 @@ dependencies = [
 dev = [
     "flask==3.1.2",
     "pytest-asyncio",
-    "flake8",
-    "black",
-    "isort"
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+    "types-requests",
+    "types-PyYAML",
+    "pyinstaller>=6.0.0"
 ]
 
 [project.scripts]
@@ -56,7 +58,27 @@ where = ["src"]
 [tool.pytest.ini_options]
 norecursedirs = ["tests/unit/test_scrapers.py"]
 markers = [
-    "slow",
-    "performance",
-    "integration",
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "performance: marks performance tests",
+    "integration: marks integration tests",
+    "e2e: marks end-to-end tests",
+    "security: marks security tests",
 ]
+addopts = "--strict-markers"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+select = ["E", "F", "B", "I", "N", "UP", "PL", "RUF"]
+ignore = []
+
+[tool.ruff.isort]
+known-first-party = ["src"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+check_untyped_defs = true
+ignore_missing_imports = true

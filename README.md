@@ -100,22 +100,6 @@ pytest
 python scripts/run_scraper_tests.py --all
 ```
 
-### Testing Framework
-
-The project uses a comprehensive pytest-based testing framework with unit, integration, and performance tests:
-
-```bash
-# Run all tests
-pytest
-
-# Run unit tests only
-pytest tests/unit/
-
-# Run integration tests only
-pytest tests/integration/
-
-# Run specific test file
-pytest tests/unit/test_data_quality_scorer.py
 
 # Run tests with coverage
 pytest --cov=src
