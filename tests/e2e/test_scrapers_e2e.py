@@ -603,8 +603,8 @@ class TestScraperIntegration:
             # Fallback to old behavior (failure)
             assert result["products"] == [], f"Expected empty products, got {result['products']}"
             assert len(result["errors"]) > 0, "Expected errors, got none"
-            assert "Failed to scrape SKU" in result["errors"][0], (
-                f"Expected 'Failed to scrape SKU' in error, got {result['errors'][0]}"
+            assert "Error scraping SKU" in result["errors"][0], (
+                f"Expected 'Error scraping SKU' in error, got {result['errors'][0]}"
             )
 
         # Verify execution completed
