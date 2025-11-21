@@ -11,6 +11,10 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
+# Constants
+MIN_FIELD_LENGTH = 3
+TRUNCATION_LENGTH = 50
+
 
 class FieldTestStatus(Enum):
     PASS = "✅ PASS"
@@ -46,8 +50,8 @@ class GranularScraperTester:
 
     def discover_scrapers(self) -> dict[str, Any]:
         """Discover all scraper modules dynamically."""
-        import glob
-        import importlib.util
+        import glob  # noqa: PLC0415 - Dynamic import for scraper discovery
+        import importlib.util  # noqa: PLC0415
 
         scrapers_dir = os.path.join(PROJECT_ROOT, "scrapers")
         scraper_files = glob.glob(os.path.join(scrapers_dir, "*.py"))
@@ -148,7 +152,9 @@ class GranularScraperTester:
         result.duration = time.time() - start_time
         return result
 
-    def validate_field(self, product: dict, field_name: str, duration: float) -> FieldTestResult:
+    def validate_field(  # noqa: PLR0911 - Validation requires multiple return paths
+        self, product: dict, field_name: str, duration: float
+    ) -> FieldTestResult:
         """Validate a specific field in the product data."""
         value = product.get(field_name)
 
@@ -173,7 +179,7 @@ class GranularScraperTester:
             return FieldTestResult(
                 field_name, FieldTestStatus.FAIL, value, "SKU is empty", duration
             )
-        if len(str(value).strip()) < 3:
+        if len(str(value).strip()) < MIN_FIELD_LENGTH:
             return FieldTestResult(
                 field_name, FieldTestStatus.FAIL, value, "SKU too short", duration
             )
@@ -188,7 +194,7 @@ class GranularScraperTester:
                 "Name is empty or N/A",
                 duration,
             )
-        if len(str(value).strip()) < 3:
+        if len(str(value).strip()) < MIN_FIELD_LENGTH:
             return FieldTestResult(
                 field_name, FieldTestStatus.FAIL, value, "Name too short", duration
             )
@@ -343,7 +349,9 @@ class GranularScraperTester:
 
         return results
 
-    def print_summary(self, results: dict[str, ScraperTestResult]):
+    def print_summary(  # noqa: PLR0912 - Summary requires many conditional branches
+        self, results: dict[str, ScraperTestResult]
+    ):
         """Print a detailed summary of test results."""
         print("\n" + "=" * 80)
         print("📊 GRANULAR TEST RESULTS SUMMARY")
@@ -360,8 +368,8 @@ class GranularScraperTester:
             for field_name, field_result in result.field_results.items():
                 status_emoji = field_result.status.value
                 value_display = (
-                    str(field_result.value)[:50] + "..."
-                    if field_result.value and len(str(field_result.value)) > 50
+                    str(field_result.value)[:TRUNCATION_LENGTH] + "..."
+                    if field_result.value and len(str(field_result.value)) > TRUNCATION_LENGTH
                     else str(field_result.value)
                 )
                 print(f"  {field_name}: {status_emoji}")
