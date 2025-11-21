@@ -30,7 +30,7 @@ jobs:
       - uses: ./.github/actions/setup-environment
 
       - name: Run E2E Tests
-        run: uv run pytest tests/e2e/ -v --headless
+        run: uv run pytest tests/e2e/ -v
         env:
           SCRAPER_HEADLESS: true
 
