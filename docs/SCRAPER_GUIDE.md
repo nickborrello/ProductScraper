@@ -1,6 +1,716 @@
-# Scraper Developer Guide
+# Scraper Guide
 
-This guide provides comprehensive instructions for developers working with the modular scraper system, including creating new scrapers, extending functionality, and testing procedures.
+## Configuration
+
+## YAML Schema Reference
+
+### Root Configuration
+
+```yaml
+name: string              # Required: Unique scraper identifier
+base_url: string          # Required: Base URL for the scraper
+timeout: integer          # Optional: Default timeout in seconds (default: 30)
+retries: integer          # Optional: Number of retries on failure (default: 3)
+selectors: list           # Optional: List of data extraction selectors
+workflows: list           # Optional: List of workflow steps
+login: object             # Optional: Login configuration
+anti_detection: object    # Optional: Anti-detection configuration
+```
+
+### Selector Configuration
+
+```yaml
+selectors:
+  - name: string          # Required: Field name for extracted data
+    selector: string      # Required: CSS selector for the element
+    attribute: string     # Optional: Attribute to extract ('text', 'href', 'src', etc.)
+    multiple: boolean     # Optional: Extract multiple elements (default: false)
+```
+
+### Workflow Step Configuration
+
+```yaml
+workflows:
+  - action: string        # Required: Action type
+    params: object        # Optional: Action parameters
+```
+
+### Login Configuration
+
+```yaml
+login:
+  url: string             # Required: Login page URL
+  username_field: string  # Required: CSS selector for username input
+  password_field: string  # Required: CSS selector for password input
+  submit_button: string   # Required: CSS selector for submit button
+  success_indicator: string # Optional: CSS selector indicating successful login
+```
+
+### Anti-Detection Configuration
+
+```yaml
+anti_detection:
+  enable_captcha_detection: boolean     # Optional: Enable CAPTCHA detection (default: true)
+  enable_rate_limiting: boolean         # Optional: Enable rate limiting (default: true)
+  enable_human_simulation: boolean      # Optional: Enable human behavior simulation (default: true)
+  enable_session_rotation: boolean      # Optional: Enable session rotation (default: true)
+  enable_blocking_handling: boolean     # Optional: Enable blocking page handling (default: true)
+  captcha_selectors: list               # Optional: Custom CAPTCHA selectors
+  blocking_selectors: list              # Optional: Custom blocking selectors
+  rate_limit_min_delay: float           # Optional: Minimum delay between requests (default: 1.0)
+  rate_limit_max_delay: float           # Optional: Maximum delay between requests (default: 5.0)
+  session_rotation_interval: integer    # Optional: Requests before session rotation (default: 100)
+  max_retries_on_detection: integer     # Optional: Max retries on detection (default: 3)
+```
+
+### Validation Configuration
+
+```yaml
+validation:
+  no_results_selectors: list            # Optional: Selectors to detect 'no results' pages
+  no_results_text_patterns: list        # Optional: Text patterns to detect 'no results' pages
+```
+
+## Workflow Actions
+
+### Navigation Actions
+
+#### navigate
+Navigate to a URL.
+
+```yaml
+- action: "navigate"
+  params:
+    url: "https://example.com/search?q={query}"  # URL with template variables
+    wait_after: 2                                # Optional: Wait time after navigation
+```
+
+#### wait_for
+Wait for one or more elements to be present.
+
+```yaml
+- action: "wait_for"
+  params:
+    selector: [".product-details", ".no-results-message"] # Can be a single selector string or a list of selectors
+    timeout: 10                  # Optional: Timeout in seconds
+```
+
+### Interaction Actions
+
+#### click
+Click on an element, with optional filtering. This is useful for clicking the first non-sponsored link in a list of search results.
+
+```yaml
+- action: "click"
+  params:
+    selector: ".search-result a"
+    filter_text_exclude: "sponsored" # Optional: regex to exclude elements by text
+    index: 0 # Optional: index of the element to click in the filtered list
+    wait_after: 1                # Optional: Wait time after click
+```
+
+#### input_text
+Input text into a form field.
+
+```yaml
+- action: "input_text"
+  params:
+    selector: "#search-input"    # CSS selector for input field
+    text: "{search_term}"        # Text to input (supports template variables)
+    clear_first: true            # Optional: Clear field before input (default: true)
+```
+
+### Timing Actions
+
+#### wait
+Simple wait/delay.
+
+```yaml
+- action: "wait"
+  params:
+    seconds: 2                   # Wait time in seconds
+```
+
+### Control Flow Actions
+
+#### check_no_results
+Explicitly check if the current page is a "no results" page. This action uses the selectors and patterns defined in the `validation` section. It sets a `no_results_found` flag in the results.
+
+```yaml
+- action: "check_no_results"
+  params: {}
+```
+
+#### conditional_skip
+Conditionally skip the rest of the workflow based on a flag from a previous step.
+
+```yaml
+- action: "conditional_skip"
+  params:
+    if_flag: "no_results_found"  # Skip if the 'no_results_found' flag is true
+```
+
+#### verify
+Verify a value on the page against an expected value. Can be used to ensure the correct product page is being scraped.
+
+```yaml
+- action: "verify"
+  params:
+    selector: ".product-upc"
+    attribute: "text"
+    expected_value: "{sku}"
+    match_mode: "fuzzy_number"  # "exact", "contains", or "fuzzy_number"
+    on_failure: "fail_workflow" # "fail_workflow" or "log_warning"
+```
+
+#### scroll
+Scroll the page to load lazy-loaded content or bring elements into view.
+
+```yaml
+- action: "scroll"
+  params:
+    direction: "down"  # "up", "down", "to_top", or "to_bottom"
+    amount: 500      # Optional: pixels to scroll for "up" or "down"
+    selector: "#load_more_button" # Optional: scroll a specific element into view
+```
+
+#### conditional_click
+Click on an element only if it exists. Useful for optional elements like cookie banners.
+
+```yaml
+- action: "conditional_click"
+  params:
+    selector: "#cookie-consent-button"
+    timeout: 5 # Optional: how long to wait for the element before skipping
+```
+
+### Data Extraction Actions
+
+#### extract_from_json
+Extract data from a JSON object embedded in a `<script>` tag.
+
+```yaml
+- action: "extract_from_json"
+  params:
+    selector: "script[type='application/ld+json']"
+    field: "product_name"
+    json_path: "name" # dot-notation path to the desired value (e.g., 'details.price')
+```
+
+#### extract_single
+Extract a single value using a named selector.
+
+```yaml
+- action: "extract_single"
+  params:
+    field: "product_name"        # Result field name
+    selector: "title_selector"   # Name of selector from selectors list
+```
+
+#### extract_multiple
+Extract multiple values using a named selector.
+
+```yaml
+- action: "extract_multiple"
+  params:
+    field: "image_urls"          # Result field name
+    selector: "image_selector"   # Name of selector from selectors list
+```
+
+#### extract
+Extract multiple fields at once (legacy compatibility).
+
+```yaml
+- action: "extract"
+  params:
+    fields: ["name", "price", "description"]  # List of field names
+```
+
+#### parse_weight
+Parse and normalize weight strings from extracted data.
+
+```yaml
+- action: "parse_weight"
+  params:
+    field: "weight"              # Field containing weight string
+    target_unit: "lb"            # Optional: target unit ("lb", "kg", "oz", "g")
+```
+
+#### process_images
+Process, filter, and upgrade image URLs.
+
+```yaml
+- action: "process_images"
+  params:
+    field: "images"              # Field containing image URLs
+    quality_patterns:            # Optional: URL transformation patterns
+      - regex: "(\\.jpg)$"
+        replacement: "_large.jpg"
+    filters:                     # Optional: filtering rules
+      - type: "exclude_text"
+        text: "thumbnail"
+    deduplicate: true            # Optional: remove duplicates (default: true)
+```
+
+### Authentication Actions
+
+#### login
+Execute login workflow with credentials.
+
+```yaml
+- action: "login"
+  params:
+    username: "{username}"       # Username (supports template variables)
+    password: "{password}"       # Password (supports template variables)
+```
+
+### Anti-Detection Actions
+
+#### detect_captcha
+Detect CAPTCHA presence on current page.
+
+```yaml
+- action: "detect_captcha"
+  params: {}  # No parameters required
+```
+
+#### handle_blocking
+Handle blocking pages.
+
+```yaml
+- action: "handle_blocking"
+  params: {}  # No parameters required
+```
+
+#### rate_limit
+Apply rate limiting delay.
+
+```yaml
+- action: "rate_limit"
+  params:
+    delay: 3.0  # Optional: Custom delay in seconds
+```
+
+#### simulate_human
+Simulate human-like behavior.
+
+```yaml
+- action: "simulate_human"
+  params:
+    behavior: "reading"  # Optional: 'reading', 'typing', 'navigation', or 'random'
+    duration: 2.0        # Optional: Duration in seconds
+```
+
+#### rotate_session
+Force session rotation.
+
+```yaml
+- action: "rotate_session"
+  params: {}  # No parameters required
+```
+
+## Selector Configuration Examples
+
+### Basic Text Extraction
+
+```yaml
+selectors:
+  - name: "product_title"
+    selector: "#productTitle"
+    attribute: "text"
+```
+
+### Link URL Extraction
+
+```yaml
+selectors:
+  - name: "product_url"
+    selector: ".product-link"
+    attribute: "href"
+```
+
+### Image Source Extraction
+
+```yaml
+selectors:
+  - name: "main_image"
+    selector: "#main-image"
+    attribute: "src"
+```
+
+### Multiple Element Extraction
+
+```yaml
+selectors:
+  - name: "gallery_images"
+    selector: ".gallery img"
+    attribute: "src"
+    multiple: true
+```
+
+### Fallback Selectors
+
+```yaml
+selectors:
+  - name: "product_name"
+    selector: "#productTitle, .product-title, h1.product-name"
+    attribute: "text"
+```
+
+### Weight Extraction
+
+```yaml
+selectors:
+  - name: "weight"
+    selector: ".product-weight, #weight, .specs-weight"
+    attribute: "text"
+```
+
+### Images Field Extraction
+
+```yaml
+selectors:
+  - name: "images"
+    selector: ".product-gallery img, #main-image, .additional-images img"
+    attribute: "src"
+    multiple: true
+```
+
+## Complete Configuration Examples
+
+### Example 1: E-commerce Product Scraper
+
+```yaml
+name: "ecommerce_scraper"
+base_url: "https://www.example-shop.com"
+timeout: 30
+retries: 3
+
+selectors:
+  - name: "product_name"
+    selector: "#product-title, .product-name, h1"
+    attribute: "text"
+  - name: "price"
+    selector: ".price, #price, .product-price"
+    attribute: "text"
+  - name: "description"
+    selector: "#product-description, .description"
+    attribute: "text"
+  - name: "weight"
+    selector: ".product-weight, #weight, .specs-weight"
+    attribute: "text"
+  - name: "images"
+    selector: ".product-gallery img, #main-image"
+    attribute: "src"
+    multiple: true
+  - name: "specifications"
+    selector: ".specs-table tr, #specifications li"
+    attribute: "text"
+    multiple: true
+
+workflows:
+  - action: "navigate"
+    params:
+      url: "https://www.example-shop.com/products/{product_id}"
+  - action: "wait_for"
+    params:
+      selector: "#product-title"
+      timeout: 15
+  - action: "extract"
+    params:
+      fields: ["product_name", "price", "description", "weight", "images", "specifications"]
+  - action: "parse_weight"
+    params:
+      field: "weight"
+  - action: "process_images"
+    params:
+      field: "images"
+
+anti_detection:
+  enable_captcha_detection: true
+  enable_rate_limiting: true
+  enable_human_simulation: true
+  rate_limit_min_delay: 1.5
+  rate_limit_max_delay: 4.0
+```
+
+### Example 2: Search and Extract Workflow with No-Results Handling
+
+```yaml
+name: "search_scraper"
+base_url: "https://www.example.com"
+timeout: 45
+retries: 5
+
+validation:
+  no_results_selectors:
+    - ".no-results"
+    - "div.search-empty"
+  no_results_text_patterns:
+    - "no results found"
+    - "your search returned no matches"
+
+selectors:
+  - name: "search_result_title"
+    selector: ".search-result h3, .result-title"
+    attribute: "text"
+    multiple: true
+  - name: "search_result_url"
+    selector: ".search-result a, .result-link"
+    attribute: "href"
+    multiple: true
+  - name: "result_snippet"
+    selector: ".search-result .snippet, .result-description"
+    attribute: "text"
+    multiple: true
+
+workflows:
+  - action: "navigate"
+    params:
+      url: "https://www.example.com/search"
+  - action: "wait_for"
+    params:
+      selector: "#search-input"
+      timeout: 10
+  - action: "input_text"
+    params:
+      selector: "#search-input"
+      text: "{search_query}"
+  - action: "click"
+    params:
+      selector: "#search-button, .search-submit"
+  - action: "check_no_results"
+  - action: "conditional_skip"
+    params:
+      if_flag: "no_results_found"
+  - action: "wait_for"
+    params:
+      selector: ".search-results"
+      timeout: 20
+  - action: "extract"
+    params:
+      fields: ["search_result_title", "search_result_url", "result_snippet"]
+
+anti_detection:
+  enable_captcha_detection: true
+  enable_rate_limiting: true
+  enable_human_simulation: true
+  enable_blocking_handling: true
+  captcha_selectors:
+    - "[class*='captcha']"
+    - "#captcha-container"
+    - ".recaptcha"
+  blocking_selectors:
+    - "[class*='blocked']"
+    - ".access-denied"
+    - "#blocked-message"
+```
+
+### Example 3: Login Required Scraper
+
+```yaml
+name: "authenticated_scraper"
+base_url: "https://www.members-only.com"
+timeout: 60
+retries: 3
+
+login:
+  url: "https://www.members-only.com/login"
+  username_field: "#username, #email"
+  password_field: "#password"
+  submit_button: "#login-btn, .login-submit"
+  success_indicator: ".dashboard, #user-menu"
+
+selectors:
+  - name: "member_data"
+    selector: ".member-info, #profile-data"
+    attribute: "text"
+  - name: "premium_content"
+    selector: ".premium-section"
+    attribute: "text"
+    multiple: true
+
+workflows:
+  - action: "login"
+    params:
+      username: "{username}"
+      password: "{password}"
+  - action: "wait_for"
+    params:
+      selector: ".dashboard"
+      timeout: 30
+  - action: "navigate"
+    params:
+      url: "https://www.members-only.com/member-area"
+  - action: "wait_for"
+    params:
+      selector: ".member-info"
+      timeout: 15
+  - action: "extract"
+    params:
+      fields: ["member_data", "premium_content"]
+
+anti_detection:
+  enable_captcha_detection: true
+  enable_rate_limiting: true
+  enable_human_simulation: true
+  enable_session_rotation: true
+  session_rotation_interval: 50
+  max_retries_on_detection: 5
+```
+
+### Example 4: Complex Multi-Step Workflow
+
+```yaml
+name: "complex_workflow_scraper"
+base_url: "https://www.complex-site.com"
+timeout: 90
+retries: 5
+
+selectors:
+  - name: "category_links"
+    selector: ".category-list a"
+    attribute: "href"
+    multiple: true
+  - name: "product_links"
+    selector: ".product-grid a.product-link"
+    attribute: "href"
+    multiple: true
+  - name: "product_details"
+    selector: ".product-details"
+    attribute: "text"
+
+workflows:
+  # Step 1: Navigate to main page and extract categories
+  - action: "navigate"
+    params:
+      url: "https://www.complex-site.com"
+  - action: "wait_for"
+    params:
+      selector: ".category-list"
+      timeout: 20
+  - action: "extract_multiple"
+    params:
+      field: "category_urls"
+      selector: "category_links"
+
+  # Step 2: Process first category
+  - action: "navigate"
+    params:
+      url: "{category_urls[0]}"  # Use first category URL
+  - action: "wait_for"
+    params:
+      selector: ".product-grid"
+      timeout: 25
+  - action: "extract_multiple"
+    params:
+      field: "product_urls"
+      selector: "product_links"
+
+  # Step 3: Extract product details
+  - action: "navigate"
+    params:
+      url: "{product_urls[0]}"  # Use first product URL
+  - action: "wait_for"
+    params:
+      selector: ".product-details"
+      timeout: 15
+  - action: "extract_single"
+    params:
+      field: "details"
+      selector: "product_details"
+
+  # Step 4: Simulate human reading
+  - action: "simulate_human"
+    params:
+      behavior: "reading"
+      duration: 3.0
+
+anti_detection:
+  enable_captcha_detection: true
+  enable_rate_limiting: true
+  enable_human_simulation: true
+  enable_blocking_handling: true
+  enable_session_rotation: true
+  rate_limit_min_delay: 2.0
+  rate_limit_max_delay: 8.0
+  session_rotation_interval: 25
+  max_retries_on_detection: 3
+```
+
+## Template Variables
+
+The system supports template variables in workflow parameters:
+
+- `{sku}`, `{product_id}`, `{search_query}`: Dynamic values passed at runtime
+- `{username}`, `{password}`: Credentials for login
+- `{category_urls[0]}`, `{product_urls[0]}`: Access array elements from previous extractions
+
+## Best Practices
+
+### Selector Design
+
+1. **Use Specific Selectors**: Prefer IDs over classes, classes over generic tags
+2. **Include Fallbacks**: Multiple selectors separated by commas
+3. **Avoid Brittle Selectors**: Don't rely on exact DOM structure
+4. **Test Selectors**: Verify selectors work across different page states
+
+### Workflow Design
+
+1. **Add Wait Conditions**: Always wait for elements before interacting
+2. **Handle Timing**: Include appropriate delays for page loads
+3. **Error Recovery**: Configure retries and anti-detection measures
+4. **Modular Steps**: Break complex workflows into clear steps
+
+### Anti-Detection Configuration
+
+1. **Enable Appropriately**: Only enable needed anti-detection features
+2. **Tune Delays**: Adjust rate limiting based on site restrictions
+3. **Monitor Effectiveness**: Track success rates and adjust configuration
+4. **Site-Specific Tuning**: Customize selectors for specific sites
+
+### Performance Optimization
+
+1. **Optimize Timeouts**: Set appropriate timeouts for different operations
+2. **Batch Operations**: Group similar extractions when possible
+3. **Resource Management**: Configure session rotation for long-running scrapers
+4. **Caching**: Use appropriate caching strategies for static content
+
+## Validation
+
+### Schema Validation
+
+The system validates YAML configurations against the schema. Common validation errors:
+
+- Missing required fields (`name`, `base_url`)
+- Invalid action types
+- Malformed selector configurations
+- Incorrect parameter types
+
+### Runtime Validation
+
+- Selector existence checks
+- Element interaction validation
+- Data extraction verification
+- Anti-detection effectiveness monitoring
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Selector Not Found**: Update CSS selectors, check page structure changes
+2. **Timeout Errors**: Increase timeout values, add wait conditions
+3. **Anti-Detection Failures**: Adjust anti-detection configuration
+4. **Data Extraction Issues**: Verify selector attributes and multiple settings
+
+### Debugging Tips
+
+1. **Test Selectors Individually**: Use browser dev tools to verify selectors
+2. **Enable Debug Logging**: Check workflow execution logs
+3. **Step-by-Step Testing**: Test workflow steps incrementally
+4. **Compare with Legacy**: Validate results against legacy scrapers
+
+## Development
 
 ## Architecture Overview
 
@@ -737,3 +1447,130 @@ class SelectorDiscovery:
 3. **Testing**: Run full test suite
 4. **Documentation**: Update user-facing documentation
 5. **Deployment**: Deploy to staging, then production
+
+## Migration
+
+## Overview
+
+The new modular scraper system replaces the old monolithic Python files with:
+
+- **YAML Configuration Files**: Declarative scraper definitions
+- **WorkflowExecutor**: Unified execution engine
+- **Anti-Detection Manager**: Built-in anti-detection capabilities
+- **Modular Architecture**: Reusable components and easier maintenance
+
+## Migration Process
+
+### Step 1: Analyze Legacy Scraper
+
+Identify the key components of your legacy scraper:
+
+```python
+# Legacy scraper structure (example from src/scrapers_archive/archive/amazon.py)
+def scrape_amazon(skus, log_callback=None, progress_tracker=None, status_callback=None):
+    # Browser initialization
+    browser_context = init_browser_optimized("amazon_batch", headless=HEADLESS)
+
+    # Main scraping loop
+    for sku in skus:
+        product_info = scrape_single_product(sku, driver, log_callback=log_callback)
+        # Process results...
+
+def scrape_single_product(UPC_or_ASIN, driver, max_retries=0, log_callback=None):
+    # Navigation logic
+    search_url = f"https://www.amazon.com/s?k={UPC_or_ASIN}"
+    driver.get(search_url)
+
+    # Element interaction
+    _click_first_search_result(driver, log_callback=log_callback)
+
+    # Data extraction
+    _extract_product_data(driver, product_info, log_callback=log_callback)
+```
+
+### Step 2: Create YAML Configuration
+
+Convert the legacy logic into a YAML configuration file:
+
+```yaml
+# New modular configuration (src/scrapers/configs/amazon.yaml)
+name: "amazon"
+base_url: "https://www.amazon.com"
+timeout: 30
+retries: 3
+
+selectors:
+  - name: "product_name"
+    selector: "#productTitle"
+    attribute: "text"
+  - name: "brand"
+    selector: "#bylineInfo, #brand, .a-brand"
+    attribute: "text"
+  - name: "images"
+    selector: "#altImages li.imageThumbnail img"
+    attribute: "src"
+    multiple: true
+
+workflows:
+  - action: "navigate"
+    params:
+      url: "https://www.amazon.com/s?k={sku}"
+  - action: "wait_for"
+    params:
+      selector: ".s-result-item"
+      timeout: 10
+  - action: "click"
+    params:
+      selector: ".s-result-item a.a-link-normal[href*='/dp/']"
+  - action: "wait_for"
+    params:
+      selector: "#productTitle"
+      timeout: 10
+  - action: "extract"
+    params:
+      fields: ["product_name", "brand", "images"]
+
+anti_detection:
+  enable_captcha_detection: true
+  enable_rate_limiting: true
+  enable_human_simulation: true
+  enable_blocking_handling: true
+  rate_limit_min_delay: 1.0
+  rate_limit_max_delay: 5.0
+```
+
+### Step 3: Update Integration Code
+
+Replace legacy scraper calls with the new WorkflowExecutor:
+
+```python
+# Before: Legacy scraper usage
+from src.scrapers_archive.archive.amazon import scrape_amazon
+
+results = scrape_amazon(skus, log_callback=log_callback)
+
+# After: New modular scraper usage
+from src.scrapers.parser.yaml_parser import YAMLParser
+from src.scrapers.executor.workflow_executor import WorkflowExecutor
+
+# Load configuration
+parser = YAMLParser()
+config = parser.parse("src/scrapers/configs/amazon.yaml")
+
+# Execute workflow
+executor = WorkflowExecutor(config, headless=True)
+results = executor.execute_workflow()
+```
+
+### Step 4: Handle Anti-Detection Features
+
+The new system includes built-in anti-detection capabilities. Configure them in the YAML:
+
+```yaml
+anti_detection:
+  enable_captcha_detection: true
+  enable_rate_limiting: true
+  enable_human_simulation: true
+  enable_session_rotation: false
+  enable_blocking_handling: true
+  captcha

@@ -23,18 +23,49 @@ These instructions guide GitHub Copilot's behavior when working in this reposito
 - Ensure cross-sell relationships are properly saved to Excel output
 - **Standalone Scrapers**: All scrapers are standalone Python modules with async main() functions
 - **Testing Protocol**: Always test scraping functionality locally first using the enhanced testing framework
+- Use the Actions Framework for complex workflows with parse_weight and process_images actions
+- Extract Weight and Images fields using the new processing actions
+- Bradley Caldwell scraper is now available alongside other scrapers
+
+
+## Actions Framework
+
+### Overview
+
+The Actions Framework provides a registry-based system for building modular, reusable scraping workflows. Actions are registered using the @ActionRegistry.register decorator and can be composed into complex scraping pipelines.
+
+### parse_weight Action
+
+Parses weight strings from product descriptions and normalizes them to consistent units (lb, kg, oz, g). Handles various formats like "5 lb", "2.5kg", "16 oz".
+
+### process_images Action
+
+Filters, deduplicates, and upgrades image URLs. Removes invalid URLs, eliminates duplicates, and converts relative URLs to absolute ones.
+
+### Custom Actions
+
+To create custom actions, use the @ActionRegistry.register decorator:
+
+```python
+from src.scrapers.actions.registry import ActionRegistry
+
+@ActionRegistry.register('my_custom_action')
+class MyCustomAction:
+    async def execute(self, context, **kwargs):
+        # Custom logic here
+        pass
+```
 
 
 ## Building and Testing Scrapers Locally
 
 ### Local Development Setup
 
-1. **Install Dependencies**: Each scraper has its own `requirements.txt` file. Install dependencies from the scraper's directory:
+1. **Install Dependencies**: Install project dependencies from the root directory:
 
-   ```bash
-   cd src/scrapers/{scraper_name}
-   pip install -r requirements.txt
-   ```
+    ```bash
+    pip install -e .
+    ```
 
 2. **Environment Variables**: Create a `.env` file in the scraper directory if needed for API keys or configuration:
    ```bash
@@ -45,27 +76,17 @@ These instructions guide GitHub Copilot's behavior when working in this reposito
 
 ### Running Scrapers Locally
 
-1. **Navigate to Scraper Directory**:
+1. **Use the Workflow Executor**: Run scrapers using YAML configuration files:
 
-   ```bash
-   cd src/scrapers/{scraper_name}
-   ```
+    ```bash
+    python -m src.scrapers.main --config src/scrapers/configs/{scraper_name}.yaml --sku {test_sku}
+    ```
 
-2. **Run with Test SKUs**: Use the enhanced testing framework:
+2. **Run with Test Framework**: Use the enhanced testing framework:
 
-   ```bash
-   # Local testing (recommended for development)
-   python test_scrapers.py --scraper {scraper_name}
-
-   # Local testing (no API keys required)
-   python platform_test_scrapers.py --platform --scraper {scraper_name}
-   ```
-
-3. **Run Specific Scraper**: From the scraper directory:
-   ```bash
-   python -m src
-   ```
-
+    ```bash
+    python scripts/test_scrapers.py --scraper {scraper_name}
+    ```
 ### Testing Protocol
 
 **CRITICAL**: Always test scraping functionality locally first. Use the enhanced testing framework for validation.
@@ -218,12 +239,11 @@ The testing system validates:
 
 ### Local Development Setup
 
-1. **Install Dependencies**: Each scraper has its own `requirements.txt` file. Install dependencies from the scraper's directory:
+1. **Install Dependencies**: Install project dependencies from the root directory:
 
-   ```bash
-   cd src/scrapers/{scraper_name}
-   pip install -r requirements.txt
-   ```
+    ```bash
+    pip install -e .
+    ```
 
 2. **Environment Variables**: Create a `.env` file in the scraper directory if needed for API keys or configuration:
    ```bash
@@ -240,17 +260,17 @@ The testing system validates:
    cd src/scrapers/{scraper_name}
    ```
 
-2. **Run with Test SKUs**: Run directly with Python:
+2. **Run with Test SKUs**: Use the workflow executor with YAML configs:
+
+     ```bash
+     python -m src.scrapers.main --config src/scrapers/configs/{scraper_name}.yaml --sku {test_sku}
+     ```
+
+3. **Run with Test Framework**: Use the testing script:
 
     ```bash
-    python main.py
+    python scripts/test_scrapers.py --scraper {scraper_name}
     ```
-
-3. **Run Specific Scraper**: From the scraper directory:
-   ```bash
-   python -m src
-   ```
-
 ### Testing Protocol
 
 **CRITICAL**: Always test scraping functionality locally first. Use the enhanced testing framework for validation.
@@ -409,7 +429,7 @@ Each scraper has predefined test SKUs that are known to work:
 - [ ] All required fields populated for test SKUs
 - [ ] Browser runs successfully in headless mode
 - [ ] No sensitive information in logs
-- [ ] Dependencies properly listed in requirements.txt
+- [ ] Dependencies properly listed in pyproject.toml
 
 ## Code Patterns
 
