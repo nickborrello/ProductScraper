@@ -41,7 +41,7 @@ class SettingsManager:
         "classification_method": "llm",  # 'llm' (OpenRouter), 'local_llm' (Ollama), 'fuzzy' (legacy)
         # Application Settings
         "debug_mode": False,
-        "database_path": "data/databases/products.db",
+        "database_path": "src/data/databases/products.db",
         "selenium_headless": True,
         "selenium_timeout": 30,
         "scraper_system": "new",  # 'new' (modular YAML), 'legacy' (archived)

@@ -51,7 +51,7 @@ Thumbs.db
 *.log
 
 # Database and large data files
-data/
+src/data/
 inventory/  # Legacy inventory folder if it still exists
 
 # Sensitive configuration files
@@ -61,7 +61,7 @@ config/credentials.json
 *.pem
 
 # Browser profiles (Selenium automation)
-data/selenium_profiles/
+src/data/browser_profiles/
 
 # Generated test result files
 src/scrapers/**/large_scale_test_results_*.json

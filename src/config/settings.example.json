@@ -18,7 +18,7 @@
   "ollama_model": "llama3",
   "classification_method": "hybrid",
   "debug_mode": false,
-  "database_path": "data/databases/products.db",
+  "database_path": "src/data/databases/products.db",
   "selenium_headless": true,
   "selenium_timeout": 30,
   "auto_scroll_logs": true,

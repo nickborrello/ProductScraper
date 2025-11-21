@@ -125,7 +125,7 @@ class AntiDetectionManager:
 
         # Initialize adaptive retry strategy
         self.adaptive_retry_strategy = AdaptiveRetryStrategy(
-            history_file=f"data/adaptive_retry_{site_name}.json"
+            history_file=f"src/data/adaptive_retry_{site_name}.json"
         )
 
         # Initialize failure analytics

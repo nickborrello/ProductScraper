@@ -217,7 +217,7 @@ class SettingsDialog(QDialog):
 
         db_path_layout = QHBoxLayout()
         self.database_path = QLineEdit()
-        self.database_path.setPlaceholderText("data/databases/products.db")
+        self.database_path.setPlaceholderText("src/data/databases/products.db")
         db_path_layout.addWidget(self.database_path)
 
         browse_btn = QPushButton("📁 Browse")
@@ -383,7 +383,7 @@ class SettingsDialog(QDialog):
         file_path, _ = QFileDialog.getSaveFileName(
             self,
             "Select Database Location",
-            self.database_path.text() or "data/databases/products.db",
+            self.database_path.text() or "src/data/databases/products.db",
             "SQLite Database (*.db);;All Files (*)",
         )
         if file_path:

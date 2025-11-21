@@ -12,9 +12,9 @@ class ProductDatabase:
     def __init__(self, db_path: str | None = None):
         if db_path is None:
             script_dir = os.path.dirname(os.path.abspath(__file__))
-            # Go up two levels from src/core/ to project root, then into data/databases/
+            # Go up two levels from src/core/ to project root, then into src/data/databases/
             project_root = os.path.dirname(os.path.dirname(script_dir))
-            db_path = os.path.join(project_root, "data", "databases", "products.db")
+            db_path = os.path.join(project_root, "src", "data", "databases", "products.db")
 
         self.db_path = db_path
         self.conn: sqlite3.Connection | None = None

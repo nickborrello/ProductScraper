@@ -66,7 +66,7 @@ class WorkflowExecutor:
         self.selectors = {selector.name: selector for selector in config.selectors}
         self.anti_detection_manager: AntiDetectionManager | None = None
         self.adaptive_retry_strategy = AdaptiveRetryStrategy(
-            history_file=f"data/retry_history_{config.name}.json"
+            history_file=f"src/data/retry_history_{config.name}.json"
         )
         no_results_selectors = (
             self.config.validation.no_results_selectors if self.config.validation else []
