@@ -697,6 +697,7 @@ def import_from_shopsite_xml(
     save_to_db: bool = False,
     interactive: bool = True,
     log_callback=None,
+    progress_callback=None,
 ) -> tuple[bool, str]:
     """
     Import products from ShopSite using Database Automated XML Download.
@@ -708,6 +709,7 @@ def import_from_shopsite_xml(
         save_to_db: Whether to save to database
         interactive: Whether to prompt for user confirmation (should be False for GUI mode)
         log_callback: Callback function for logging messages (for GUI integration)
+        progress_callback: Callback function for progress updates (for GUI integration)
     """
     client = ShopSiteXMLClient(log_callback=log_callback)
 
@@ -787,6 +789,7 @@ def publish_shopsite_changes(
     sitemap: bool = True,
     full_regen: bool = False,
     log_callback=None,
+    progress_callback=None,
 ) -> tuple[bool, str]:
     """
     Publish changes to ShopSite by regenerating website content.
@@ -798,6 +801,7 @@ def publish_shopsite_changes(
         sitemap: Whether to generate Google XML sitemap
         full_regen: Whether to do full regeneration (overrides incremental updates)
         log_callback: Callback function for logging messages (for GUI integration)
+        progress_callback: Callback function for progress updates (for GUI integration)
 
     Returns:
         Tuple of (success: bool, message: str)

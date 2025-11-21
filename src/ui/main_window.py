@@ -334,6 +334,7 @@ class Worker(QThread):
         import asyncio
         import inspect
 
+        had_error = False
         try:
             if inspect.iscoroutinefunction(self.fn):
                 # Async function: create new event loop in this thread
@@ -348,14 +349,16 @@ class Worker(QThread):
                 result = self.fn(*self.args, **self.kwargs)
         except Exception as e:
             # Emit error signal with exception details
+            had_error = True
             self.signals.error.emit((type(e), e, traceback.format_exc()))
         else:
             # Emit result signal with the function's return value
             if not self._is_cancelled:
                 self.signals.result.emit(result)
         finally:
-            # Emit finished signal regardless of outcome
-            self.signals.finished.emit()
+            # Emit finished signal only if there was no error
+            if not had_error:
+                self.signals.finished.emit()
 
 
 class LogViewer(QTextEdit):
@@ -1576,6 +1579,7 @@ class MainWindow(QMainWindow):
         error_dialog.setDetailedText(err_tb)
         error_dialog.exec()
 
+        # Mark operation as finished with error
         self.worker_finished(is_error=True)
 
     def worker_finished(self, is_error=False):
