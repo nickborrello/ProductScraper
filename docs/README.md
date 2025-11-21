@@ -9,6 +9,8 @@ The ProductScraper framework provides a modular, YAML-based web scraping system 
 ### 🆕 **Modular YAML-Based System**
 - **Declarative Configuration**: YAML-based scraper definitions
 - **WorkflowExecutor**: Unified execution engine with anti-detection
+- **Actions Framework**: Extensible action system for complex workflows
+- **Advanced Field Support**: Enhanced support for weight parsing and image processing
 - **Built-in Anti-Detection**: CAPTCHA handling, rate limiting, human simulation
 - **Extensible Architecture**: Easy to add new scrapers and features
 
@@ -58,6 +60,12 @@ print(results)
 - **Session Rotation**: Automatic browser session management
 - **Blocking Detection**: Access denied page handling
 
+### Actions Framework Components
+
+- **Weight Parsing**: Advanced field support for weight extraction and normalization
+- **Image Processing**: Image download, conversion, and optimization
+- **Custom Data Transformations**: Flexible data manipulation and formatting
+
 
 ## Configuration
 
@@ -89,12 +97,12 @@ anti_detection:
 
 ### Modular System Scrapers
 - ✅ amazon - E-commerce product scraper
+- ✅ bradley - Bradley Caldwell pet products scraper
 - ✅ central_pet - Pet supplies scraper
 - ✅ coastal - Wholesale product scraper
 - ✅ mazuri - Animal nutrition scraper
 - ✅ orgill - Hardware wholesaler scraper
 - ✅ petfoodex - Pet food exhibition scraper
-- ✅ phillips - Agricultural products scraper
 
 
 ## Available Scrapers
@@ -102,12 +110,12 @@ anti_detection:
 | Scraper | Status | Description |
 |---------|--------|-------------|
 | amazon | ✅ Available | E-commerce product scraper |
+| bradley | ✅ Available | Bradley Caldwell pet products scraper |
 | central_pet | ✅ Available | Pet supplies scraper |
 | coastal | ✅ Available | Wholesale product scraper |
 | mazuri | ✅ Available | Animal nutrition scraper |
 | orgill | ✅ Available | Hardware wholesaler scraper |
 | petfoodex | ✅ Available | Pet food exhibition scraper |
-| phillips | ✅ Available | Agricultural products scraper |
 
 ## Development Workflow
 

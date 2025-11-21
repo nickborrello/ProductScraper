@@ -8,6 +8,7 @@ The modular scraper system consists of several key components:
 
 - **YAML Configuration Files**: Declarative scraper definitions
 - **WorkflowExecutor**: Core execution engine
+- **Actions Framework**: Registry-based system for workflow actions with base action classes, handler registry, and extensible action types
 - **AntiDetectionManager**: Anti-detection capabilities
 - **YAMLParser**: Configuration parsing and validation
 - **Selector Storage**: Reusable selector management
@@ -110,39 +111,39 @@ Add test data to the test fixtures:
 
 ### Adding New Workflow Actions
 
-To add a new workflow action, extend the WorkflowExecutor class:
+To add a new workflow action using the Actions Framework, create a new action class that inherits from BaseAction and register it with the ActionRegistry:
 
 ```python
-# src/scrapers/executor/custom_workflow_executor.py
-from src.scrapers.executor.workflow_executor import WorkflowExecutor
-from src.scrapers.models.config import WorkflowStep
+# src/scrapers/actions/handlers/custom_action.py
+from typing import Dict, Any
+from src.scrapers.actions.base import BaseAction
+from src.scrapers.actions.registry import ActionRegistry
 
-class CustomWorkflowExecutor(WorkflowExecutor):
+@ActionRegistry.register("custom_action")
+class CustomAction(BaseAction):
+    """Custom workflow action example."""
 
-    def _execute_step(self, step: WorkflowStep):
-        """Override to add custom actions."""
-        action = step.action.lower()
+    def validate_params(self, params: Dict[str, Any]) -> bool:
+        """Validate action parameters."""
+        required_params = ["custom_param"]
+        return all(param in params for param in required_params)
 
-        # Check for custom actions first
-        if action == "custom_action":
-            self._action_custom_action(step.params)
-            return
-
-        # Call parent implementation for built-in actions
-        super()._execute_step(step)
-
-    def _action_custom_action(self, params: Dict[str, Any]):
-        """Implement custom workflow action."""
+    def execute(self, context: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute the custom action."""
         custom_param = params.get("custom_param")
 
         # Implement custom logic here
         self.logger.info(f"Executing custom action with param: {custom_param}")
 
         # Example: Custom browser interaction
-        self.browser.driver.execute_script("console.log('Custom action executed');")
+        if hasattr(context.get('browser', {}), 'driver'):
+            context['browser'].driver.execute_script("console.log('Custom action executed');")
 
         # Store results
-        self.results["custom_result"] = f"Processed: {custom_param}"
+        result = f"Processed: {custom_param}"
+        context.setdefault('results', {})["custom_result"] = result
+
+        return {"success": True, "result": result}
 ```
 
 ### Usage Example
@@ -158,10 +159,11 @@ workflows:
 ### Best Practices for Custom Actions
 
 1. **Follow Naming Conventions**: Use lowercase action names with underscores
-2. **Parameter Validation**: Validate required parameters
-3. **Error Handling**: Implement proper exception handling
+2. **Parameter Validation**: Implement validate_params method to check required parameters
+3. **Error Handling**: Implement proper exception handling and return error status
 4. **Logging**: Add appropriate logging for debugging
 5. **Documentation**: Document custom actions in the configuration guide
+6. **Registry Usage**: Always use @ActionRegistry.register decorator for automatic registration
 
 ## Adding New Anti-Detection Modules
 
@@ -357,6 +359,46 @@ class TestCustomWorkflowExecutor:
             "console.log('Custom action executed');"
         )
         assert executor.results["custom_result"] == "Processed: test_value"
+
+    def test_parse_weight_action(self):
+        """Test parse_weight action execution."""
+        from src.scrapers.actions.handlers.weight import ParseWeightAction
+
+        action = ParseWeightAction()
+        context = {"results": {}}
+        params = {"field": "weight", "source_field": "raw_weight"}
+
+        # Mock context with weight data
+        context["results"]["raw_weight"] = "10 oz"
+
+        result = action.execute(context, params)
+
+        assert result["success"] is True
+        assert context["results"]["weight"] == "0.625 lb"
+
+    def test_process_images_action(self):
+        """Test process_images action execution."""
+        from src.scrapers.actions.handlers.image import ProcessImagesAction
+
+        action = ProcessImagesAction()
+        context = {"results": {}}
+        params = {
+            "field": "images",
+            "source_field": "raw_images",
+            "quality_patterns": [{"regex": r"\._AC_.*", "replacement": "._AC_SL1500_"}]
+        }
+
+        # Mock context with image URLs
+        context["results"]["raw_images"] = [
+            "https://example.com/image._AC_US200_.jpg",
+            "https://example.com/image2._AC_US400_.jpg"
+        ]
+
+        result = action.execute(context, params)
+
+        assert result["success"] is True
+        assert len(context["results"]["images"]) == 2
+        assert "._AC_SL1500_" in context["results"]["images"][0]
 ```
 
 ### Integration Testing
@@ -634,6 +676,17 @@ class SelectorDiscovery:
 2. **Single Responsibility**: Each class/method should have one purpose
 3. **Configuration-Driven**: Avoid hardcoding values
 4. **Error Resilience**: Implement proper error handling
+
+### Actions Framework Best Practices
+
+1. **Action Naming**: Use descriptive, lowercase names with underscores (e.g., `parse_weight`, `process_images`)
+2. **Parameter Validation**: Always implement `validate_params()` method to check required parameters and their types
+3. **Error Handling**: Return appropriate error status and messages, never throw unhandled exceptions
+4. **Registry Usage**: Always use `@ActionRegistry.register()` decorator for automatic action registration
+5. **Modular Design**: Keep actions focused on single responsibilities, compose complex workflows from simple actions
+6. **Context Management**: Use the context dictionary for sharing data between actions, avoid global state
+7. **Logging**: Implement comprehensive logging for debugging and monitoring action execution
+8. **Testing**: Write unit tests for each action covering success and error scenarios
 
 ### Performance Optimization
 

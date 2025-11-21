@@ -226,6 +226,32 @@ Extract multiple fields at once (legacy compatibility).
     fields: ["name", "price", "description"]  # List of field names
 ```
 
+#### parse_weight
+Parse and normalize weight strings from extracted data.
+
+```yaml
+- action: "parse_weight"
+  params:
+    field: "weight"              # Field containing weight string
+    target_unit: "lb"            # Optional: target unit ("lb", "kg", "oz", "g")
+```
+
+#### process_images
+Process, filter, and upgrade image URLs.
+
+```yaml
+- action: "process_images"
+  params:
+    field: "images"              # Field containing image URLs
+    quality_patterns:            # Optional: URL transformation patterns
+      - regex: "(\\.jpg)$"
+        replacement: "_large.jpg"
+    filters:                     # Optional: filtering rules
+      - type: "exclude_text"
+        text: "thumbnail"
+    deduplicate: true            # Optional: remove duplicates (default: true)
+```
+
 ### Authentication Actions
 
 #### login
@@ -331,6 +357,25 @@ selectors:
     attribute: "text"
 ```
 
+### Weight Extraction
+
+```yaml
+selectors:
+  - name: "weight"
+    selector: ".product-weight, #weight, .specs-weight"
+    attribute: "text"
+```
+
+### Images Field Extraction
+
+```yaml
+selectors:
+  - name: "images"
+    selector: ".product-gallery img, #main-image, .additional-images img"
+    attribute: "src"
+    multiple: true
+```
+
 ## Complete Configuration Examples
 
 ### Example 1: E-commerce Product Scraper
@@ -351,6 +396,9 @@ selectors:
   - name: "description"
     selector: "#product-description, .description"
     attribute: "text"
+  - name: "weight"
+    selector: ".product-weight, #weight, .specs-weight"
+    attribute: "text"
   - name: "images"
     selector: ".product-gallery img, #main-image"
     attribute: "src"
@@ -370,7 +418,13 @@ workflows:
       timeout: 15
   - action: "extract"
     params:
-      fields: ["product_name", "price", "description", "images", "specifications"]
+      fields: ["product_name", "price", "description", "weight", "images", "specifications"]
+  - action: "parse_weight"
+    params:
+      field: "weight"
+  - action: "process_images"
+    params:
+      field: "images"
 
 anti_detection:
   enable_captcha_detection: true
