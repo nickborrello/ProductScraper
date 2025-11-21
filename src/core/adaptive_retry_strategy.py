@@ -245,8 +245,8 @@ class AdaptiveRetryStrategy:
         self._save_history()
 
         logger.debug(
-            f"Recorded failure: {failure_context.failure_type.value} on {failure_context.site_name} "
-            f"during {failure_context.action} "
+            f"Recorded failure: {failure_context.failure_type.value} on "
+            f"{failure_context.site_name} during {failure_context.action} "
             f"(retry_count: {failure_context.retry_count}, success: {final_success})"
         )
 
@@ -421,7 +421,7 @@ class AdaptiveRetryStrategy:
             pattern.peak_failure_hour is not None
             and abs(current_hour - pattern.peak_failure_hour) <= PEAK_HOUR_WINDOW
         ):
-            adapted_config.base_delay *= PEAK_HOUR_DELAY_MULTIPLIER  # Increase delay during peak hours
+            adapted_config.base_delay *= PEAK_HOUR_DELAY_MULTIPLIER  # Increase delay in peak hours
 
         return adapted_config
 
