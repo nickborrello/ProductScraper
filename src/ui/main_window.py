@@ -458,9 +458,9 @@ class MainWindow(QMainWindow):
             "🔄",
         )
         self.download_xml_btn = database_card.add_button(
-            "Download XML",
+            "Download XML & Update DB",
             self.start_xml_download,
-            "Download latest XML from ShopSite",
+            "Download latest XML from ShopSite and update database",
             "⬇️",
         )
         self.publish_shopsite_btn = database_card.add_button(
@@ -834,10 +834,10 @@ class MainWindow(QMainWindow):
             self._run_worker(run_db_refresh, file_path)
 
     def start_xml_download(self):
-        """Download XML from ShopSite"""
-        self.last_operation = "XML Download"
-        self.log_message("Downloading XML from ShopSite...", "INFO")
-        self._run_worker(run_shopsite_xml_download, interactive=False)
+        """Download XML from ShopSite and update database"""
+        self.last_operation = "XML Download & Database Update"
+        self.log_message("Downloading XML from ShopSite and updating database...", "INFO")
+        self._run_worker(run_shopsite_xml_download, save_to_db=True, interactive=False)
 
     def start_shopsite_publish(self):
         """Publish changes to ShopSite"""
