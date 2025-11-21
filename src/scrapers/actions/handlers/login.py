@@ -14,7 +14,7 @@ class LoginAction(BaseAction):
     def execute(self, params: dict[str, Any]) -> None:
         # Merge login details from config into params
         if self.executor.config.login:
-            params.update(self.executor.config.login.dict())
+            params.update(self.executor.config.login.model_dump())
 
         # Get credentials from settings manager
         scraper_name = self.executor.config.name
