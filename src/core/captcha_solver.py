@@ -8,7 +8,7 @@ import time
 from enum import Enum
 from typing import Any, cast
 
-import requests
+import requests  # type: ignore
 from selenium.webdriver.common.by import By
 
 logger = logging.getLogger(__name__)

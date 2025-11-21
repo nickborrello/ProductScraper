@@ -48,6 +48,7 @@ def sample_config():
         login=None,
         anti_detection=None,
         http_status=None,
+        validation=None,
         test_skus=["035585499741"],
     )
 
@@ -515,6 +516,7 @@ class TestWorkflowExecutor:
             ),
             anti_detection=None,
             http_status=None,
+            validation=None,
             test_skus=None,
         )
 

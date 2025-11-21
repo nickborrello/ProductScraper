@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional, cast
 from urllib.parse import urlparse
 
-import yaml
+import yaml  # type: ignore
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
@@ -935,7 +935,7 @@ class PageLoadThread(QThread):
         """Load page content."""
         try:
             # Use simple HTTP request to get page content
-            import requests
+            import requests  # type: ignore
             from bs4 import BeautifulSoup
 
             headers = {
@@ -1111,7 +1111,7 @@ class SelectorTestingThread(QThread):
                         if attribute == "text":
                             value = elements[0].get_text(strip=True)
                         else:
-                            value = elements[0].get(attribute, "")
+                            value = str(elements[0].get(attribute, ""))
 
                         if isinstance(value, str):
                             success = bool(value.strip())

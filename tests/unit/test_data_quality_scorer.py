@@ -2,6 +2,10 @@
 Unit tests for DataQualityScorer
 """
 
+import unittest
+from typing import Any
+from unittest.mock import MagicMock
+
 import pytest
 
 from src.core.data_quality_scorer import (
@@ -108,14 +112,14 @@ class TestDataQualityScorer:
         assert score == max_score
 
         # Invalid formats
-        record = {
+        invalid_record: dict[str, Any] = {
             "SKU": "invalid sku with spaces and special chars!",
             "Name": "123",  # Just numbers
             "Product_Field_16": "",
             "Product_Field_24": "N/A",
             "Product_Field_25": None,
         }
-        score, _ = scorer._score_consistency(record)
+        score, _ = scorer._score_consistency(invalid_record)
         min_score = 0.0
         assert score == min_score
 

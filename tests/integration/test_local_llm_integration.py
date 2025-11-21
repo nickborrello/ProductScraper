@@ -1,4 +1,5 @@
 import json
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -249,7 +250,7 @@ class TestLocalLLMIntegration:
         mock_list.return_value = [
             {"name": "llama2", "size": 1000000}
         ]  # Mock successful list response
-        empty_product = {}
+        empty_product: dict[str, Any] = {}
 
         result = classify_single_product(empty_product, method="local_llm")
         # Should handle empty products gracefully

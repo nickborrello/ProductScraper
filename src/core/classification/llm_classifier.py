@@ -11,7 +11,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-import requests
+import requests  # type: ignore
 
 # Configure logging
 logger = logging.getLogger(__name__)

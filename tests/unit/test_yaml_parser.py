@@ -2,7 +2,7 @@ import os
 import sys
 
 import pytest
-import yaml
+import yaml  # type: ignore
 
 # Add project root to sys.path
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -249,6 +249,8 @@ selectors:
             retries=RETRIES_DEFAULT,
             login=None,
             anti_detection=None,
+            http_status=None,
+            validation=None,
             test_skus=None,
         )
 
@@ -271,6 +273,8 @@ selectors:
             retries=RETRIES_DEFAULT,
             login=None,
             anti_detection=None,
+            http_status=None,
+            validation=None,
             test_skus=None,
         )
 
@@ -394,6 +398,8 @@ test_skus:
             retries=RETRIES_DEFAULT,
             login=None,
             anti_detection=None,
+            http_status=None,
+            validation=None,
             test_skus=None,
         )
 

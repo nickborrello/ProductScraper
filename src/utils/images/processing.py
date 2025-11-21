@@ -3,7 +3,7 @@ import re
 import time
 from io import BytesIO
 
-import requests
+import requests  # type: ignore
 from PIL import Image
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options

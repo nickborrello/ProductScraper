@@ -1,6 +1,7 @@
 import json
 import os
 import uuid
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -807,7 +808,7 @@ class TestLocalLLMClassifier:
         batch_results = classifier.classify_products_batch(products)
 
         # Test individual classification with same mock
-        individual_results = []
+        individual_results: list[dict[str, Any]] = []
         for product in products:
             mock_response = {
                 "category": batch_response["classifications"][len(individual_results)]["category"],

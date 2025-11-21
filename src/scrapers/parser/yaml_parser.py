@@ -1,6 +1,6 @@
 from pathlib import Path
 
-import yaml
+import yaml  # type: ignore
 
 from src.core.anti_detection_manager import AntiDetectionConfig
 from src.scrapers.models import ScraperConfig

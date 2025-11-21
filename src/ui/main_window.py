@@ -1011,9 +1011,7 @@ class MainWindow(QMainWindow):
 
             log_msg = "product editor"
         elif editor_type == "classification":
-            from src.core.classification.ui import (
-                edit_classification_in_batch as editor_func,  # type: ignore
-            )
+            from src.core.classification.ui import edit_classification_in_batch as editor_func  # type: ignore
 
             log_msg = "classification editor"
         else:

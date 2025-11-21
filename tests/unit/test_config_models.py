@@ -1,5 +1,6 @@
 import os
 import sys
+from typing import Any
 
 import pytest
 from pydantic import ValidationError
@@ -16,7 +17,9 @@ class TestSelectorConfig:
 
     def test_init_minimal(self):
         """Test SelectorConfig initialization with minimal required fields."""
-        config = SelectorConfig(name="test_selector", selector=".test-class")
+        config = SelectorConfig(
+            name="test_selector", selector=".test-class", attribute=None, multiple=False
+        )
 
         assert config.name == "test_selector"
         assert config.selector == ".test-class"
@@ -37,7 +40,7 @@ class TestSelectorConfig:
     def test_init_with_attribute(self):
         """Test SelectorConfig with attribute field."""
         config = SelectorConfig(
-            name="image_selector", selector="img.product-image", attribute="src"
+            name="image_selector", selector="img.product-image", attribute="src", multiple=False
         )
 
         assert config.name == "image_selector"
@@ -74,7 +77,12 @@ class TestSelectorConfig:
 
     def test_from_dict(self):
         """Test creating SelectorConfig from dictionary."""
-        data = {"name": "test_selector", "selector": ".test", "attribute": "href", "multiple": True}
+        data: dict[str, Any] = {
+            "name": "test_selector",
+            "selector": ".test",
+            "attribute": "href",
+            "multiple": True,
+        }
 
         config = SelectorConfig(**data)
 
@@ -135,7 +143,10 @@ class TestWorkflowStep:
     def test_from_dict(self):
         """Test creating WorkflowStep from dictionary."""
         wait_after = 1
-        data = {"action": "click", "params": {"selector": ".button", "wait_after": wait_after}}
+        data: dict[str, Any] = {
+            "action": "click",
+            "params": {"selector": ".button", "wait_after": wait_after},
+        }
 
         step = WorkflowStep(**data)
 
@@ -153,6 +164,8 @@ class TestLoginConfig:
             username_field="#username",
             password_field="#password",
             submit_button="#submit",
+            success_indicator=None,
+            failure_indicators=None,
         )
 
         assert config.url == "https://example.com/login"
@@ -169,6 +182,7 @@ class TestLoginConfig:
             password_field="#password",
             submit_button="#submit",
             success_indicator=".dashboard",
+            failure_indicators=None,
         )
 
         assert config.url == "https://example.com/login"
@@ -182,6 +196,7 @@ class TestLoginConfig:
             password_field="#pass",
             submit_button="#submit",
             success_indicator=".success",
+            failure_indicators=None,
         )
         config2 = LoginConfig(
             url="https://test.com/login",
@@ -189,12 +204,15 @@ class TestLoginConfig:
             password_field="#pass",
             submit_button="#submit",
             success_indicator=".success",
+            failure_indicators=None,
         )
         config3 = LoginConfig(
             url="https://different.com/login",
             username_field="#user",
             password_field="#pass",
             submit_button="#submit",
+            success_indicator=None,
+            failure_indicators=None,
         )
 
         assert config1 == config2
@@ -208,6 +226,7 @@ class TestLoginConfig:
             password_field="#password",
             submit_button="#submit",
             success_indicator=".welcome",
+            failure_indicators=None,
         )
 
         data = config.model_dump()
@@ -224,7 +243,7 @@ class TestLoginConfig:
 
     def test_from_dict(self):
         """Test creating LoginConfig from dictionary."""
-        data = {
+        data: dict[str, Any] = {
             "url": "https://example.com/login",
             "username_field": "#username",
             "password_field": "#password",
@@ -246,7 +265,17 @@ class TestScraperConfig:
         """Test ScraperConfig initialization with minimal required fields."""
         default_timeout = 30
         default_retries = 3
-        config = ScraperConfig(name="Test Scraper", base_url="https://example.com")
+        config = ScraperConfig(
+            name="Test Scraper",
+            base_url="https://example.com",
+            timeout=default_timeout,
+            retries=default_retries,
+            login=None,
+            anti_detection=None,
+            http_status=None,
+            validation=None,
+            test_skus=None,
+        )
 
         assert config.name == "Test Scraper"
         assert config.base_url == "https://example.com"
@@ -265,8 +294,8 @@ class TestScraperConfig:
         timeout = 60
         retries = 5
         selectors = [
-            SelectorConfig(name="title", selector=".title"),
-            SelectorConfig(name="price", selector=".price", attribute="text"),
+            SelectorConfig(name="title", selector=".title", attribute=None, multiple=False),
+            SelectorConfig(name="price", selector=".price", attribute="text", multiple=False),
         ]
         workflows = [
             WorkflowStep(action="navigate", params={"url": "https://example.com"}),
@@ -277,6 +306,8 @@ class TestScraperConfig:
             username_field="#user",
             password_field="#pass",
             submit_button="#submit",
+            success_indicator=None,
+            failure_indicators=None,
         )
         test_skus = ["SKU001", "SKU002"]
 
@@ -289,6 +320,8 @@ class TestScraperConfig:
             workflows=workflows,
             login=login,
             anti_detection=None,
+            http_status=None,
+            validation=None,
             test_skus=test_skus,
         )
 
@@ -306,7 +339,9 @@ class TestScraperConfig:
         num_workflows = 3
         wait_timeout = 10
         selectors = [
-            SelectorConfig(name="product_name", selector=".product-title", attribute="text"),
+            SelectorConfig(
+                name="product_name", selector=".product-title", attribute="text", multiple=False
+            ),
             SelectorConfig(
                 name="product_price", selector=".price", attribute="text", multiple=False
             ),
@@ -322,8 +357,15 @@ class TestScraperConfig:
         config = ScraperConfig(
             name="Product Scraper",
             base_url="https://example.com",
+            timeout=30,
+            retries=3,
             selectors=selectors,
             workflows=workflows,
+            login=None,
+            anti_detection=None,
+            http_status=None,
+            validation=None,
+            test_skus=None,
         )
 
         assert len(config.selectors) == num_selectors
@@ -336,12 +378,38 @@ class TestScraperConfig:
         timeout = 45
         retries = 2
         config1 = ScraperConfig(
-            name="Test", base_url="https://example.com", timeout=timeout, retries=retries
+            name="Test",
+            base_url="https://example.com",
+            timeout=timeout,
+            retries=retries,
+            login=None,
+            anti_detection=None,
+            http_status=None,
+            validation=None,
+            test_skus=None,
         )
         config2 = ScraperConfig(
-            name="Test", base_url="https://example.com", timeout=timeout, retries=retries
+            name="Test",
+            base_url="https://example.com",
+            timeout=timeout,
+            retries=retries,
+            login=None,
+            anti_detection=None,
+            http_status=None,
+            validation=None,
+            test_skus=None,
         )
-        config3 = ScraperConfig(name="Different", base_url="https://example.com")
+        config3 = ScraperConfig(
+            name="Different",
+            base_url="https://example.com",
+            timeout=30,
+            retries=3,
+            login=None,
+            anti_detection=None,
+            http_status=None,
+            validation=None,
+            test_skus=None,
+        )
 
         assert config1 == config2
         assert config1 != config3
@@ -352,7 +420,9 @@ class TestScraperConfig:
         retries = 2
         num_selectors = 1
         num_workflows = 1
-        selectors = [SelectorConfig(name="title", selector=".title")]
+        selectors = [
+            SelectorConfig(name="title", selector=".title", attribute=None, multiple=False)
+        ]
         workflows = [WorkflowStep(action="navigate", params={"url": "https://test.com"})]
 
         config = ScraperConfig(
@@ -362,6 +432,10 @@ class TestScraperConfig:
             retries=retries,
             selectors=selectors,
             workflows=workflows,
+            login=None,
+            anti_detection=None,
+            http_status=None,
+            validation=None,
             test_skus=["TEST001"],
         )
 
@@ -381,7 +455,7 @@ class TestScraperConfig:
         retries = 2
         num_selectors = 1
         num_workflows = 1
-        data = {
+        data: dict[str, Any] = {
             "name": "Test Scraper",
             "base_url": "https://example.com",
             "timeout": timeout,
@@ -403,32 +477,49 @@ class TestScraperConfig:
         """Test that required fields are validated."""
         # Missing name
         with pytest.raises(ValidationError):
-            ScraperConfig(base_url="https://example.com")
+            ScraperConfig(base_url="https://example.com")  # type: ignore
 
         # Missing base_url
         with pytest.raises(ValidationError):
-            ScraperConfig(name="Test Scraper")
+            ScraperConfig(name="Test Scraper")  # type: ignore
 
     def test_validation_field_types(self):
         """Test field type validation."""
         # Invalid timeout type
         with pytest.raises(ValidationError):
-            ScraperConfig(name="Test", base_url="https://example.com", timeout="not_a_number")
+            ScraperConfig(
+                name="Test", base_url="https://example.com", timeout="not_a_number"  # type: ignore
+            )
 
         # Invalid retries type
         with pytest.raises(ValidationError):
-            ScraperConfig(name="Test", base_url="https://example.com", retries="not_a_number")
+            ScraperConfig(
+                name="Test", base_url="https://example.com", retries="not_a_number"  # type: ignore
+            )
 
     def test_selectors_validation(self):
         """Test selectors field validation."""
         num_selectors = 2
         # Valid selectors
         selectors = [
-            SelectorConfig(name="valid", selector=".valid"),
-            SelectorConfig(name="another", selector="#another", attribute="href"),
+            SelectorConfig(name="valid", selector=".valid", attribute=None, multiple=False),
+            SelectorConfig(
+                name="another", selector="#another", attribute="href", multiple=False
+            ),
         ]
 
-        config = ScraperConfig(name="Test", base_url="https://example.com", selectors=selectors)
+        config = ScraperConfig(
+            name="Test",
+            base_url="https://example.com",
+            timeout=30,
+            retries=3,
+            selectors=selectors,
+            login=None,
+            anti_detection=None,
+            http_status=None,
+            validation=None,
+            test_skus=None,
+        )
 
         assert len(config.selectors) == num_selectors
 
@@ -442,7 +533,18 @@ class TestScraperConfig:
             WorkflowStep(action="extract", params={"fields": ["title"]}),
         ]
 
-        config = ScraperConfig(name="Test", base_url="https://example.com", workflows=workflows)
+        config = ScraperConfig(
+            name="Test",
+            base_url="https://example.com",
+            timeout=30,
+            retries=3,
+            workflows=workflows,
+            login=None,
+            anti_detection=None,
+            http_status=None,
+            validation=None,
+            test_skus=None,
+        )
 
         assert len(config.workflows) == num_workflows
 
@@ -453,9 +555,21 @@ class TestScraperConfig:
             username_field="#username",
             password_field="#password",
             submit_button="#submit",
+            success_indicator=None,
+            failure_indicators=None,
         )
 
-        config = ScraperConfig(name="Test", base_url="https://example.com", login=login)
+        config = ScraperConfig(
+            name="Test",
+            base_url="https://example.com",
+            timeout=30,
+            retries=3,
+            login=login,
+            anti_detection=None,
+            http_status=None,
+            validation=None,
+            test_skus=None,
+        )
 
         assert config.login is not None
         assert config.login.url == "https://example.com/login"
@@ -464,13 +578,32 @@ class TestScraperConfig:
         """Test test_skus field validation."""
         test_skus = ["SKU001", "SKU002", "SKU003"]
 
-        config = ScraperConfig(name="Test", base_url="https://example.com", test_skus=test_skus)
+        config = ScraperConfig(
+            name="Test",
+            base_url="https://example.com",
+            timeout=30,
+            retries=3,
+            test_skus=test_skus,
+            login=None,
+            anti_detection=None,
+            http_status=None,
+            validation=None,
+        )
 
         assert config.test_skus == test_skus
 
     def test_empty_lists_defaults(self):
-        """Test that empty lists are handled correctly."""
-        config = ScraperConfig(name="Test", base_url="https://example.com")
+        config = ScraperConfig(
+            name="Test",
+            base_url="https://example.com",
+            timeout=30,
+            retries=3,
+            login=None,
+            anti_detection=None,
+            http_status=None,
+            validation=None,
+            test_skus=None,
+        )
 
         assert config.selectors == []
         assert config.workflows == []
@@ -480,8 +613,12 @@ class TestScraperConfig:
         config = ScraperConfig(
             name="Test",
             base_url="https://example.com",
+            timeout=30,
+            retries=3,
             login=None,
             anti_detection=None,
+            http_status=None,
+            validation=None,
             test_skus=None,
         )
 

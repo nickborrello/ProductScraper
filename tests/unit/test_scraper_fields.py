@@ -5,7 +5,7 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import Any, cast
 
 # Add project root to path
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -72,6 +72,10 @@ class GranularScraperTester:
             try:
                 # Import the module
                 spec = importlib.util.spec_from_file_location(module_name, scraper_file)
+                if spec is None or spec.loader is None:
+                    print(f"❌ Failed to load spec for {module_name}")
+                    continue
+                
                 module = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(module)
                 modules[module_name] = module
@@ -80,23 +84,27 @@ class GranularScraperTester:
 
         return modules
 
-    def get_scraper_function(self, module) -> Callable | None:
+    def get_scraper_function(self, module: Any) -> Callable[..., Any] | None:
         """Find the scrape function in a module."""
         for attr_name in dir(module):
             if attr_name.startswith("scrape_"):
                 func = getattr(module, attr_name)
                 # Check if the function is defined in this module (not imported)
-                if hasattr(func, "__module__") and func.__module__ == module.__name__:
-                    return func
+                if (
+                    callable(func)
+                    and hasattr(func, "__module__")
+                    and func.__module__ == module.__name__
+                ):
+                    return cast(Callable[..., Any], func)
         return None
 
     def test_single_field(
-        self, scraper_func: callable, test_sku: str, field_name: str
+        self, scraper_func: Callable[..., Any], test_sku: str, field_name: str
     ) -> FieldTestResult:
         """Test a single field for a scraper."""
         start_time = time.time()
 
-        def run_test():
+        def run_test() -> FieldTestResult:
             try:
                 # Run the scraper
                 results = scraper_func([test_sku])
@@ -130,9 +138,9 @@ class GranularScraperTester:
                 )
 
         # Run test with timeout
-        result_container = {"result": None, "completed": False}
+        result_container: dict[str, Any] = {"result": None, "completed": False}
 
-        def run_test_thread():
+        def run_test_thread() -> None:
             result_container["result"] = run_test()
             result_container["completed"] = True
 
@@ -149,7 +157,7 @@ class GranularScraperTester:
                 duration=self.test_timeout,
             )
 
-        result = result_container["result"]
+        result = cast(FieldTestResult, result_container["result"])
         result.duration = time.time() - start_time
         return result
 
@@ -360,7 +368,7 @@ class GranularScraperTester:
 
         for scraper_name, result in results.items():
             print(f"\n{scraper_name.upper()}:")
-            print(f"Overall: {result.status.value} ({result.total_duration:.1f}s)")
+            print(f"Overall: {result.overall_status.value} ({result.total_duration:.1f}s)")
 
             for field_name, field_result in result.field_results.items():
                 status_emoji = field_result.status.value

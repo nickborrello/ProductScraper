@@ -11,11 +11,11 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-import yaml
+import yaml  # type: ignore
 
 from src.scrapers.executor.workflow_executor import WorkflowExecutor
 from src.scrapers.parser.yaml_parser import ScraperConfigParser
-from tests.fixtures.scraper_validator import ScraperValidator
+from tests.fixtures.scraper_validator import ScraperValidator, ValidationResults
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 
@@ -43,7 +43,7 @@ class ScraperIntegrationTester:
     def get_available_scrapers(self) -> list[str]:
         """Get list of available scraper names."""
         configs_dir = self.project_root / "src" / "scrapers" / "configs"
-        scrapers = []
+        scrapers: list[str] = []
 
         if not configs_dir.exists():
             return scrapers
@@ -76,7 +76,7 @@ class ScraperIntegrationTester:
             f"{scraper_name} with SKUs {skus}, headless={headless}"
         )
 
-        results = {
+        results: dict[str, Any] = {
             "scraper": scraper_name,
             "skus": skus,
             "success": False,
@@ -98,7 +98,7 @@ class ScraperIntegrationTester:
             config = parser.load_from_file(config_path)
             print(f"DEBUG: Config loaded successfully for {scraper_name}")
 
-            products = []
+            products: list[dict[str, Any]] = []
             for i, sku in enumerate(skus):
                 print(f"DEBUG: Processing SKU {sku} ({i + 1}/{len(skus)}) for {scraper_name}")
                 try:
@@ -181,7 +181,7 @@ class ScraperIntegrationTester:
         run_results = self.run_scraper_locally(scraper_name, skus)
 
         # Validate results
-        validation_results = {}
+        validation_results: Any = {}
         if run_results["success"] and run_results["products"]:
             validation_results = self.validator.validate_product_data(
                 run_results["products"], scraper_name
@@ -228,7 +228,7 @@ class ScraperIntegrationTester:
                     f"{skipped_count} login-requiring scrapers: {', '.join(login_required_scrapers)}"
                 )
 
-        results = {
+        results: dict[str, Any] = {
             "total_scrapers": len(scrapers),
             "successful_scrapers": 0,
             "failed_scrapers": 0,
@@ -399,7 +399,7 @@ class TestScraperIntegration:
     @pytest.fixture
     def scraper_cleanup(self):
         """Fixture for scraper cleanup after tests."""
-        cleanup_items = []
+        cleanup_items: list[Any] = []
 
         yield cleanup_items
 

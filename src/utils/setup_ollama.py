@@ -10,7 +10,7 @@ import subprocess
 from pathlib import Path
 
 import ollama
-import requests
+import requests  # type: ignore
 
 
 def run_command(command, shell=False):
