@@ -412,7 +412,7 @@ class ProductEditor(QMainWindow):
 
         # Select first source
         if image_sets:
-            first_site = list(image_sets.keys())[0]
+            first_site = next(iter(image_sets.keys()))
             self._select_image_source(first_site)
 
     def _select_image_source(self, site):

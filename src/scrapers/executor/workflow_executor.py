@@ -16,6 +16,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 from src.core.adaptive_retry_strategy import (
     AdaptiveRetryStrategy,
+)
+from src.core.adaptive_retry_strategy import (
     FailureContext as AdaptiveFailureContext,
 )
 from src.core.anti_detection_manager import AntiDetectionManager
@@ -343,9 +345,7 @@ class WorkflowExecutor:
 
             # Check if we should retry
             should_retry = (
-                retry_count < adaptive_config.max_retries
-                and failure_context.failure_type != FailureType.PAGE_NOT_FOUND
-                and failure_context.failure_type != FailureType.NO_RESULTS
+                retry_count < adaptive_config.max_retries and failure_context.failure_type not in (FailureType.PAGE_NOT_FOUND, FailureType.NO_RESULTS)
             )
 
             if should_retry:

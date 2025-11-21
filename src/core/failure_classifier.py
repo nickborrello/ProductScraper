@@ -258,7 +258,8 @@ class FailureClassifier:
             confidence = self._calculate_text_match_confidence(
                 exception_str, patterns["text_patterns"]
             )
-            if confidence > 0.5:
+            MIN_TEXT_CONFIDENCE = 0.5
+            if confidence > MIN_TEXT_CONFIDENCE:
                 return FailureContext(
                     failure_type=failure_type,
                     confidence=confidence,
@@ -375,8 +376,9 @@ class FailureClassifier:
                     )
                     best_details = details
 
+            MIN_FAILURE_CONFIDENCE = 0.3
             if (
-                best_match and best_confidence > 0.3
+                best_match and best_confidence > MIN_FAILURE_CONFIDENCE
             ):  # Lower threshold to catch more potential failures
                 return FailureContext(
                     failure_type=best_match,

@@ -44,10 +44,10 @@ class LocalLLMProductClassifier:
 
     def __init__(
         self,
-        model_name: str = None,
-        cache_file: Path = None,
-        product_taxonomy: dict[str, list[str]] = None,
-        product_pages: list[str] = None,
+        model_name: str | None = None,
+        cache_file: Path | None = None,
+        product_taxonomy: dict[str, list[str]] | None = None,
+        product_pages: list[str] | None = None,
     ):
         # Try to get model name from settings first, then parameter, then environment, then default
         if model_name is None:
@@ -258,7 +258,7 @@ class LocalLLMProductClassifier:
 
         # Reconstruct full results list with empty results for invalid products
         results = [{"category": "", "product_type": "", "product_on_pages": ""} for _ in products]
-        for idx, result in zip(valid_indices, valid_results):
+        for idx, result in zip(valid_indices, valid_results, strict=False):
             results[idx] = result
 
         return results
@@ -468,9 +468,9 @@ _local_llm_classifier = None
 
 
 def get_local_llm_classifier(
-    model_name: str = None,
-    product_taxonomy: dict[str, list[str]] = None,
-    product_pages: list[str] = None,
+    model_name: str | None = None,
+    product_taxonomy: dict[str, list[str]] | None = None,
+    product_pages: list[str] | None = None,
 ) -> LocalLLMProductClassifier:
     """Get or create local LLM classifier instance."""
     global _local_llm_classifier
@@ -503,8 +503,8 @@ def reset_local_llm_classifier():
 
 def classify_product_local_llm(
     product_info: dict[str, Any],
-    product_taxonomy: dict[str, list[str]] = None,
-    product_pages: list[str] = None,
+    product_taxonomy: dict[str, list[str]] | None = None,
+    product_pages: list[str] | None = None,
 ) -> dict[str, str]:
     """
     Classify a product using local LLM via Ollama (no API key required).
@@ -579,7 +579,7 @@ if __name__ == "__main__":
         print("🤖 Classifying test products...")
         results = classifier.classify_products_batch(test_products)
 
-        for i, (product, result) in enumerate(zip(test_products, results), 1):
+        for i, (product, result) in enumerate(zip(test_products, results, strict=False), 1):
             print(f"\n📦 Product {i}: {product['Name'][:50]}")
             print(f"   Category: {result.get('category', 'N/A')}")
             print(f"   Product Type: {result.get('product_type', 'N/A')}")

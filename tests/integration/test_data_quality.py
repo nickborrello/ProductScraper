@@ -56,7 +56,7 @@ def test_data_quality_gate():
                 "Product_Field_24": "Test Category",
                 "Product_Field_25": "Test Product Type",
             }
-            score, _ = scorer.score_record(record)
+            _score, _ = scorer.score_record(record)
             total_records += 1
             if is_product_high_quality(record):
                 high_quality_records += 1

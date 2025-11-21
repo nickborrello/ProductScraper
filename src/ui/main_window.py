@@ -1561,7 +1561,7 @@ class MainWindow(QMainWindow):
 
     def handle_error(self, error_tuple):
         """Handle errors emitted from the worker thread"""
-        err_type, err_val, err_tb = error_tuple
+        _err_type, err_val, err_tb = error_tuple
         self.log_message(f"An error occurred: {err_val}", "ERROR")
         self.log_message(f"Error details: {err_tb}", "DEBUG")
 

@@ -151,7 +151,7 @@ class TestSelectorStorage:
 
             shutil.rmtree(test_dir)
 
-        storage = SelectorStorage(str(storage_file))
+        SelectorStorage(str(storage_file))
 
         assert test_dir.exists()
 

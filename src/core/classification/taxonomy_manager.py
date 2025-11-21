@@ -11,7 +11,7 @@ from pathlib import Path
 class TaxonomyManager:
     """Manages product taxonomy with database integration"""
 
-    def __init__(self, taxonomy_file: str = None, db_path: str = None):
+    def __init__(self, taxonomy_file: str | None = None, db_path: str | None = None):
         """
         Initialize taxonomy manager
 
@@ -543,7 +543,7 @@ if __name__ == "__main__":
 
     # Show sample
     print("\n📋 Sample categories:")
-    for i, (category, types) in enumerate(list(updated_taxonomy.items())[:3]):
+    for _i, (category, types) in enumerate(list(updated_taxonomy.items())[:3]):
         print(f"   {category}: {len(types)} types")
         if types:
             print(f"      Examples: {types[:3]}")

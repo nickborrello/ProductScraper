@@ -74,7 +74,7 @@ def download_image(img_url, subdir, file_name, idx, results_folder=None):
     if idx == 0:
         img_name = os.path.join(folder_path, sanitized_file_name)
     else:
-        name, ext = os.path.splitext(sanitized_file_name)
+        name, _ext = os.path.splitext(sanitized_file_name)
         img_name = os.path.join(folder_path, f"{name}-{idx}.jpg")
 
     headers = {

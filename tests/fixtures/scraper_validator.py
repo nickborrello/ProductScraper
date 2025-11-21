@@ -11,7 +11,7 @@ import pandas as pd
 class ScraperValidator:
     """Validates scraper output data format and content."""
 
-    def __init__(self, test_data_path: str = None):
+    def __init__(self, test_data_path: str | None = None):
         """Initialize validator with test data configuration."""
         # Define common validation rules internally
         self.common_rules = {

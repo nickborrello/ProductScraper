@@ -9,7 +9,7 @@ from typing import Any
 
 
 class ProductDatabase:
-    def __init__(self, db_path: str = None):
+    def __init__(self, db_path: str | None = None):
         if db_path is None:
             script_dir = os.path.dirname(os.path.abspath(__file__))
             # Go up two levels from src/core/ to project root, then into data/databases/
@@ -61,7 +61,7 @@ class ProductDatabase:
             results = []
 
             for row in cursor.fetchall():
-                product = dict(zip(columns, row))
+                product = dict(zip(columns, row, strict=False))
 
                 # No extra_data JSON parsing needed for current schema
                 results.append(product)
@@ -102,7 +102,7 @@ class ProductDatabase:
         results = []
 
         for row in cursor.fetchall():
-            product = dict(zip(columns, row))
+            product = dict(zip(columns, row, strict=False))
             results.append(product)
 
         return results

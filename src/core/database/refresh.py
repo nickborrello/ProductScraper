@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 class ShopSiteDatabase:
     """SQLite database manager for ShopSite products."""
 
-    def __init__(self, db_path: str = None):
+    def __init__(self, db_path: str | None = None):
         if db_path is None:
             script_dir = os.path.dirname(os.path.abspath(__file__))
             project_root = os.path.dirname(os.path.dirname(script_dir))
@@ -482,7 +482,7 @@ def parse_xml_file_to_dataframe(xml_file_path: str) -> pd.DataFrame | None:
 
 
 def process_xml_to_database(
-    xml_file_path: str, db_path: str = None, clear_existing: bool = True
+    xml_file_path: str, db_path: str | None = None, clear_existing: bool = True
 ) -> bool:
     """
     Process a downloaded ShopSite XML file and save to SQLite database.
@@ -526,7 +526,7 @@ def process_xml_to_database(
         return False
 
 
-def refresh_database_from_xml(xml_file_path: str, db_path: str = None) -> tuple[bool, str]:
+def refresh_database_from_xml(xml_file_path: str, db_path: str | None = None) -> tuple[bool, str]:
     """
     Refresh the local database with new XML data.
 

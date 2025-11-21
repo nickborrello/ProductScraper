@@ -77,7 +77,7 @@ class TestLocalLLMClassifier:
             assert expected in category_names, f"Missing category: {expected}"
 
         # Check that categories have product types
-        for category, product_types in GENERAL_PRODUCT_TAXONOMY.items():
+        for _category, product_types in GENERAL_PRODUCT_TAXONOMY.items():
             assert isinstance(product_types, list)
             assert len(product_types) > 0
             assert all(isinstance(pt, str) for pt in product_types)
@@ -830,7 +830,7 @@ class TestLocalLLMClassifier:
             individual_results.append(result)
 
         # Results should be consistent
-        for batch_result, individual_result in zip(batch_results, individual_results):
+        for batch_result, individual_result in zip(batch_results, individual_results, strict=False):
             assert batch_result["category"] == individual_result["category"]
             assert batch_result["product_type"] == individual_result["product_type"]
             assert batch_result["product_on_pages"] == individual_result["product_on_pages"]

@@ -237,7 +237,7 @@ class FailureAnalytics:
         Returns:
             Nested dictionary of failure patterns
         """
-        cutoff_time = time.time() - (hours * 3600)
+        time.time() - (hours * 3600)
 
         with self._lock:
             if site_name:
@@ -448,9 +448,10 @@ class FailureAnalytics:
                 )
 
         # CAPTCHA recommendations
+        HIGH_CAPTCHA_THRESHOLD = 0.2
         if failure_counts.get("captcha_detected", 0) > 0:
             captcha_pct = failure_counts["captcha_detected"] / sum(failure_counts.values())
-            if captcha_pct > 0.2:
+            if captcha_pct > HIGH_CAPTCHA_THRESHOLD:
                 recommendations.append(
                     "Frequent CAPTCHA detection. Consider implementing automated CAPTCHA solving "
                     "or adjusting scraping patterns to avoid detection."
@@ -463,16 +464,18 @@ class FailureAnalytics:
                 "and implementing session management strategies."
             )
 
+        HIGH_FAILURE_THRESHOLD = 10
         # Site-specific recommendations
         for site, failures in site_failures.items():
-            if failures > 10:  # Arbitrary threshold
+            if failures > HIGH_FAILURE_THRESHOLD:  # Arbitrary threshold
                 recommendations.append(
                     f"High failure rate for {site}. Consider reviewing site-specific configuration "
                     "and implementing targeted anti-detection measures."
                 )
 
         # Action-specific recommendations
-        if action_failures.get("login", 0) > 5:
+        HIGH_LOGIN_FAILURE_THRESHOLD = 5
+        if action_failures.get("login", 0) > HIGH_LOGIN_FAILURE_THRESHOLD:
             recommendations.append(
                 "Login failures detected. Verify credentials and consider implementing "
                 "credential rotation or alternative authentication methods."
@@ -517,8 +520,9 @@ class FailureAnalytics:
             # Reset recent failure counters periodically
             for metrics in self._site_metrics.values():
                 # Reset recent failures counter every few hours
+                TWO_HOURS_IN_SECONDS = 7200
                 if (
-                    metrics.last_failure_time and time.time() - metrics.last_failure_time > 7200
+                    metrics.last_failure_time and time.time() - metrics.last_failure_time > TWO_HOURS_IN_SECONDS
                 ):  # 2 hours
                     metrics.recent_failures = max(0, metrics.recent_failures - 1)
 

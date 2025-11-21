@@ -60,7 +60,7 @@ def install_ollama_linux():
     """Install Ollama on Linux."""
     print("🐧 Installing Ollama on Linux...")
 
-    success, stdout, stderr = run_command(
+    success, _stdout, stderr = run_command(
         "curl -fsSL https://ollama.com/install.sh | sh", shell=True
     )
     if success:
@@ -96,7 +96,7 @@ def check_ollama_installation():
     """Check if Ollama is installed and running."""
     print("🔍 Checking Ollama installation...")
 
-    success, stdout, stderr = run_command(["ollama", "--version"])
+    success, stdout, _stderr = run_command(["ollama", "--version"])
     if not success:
         print("❌ Ollama is not installed or not in PATH")
         return False
@@ -120,7 +120,7 @@ def pull_default_model():
     """Pull the default model (llama3.2)."""
     print("📥 Pulling default model (llama3.2)...")
 
-    success, stdout, stderr = run_command(["ollama", "pull", "llama3.2"])
+    success, _stdout, stderr = run_command(["ollama", "pull", "llama3.2"])
     if success:
         print("✅ Model llama3.2 downloaded successfully!")
         return True

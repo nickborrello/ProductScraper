@@ -61,7 +61,7 @@ class TestDataQualityScorer:
 
     def test_score_record_invalid(self, scorer, invalid_record):
         """Test scoring an invalid record."""
-        score, details = scorer.score_record(invalid_record)
+        score, _details = scorer.score_record(invalid_record)
 
         assert isinstance(score, float)
         assert 0 <= score <= 100
@@ -84,7 +84,7 @@ class TestDataQualityScorer:
 
         # Test image URLs
         record = {"Images": "https://valid.com/img.jpg,invalid-url"}
-        score, details = scorer._score_accuracy(record)
+        _score, details = scorer._score_accuracy(record)
         assert details["images"]["valid_urls"] == 1
         assert details["images"]["total_urls"] == 2
 
@@ -109,7 +109,7 @@ class TestDataQualityScorer:
             "Product_Field_24": "N/A",
             "Product_Field_25": None,
         }
-        score, details = scorer._score_consistency(record)
+        score, _details = scorer._score_consistency(record)
         assert score == 0.0
 
     def test_is_high_quality(self, scorer, valid_record, invalid_record):

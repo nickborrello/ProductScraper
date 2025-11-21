@@ -38,7 +38,7 @@ class TestScraperValidation:
         else:  # low
             record = sample_low_quality_record
 
-        score, details = data_quality_scorer.score_record(record)
+        score, _details = data_quality_scorer.score_record(record)
 
         assert score >= expected_score_min, (
             f"{quality_level}-quality record scored too low: {score}"
@@ -63,7 +63,7 @@ class TestScraperValidation:
 
     def test_low_quality_record_validation(self, data_quality_scorer, sample_low_quality_record):
         """Test that low-quality records fail validation."""
-        score, details = data_quality_scorer.score_record(sample_low_quality_record)
+        score, _details = data_quality_scorer.score_record(sample_low_quality_record)
 
         assert score < 85.0, f"Low-quality record scored too high: {score}"
         assert not is_product_high_quality(sample_low_quality_record), (
@@ -76,7 +76,7 @@ class TestScraperValidation:
         """Test batch validation of mixed quality records."""
         results = []
         for record in sample_mixed_quality_records:
-            score, details = data_quality_scorer.score_record(record)
+            score, _details = data_quality_scorer.score_record(record)
             results.append((score, is_product_high_quality(record)))
 
         # Should have one high and one low quality
@@ -94,7 +94,7 @@ class TestScraperValidation:
 
         for weight_str, expected_lb in test_cases:
             record = {"Weight": weight_str}
-            score, details = data_quality_scorer._score_accuracy(record)
+            _score, details = data_quality_scorer._score_accuracy(record)
             assert details["weight"]["normalized"] == f"{expected_lb:.2f} lb"
 
     def test_image_url_validation_integration(self, data_quality_scorer):
@@ -109,7 +109,7 @@ class TestScraperValidation:
 
         # Mixed valid/invalid
         record = {"Images": "https://valid.com/img.jpg,invalid-url,ftp://invalid.com/img.jpg"}
-        score, details = data_quality_scorer._score_accuracy(record)
+        _score, details = data_quality_scorer._score_accuracy(record)
         assert details["images"]["valid_urls"] == 1
         assert details["images"]["percentage"] == pytest.approx(
             33.333333333333336, rel=1e-10

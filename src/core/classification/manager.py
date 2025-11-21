@@ -250,7 +250,7 @@ def classify_products_batch(products_list, method=None):
                     batch_results = classifier.classify_products_batch(batch_products)
 
                     # Convert results back to expected format
-                    for product_info, result in zip(batch, batch_results):
+                    for product_info, result in zip(batch, batch_results, strict=False):
                         product_copy = product_info.copy()
                         product_copy["Category"] = result.get("category", "")
                         product_copy["Product Type"] = result.get("product_type", "")

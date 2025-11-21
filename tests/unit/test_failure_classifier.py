@@ -40,7 +40,8 @@ class TestFailureClassifierNoResults:
         result = classifier.classify_page_content(mock_driver, {})
 
         assert result.failure_type == FailureType.NO_RESULTS
-        assert result.confidence == 0.8  # High confidence for selector match
+        HIGH_CONFIDENCE_THRESHOLD = 0.8
+        assert result.confidence == HIGH_CONFIDENCE_THRESHOLD  # High confidence for selector match
         assert result.recovery_strategy == "fail_and_continue_to_next_sku"
 
     def test_no_results_text_patterns_detection(self, classifier, mock_driver):
@@ -52,7 +53,8 @@ class TestFailureClassifierNoResults:
         result = classifier.classify_page_content(mock_driver, {})
 
         assert result.failure_type == FailureType.NO_RESULTS
-        assert result.confidence > 0.3  # Should exceed threshold with multiple matches
+        MIN_CONFIDENCE_THRESHOLD = 0.3
+        assert result.confidence > MIN_CONFIDENCE_THRESHOLD  # Should exceed threshold with multiple matches
         assert result.details["text_match"] is True
 
     def test_no_results_title_patterns_detection(self, classifier, mock_driver):

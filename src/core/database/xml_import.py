@@ -32,6 +32,9 @@ load_dotenv()
 # Initialize settings manager
 settings = SettingsManager()
 
+# HTTP status codes
+HTTP_OK = 200
+
 # Set up logging (per project guidelines)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -234,7 +237,7 @@ class ShopSiteXMLClient:
                 self.config["xml_url"], params=params, timeout=300, stream=True
             )
 
-            if response.status_code == 200:
+            if response.status_code == HTTP_OK:
                 import time
 
                 # Try to estimate total size based on previous downloads
@@ -342,7 +345,7 @@ class ShopSiteXMLClient:
 
 
 def save_dataframe_to_database(
-    df: pd.DataFrame, db_path: str = None, clear_existing: bool = True
+    df: pd.DataFrame, db_path: str | None = None, clear_existing: bool = True
 ) -> tuple[bool, str]:
     """Save DataFrame directly to SQLite database."""
     try:
@@ -846,7 +849,7 @@ def publish_shopsite_changes(
         # Make the publish request
         response = session.get(publish_url, params=params, timeout=600)  # 10 minute timeout
 
-        if response.status_code == 200:
+        if response.status_code == HTTP_OK:
             success_msg = "✅ ShopSite publish completed successfully"
             log(success_msg)
 
