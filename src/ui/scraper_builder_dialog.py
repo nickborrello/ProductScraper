@@ -397,8 +397,12 @@ class SelectorGenerationPage(QWizardPage):
         self.completeChanged.emit()
 
     def get_selectors(self) -> Dict[str, Dict[str, Any]]:
-        """Get all selectors from the table."""
+        """Get all selectors from the table, preserving extra metadata."""
         selectors = {}
+        
+        # Get original suggestions to preserve metadata like 'processing'
+        suggested = self.typed_wizard.get_wizard_data("suggested_selectors", {}) or {}
+        
         for row in range(self.selectors_table.rowCount()):
             field_item = self.selectors_table.item(row, 0)
             selector_item = self.selectors_table.item(row, 1)
@@ -410,7 +414,16 @@ class SelectorGenerationPage(QWizardPage):
                 attribute = attr_item.text()
 
                 if selector.strip():
-                    selectors[field] = {"selector": selector, "attribute": attribute}
+                    # Start with original data if available to keep 'processing' info
+                    field_data = suggested.get(field, {}).copy()
+                    
+                    # Update with current table values (in case user edited them)
+                    field_data.update({
+                        "selector": selector,
+                        "attribute": attribute
+                    })
+                    
+                    selectors[field] = field_data
 
         return selectors
 
@@ -718,18 +731,83 @@ class ConfigurationSavingPage(QWizardPage):
                         )
                         selectors.append(selector_config)
 
-            # Create basic workflow
+            # Create advanced workflow
             workflows = []
             if self.create_workflow_cb.isChecked():
-                workflows = [
-                    WorkflowStep(action="navigate", params={"url": url}),
-                    WorkflowStep(
-                        action="wait", params={"selector": "body", "timeout": 5}
-                    ),
-                    WorkflowStep(
-                        action="extract", params={"fields": [s.name for s in selectors]}
-                    ),
-                ]
+                workflows.append(WorkflowStep(action="navigate", params={"url": url}))
+                workflows.append(WorkflowStep(action="wait", params={"selector": "body", "timeout": 5}))
+                
+                # Generate steps for each field
+                if self.typed_wizard.test_results:
+                    for field_name, result in self.typed_wizard.test_results.items():
+                        if not result.get("success", False):
+                            continue
+                            
+                        selector_info = result.get("selector_info", {})
+                        processing = selector_info.get("processing", {})
+                        selector = selector_info.get("selector")
+                        
+                        if processing and processing.get("type") == "json":
+                            # JSON Extraction
+                            temp_field = f"{field_name}_raw_json"
+                            workflows.append(WorkflowStep(
+                                action="extract_single", 
+                                params={
+                                    "field": temp_field, 
+                                    "selector": selector
+                                }
+                            ))
+                            workflows.append(WorkflowStep(
+                                action="extract_from_json",
+                                params={
+                                    "source_field": temp_field,
+                                    "target_field": field_name,
+                                    "json_path": processing.get("path")
+                                }
+                            ))
+                        else:
+                            # Standard extraction
+                            is_multiple = selector_config.multiple if 'selector_config' in locals() else field_name.endswith("s")
+                            action = "extract_multiple" if is_multiple else "extract_single"
+                            
+                            workflows.append(WorkflowStep(
+                                action=action,
+                                params={
+                                    "field": field_name,
+                                    "selector": selector
+                                }
+                            ))
+                            
+                            # Post-processing
+                            if processing:
+                                p_type = processing.get("type")
+                                if p_type == "weight":
+                                    workflows.append(WorkflowStep(
+                                        action="parse_weight",
+                                        params={"field": field_name}
+                                    ))
+                                elif p_type == "regex":
+                                    workflows.append(WorkflowStep(
+                                        action="transform_value",
+                                        params={
+                                            "field": field_name,
+                                            "transformations": [{
+                                                "type": "regex_extract",
+                                                "pattern": processing.get("pattern"),
+                                                "group": processing.get("group", 1)
+                                            }]
+                                        }
+                                    ))
+                                elif p_type == "price":
+                                    workflows.append(WorkflowStep(
+                                        action="transform_value",
+                                        params={
+                                            "field": field_name,
+                                            "transformations": [
+                                                {"type": "replace", "pattern": "[^0-9.]", "replacement": ""}
+                                            ]
+                                        }
+                                    ))
 
             # Create config
             config = ScraperConfig(
@@ -942,21 +1020,29 @@ Required fields to look for:
 - product_name: Main product title/name
 - brand: Product brand
 - image_urls: Product images (array of image URLs)
-- weight: Product weight (look for weight information, convert any ounces to pounds, format as 'X.XX lbs')
+- weight: Product weight (look for weight information)
+- price: Product price
+- description: Product description
+- sku: Product SKU/ID
 
 For each field, provide:
 - selector: CSS selector
 - attribute: HTML attribute to extract (text, src, href, etc.)
+- processing: (Optional) Object describing any needed post-processing
+    - type: "json" (if data is in a JSON script), "regex" (to extract part of text), "weight" (to parse weight), "price" (to clean price)
+    - path: (for "json") dot-notation path to value
+    - pattern: (for "regex") regex pattern with capturing group
+    - group: (for "regex") group number to extract (default 1)
 
 IMPORTANT:
-- Only include the 4 specified fields: product_name, brand, image_urls, weight
-- Ensure all selector and attribute values are non-null and valid
-- For weight, if found in ounces, convert to pounds (1 oz = 0.0625 lbs) and format as 'X.XX lbs'
-- Return only valid JSON with no null values
-- When using contains selectors, use the proper CSS pseudo-class ':-soup-contains' instead of the deprecated ':contains' (e.g., 'div:-soup-contains("text")' instead of 'div:contains("text")')
+- For JSON data (often in <script type="application/ld+json">), use selector for the script tag and attribute="text", then set processing.type="json" and processing.path.
+- For weight, if found in text like "Weight: 10 lbs", use processing.type="weight".
+- For price, if found like "$10.00", use processing.type="price".
+- Return only valid JSON with no null values.
+- When using contains selectors, use the proper CSS pseudo-class ':-soup-contains' instead of the deprecated ':contains'.
 
 HTML Content:
-{self.page_content[:4000]}  # Limit content length
+{self.page_content[:6000]}  # Limit content length
 
 Return only valid JSON.
 """

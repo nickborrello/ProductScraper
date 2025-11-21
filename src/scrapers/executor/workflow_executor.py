@@ -24,15 +24,7 @@ from src.core.settings_manager import SettingsManager
 from src.scrapers.models.config import (ScraperConfig, SelectorConfig,
                                         WorkflowStep)
 from src.utils.scraping.browser import ScraperBrowser, create_browser
-
-logger = logging.getLogger(__name__)
-
-
-class WorkflowExecutionError(Exception):
-    """Exception raised when workflow execution fails."""
-
-    pass
-
+from src.scrapers.actions.registry import ActionRegistry
 
 class WorkflowExecutor:
     """
@@ -224,50 +216,39 @@ class WorkflowExecutor:
 
         success = False
         try:
-            if action == "navigate":
-                self._action_navigate(params)
-            elif action == "wait_for":
-                self._action_wait_for(params)
-            elif action == "extract_single":
-                self._action_extract_single(params)
-            elif action == "extract_multiple":
-                self._action_extract_multiple(params)
-            elif action == "input_text":
-                self._action_input_text(params)
-            elif action == "click":
-                self._action_click(params)
-            elif action == "wait":
-                self._action_wait(params)
-            elif action == "extract":
-                self._action_extract(params)
-            elif action == "login":
-                self._action_login(params)
-            elif action == "detect_captcha":
-                self._action_detect_captcha(params)
-            elif action == "handle_blocking":
-                self._action_handle_blocking(params)
-            elif action == "rate_limit":
-                self._action_rate_limit(params)
-            elif action == "simulate_human":
-                self._action_simulate_human(params)
-            elif action == "rotate_session":
-                self._action_rotate_session(params)
-            elif action == "validate_http_status":
-                self._action_validate_http_status(params)
-            elif action == "check_no_results":
-                self._action_check_no_results(params)
-            elif action == "conditional_skip":
-                self._action_conditional_skip(params)
-            elif action == "scroll":
-                self._action_scroll(params)
-            elif action == "extract_from_json":
-                self._action_extract_from_json(params)
-            elif action == "conditional_click":
-                self._action_conditional_click(params)
-            elif action == "verify":
-                self._action_verify(params)
+            # Dynamic action execution using registry
+            action_class = ActionRegistry.get_action_class(action)
+            if action_class:
+                action_instance = action_class(self)
+                action_instance.execute(params)
             else:
-                raise WorkflowExecutionError(f"Unknown action: {action}")
+                # Fallback for legacy actions not yet migrated or unknown actions
+                if action == "detect_captcha":
+                    self._action_detect_captcha(params)
+                elif action == "handle_blocking":
+                    self._action_handle_blocking(params)
+                elif action == "rate_limit":
+                    self._action_rate_limit(params)
+                elif action == "simulate_human":
+                    self._action_simulate_human(params)
+                elif action == "rotate_session":
+                    self._action_rotate_session(params)
+                elif action == "validate_http_status":
+                    self._action_validate_http_status(params)
+                elif action == "check_no_results":
+                    self._action_check_no_results(params)
+                elif action == "conditional_skip":
+                    self._action_conditional_skip(params)
+                elif action == "scroll":
+                    self._action_scroll(params)
+                elif action == "extract_from_json":
+                    self._action_extract_from_json(params)
+                elif action == "conditional_click":
+                    self._action_conditional_click(params)
+                elif action == "verify":
+                    self._action_verify(params)
+                else:
+                    raise WorkflowExecutionError(f"Unknown action: {action}")
 
             success = True
 
