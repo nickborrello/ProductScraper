@@ -153,7 +153,7 @@ class CaptchaSolver:
                                 "site_key": site_key,
                                 "element": element,
                             }
-                except:
+                except Exception:
                     continue
 
             # Check for reCAPTCHA v3
@@ -177,7 +177,7 @@ class CaptchaSolver:
                         return CaptchaType.RECAPTCHA_V3, {
                             "site_key": site_key,
                         }
-            except:
+            except Exception:
                 pass
 
             # Check for hCaptcha
@@ -198,7 +198,7 @@ class CaptchaSolver:
                                 "site_key": site_key,
                                 "element": element,
                             }
-                except:
+                except Exception:
                     continue
 
             return CaptchaType.UNKNOWN, {}

@@ -285,7 +285,7 @@ class SelectorGenerationPage(QWizardPage):
             url = self.typed_wizard.field("url")
             if url:
                 self.visual_picker.set_url(url)
-        except:
+        except Exception:
             pass
 
         visual_layout.addWidget(self.visual_picker)

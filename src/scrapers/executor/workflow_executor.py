@@ -563,7 +563,7 @@ class WorkflowExecutor:
                                     similar_selectors.append(f".{selector[1:]}")
                                 elif selector.startswith("#") and selector[1:] == el_id:
                                     similar_selectors.append(selector)
-                            except:
+                            except Exception:
                                 pass
                         if similar_selectors:
                             logger.debug(

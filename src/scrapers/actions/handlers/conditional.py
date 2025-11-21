@@ -39,7 +39,7 @@ class ConditionalAction(BaseAction):
             try:
                 self.executor.browser.driver.find_element(By.CSS_SELECTOR, selector)
                 condition_met = True
-            except:
+            except Exception:
                 condition_met = False
 
         logger.debug(f"Conditional check '{condition_type}': {condition_met}")

@@ -49,7 +49,7 @@ class WaitForAction(BaseAction):
             try:
                 logger.debug(f"Current page URL: {self.executor.browser.driver.current_url}")
                 logger.debug(f"Page title: {self.executor.browser.driver.title}")
-            except:
+            except Exception:
                 pass
 
             raise WorkflowExecutionError(f"Element not found within {timeout}s: {selectors}")

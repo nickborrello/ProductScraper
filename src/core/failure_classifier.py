@@ -427,7 +427,7 @@ class FailureClassifier:
                     elements = driver.find_elements(By.CSS_SELECTOR, selector)
                     if elements:
                         return 0.8  # High confidence for *any* selector match (adjusted from 0.9)
-                except:
+                except Exception:
                     continue
             return 0.0
         except Exception:

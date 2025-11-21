@@ -217,7 +217,7 @@ class DataQualityScorer:
                 return 100, {"normalized": f"{normalized_lb:.2f} lb", "valid": True}
             else:
                 return 0, {"normalized": None, "valid": False}
-        except:
+        except Exception:
             return 0, {"normalized": None, "valid": False}
 
     def _normalize_weight_to_lb(self, weight_str: str) -> float | None:
@@ -259,7 +259,7 @@ class DataQualityScorer:
         try:
             parsed = urlparse(url)
             return parsed.scheme in ("http", "https") and bool(parsed.netloc)
-        except:
+        except Exception:
             return False
 
     def _score_price_accuracy(self, price_str: str) -> tuple[float, Any]:
@@ -275,7 +275,7 @@ class DataQualityScorer:
                 "numeric": True,
                 "value": price_value,
             }
-        except:
+        except Exception:
             return 0, {"numeric": False, "value": None}
 
     def _is_sku_consistent(self, sku: str) -> bool:
