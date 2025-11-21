@@ -438,9 +438,10 @@ class FailureAnalytics:
         recommendations = []
 
         # Rate limiting recommendations
+        HIGH_RATE_LIMIT_THRESHOLD = 0.3
         if failure_counts.get("rate_limited", 0) > 0:
             rate_limited_pct = failure_counts["rate_limited"] / sum(failure_counts.values())
-            if rate_limited_pct > 0.3:
+            if rate_limited_pct > HIGH_RATE_LIMIT_THRESHOLD:
                 recommendations.append(
                     "High rate limiting detected. Consider increasing delays between requests "
                     "and implementing more sophisticated rate limiting strategies."
