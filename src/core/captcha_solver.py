@@ -31,24 +31,26 @@ class CaptchaService(Enum):
     CAPSOLVER = "capsolver"
 
 
-class CaptchaSolverConfig:
+from pydantic import BaseModel, Field
+
+
+class CaptchaSolverConfig(BaseModel):
     """Configuration for CAPTCHA solving services."""
 
-    def __init__(
-        self,
-        enabled: bool = False,
-        service: str = "2captcha",
-        api_key: str = "",
-        timeout: int = 120,
-        polling_interval: float = 5.0,
-        max_retries: int = 3,
-    ):
-        self.enabled = enabled
-        self.service = CaptchaService(service.lower())
-        self.api_key = api_key
-        self.timeout = timeout
-        self.polling_interval = polling_interval
-        self.max_retries = max_retries
+    enabled: bool = Field(False, description="Enable external CAPTCHA solving")
+    service: str = Field("2captcha", description="Solving service (2captcha, anti-captcha, etc.)")
+    api_key: str = Field("", description="API key for the service")
+    timeout: int = Field(120, description="Timeout in seconds")
+    polling_interval: float = Field(5.0, description="Polling interval in seconds")
+    max_retries: int = Field(3, description="Max retries for solving")
+
+    @property
+    def service_enum(self) -> CaptchaService:
+        """Get service as Enum."""
+        try:
+            return CaptchaService(self.service.lower())
+        except ValueError:
+            return CaptchaService.TWOCAPTCHA
 
 
 class CaptchaSolver:
@@ -218,11 +220,12 @@ class CaptchaSolver:
             Task ID if successful, None otherwise
         """
         try:
-            if self.config.service == CaptchaService.TWOCAPTCHA:
+            service = self.config.service_enum
+            if service == CaptchaService.TWOCAPTCHA:
                 return self._submit_2captcha(captcha_type, params, url)
-            elif self.config.service == CaptchaService.ANTICAPTCHA:
+            elif service == CaptchaService.ANTICAPTCHA:
                 return self._submit_anti_captcha(captcha_type, params, url)
-            elif self.config.service == CaptchaService.CAPSOLVER:
+            elif service == CaptchaService.CAPSOLVER:
                 return self._submit_capsolver(captcha_type, params, url)
             else:
                 logger.error(f"Unsupported CAPTCHA service: {self.config.service}")
@@ -350,11 +353,12 @@ class CaptchaSolver:
     def _retrieve_solution(self, task_id: str) -> str | None:
         """Retrieve solution from solving service."""
         try:
-            if self.config.service == CaptchaService.TWOCAPTCHA:
+            service = self.config.service_enum
+            if service == CaptchaService.TWOCAPTCHA:
                 return self._retrieve_2captcha(task_id)
-            elif self.config.service == CaptchaService.ANTICAPTCHA:
+            elif service == CaptchaService.ANTICAPTCHA:
                 return self._retrieve_anti_captcha(task_id)
-            elif self.config.service == CaptchaService.CAPSOLVER:
+            elif service == CaptchaService.CAPSOLVER:
                 return self._retrieve_capsolver(task_id)
             else:
                 logger.error(f"Unsupported CAPTCHA service: {self.config.service}")
