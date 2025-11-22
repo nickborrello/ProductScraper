@@ -3,19 +3,15 @@ import os
 import sqlite3
 import sys
 from pathlib import Path
-from typing import Any
 
-from PyQt6.QtCore import QSize, Qt, QUrl
+from PyQt6.QtCore import QSize, Qt
 from PyQt6.QtGui import QIcon, QPixmap
-from PyQt6.QtNetwork import QNetworkAccessManager, QNetworkRequest
 from PyQt6.QtWidgets import (
     QAbstractItemView,
-    QApplication,
     QCheckBox,
     QComboBox,
     QFileDialog,
     QFormLayout,
-    QGroupBox,
     QHBoxLayout,
     QHeaderView,
     QLabel,
@@ -30,7 +26,6 @@ from PyQt6.QtWidgets import (
     QStyledItemDelegate,
     QTableWidget,
     QTableWidgetItem,
-    QTextEdit,
     QVBoxLayout,
     QWidget,
 )
@@ -129,7 +124,7 @@ class ConsolidationWidget(QWidget):
         left_layout.setContentsMargins(0, 0, 0, 0)
 
         # Instructions
-        instructions = QLabel("Select the best data source for each field:")
+        instructions = QLabel("Select the best data source or edit manually:")
         instructions.setStyleSheet("color: #aaa; font-size: 12px; margin-bottom: 10px;")
         left_layout.addWidget(instructions)
 
@@ -220,7 +215,7 @@ class ConsolidationWidget(QWidget):
                 if self.image_source_combo.itemData(i) == saved_scraper:
                     self.image_source_combo.setCurrentIndex(i)
                     break
-        
+
         right_layout.addStretch()
 
         content_layout.addWidget(right_widget)
@@ -230,9 +225,8 @@ class ConsolidationWidget(QWidget):
         button_layout = QHBoxLayout()
 
         # Navigation buttons (if in queue mode)
-        # Navigation buttons (if in queue mode)
         is_queue_mode = self.consolidation_queue and len(self.consolidation_queue) > 1
-        
+
         if is_queue_mode:
             prev_btn = QPushButton("← Previous")
             prev_btn.setProperty("class", "secondary")
@@ -281,6 +275,7 @@ class ConsolidationWidget(QWidget):
         options_layout.setSpacing(5)
 
         combo = QComboBox()
+        combo.setEditable(True)  # Allow manual editing
         combo.addItem("-- Select Source --", None)
 
         for scraper_name in self.scrapers:
@@ -296,22 +291,41 @@ class ConsolidationWidget(QWidget):
                 display_text = f"{scraper_name}: {display_value}"
                 combo.addItem(display_text, scraper_name)
 
-        combo.currentIndexChanged.connect(lambda: self.on_selection_changed(field_name, combo))
+        # We no longer use on_selection_changed for text fields as we read final text on save
+        # But we might want to update text when user picks an item
+        combo.currentIndexChanged.connect(
+            lambda idx, c=combo, s=self.scrapers, f=field_name: self.on_combo_changed(idx, c, s, f)
+        )
+
         options_layout.addWidget(combo)
 
         # Pre-select if we have a previous selection
         if field_name in self.selections:
             saved_scraper = self.selections[field_name]
-            for i in range(combo.count()):
-                if combo.itemData(i) == saved_scraper:
-                    combo.setCurrentIndex(i)
-                    break
+
+            # Try to find scraper in items
+            index = combo.findData(saved_scraper)
+            if index >= 0:
+                combo.setCurrentIndex(index)
+
+            # If we have a saved value (especially for manual edits)
+            saved_value = self.selections.get(f"{field_name}_value")
+            if saved_value:
+                combo.setEditText(str(saved_value))
 
         layout.addLayout(options_layout)
 
         self.field_widgets[field_name] = combo
 
         return container
+
+    def on_combo_changed(self, index, combo, scrapers, field_name):
+        """When a user selects an item, update the edit text with the full value."""
+        scraper_name = combo.currentData()
+        if scraper_name:
+            scraper_data = self.sku_data["scrapers"][scraper_name]
+            full_value = scraper_data.get(field_name, "")
+            combo.setEditText(str(full_value))
 
     def _load_previous_selections(self):
         """Load previously saved selections for this product if they exist."""
@@ -325,15 +339,8 @@ class ConsolidationWidget(QWidget):
                 for field_name, field_data in existing["fields"].items():
                     if "source" in field_data:
                         self.selections[field_name] = field_data["source"]
-
-    def on_selection_changed(self, field_name: str, combo: QComboBox):
-        """Handle field selection change."""
-        selected_scraper = combo.currentData()
-
-        if selected_scraper:
-            self.selections[field_name] = selected_scraper
-        elif field_name in self.selections:
-            del self.selections[field_name]
+                    if "value" in field_data:
+                        self.selections[f"{field_name}_value"] = field_data["value"]
 
     def on_image_source_changed(self):
         """Handle image source selection and load thumbnails."""
@@ -461,7 +468,7 @@ class ConsolidationWidget(QWidget):
             else:
                 self.main_image_label.setText("Failed to load image")
         except Exception as e:
-            self.main_image_label.setText(f"Error loading image:\\n{str(e)[:50]}")
+            self.main_image_label.setText(f"Error loading image:\n{str(e)[:50]}")
 
     def move_image_up(self, index: int):
         """Move an image up in the order."""
@@ -489,19 +496,31 @@ class ConsolidationWidget(QWidget):
         """Get the consolidated product data."""
         consolidated = {"sku": self.sku, "fields": {}}
 
-        for field, scraper in self.selections.items():
-            value = self.sku_data["scrapers"][scraper].get(field)
-            consolidated["fields"][field] = {"source": scraper, "value": value}
+        # Text fields
+        for field in self.fields:
+            if field == "Images":
+                continue
+
+            combo = self.field_widgets.get(field)
+            if combo:
+                value = combo.currentText()
+                source = combo.currentData()  # Might be None if manual edit
+                if source is None:
+                    source = "Manual"
+                consolidated["fields"][field] = {"source": source, "value": value}
+
+        # Images (handled separately)
+        if "Images" in self.selections:
+            scraper = self.selections["Images"]
+            value = self.sku_data["scrapers"][scraper].get("Images")
+            consolidated["fields"]["Images"] = {"source": scraper, "value": value}
 
         return consolidated
 
     def save_consolidated(self):
         """Save the consolidated product."""
-        if not self.selections:
-            QMessageBox.warning(
-                self, "No Selections", "Please select at least one field before saving."
-            )
-            return
+        # Validation: Check if fields are empty (optional, but good practice)
+        # For now, we allow empty if the user wants it, but maybe warn?
 
         # Call ResultsHub's callback directly
         if self.results_hub:
@@ -520,8 +539,7 @@ class ConsolidationWidget(QWidget):
     def go_to_next(self):
         """Save current and move to next product."""
         # Auto-save current product
-        if self.selections:
-            self.save_consolidated()
+        self.save_consolidated()
 
         # Move to next
         if self.results_hub and self.current_index < len(self.consolidation_queue) - 1:
@@ -535,8 +553,7 @@ class ConsolidationWidget(QWidget):
     def go_to_previous(self):
         """Move to previous product (auto-saving current)."""
         # Auto-save current product
-        if self.selections:
-            self.save_consolidated()
+        self.save_consolidated()
 
         if self.results_hub and self.current_index > 0:
             self.results_hub.consolidation_index = self.current_index - 1
@@ -643,7 +660,7 @@ class ResultsHub(QWidget):
 
         header_layout.addStretch()
 
-        self.consolidate_btn = QPushButton("🔀 Consolidate Products")
+        self.consolidate_btn = QPushButton("🔀 Consolidate All")
         self.consolidate_btn.setProperty("class", "primary")
         self.consolidate_btn.clicked.connect(self.enter_consolidation_mode)
         self.consolidate_btn.setEnabled(False)
@@ -681,18 +698,9 @@ class ResultsHub(QWidget):
         # Table
         self.table = QTableWidget()
         self.table.setAlternatingRowColors(True)
-        self.table.setEditTriggers(
-            QAbstractItemView.EditTrigger.DoubleClicked
-            | QAbstractItemView.EditTrigger.EditKeyPressed
-        )
+        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        self.table.cellChanged.connect(self.on_cell_edited)
         self.table.cellDoubleClicked.connect(self.on_product_double_clicked)
-
-        # Install custom delegate for better text editing on Name and Brand columns
-        text_delegate = LargeTextDelegate()
-        self.table.setItemDelegateForColumn(3, text_delegate)  # Name column
-        self.table.setItemDelegateForColumn(4, text_delegate)  # Brand column
 
         content_layout.addWidget(self.table)
 
@@ -748,15 +756,21 @@ class ResultsHub(QWidget):
             self.session_data = data
             self.session_title.setText(f"Session: {os.path.basename(file_path)}")
 
+            # Reset state
+            self.consolidated_products = []
+            self.export_excel_btn.setEnabled(False)
+            self.import_db_btn.setEnabled(False)
+
             # Parse results
             self.parse_session_data()
 
             # Update UI
             self.update_table()
             self.consolidate_btn.setEnabled(True)
-            self.import_db_btn.setEnabled(True)
-            self.export_excel_btn.setEnabled(True)
             self.status_label.setText(f"Loaded {len(self.consolidated_data)} unique SKUs")
+
+            # Initial check (likely disabled, but good to run logic)
+            self.check_completion_status()
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to load session: {e}")
@@ -828,11 +842,15 @@ class ResultsHub(QWidget):
         header = self.table.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)  # SKU
         header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)  # Price
-        header.setSectionResizeMode(2, QHeaderView.ResizeMode.Interactive)  # Images - interactive with max width
+        header.setSectionResizeMode(
+            2, QHeaderView.ResizeMode.Interactive
+        )  # Images - interactive with max width
         header.setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)  # Name - expands
         header.setSectionResizeMode(4, QHeaderView.ResizeMode.ResizeToContents)  # Brand
         header.setSectionResizeMode(5, QHeaderView.ResizeMode.ResizeToContents)  # Status
-        header.setSectionResizeMode(6, QHeaderView.ResizeMode.Interactive)  # Actions - interactive with fixed width
+        header.setSectionResizeMode(
+            6, QHeaderView.ResizeMode.Interactive
+        )  # Actions - interactive with fixed width
 
         # Set reasonable widths for interactive columns
         header.resizeSection(2, 200)  # Images column default 200px
@@ -880,6 +898,17 @@ class ResultsHub(QWidget):
                 name = f"Multiple sources ({num_sources})"
                 brand = f"Multiple sources ({num_sources})"
 
+            # Check if verified/consolidated override exists
+            is_consolidated = sku in [p["sku"] for p in self.consolidated_products]
+            if is_consolidated:
+                # Retrieve the consolidated values for display
+                cons_prod = next(p for p in self.consolidated_products if p["sku"] == sku)
+                fields = cons_prod["fields"]
+                if "Name" in fields:
+                    name = fields["Name"]["value"]
+                if "Brand" in fields:
+                    brand = fields["Brand"]["value"]
+
             # Get price
             price = item.get("price", "")
 
@@ -888,18 +917,20 @@ class ResultsHub(QWidget):
                 # Single source - show the images
                 scraper_data = next(iter(item["scrapers"].values()))
                 imgs = scraper_data.get("Images", [])
-                images_str = ", ".join(
-                    [img if isinstance(img, str) else img.get("url", "") for img in imgs]
-                ) if isinstance(imgs, list) and imgs else ""
+                images_str = (
+                    ", ".join([img if isinstance(img, str) else img.get("url", "") for img in imgs])
+                    if isinstance(imgs, list) and imgs
+                    else ""
+                )
             else:
                 # Multiple sources - show placeholder
                 images_str = f"Multiple sources ({num_sources})"
 
             # Determine status
-            status = "Consolidated" if sku in [p["sku"] for p in self.consolidated_products] else "Pending"
+            status = "Consolidated" if is_consolidated else "Pending"
 
             # Create action button
-            action_btn = QPushButton("Consolidate" if status == "Pending" else "View")
+            action_btn = QPushButton("Edit" if is_consolidated else "Consolidate")
             action_btn.clicked.connect(lambda checked, s=sku: self.consolidate_product(s))
             action_widget = QWidget()
             action_layout = QHBoxLayout(action_widget)
@@ -912,53 +943,22 @@ class ResultsHub(QWidget):
             self.table.setItem(row_idx, 2, QTableWidgetItem(images_str))
             self.table.setItem(row_idx, 3, QTableWidgetItem(name))
             self.table.setItem(row_idx, 4, QTableWidgetItem(brand))
-            self.table.setItem(row_idx, 5, QTableWidgetItem(status))
+
+            status_item = QTableWidgetItem(status)
+            if status == "Pending":
+                status_item.setForeground(Qt.GlobalColor.red)
+            else:
+                status_item.setForeground(Qt.GlobalColor.green)
+            self.table.setItem(row_idx, 5, status_item)
+
             self.table.setCellWidget(row_idx, 6, action_widget)
 
     def on_product_double_clicked(self, row, col):
-        """Handle double-click on product row - only trigger consolidation on SKU or Status columns."""
-        # Allow editing for Name (col 3) and Brand (col 4)
-        if col in [3, 4]:
-            return  # Let the edit happen
-
-        # For other columns (SKU, Sources, Status), trigger consolidation
+        """Handle double-click on product row - trigger consolidation."""
         sku_item = self.table.item(row, 0)
         if sku_item:
             sku = sku_item.text()
             self.consolidate_product(sku)
-
-    def on_cell_edited(self, row, col):
-        """Handle cell editing for Name and Brand columns."""
-        if col not in [3, 4]:  # Only Name and Brand are editable
-            return
-
-        sku_item = self.table.item(row, 0)
-        if not sku_item:
-            return
-        sku = sku_item.text()
-
-        edited_item = self.table.item(row, col)
-        if not edited_item:
-            return
-        new_value = edited_item.text()
-
-        # Find the product in consolidated_data
-        product = next((p for p in self.consolidated_data if p["sku"] == sku), None)
-        if not product:
-            return
-
-        field_name = "Name" if col == 3 else "Brand"
-
-        # Update all scraper data for this product
-        for scraper_data in product["scrapers"].values():
-            scraper_data[field_name] = new_value
-
-        # Also update consolidated_products if it exists
-        for cons_prod in self.consolidated_products:
-            if cons_prod["sku"] == sku:
-                if field_name in cons_prod["fields"]:
-                    cons_prod["fields"][field_name]["value"] = new_value
-                break
 
     def enter_consolidation_mode(self):
         """Enter consolidation mode - iterate through ALL unconsolidated products."""
@@ -971,7 +971,9 @@ class ResultsHub(QWidget):
 
         if not products_to_consolidate:
             QMessageBox.information(
-                self, "All Done", "All products have been verified!"
+                self,
+                "All Done",
+                "All products have been verified!",
             )
             return
 
@@ -989,8 +991,6 @@ class ResultsHub(QWidget):
 
         if not product_data:
             return
-
-        # Removed single-source check to allow verification of all products
 
         # Create consolidation widget with ResultsHub reference
         consolidation_widget = ConsolidationWidget(product_data, results_hub_parent=self)
@@ -1020,6 +1020,26 @@ class ResultsHub(QWidget):
         """Return to browser view."""
         self.view_stack.setCurrentIndex(0)
 
+    def check_completion_status(self):
+        """Check if all products are consolidated and enable/disable buttons."""
+        total_products = len(self.consolidated_data)
+        consolidated_count = len(self.consolidated_products)
+
+        is_complete = (total_products > 0) and (consolidated_count >= total_products)
+
+        self.export_excel_btn.setEnabled(is_complete)
+        self.import_db_btn.setEnabled(is_complete)
+
+        if is_complete:
+            self.status_label.setText(
+                f"All {total_products} products consolidated. Ready to export/import."
+            )
+            self.status_label.setStyleSheet("color: green; font-weight: bold;")
+        else:
+            remaining = total_products - consolidated_count
+            self.status_label.setText(f"Consolidation in progress. {remaining} remaining.")
+            self.status_label.setStyleSheet("color: #888;")
+
     def on_consolidation_saved(self, consolidated_data: dict):
         """Handle saved consolidation."""
         # Check if this product was already consolidated (update instead of append)
@@ -1042,6 +1062,7 @@ class ResultsHub(QWidget):
         # Return to browser and refresh (no popup)
         self.exit_consolidation_mode()
         self.update_table()
+        self.check_completion_status()
 
     def on_consolidation_cancelled(self):
         """Handle cancelled consolidation."""
@@ -1051,7 +1072,9 @@ class ResultsHub(QWidget):
         """Import consolidated products to the database."""
         if not self.consolidated_products:
             QMessageBox.warning(
-                self, "No Data", "Please consolidate some products first before importing."
+                self,
+                "No Data",
+                "Please consolidate some products first before importing.",
             )
             return
 
@@ -1205,13 +1228,13 @@ class ResultsHub(QWidget):
             QMessageBox.information(
                 self,
                 "Success",
-                f"Exported {len(self.consolidated_data)} products to:\\n{file_path}",
+                f"Exported {len(self.consolidated_data)} products to:\n{file_path}",
             )
         except ImportError:
             QMessageBox.critical(
                 self,
                 "Missing Dependency",
-                "openpyxl library is required.\\nInstall with: pip install openpyxl",
+                "openpyxl library is required.\nInstall with: pip install openpyxl",
             )
         except Exception as e:
             QMessageBox.critical(self, "Export Failed", f"Error: {e}")
