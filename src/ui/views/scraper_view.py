@@ -103,7 +103,7 @@ class ScraperView(QWidget):
 
         # --- Left Panel: Configuration ---
         left_panel = QWidget()
-        left_panel.setMaximumWidth(250)  # Reduced sidebar width
+        left_panel.setMaximumWidth(280)  # Adjusted sidebar width for readability
         left_layout = QVBoxLayout(left_panel)
         left_layout.setContentsMargins(0, 0, 5, 0)
         left_layout.setSpacing(10)
@@ -327,7 +327,7 @@ class ScraperView(QWidget):
                     spinbox = QSpinBox()
                     spinbox.setRange(1, 10)
                     spinbox.setValue(1)  # Default 1 worker
-                    spinbox.setFixedWidth(50)
+                    spinbox.setFixedWidth(60)
                     spinbox.setPrefix("W:")
                     spinbox.setToolTip(f"Number of workers for {config.name}")
                     row_layout.addWidget(spinbox, 0)  # Stretch factor 0
