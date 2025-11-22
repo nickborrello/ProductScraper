@@ -691,8 +691,8 @@ class ResultsHub(QWidget):
 
         # Install custom delegate for better text editing on Name and Brand columns
         text_delegate = LargeTextDelegate()
-        self.table.setItemDelegateForColumn(2, text_delegate)  # Name column
-        self.table.setItemDelegateForColumn(3, text_delegate)  # Brand column
+        self.table.setItemDelegateForColumn(3, text_delegate)  # Name column
+        self.table.setItemDelegateForColumn(4, text_delegate)  # Brand column
 
         content_layout.addWidget(self.table)
 
@@ -819,7 +819,7 @@ class ResultsHub(QWidget):
             return
 
         # Define columns
-        columns = ["SKU", "Price", "Name", "Brand", "Status"]
+        columns = ["SKU", "Price", "Images", "Name", "Brand", "Status"]
 
         self.table.setColumnCount(len(columns))
         self.table.setHorizontalHeaderLabels(columns)
@@ -871,6 +871,13 @@ class ResultsHub(QWidget):
             else:
                 status = "⏳ Needs Consolidation"
 
+            # Calculate total images
+            image_count = 0
+            for scraper_data in item["scrapers"].values():
+                imgs = scraper_data.get("Images", [])
+                if isinstance(imgs, list):
+                    image_count += len(imgs)
+
             # Create items with read-only flags for non-editable columns
             item_sku = QTableWidgetItem(str(sku))
             item_sku.setFlags(item_sku.flags() ^ Qt.ItemFlag.ItemIsEditable)
@@ -880,13 +887,18 @@ class ResultsHub(QWidget):
             item_price.setFlags(item_price.flags() ^ Qt.ItemFlag.ItemIsEditable)
             self.table.setItem(row_idx, 1, item_price)
 
+            item_images = QTableWidgetItem(str(image_count))
+            item_images.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            item_images.setFlags(item_images.flags() ^ Qt.ItemFlag.ItemIsEditable)
+            self.table.setItem(row_idx, 2, item_images)
+
             # Name and Brand are editable
-            self.table.setItem(row_idx, 2, QTableWidgetItem(name))
-            self.table.setItem(row_idx, 3, QTableWidgetItem(brand))
+            self.table.setItem(row_idx, 3, QTableWidgetItem(name))
+            self.table.setItem(row_idx, 4, QTableWidgetItem(brand))
 
             item_status = QTableWidgetItem(status)
             item_status.setFlags(item_status.flags() ^ Qt.ItemFlag.ItemIsEditable)
-            self.table.setItem(row_idx, 4, item_status)
+            self.table.setItem(row_idx, 5, item_status)
 
         # Resize columns
         header = self.table.horizontalHeader()
@@ -917,12 +929,12 @@ class ResultsHub(QWidget):
         for product in self.consolidated_data:
             if product["sku"] == sku:
                 # Update based on column
-                if col == 2:  # Name
+                if col == 3:  # Name
                     # Update in first available scraper
                     for scraper_data in product["scrapers"].values():
                         scraper_data["Name"] = new_value
                         break
-                elif col == 3:  # Brand
+                elif col == 4:  # Brand
                     for scraper_data in product["scrapers"].values():
                         scraper_data["Brand"] = new_value
                         break
@@ -930,8 +942,8 @@ class ResultsHub(QWidget):
 
     def on_product_double_clicked(self, row, col):
         """Handle double-click on product row - only trigger consolidation on SKU or Status columns."""
-        # Allow editing for Name (col 2) and Brand (col 3)
-        if col in [2, 3]:
+        # Allow editing for Name (col 3) and Brand (col 4)
+        if col in [3, 4]:
             return  # Let the edit happen
 
         # For other columns (SKU, Sources, Status), trigger consolidation
