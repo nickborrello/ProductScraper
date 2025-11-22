@@ -319,6 +319,10 @@ class ConsolidationWidget(QWidget):
         # Auto-select if only one source exists and no previous selection
         elif len(self.scrapers) == 1 and combo.count() > 1:
             combo.setCurrentIndex(1)
+        
+        # If still on default index, clear the text so it doesn't show "-- Select Source --"
+        elif combo.currentIndex() == 0:
+            combo.setEditText("")
 
         layout.addLayout(options_layout)
 
