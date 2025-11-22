@@ -928,15 +928,17 @@ class ResultsHub(QWidget):
             price = item.get("price", "")
 
             # Get images string
-            if num_sources == 1:
-                # Single source - show the images
+            if is_consolidated:
+                cons_prod = next(p for p in self.consolidated_products if p["sku"] == sku)
+                imgs = cons_prod["fields"].get("Images", {}).get("value", [])
+                count = len(imgs) if isinstance(imgs, list) else 0
+                images_str = f"{count} images"
+            elif num_sources == 1:
+                # Single source - show the images count
                 scraper_data = next(iter(item["scrapers"].values()))
                 imgs = scraper_data.get("Images", [])
-                images_str = (
-                    ", ".join([img if isinstance(img, str) else img.get("url", "") for img in imgs])
-                    if isinstance(imgs, list) and imgs
-                    else ""
-                )
+                count = len(imgs) if isinstance(imgs, list) else 0
+                images_str = f"{count} images"
             else:
                 # Multiple sources - show placeholder
                 images_str = f"Multiple sources ({num_sources})"
