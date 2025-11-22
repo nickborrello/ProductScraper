@@ -323,6 +323,14 @@ class ScraperView(QWidget):
         configs_dir = Path("src/scrapers/configs")
         if not configs_dir.exists():
             return
+
+        # Load last used settings
+        last_selected = settings.get("last_selected_scrapers", [])
+        last_workers = settings.get("last_scraper_workers", {})
+        
+        # If no saved settings, default all to checked (or specific logic)
+        has_history = len(last_selected) > 0
+
         try:
             for config_file in sorted(configs_dir.glob("*.yaml")):
                 if config_file.name == "sample_config.yaml":
@@ -338,13 +346,27 @@ class ScraperView(QWidget):
 
                     # Checkbox
                     checkbox = QCheckBox(config.name)
-                    checkbox.setChecked(True)  # Default to checked
+                    
+                    # Restore state: if we have history, check if in list. Else default True.
+                    if has_history:
+                        checkbox.setChecked(config.name in last_selected)
+                    else:
+                        checkbox.setChecked(True)
+                        
                     row_layout.addWidget(checkbox, 1)  # Stretch factor 1
 
                     # Worker count spinbox
                     spinbox = QSpinBox()
                     spinbox.setRange(1, 10)
-                    spinbox.setValue(1)  # Default 1 worker
+                    
+                    # Restore workers: if in saved dict, use it. Else default 1.
+                    # Note: QSettings might return strings keys/values, ensure type safety
+                    saved_worker_count = last_workers.get(config.name, 1)
+                    try:
+                        spinbox.setValue(int(saved_worker_count))
+                    except (ValueError, TypeError):
+                        spinbox.setValue(1)
+                        
                     spinbox.setFixedWidth(60)
                     # spinbox.setPrefix("W:") # Removed per user request
                     spinbox.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -513,6 +535,10 @@ class ScraperView(QWidget):
             if widgets["checkbox"].isChecked():
                 selected_scrapers.append(scraper_name)
                 scraper_workers[scraper_name] = widgets["spinbox"].value()
+
+        # Save to settings
+        settings.set("last_selected_scrapers", selected_scrapers)
+        settings.set("last_scraper_workers", scraper_workers)
 
         # Gather items from table
         items_to_scrape = []
