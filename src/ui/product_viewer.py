@@ -891,17 +891,17 @@ class ProductViewer(QWidget):
                 if "results" in data and isinstance(data["results"], list):
                     self.json_data = data["results"]
                 # Check for session format
-                elif "session_id" in data and "scrapers" in data:
+                elif "session_id" in data and "results" in data:
                     # Flatten scraper results
                     self.json_data = []
-                    for scraper_name, scraper_data in data.get("scrapers", {}).items():
-                        if "results" in scraper_data:
-                            for sku, details in scraper_data["results"].items():
-                                # Flatten structure
-                                item = details.copy()
-                                item["SKU"] = sku
-                                item["Scraper"] = scraper_name
-                                self.json_data.append(item)
+                    # data["results"] is {scraper_name: {sku: result_data}}
+                    for scraper_name, scraper_results in data.get("results", {}).items():
+                        for sku, details in scraper_results.items():
+                            # Flatten structure
+                            item = details.get("data", {})
+                            item["scraper"] = scraper_name
+                            item["timestamp"] = details.get("timestamp")
+                            self.json_data.append(item)
                 else:
                     # Try to find any list in the dict
                     found_list = False
