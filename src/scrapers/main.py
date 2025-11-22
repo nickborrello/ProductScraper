@@ -19,7 +19,7 @@ import os
 from src.core.database.refresh import refresh_database_from_xml
 
 
-def run_scraping(file_path: str, selected_sites: list[str] | None = None, log_callback=None, status_callback=None, progress_callback=None, **kwargs) -> None:
+def run_scraping(file_path: str, selected_sites: list[str] | None = None, log_callback=None, status_callback=None, progress_callback=None, scraper_workers: dict[str, int] | None = None, **kwargs) -> None:
     """
     Run scraping using the new modular scraper system.
 
@@ -29,6 +29,7 @@ def run_scraping(file_path: str, selected_sites: list[str] | None = None, log_ca
         log_callback: Optional callback for logging messages
         status_callback: Optional callback for status updates
         progress_callback: Optional callback for progress updates
+        scraper_workers: Dictionary mapping scraper names to worker counts
         **kwargs: Additional arguments passed to individual scrapers
     """
     print("🚀 Starting scraping with new modular scraper system...")
@@ -145,28 +146,45 @@ def run_scraping(file_path: str, selected_sites: list[str] | None = None, log_ca
     from src.core.settings_manager import settings
     
     max_workers = settings.get("max_workers", 2)
-    log(f"⚙️ Using max {max_workers} concurrent workers", "INFO")
     
-    # Determine execution strategy
-    tasks = []
-    
-    # Strategy 1: Single Site + Multiple Workers = Split SKUs (Risky but fast)
-    if len(configs) == 1 and max_workers > 1:
-        config = configs[0]
-        chunk_size = math.ceil(len(skus) / max_workers)
-        sku_chunks = [skus[i:i + chunk_size] for i in range(0, len(skus), chunk_size)]
-        
-        log(f"⚠️ ENABLED SKU-LEVEL PARALLELISM for {config.name}", "WARNING")
-        log(f"⚠️ Splitting {len(skus)} SKUs into {len(sku_chunks)} chunks across {max_workers} workers.", "WARNING")
-        log(f"⚠️ CAUTION: This will trigger {len(sku_chunks)} concurrent logins to the same account.", "WARNING")
-        
-        for i, chunk in enumerate(sku_chunks):
-            tasks.append((config, chunk, f"Worker-{i+1}"))
-            
-    # Strategy 2: Multiple Sites or Single Worker = One task per site (Safe)
+    # If scraper_workers provided (from GUI), calculate total needed
+    if scraper_workers:
+        total_requested_workers = sum(scraper_workers.get(c.name, 1) for c in configs)
+        log(f"⚙️ Using user-defined worker counts (Total: {total_requested_workers})", "INFO")
+        # Update max_workers to accommodate user request if needed
+        if total_requested_workers > max_workers:
+            max_workers = total_requested_workers
+            log(f"   Increased max_workers to {max_workers} to match request", "INFO")
     else:
-        for config in configs:
+        log(f"⚙️ Using max {max_workers} concurrent workers (Automatic allocation)", "INFO")
+    
+    # Allocation Strategy: Explicit User Control
+    tasks = []
+    workers_used = 0
+    
+    for config in configs:
+        # Get requested workers for this scraper (default to 1)
+        count = 1
+        if scraper_workers and config.name in scraper_workers:
+            count = scraper_workers[config.name]
+            
+        if count > 1:
+            # Split SKUs for this scraper
+            chunk_size = math.ceil(len(skus) / count)
+            sku_chunks = [skus[i:i + chunk_size] for i in range(0, len(skus), chunk_size)]
+            
+            log(f"⚡ {config.name}: {len(sku_chunks)} workers (SKU splitting enabled)", "INFO")
+            
+            for i, chunk in enumerate(sku_chunks):
+                tasks.append((config, chunk, f"W{i+1}"))
+                workers_used += 1
+        else:
+            # Single worker
             tasks.append((config, skus, "Main"))
+            workers_used += 1
+            log(f"⚡ {config.name}: 1 worker (sequential)", "INFO")
+    
+    log(f"📊 Total active workers: {workers_used}", "INFO")
 
     def process_scraper(args):
         """Process a scraper configuration with a specific list of SKUs."""

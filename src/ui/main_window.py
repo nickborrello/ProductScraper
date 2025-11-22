@@ -129,7 +129,7 @@ class MainWindow(QMainWindow):
         self.content_area.addWidget(self.settings_view)
 
     # Worker Logic (Adapted from original)
-    def start_scraping_worker(self, file_path, selected_scrapers=None, items_to_scrape=None):
+    def start_scraping_worker(self, file_path, selected_scrapers=None, items_to_scrape=None, scraper_workers=None):
         import threading
         from src.scrapers.main import run_scraping
         
@@ -146,6 +146,7 @@ class MainWindow(QMainWindow):
             file_path=file_path,
             selected_sites=selected_scrapers,
             items_to_scrape=items_to_scrape,
+            scraper_workers=scraper_workers,
             stop_event=self.stop_event
         )
         
