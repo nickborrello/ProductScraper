@@ -418,7 +418,7 @@ class ConsolidationWidget(QWidget):
                     control_layout = QHBoxLayout()
                     control_layout.setSpacing(2)
 
-                    up_btn = QPushButton("▲")
+                    up_btn = QPushButton("◀")
                     up_btn.setFixedSize(38, 18)
                     up_btn.setStyleSheet("font-size: 10px; padding: 0;")
                     up_btn.clicked.connect(lambda checked, i=idx: self.move_image_up(i))
@@ -426,7 +426,7 @@ class ConsolidationWidget(QWidget):
                         up_btn.setEnabled(False)
                     control_layout.addWidget(up_btn)
 
-                    down_btn = QPushButton("▼")
+                    down_btn = QPushButton("▶")
                     down_btn.setFixedSize(38, 18)
                     down_btn.setStyleSheet("font-size: 10px; padding: 0;")
                     down_btn.clicked.connect(lambda checked, i=idx: self.move_image_down(i))
