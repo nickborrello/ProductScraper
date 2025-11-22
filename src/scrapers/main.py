@@ -198,7 +198,6 @@ def run_scraping(file_path: str, selected_sites: list[str] | None = None, log_ca
                     pass
 
             update_status(f"{config.name} ({worker_id}): Processing SKU {idx}/{len(target_skus)} ({sku})")
-            log(f"{prefix} Processing SKU {idx}/{len(target_skus)}: {sku}", "INFO")
             
             try:
                 # Execute workflow with SKU context
@@ -217,7 +216,12 @@ def run_scraping(file_path: str, selected_sites: list[str] | None = None, log_ca
                         # Add to collector (JSON storage)
                         collector.add_result(sku, config.name, extracted_data)
                         scraper_success += 1
-                        log(f"✅ {prefix} Successfully scraped SKU: {sku}", "INFO")
+                        
+                        # Log product details (Price is from input file, not scraped)
+                        name = extracted_data.get("Name", "N/A")
+                        brand = extracted_data.get("Brand", "N/A")
+                        weight = extracted_data.get("Weight", "N/A")
+                        log(f"✅ {prefix} Found: {name} | Brand: {brand} | Weight: {weight}", "INFO")
                     else:
                         # SKU not found on this site - skip (per user requirement #4)
                         log(f"⚠️ {prefix} No data found for SKU: {sku}", "WARNING")

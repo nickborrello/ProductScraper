@@ -13,7 +13,7 @@ from src.ui.styling import apply_dark_theme
 from src.ui.views.dashboard_view import DashboardView
 from src.ui.views.scraper_view import ScraperView
 from src.ui.views.settings_view import SettingsView
-from src.ui.product_viewer import ProductViewer
+from src.ui.results_hub import ResultsHub
 from src.ui.widgets import Worker, LogViewer
 
 # Import core logic (kept from original file)
@@ -55,7 +55,7 @@ class MainWindow(QMainWindow):
     def create_sidebar(self):
         self.sidebar = QWidget()
         self.sidebar.setObjectName("sidebar")
-        self.sidebar.setFixedWidth(250)
+        self.sidebar.setFixedWidth(180)
         
         layout = QVBoxLayout(self.sidebar)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -75,7 +75,7 @@ class MainWindow(QMainWindow):
         
         self.add_nav_button("Dashboard", "📊", 0, layout)
         self.add_nav_button("Scraper", "🕸️", 1, layout)
-        self.add_nav_button("Data", "🗄️", 2, layout)
+        self.add_nav_button("Results", "🗄️", 2, layout)
         self.add_nav_button("Settings", "⚙️", 3, layout)
         
         layout.addStretch()
@@ -120,9 +120,9 @@ class MainWindow(QMainWindow):
         self.scraper_view.cancel_scraping_signal.connect(self.cancel_scraping_worker)
         self.content_area.addWidget(self.scraper_view)
 
-        # 2: Data (Product Viewer)
-        self.product_viewer = ProductViewer()
-        self.content_area.addWidget(self.product_viewer)
+        # 2: Results Hub (formerly Data/ProductViewer)
+        self.results_hub = ResultsHub()
+        self.content_area.addWidget(self.results_hub)
 
         # 3: Settings
         self.settings_view = SettingsView()
