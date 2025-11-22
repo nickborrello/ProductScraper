@@ -511,6 +511,10 @@ class ConsolidationWidget(QWidget):
             combo = self.field_widgets.get(field)
             if combo:
                 value = combo.currentText()
+                # Treat the placeholder text as empty
+                if value == "-- Select Source --":
+                    value = ""
+
                 source = combo.currentData()  # Might be None if manual edit
                 if source is None:
                     source = "Manual"
