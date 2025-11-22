@@ -138,13 +138,13 @@ class WorkflowExecutor:
         self.workflow_stopped = False
 
     def execute_workflow(
-        self, test_skus: list[str] | None = None, quit_browser: bool = True
+        self, context: dict[str, Any] | None = None, quit_browser: bool = True
     ) -> dict[str, Any]:
         """
         Execute the complete workflow defined in the configuration.
 
         Args:
-            test_skus: List of SKUs to test with (optional)
+            context: Dictionary of context variables (e.g. {'sku': '123'})
             quit_browser: Whether to quit the browser after execution
 
         Returns:
@@ -155,13 +155,18 @@ class WorkflowExecutor:
         """
         try:
             logger.info(f"Starting workflow execution for: {self.config.name}")
+            self.results = {} # Reset results for new run
+            
+            # Merge context into results so they are available
+            if context:
+                self.results.update(context)
 
             for i, step in enumerate(self.config.workflows, 1):
                 if self.workflow_stopped:
                     logger.info("Workflow stopped due to condition, skipping remaining steps.")
                     break
                 logger.info(f"Step {i}/{len(self.config.workflows)}: Executing {step.action}")
-                self._execute_step(step)
+                self._execute_step(step, context)
                 logger.info(f"Step {i}/{len(self.config.workflows)}: Completed {step.action}")
 
             logger.info(f"Workflow execution completed for: {self.config.name}")
@@ -179,12 +184,13 @@ class WorkflowExecutor:
             if quit_browser and self.browser:
                 self.browser.quit()
 
-    def execute_steps(self, steps: list[Any]) -> dict[str, Any]:
+    def execute_steps(self, steps: list[Any], context: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Execute specific workflow steps.
 
         Args:
             steps: List of WorkflowStep objects to execute
+            context: Dictionary of context variables
 
         Returns:
             Dict containing execution results and extracted data
@@ -199,7 +205,7 @@ class WorkflowExecutor:
                 if self.workflow_stopped:
                     logger.info("Workflow stopped due to condition, skipping remaining steps.")
                     break
-                self._execute_step(step)
+                self._execute_step(step, context)
 
             logger.info(f"Step execution completed for: {self.config.name}")
             return {
@@ -213,18 +219,40 @@ class WorkflowExecutor:
             logger.error(f"Step execution failed: {e}")
             raise WorkflowExecutionError(f"Step execution failed: {e}")
 
-    def _execute_step(self, step: WorkflowStep):
+    def _substitute_variables(self, text: str, context: dict[str, Any]) -> str:
+        """Substitute variables in text using context."""
+        if not context or not isinstance(text, str):
+            return text
+        
+        try:
+            # Only format if it looks like it has placeholders
+            if "{" in text and "}" in text:
+                return text.format(**context)
+        except Exception:
+            # If formatting fails (e.g. missing key), return original
+            pass
+        return text
+
+    def _execute_step(self, step: WorkflowStep, context: dict[str, Any] | None = None):
         """
         Execute a single workflow step.
 
         Args:
             step: WorkflowStep to execute
+            context: Context variables for substitution
 
         Raises:
             WorkflowExecutionError: If step execution fails
         """
         action = step.action.lower()
-        params = step.params or {}
+        params = step.params.copy() if step.params else {}
+        
+        # Perform variable substitution on string parameters
+        if context:
+            for key, value in params.items():
+                if isinstance(value, str):
+                    params[key] = self._substitute_variables(value, context)
+
         start_time = time.time()
         params["start_time"] = start_time  # Track for analytics
 

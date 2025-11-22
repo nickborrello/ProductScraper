@@ -1,6 +1,7 @@
 import os
 import sqlite3
 import sys
+import pandas as pd
 from pathlib import Path
 from typing import Any
 
@@ -29,25 +30,14 @@ from PyQt6.QtWidgets import (
     QTableWidgetItem,
     QVBoxLayout,
     QWidget,
+    QFileDialog,
 )
 
 
-class ProductViewer(QMainWindow):
+class ProductViewer(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Product Database Viewer - Professional Edition")
-        self.setGeometry(100, 100, 1400, 900)
-
-        # Apply the global dark theme.
-        try:
-            from src.ui.styling import STYLESHEET
-
-            self.setStyleSheet(STYLESHEET)
-        except (ImportError, ModuleNotFoundError):
-            print("CRITICAL: Could not import stylesheet. UI will be unstyled.")
-            # Fallback to a very basic theme if the import fails
-            self.setStyleSheet("QMainWindow { background-color: #1e1e1e; color: #ffffff; }")
-
+        
         # Database connection
         self.conn = None
         self.connect_db()
@@ -72,17 +62,16 @@ class ProductViewer(QMainWindow):
     def connect_db(self):
         """Connect to the database."""
         if not DB_PATH.exists():
-            raise FileNotFoundError(f"Database not found: {DB_PATH}")
+            # Database might be created later, so just return silently
+            return
         self.conn = sqlite3.connect(DB_PATH)
         # Ensure UTF-8 handling
         self.conn.text_factory = str
 
     def create_widgets(self):
         """Create the main UI components."""
-        # Central widget and layout
-        central_widget = QWidget()
-        self.setCentralWidget(central_widget)
-        layout = QVBoxLayout(central_widget)
+        # Layout
+        layout = QVBoxLayout(self)
         layout.setSpacing(10)
         layout.setContentsMargins(15, 15, 15, 15)
 
@@ -216,8 +205,18 @@ class ProductViewer(QMainWindow):
         self.select_all_button.clicked.connect(self.select_all_visible)
         button_layout.addWidget(self.select_all_button)
 
-        self.clear_selection_button = QPushButton("🗑️ Clear Selection")
-        self.clear_selection_button.setProperty("class", "danger")
+        self.export_button = QPushButton("💾 Export to CSV")
+        self.export_button.clicked.connect(self.export_products)
+        button_layout.addWidget(self.export_button)
+
+        self.delete_button = QPushButton("🗑️ Delete Selected")
+        self.delete_button.setProperty("class", "danger")
+        self.delete_button.clicked.connect(self.delete_selected_products)
+        self.delete_button.setEnabled(False)
+        button_layout.addWidget(self.delete_button)
+
+        self.clear_selection_button = QPushButton("❌ Clear Selection")
+        self.clear_selection_button.setProperty("class", "secondary")
         self.clear_selection_button.clicked.connect(self.clear_selection)
         button_layout.addWidget(self.clear_selection_button)
 
@@ -298,7 +297,8 @@ class ProductViewer(QMainWindow):
     def load_products(self):
         """Load products from database with current filters."""
         if self.conn is None:
-            QMessageBox.critical(self, "Error", "Database connection not available")
+            self.status_label.setText("Database not connected (products.db not found)")
+            self.table.setRowCount(0)
             return
 
         try:
@@ -599,9 +599,13 @@ class ProductViewer(QMainWindow):
         if self.selected_products:
             self.edit_button.setText(f"✏️ Edit Selected ({len(self.selected_products)})")
             self.edit_button.setEnabled(True)
+            self.delete_button.setEnabled(True)
+            self.delete_button.setText(f"🗑️ Delete Selected ({len(self.selected_products)})")
         else:
             self.edit_button.setText("✏️ Edit Selected")
             self.edit_button.setEnabled(False)
+            self.delete_button.setEnabled(False)
+            self.delete_button.setText("🗑️ Delete Selected")
 
     def prev_page(self):
         """Go to previous page."""
@@ -674,6 +678,114 @@ class ProductViewer(QMainWindow):
             import traceback
 
             traceback.print_exc()
+
+    def export_products(self):
+        """Export current view or selected products to CSV."""
+        if not self.conn:
+            return
+
+        try:
+            # Determine what to export
+            if self.selected_products:
+                skus = list(self.selected_products)
+                placeholders = ",".join("?" * len(skus))
+                query = f"SELECT * FROM products WHERE SKU IN ({placeholders})"
+                params = skus
+                filename = "selected_products.csv"
+            else:
+                # Export all visible (filtered) products
+                # We need to reconstruct the query logic or just export all if no filter
+                # For simplicity, let's export all currently filtered
+                # But reusing the query logic is complex. 
+                # Let's ask user: Export All or Export Selected?
+                # Actually, standard behavior: if selection, export selection. Else export all.
+                
+                # Re-run the current filter query
+                # This is a bit redundant but safest
+                query = """
+                    SELECT *
+                    FROM products
+                    WHERE Name IS NOT NULL
+                """
+                params = []
+                
+                # Add search filter
+                if self.search_term:
+                    query += " AND (SKU LIKE ? OR LOWER(Brand) LIKE LOWER(?) OR LOWER(Name) LIKE LOWER(?))"
+                    search_param = f"%{self.search_term}%"
+                    params.extend([search_param, search_param, search_param])
+
+                # Add category filter
+                if self.category_filter:
+                    query += " AND (Category LIKE ? OR Category LIKE ? OR Category LIKE ? OR Category = ?)"
+                    category_param = self.category_filter
+                    params.extend([f"%|{category_param}|%", f"{category_param}|%", f"%|{category_param}", category_param])
+
+                # Add product type filter
+                if self.product_type_filter:
+                    query += " AND (Product_Type LIKE ? OR Product_Type LIKE ? OR Product_Type LIKE ? OR Product_Type = ?)"
+                    type_param = self.product_type_filter
+                    params.extend([f"%|{type_param}|%", f"{type_param}|%", f"%|{type_param}", type_param])
+
+                # Add special order filter
+                if self.special_order_filter:
+                    query += " AND LOWER(Special_Order) = 'yes'"
+
+                # Add disabled products filter
+                if not self.show_disabled:
+                    query += " AND (ProductDisabled IS NULL OR LOWER(ProductDisabled) != 'checked')"
+
+                # Add date range filter
+                if self.date_from:
+                    query += " AND last_updated >= ?"
+                    params.append(self.date_from)
+                if self.date_to:
+                    query += " AND last_updated <= ?"
+                    params.append(self.date_to + " 23:59:59")
+
+                filename = "all_products.csv"
+
+            # Get save path
+            path, _ = QFileDialog.getSaveFileName(self, "Export CSV", filename, "CSV Files (*.csv)")
+            if not path:
+                return
+
+            # Execute
+            df = pd.read_sql_query(query, self.conn, params=params)
+            df.to_csv(path, index=False)
+            
+            QMessageBox.information(self, "Success", f"Exported {len(df)} products to {path}")
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to export: {e}")
+
+    def delete_selected_products(self):
+        """Delete selected products from database."""
+        if not self.selected_products:
+            return
+
+        count = len(self.selected_products)
+        reply = QMessageBox.question(
+            self,
+            "Confirm Delete",
+            f"Are you sure you want to delete {count} products?\nThis cannot be undone.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+
+        if reply == QMessageBox.StandardButton.Yes:
+            try:
+                cursor = self.conn.cursor()
+                skus = list(self.selected_products)
+                placeholders = ",".join("?" * len(skus))
+                cursor.execute(f"DELETE FROM products WHERE SKU IN ({placeholders})", skus)
+                self.conn.commit()
+                
+                self.selected_products.clear()
+                self.load_products()
+                QMessageBox.information(self, "Success", f"Deleted {count} products.")
+                
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to delete products: {e}")
 
     def load_products_data(self, skus):
         """Load product data from database for the given SKUs."""

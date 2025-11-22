@@ -56,6 +56,7 @@ src/data/retry_history_*.json
 src/data/analytics/
 src/data/browser_profiles/
 src/data/databases/
+data/databases/
 src/data/product_pages.json
 inventory/  # Legacy inventory folder if it still exists
 

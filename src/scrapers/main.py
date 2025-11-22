@@ -30,62 +30,38 @@ def run_scraping(file_path: str, selected_sites: list[str] | None = None, **kwar
     """
     print("🚀 Starting scraping with new modular scraper system...")
 
+    # Helper for logging
+    def log(msg, level="INFO"):
+        print(f"[{level}] {msg}")
+        if log_callback:
+            log_callback.emit(msg, level)
+            
+    # Helper for status updates
+    def update_status(msg):
+        if status_callback:
+            status_callback.emit(msg)
+
     # Load available scraper configurations
     config_dir = os.path.join(project_root, "src", "scrapers", "configs")
     available_sites = []
 
-    if os.path.exists(config_dir):
-        for filename in os.listdir(config_dir):
-            if filename.endswith((".yaml", ".yml")) and filename != "sample_config.yaml":
-                site_name = (
-                    filename.replace(".yaml", "").replace(".yml", "").replace("_", " ").title()
-                )
-                available_sites.append(site_name)
+    if selected_sites:
+        # Use user-selected sites
+        available_sites = selected_sites
+    else:
+        if os.path.exists(config_dir):
+            for filename in os.listdir(config_dir):
+                if filename.endswith((".yaml", ".yml")) and filename != "sample_config.yaml":
+                    site_name = (
+                        filename.replace(".yaml", "").replace(".yml", "").replace("_", " ").title()
+                    )
+                    available_sites.append(site_name)
 
     if not available_sites:
-        print("❌ No scraper configurations found in src/scrapers/configs/")
+        log("❌ No scraper configurations found or selected.", "ERROR")
         return
 
-    print(f"📋 Available scrapers: {', '.join(available_sites)}")
-
-    # Filter to selected sites if specified
-    if selected_sites:
-        available_sites = [
-            site
-            for site in available_sites
-            if site.lower().replace(" ", "") in [s.lower().replace(" ", "") for s in selected_sites]
-        ]
-        if not available_sites:
-            print(f"❌ None of the selected sites are available: {selected_sites}")
-            return
-
-    print(f"🎯 Will scrape sites: {', '.join(available_sites)}")
-
-    # TODO: Implement Excel file processing and scraping execution
-    # This is a placeholder - full implementation would require integrating with
-    # the existing Excel processing logic from the archived system
-
-    print("✅ New modular scraper system initialized")
-    print("📖 See docs/SCRAPER_CONFIGURATION_GUIDE.md for configuration details")
-
-
-def get_available_scrapers() -> list[str]:
-    """
-    Get list of available scraper configurations.
-
-    Returns:
-        List of scraper names
-    """
-    config_dir = os.path.join(project_root, "src", "scrapers", "configs")
-    scrapers = []
-
-    if os.path.exists(config_dir):
-        for filename in os.listdir(config_dir):
-            if filename.endswith((".yaml", ".yml")) and filename != "sample_config.yaml":
-                site_name = (
-                    filename.replace(".yaml", "").replace(".yml", "").replace("_", " ").title()
-                )
-                scrapers.append(site_name)
+    log(f"📋 Available scrapers: {', '.join(available_sites)}")
 
     # Filter to only passing scrapers if the file exists
     passing_file = os.path.join(project_root, "data", "passing_scrapers.json")
