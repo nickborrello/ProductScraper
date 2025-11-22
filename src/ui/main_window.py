@@ -130,18 +130,23 @@ class MainWindow(QMainWindow):
 
     # Worker Logic (Adapted from original)
     def start_scraping_worker(self, file_path, selected_scrapers=None, items_to_scrape=None):
+        import threading
         from src.scrapers.main import run_scraping
         
         self.scraper_view.log_message(f"Starting scrape for {file_path}...", "INFO")
         if selected_scrapers:
             self.scraper_view.log_message(f"Selected scrapers: {', '.join(selected_scrapers)}", "INFO")
         
+        # Create stop event
+        self.stop_event = threading.Event()
+        
         # Create worker
         self.worker = Worker(
             run_scraping, 
             file_path=file_path,
             selected_sites=selected_scrapers,
-            items_to_scrape=items_to_scrape
+            items_to_scrape=items_to_scrape,
+            stop_event=self.stop_event
         )
         
         # Connect signals
@@ -155,8 +160,10 @@ class MainWindow(QMainWindow):
 
     def cancel_scraping_worker(self):
         if self.worker and self.worker.isRunning():
-            self.worker.cancel()
             self.scraper_view.log_message("Cancelling...", "WARNING")
+            if hasattr(self, 'stop_event'):
+                self.stop_event.set()
+            self.worker.cancel()
 
     def on_scraping_finished(self):
         self.scraper_view.on_scraping_finished()

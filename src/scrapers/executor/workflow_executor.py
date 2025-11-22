@@ -98,10 +98,11 @@ class WorkflowExecutor:
 
         # Initialize browser
         try:
+            import uuid
             self.browser = create_browser(
                 site_name=self.config.name,
                 headless=headless,
-                profile_suffix=f"workflow_{int(time.time())}",
+                profile_suffix=f"workflow_{int(time.time())}_{uuid.uuid4().hex[:8]}",
             )
             logger.info(f"Browser initialized for scraper: {self.config.name}")
 

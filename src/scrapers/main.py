@@ -179,6 +179,12 @@ def run_scraping(file_path: str, selected_sites: list[str] | None = None, log_ca
         # Process each SKU
         batch_size = 10
         for idx, sku in enumerate(target_skus, 1):
+            # Check for cancellation
+            stop_event = kwargs.get("stop_event")
+            if stop_event and stop_event.is_set():
+                log(f"🛑 {prefix} Cancellation requested. Stopping...", "WARNING")
+                break
+
             # Restart browser every batch_size items
             if idx > 1 and (idx - 1) % batch_size == 0:
                 log(f"🔄 {prefix} Restarting browser (batch limit {batch_size} reached)...", "INFO")
