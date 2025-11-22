@@ -273,7 +273,7 @@ def run_scraping(
                         )
                     else:
                         # SKU not found on this site - skip (per user requirement #4)
-                        log(f"⚠️ {prefix} No data found for SKU: {sku}", "WARNING")
+                        # log(f"⚠️ {prefix} No data found for SKU: {sku}", "WARNING") # Suppressed per user request
                         scraper_failed += 1
                 else:
                     scraper_failed += 1
