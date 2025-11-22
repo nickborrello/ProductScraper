@@ -1,9 +1,10 @@
 import os
 import sqlite3
 import sys
-import pandas as pd
 from pathlib import Path
 from typing import Any
+
+import pandas as pd
 
 # Add project root to path for imports
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -18,6 +19,7 @@ from PyQt6.QtWidgets import (
     QApplication,
     QCheckBox,
     QComboBox,
+    QFileDialog,
     QGroupBox,
     QHBoxLayout,
     QHeaderView,
@@ -30,7 +32,6 @@ from PyQt6.QtWidgets import (
     QTableWidgetItem,
     QVBoxLayout,
     QWidget,
-    QFileDialog,
 )
 
 
@@ -53,7 +54,13 @@ class ProductViewer(QWidget):
         self.product_type_filter = ""
         self.special_order_filter = False
         self.date_from = ""
+        self.date_from = ""
         self.date_to = ""
+        
+        # JSON Mode State
+        self.json_mode = False
+        self.json_data = []
+        self.current_json_file = None
 
         # Create UI
         self.create_widgets()
@@ -220,6 +227,21 @@ class ProductViewer(QWidget):
         self.clear_selection_button.clicked.connect(self.clear_selection)
         button_layout.addWidget(self.clear_selection_button)
 
+        # JSON Result Actions
+        self.load_json_btn = QPushButton("📂 Load Results")
+        self.load_json_btn.clicked.connect(self.load_results_file)
+        button_layout.addWidget(self.load_json_btn)
+
+        self.save_json_btn = QPushButton("💾 Save JSON")
+        self.save_json_btn.clicked.connect(self.save_results_to_json)
+        self.save_json_btn.setVisible(False)
+        button_layout.addWidget(self.save_json_btn)
+
+        self.import_db_btn = QPushButton("📥 Import to DB")
+        self.import_db_btn.clicked.connect(self.import_to_database)
+        self.import_db_btn.setVisible(False)
+        button_layout.addWidget(self.import_db_btn)
+
         button_layout.addStretch()
         layout.addWidget(action_card)
 
@@ -295,7 +317,11 @@ class ProductViewer(QWidget):
             scrollbar.setValue(0)
 
     def load_products(self):
-        """Load products from database with current filters."""
+        """Load products from database or JSON with current filters."""
+        if self.json_mode:
+            self._load_products_from_json()
+            return
+
         if self.conn is None:
             self.status_label.setText("Database not connected (products.db not found)")
             self.table.setRowCount(0)
@@ -401,38 +427,7 @@ class ProductViewer(QWidget):
                     last_updated,
                 ) = row
 
-                # Check if this product is selected
-                is_selected = "☑" if sku in self.selected_products else "☐"
-
-                # Format data for display
-                price_display = price or ""
-                weight_display = weight or ""
-                category_display = category or ""
-                product_type_display = product_type or ""
-                pages_display = product_on_pages or ""
-                special_order_display = (
-                    "Yes" if special_order and str(special_order).lower().strip() == "yes" else "No"
-                )
-                disabled_display = (
-                    "Yes"
-                    if product_disabled and str(product_disabled).lower().strip() == "checked"
-                    else "No"
-                )
-                last_updated_display = last_updated or ""
-
-                # Set table items
-                self.table.setItem(row_idx, 0, QTableWidgetItem(is_selected))
-                self.table.setItem(row_idx, 1, QTableWidgetItem(sku))
-                self.table.setItem(row_idx, 2, QTableWidgetItem(brand or ""))
-                self.table.setItem(row_idx, 3, QTableWidgetItem(name or ""))
-                self.table.setItem(row_idx, 4, QTableWidgetItem(price_display))
-                self.table.setItem(row_idx, 5, QTableWidgetItem(weight_display))
-                self.table.setItem(row_idx, 6, QTableWidgetItem(category_display))
-                self.table.setItem(row_idx, 7, QTableWidgetItem(product_type_display))
-                self.table.setItem(row_idx, 8, QTableWidgetItem(pages_display))
-                self.table.setItem(row_idx, 9, QTableWidgetItem(special_order_display))
-                self.table.setItem(row_idx, 10, QTableWidgetItem(disabled_display))
-                self.table.setItem(row_idx, 11, QTableWidgetItem(last_updated_display))
+                self._populate_table_row(row_idx, sku, brand, name, price, weight, category, product_type, product_on_pages, special_order, product_disabled, last_updated)
 
             # Update filter dropdowns with available values
             self.update_filter_dropdowns()
@@ -444,6 +439,93 @@ class ProductViewer(QWidget):
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to load products: {e}")
+
+    def _load_products_from_json(self):
+        """Filter and load products from JSON data."""
+        filtered_data = []
+        
+        # Apply filters
+        for item in self.json_data:
+            # Search
+            if self.search_term:
+                term = self.search_term.lower()
+                if (term not in str(item.get("SKU", "")).lower() and 
+                    term not in str(item.get("Brand", "")).lower() and 
+                    term not in str(item.get("Name", "")).lower()):
+                    continue
+            
+            # Category
+            if self.category_filter and self.category_filter not in str(item.get("Category", "")):
+                continue
+                
+            # Product Type
+            if self.product_type_filter and self.product_type_filter not in str(item.get("Product Type", "")):
+                continue
+                
+            filtered_data.append(item)
+            
+        self.total_products = len(filtered_data)
+        
+        # Pagination
+        start = self.current_page * self.page_size
+        end = start + self.page_size
+        page_data = filtered_data[start:end]
+        
+        self.table.setRowCount(len(page_data))
+        for row_idx, item in enumerate(page_data):
+            self._populate_table_row(
+                row_idx,
+                item.get("SKU", ""),
+                item.get("Brand", ""),
+                item.get("Name", ""),
+                item.get("Price", ""),
+                item.get("Weight", ""),
+                item.get("Category", ""),
+                item.get("Product Type", ""),
+                item.get("Product On Pages", ""),
+                item.get("Special Order", ""),
+                item.get("Product Disabled", ""),
+                item.get("last_updated", "")
+            )
+            
+        self.update_pagination()
+        self.update_status()
+        self.update_edit_button()
+
+    def _populate_table_row(self, row_idx, sku, brand, name, price, weight, category, product_type, product_on_pages, special_order, product_disabled, last_updated):
+        """Helper to populate a single table row."""
+        # Check if this product is selected
+        is_selected = "☑" if sku in self.selected_products else "☐"
+
+        # Format data for display
+        price_display = str(price) if price else ""
+        weight_display = str(weight) if weight else ""
+        category_display = str(category) if category else ""
+        product_type_display = str(product_type) if product_type else ""
+        pages_display = str(product_on_pages) if product_on_pages else ""
+        special_order_display = (
+            "Yes" if special_order and str(special_order).lower().strip() == "yes" else "No"
+        )
+        disabled_display = (
+            "Yes"
+            if product_disabled and str(product_disabled).lower().strip() == "checked"
+            else "No"
+        )
+        last_updated_display = str(last_updated) if last_updated else ""
+
+        # Set table items
+        self.table.setItem(row_idx, 0, QTableWidgetItem(is_selected))
+        self.table.setItem(row_idx, 1, QTableWidgetItem(str(sku)))
+        self.table.setItem(row_idx, 2, QTableWidgetItem(str(brand or "")))
+        self.table.setItem(row_idx, 3, QTableWidgetItem(str(name or "")))
+        self.table.setItem(row_idx, 4, QTableWidgetItem(price_display))
+        self.table.setItem(row_idx, 5, QTableWidgetItem(weight_display))
+        self.table.setItem(row_idx, 6, QTableWidgetItem(category_display))
+        self.table.setItem(row_idx, 7, QTableWidgetItem(product_type_display))
+        self.table.setItem(row_idx, 8, QTableWidgetItem(pages_display))
+        self.table.setItem(row_idx, 9, QTableWidgetItem(special_order_display))
+        self.table.setItem(row_idx, 10, QTableWidgetItem(disabled_display))
+        self.table.setItem(row_idx, 11, QTableWidgetItem(last_updated_display))
 
     def update_filter_dropdowns(self):
         """Update category and product type filter dropdowns with available values."""
@@ -787,10 +869,161 @@ class ProductViewer(QWidget):
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to delete products: {e}")
 
+    def load_results_file(self):
+        """Load scraper results from a JSON file."""
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Open Results File", 
+            str(Path(PROJECT_ROOT) / "data" / "scraper_results"), 
+            "JSON Files (*.json)"
+        )
+        
+        if not path:
+            return
+            
+        try:
+            import json
+            with open(path, encoding='utf-8') as f:
+                data = json.load(f)
+                
+            # Handle different JSON structures
+            if isinstance(data, dict):
+                # Check for "results" key (common in our scraper output)
+                if "results" in data and isinstance(data["results"], list):
+                    self.json_data = data["results"]
+                # Check for session format
+                elif "session_id" in data and "scrapers" in data:
+                    # Flatten scraper results
+                    self.json_data = []
+                    for scraper_name, scraper_data in data.get("scrapers", {}).items():
+                        if "results" in scraper_data:
+                            for sku, details in scraper_data["results"].items():
+                                # Flatten structure
+                                item = details.copy()
+                                item["SKU"] = sku
+                                item["Scraper"] = scraper_name
+                                self.json_data.append(item)
+                else:
+                    # Try to find any list in the dict
+                    found_list = False
+                    for key, value in data.items():
+                        if isinstance(value, list):
+                            self.json_data = value
+                            found_list = True
+                            break
+                    if not found_list:
+                        raise ValueError("Could not find a list of products in JSON file")
+            elif isinstance(data, list):
+                self.json_data = data
+            else:
+                raise ValueError("Invalid JSON format")
+                
+            self.json_mode = True
+            self.current_json_file = path
+            self.status_label.setText(f"Loaded {len(self.json_data)} products from {os.path.basename(path)}")
+            
+            # Update UI state
+            self.save_json_btn.setVisible(True)
+            self.import_db_btn.setVisible(True)
+            self.export_button.setText("💾 Export JSON to CSV")
+            
+            # Reset filters and load
+            self.current_page = 0
+            self.load_products()
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to load JSON file: {e}")
+
+    def save_results_to_json(self):
+        """Save current JSON data back to file."""
+        if not self.json_mode or not self.current_json_file:
+            return
+            
+        try:
+            import json
+            # Create a backup first
+            backup_path = self.current_json_file + ".bak"
+            import shutil
+            shutil.copy2(self.current_json_file, backup_path)
+            
+            # We need to reconstruct the original format if possible, 
+            # but for now let's save the flat list or a simple structure
+            # To be safe and not break the original structure if it was complex,
+            # we might want to just save the list. 
+            # However, our scraper output is usually specific.
+            
+            # Let's save as a flat list of results for now, or try to match the session format?
+            # Matching session format is hard without keeping the original object.
+            # Let's save as a simple list of products, which is easier to read/import later.
+            
+            with open(self.current_json_file, 'w', encoding='utf-8') as f:
+                json.dump({"results": self.json_data}, f, indent=2)
+                
+            QMessageBox.information(self, "Success", f"Saved {len(self.json_data)} products to {self.current_json_file}")
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to save JSON file: {e}")
+
+    def import_to_database(self):
+        """Import current JSON data into the database."""
+        if not self.json_mode or not self.json_data:
+            return
+            
+        reply = QMessageBox.question(
+            self, "Confirm Import",
+            f"Import {len(self.json_data)} products into the database?\nExisting SKUs will be updated.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        
+        if reply == QMessageBox.StandardButton.Yes:
+            try:
+                # Use existing logic or direct DB insertion
+                # We can use the result_storage module if available, or direct SQL
+                
+                cursor = self.conn.cursor()
+                count = 0
+                for item in self.json_data:
+                    sku = item.get("SKU")
+                    if not sku:
+                        continue
+                        
+                    # Basic upsert logic
+                    name = item.get("Name", "")
+                    brand = item.get("Brand", "")
+                    price = item.get("Price", "")
+                    weight = item.get("Weight", "")
+                    category = item.get("Category", "")
+                    
+                    # Check if exists
+                    cursor.execute("SELECT SKU FROM products WHERE SKU = ?", (sku,))
+                    exists = cursor.fetchone()
+                    
+                    if exists:
+                        cursor.execute("""
+                            UPDATE products 
+                            SET Name=?, Brand=?, Price=?, Weight=?, Category=?, last_updated=CURRENT_TIMESTAMP
+                            WHERE SKU=?
+                        """, (name, brand, price, weight, category, sku))
+                    else:
+                        cursor.execute("""
+                            INSERT INTO products (SKU, Name, Brand, Price, Weight, Category, last_updated)
+                            VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                        """, (sku, name, brand, price, weight, category))
+                    count += 1
+                    
+                self.conn.commit()
+                QMessageBox.information(self, "Success", f"Imported/Updated {count} products in database.")
+                
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to import to database: {e}")
+
     def load_products_data(self, skus):
-        """Load product data from database for the given SKUs."""
+        """Load product data from database OR JSON for the given SKUs."""
         if not skus:
             return []
+
+        if self.json_mode:
+            # Filter json_data for these SKUs
+            return [item for item in self.json_data if item.get("SKU") in skus]
 
         if self.conn is None:
             return []

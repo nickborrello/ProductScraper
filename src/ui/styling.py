@@ -200,6 +200,31 @@ STYLESHEET = f"""
         background-color: {SUCCESS_COLOR};
         border-radius: 3px;
     }}
+
+    /* Checkboxes */
+    QCheckBox {{
+        spacing: 8px;
+        color: {TEXT_PRIMARY};
+    }}
+    QCheckBox::indicator {{
+        width: 18px;
+        height: 18px;
+        border: 1px solid {BORDER_COLOR};
+        border-radius: 3px;
+        background-color: {SIDEBAR_BG};
+    }}
+    QCheckBox::indicator:unchecked:hover {{
+        border: 1px solid {ACCENT_COLOR};
+    }}
+    QCheckBox::indicator:checked {{
+        background-color: {PRIMARY_COLOR};
+        border: 1px solid {PRIMARY_COLOR};
+        image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBvbHlsaW5lIHBvaW50cz0iMjAgNiA5IDE3IDQgMTIiPjwvcG9seWxpbmU+PC9zdmc+);
+    }}
+    QCheckBox::indicator:checked:hover {{
+        background-color: {ACCENT_COLOR};
+        border-color: {ACCENT_COLOR};
+    }}
 """
 
 def apply_dark_theme(app: QApplication):
