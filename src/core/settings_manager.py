@@ -48,6 +48,7 @@ class SettingsManager:
         # UI Settings
         "auto_scroll_logs": True,
         "theme": "dark",  # 'dark' or 'light'
+        "max_workers": 2,  # Number of concurrent scrapers
     }
 
     def __init__(self):

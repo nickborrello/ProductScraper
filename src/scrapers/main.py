@@ -92,8 +92,8 @@ def run_scraping(file_path: str, selected_sites: list[str] | None = None, log_ca
     
     # Load scraper configurations
     update_status("Loading scraper configurations...")
-    from src.scrapers.parser import ScraperConfigParser
     from src.scrapers.executor.workflow_executor import WorkflowExecutor
+    from src.scrapers.parser import ScraperConfigParser
     from src.scrapers.result_collector import ResultCollector
     
     parser = ScraperConfigParser()
@@ -127,26 +127,72 @@ def run_scraping(file_path: str, selected_sites: list[str] | None = None, log_ca
     
     log(f"🚀 Starting scraping: {len(configs)} scrapers × {len(skus)} SKUs = {total_operations} operations", "INFO")
     
-    for config in configs:
+    import math
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    from src.core.settings_manager import settings
+    
+    max_workers = settings.get("max_workers", 2)
+    log(f"⚙️ Using max {max_workers} concurrent workers", "INFO")
+    
+    # Determine execution strategy
+    tasks = []
+    
+    # Strategy 1: Single Site + Multiple Workers = Split SKUs (Risky but fast)
+    if len(configs) == 1 and max_workers > 1:
+        config = configs[0]
+        chunk_size = math.ceil(len(skus) / max_workers)
+        sku_chunks = [skus[i:i + chunk_size] for i in range(0, len(skus), chunk_size)]
+        
+        log(f"⚠️ ENABLED SKU-LEVEL PARALLELISM for {config.name}", "WARNING")
+        log(f"⚠️ Splitting {len(skus)} SKUs into {len(sku_chunks)} chunks across {max_workers} workers.", "WARNING")
+        log(f"⚠️ CAUTION: This will trigger {len(sku_chunks)} concurrent logins to the same account.", "WARNING")
+        
+        for i, chunk in enumerate(sku_chunks):
+            tasks.append((config, chunk, f"Worker-{i+1}"))
+            
+    # Strategy 2: Multiple Sites or Single Worker = One task per site (Safe)
+    else:
+        for config in configs:
+            tasks.append((config, skus, "Main"))
+
+    def process_scraper(args):
+        """Process a scraper configuration with a specific list of SKUs."""
+        config, target_skus, worker_id = args
+        scraper_success = 0
+        scraper_failed = 0
+        
+        prefix = f"[{config.name}:{worker_id}]"
+        
         log(f"\n{'='*60}", "INFO")
-        log(f"📌 Starting scraper: {config.name}", "INFO")
+        log(f"📌 Starting scraper: {config.name} ({worker_id}) - {len(target_skus)} SKUs", "INFO")
         log(f"{'='*60}", "INFO")
         
-        update_status(f"Running {config.name} scraper...")
+        update_status(f"Running {config.name} ({worker_id})...")
         
         # Initialize executor for this scraper
         try:
             executor = WorkflowExecutor(config, headless=True)
         except Exception as e:
-            log(f"❌ Failed to initialize {config.name}: {e}", "ERROR")
-            failed_results += len(skus)
-            completed_operations += len(skus)
-            continue
+            log(f"❌ {prefix} Failed to initialize: {e}", "ERROR")
+            return 0, len(target_skus)
         
         # Process each SKU
-        for idx, sku in enumerate(skus, 1):
-            update_status(f"{config.name}: Processing SKU {idx}/{len(skus)} ({sku})")
-            log(f"\n[{config.name}] Processing SKU {idx}/{len(skus)}: {sku}", "INFO")
+        batch_size = 10
+        for idx, sku in enumerate(target_skus, 1):
+            # Restart browser every batch_size items
+            if idx > 1 and (idx - 1) % batch_size == 0:
+                log(f"🔄 {prefix} Restarting browser (batch limit {batch_size} reached)...", "INFO")
+                try:
+                    if executor.browser:
+                        executor.browser.quit()
+                    # Re-initialize executor (which creates new browser)
+                    executor = WorkflowExecutor(config, headless=True)
+                except Exception as e:
+                    log(f"❌ {prefix} Failed to restart browser: {e}", "ERROR")
+                    pass
+
+            update_status(f"{config.name} ({worker_id}): Processing SKU {idx}/{len(target_skus)} ({sku})")
+            log(f"{prefix} Processing SKU {idx}/{len(target_skus)}: {sku}", "INFO")
             
             try:
                 # Execute workflow with SKU context
@@ -164,21 +210,22 @@ def run_scraping(file_path: str, selected_sites: list[str] | None = None, log_ca
                     if has_data:
                         # Add to collector (JSON storage)
                         collector.add_result(sku, config.name, extracted_data)
-                        successful_results += 1
-                        log(f"✅ [{config.name}] Successfully scraped SKU: {sku}", "INFO")
+                        scraper_success += 1
+                        log(f"✅ {prefix} Successfully scraped SKU: {sku}", "INFO")
                     else:
                         # SKU not found on this site - skip (per user requirement #4)
-                        log(f"⚠️ [{config.name}] No data found for SKU: {sku}", "WARNING")
-                        failed_results += 1
+                        log(f"⚠️ {prefix} No data found for SKU: {sku}", "WARNING")
+                        scraper_failed += 1
                 else:
-                    failed_results += 1
-                    log(f"❌ [{config.name}] Failed to scrape SKU: {sku}", "ERROR")
+                    scraper_failed += 1
+                    log(f"❌ {prefix} Failed to scrape SKU: {sku}", "ERROR")
                     
             except Exception as e:
-                failed_results += 1
-                log(f"❌ [{config.name}] Error scraping SKU {sku}: {e}", "ERROR")
+                scraper_failed += 1
+                log(f"❌ {prefix} Error scraping SKU {sku}: {e}", "ERROR")
             
-            # Update progress
+            # Update progress (thread-safe way needed ideally, but simple increment works for rough progress)
+            nonlocal completed_operations
             completed_operations += 1
             if progress_callback:
                 progress_pct = int((completed_operations / total_operations) * 100)
@@ -192,9 +239,23 @@ def run_scraping(file_path: str, selected_sites: list[str] | None = None, log_ca
             if executor.browser:
                 executor.browser.quit()
         except Exception as e:
-            log(f"⚠️ Error closing browser for {config.name}: {e}", "WARNING")
+            log(f"⚠️ {prefix} Error closing browser: {e}", "WARNING")
         
-        log(f"✅ Completed scraper: {config.name}", "INFO")
+        log(f"✅ Completed task: {config.name} ({worker_id})", "INFO")
+        return scraper_success, scraper_failed
+
+    # Run scrapers in parallel
+    with ThreadPoolExecutor(max_workers=max_workers) as thread_executor:
+        # Submit all tasks
+        futures = [thread_executor.submit(process_scraper, task) for task in tasks]
+        
+        for future in as_completed(futures):
+            try:
+                s_success, s_failed = future.result()
+                successful_results += s_success
+                failed_results += s_failed
+            except Exception as exc:
+                log(f"❌ Scraper task generated an exception: {exc}", "ERROR")
     
     # Save results to JSON file
     log("\n💾 Saving results to JSON file...", "INFO")
@@ -204,7 +265,7 @@ def run_scraping(file_path: str, selected_sites: list[str] | None = None, log_ca
         
         # Display collection stats
         stats = collector.get_stats()
-        log(f"\n📊 Results Summary:", "INFO")
+        log("\n📊 Results Summary:", "INFO")
         log(f"   Unique SKUs found: {stats['total_unique_skus']}", "INFO")
         log(f"   Total scraper results: {stats['total_results']}", "INFO")
         log(f"   SKUs found on multiple sites: {stats['skus_found_on_multiple_sites']}", "INFO")
@@ -213,7 +274,7 @@ def run_scraping(file_path: str, selected_sites: list[str] | None = None, log_ca
     
     # Final summary
     log(f"\n{'='*60}", "INFO")
-    log(f"🏁 SCRAPING COMPLETE", "INFO")
+    log("🏁 SCRAPING COMPLETE", "INFO")
     log(f"{'='*60}", "INFO")
     log(f"📊 Total operations: {total_operations}", "INFO")
     log(f"✅ Successful: {successful_results}", "INFO")

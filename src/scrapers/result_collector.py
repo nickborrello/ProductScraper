@@ -22,7 +22,9 @@ class ResultCollector:
         """
         if output_dir is None:
             # Default to project data/scraper_results/
-            project_root = Path(__file__).parent.parent.parent
+            # Default to project data/scraper_results/
+            # src/scrapers/result_collector.py -> src/scrapers -> src -> root
+            project_root = Path(__file__).parent.parent.parent.parent
             output_dir = project_root / "data" / "scraper_results"
 
         self.output_dir = Path(output_dir).resolve()

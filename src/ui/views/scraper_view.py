@@ -28,14 +28,15 @@ class ScraperView(QWidget):
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QProgressBar, QFrame, QFileDialog,
     QListWidget, QListWidgetItem, QSplitter, QMessageBox, QTableWidget, QTableWidgetItem, QHeaderView,
-    QAbstractItemView, QCheckBox, QStackedWidget
+    QAbstractItemView, QCheckBox, QStackedWidget, QSpinBox
 )
 from PyQt6.QtCore import pyqtSignal, Qt
 from pathlib import Path
-from src.ui.widgets import LogViewer
-from src.scrapers.parser.yaml_parser import ScraperConfigParser
 import pandas as pd
 import os
+from src.ui.widgets import LogViewer
+from src.scrapers.parser.yaml_parser import ScraperConfigParser
+from src.core.settings_manager import settings
 
 class ScraperView(QWidget):
     # Signals to communicate with MainWindow
@@ -94,6 +95,30 @@ class ScraperView(QWidget):
         refresh_btn.clicked.connect(self.load_scrapers)
         scraper_layout.addWidget(refresh_btn)
         left_layout.addWidget(scraper_group)
+
+        # Settings Group
+        settings_group = QFrame()
+        settings_group.setProperty("class", "card")
+        settings_layout = QVBoxLayout(settings_group)
+        settings_layout.addWidget(QLabel("<b>3. Settings</b>"))
+
+        # Max Workers
+        workers_layout = QHBoxLayout()
+        workers_layout.addWidget(QLabel("Max Workers:"))
+        self.spin_workers = QSpinBox()
+        self.spin_workers.setRange(1, 10)
+        self.spin_workers.setValue(settings.get("max_workers", 2))
+        self.spin_workers.valueChanged.connect(lambda v: settings.set("max_workers", v))
+        workers_layout.addWidget(self.spin_workers)
+        settings_layout.addLayout(workers_layout)
+
+        # Headless Mode
+        self.chk_headless = QCheckBox("Headless Mode")
+        self.chk_headless.setChecked(settings.get("selenium_headless", True))
+        self.chk_headless.toggled.connect(lambda v: settings.set("selenium_headless", v))
+        settings_layout.addWidget(self.chk_headless)
+
+        left_layout.addWidget(settings_group)
         
         # Actions
         action_layout = QVBoxLayout()

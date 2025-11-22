@@ -156,6 +156,7 @@ class WorkflowExecutor:
         try:
             logger.info(f"Starting workflow execution for: {self.config.name}")
             self.results = {} # Reset results for new run
+            self.workflow_stopped = False # Reset stop flag for new run
             
             # Merge context into results so they are available
             if context:

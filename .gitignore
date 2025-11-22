@@ -58,6 +58,8 @@ data/browser_profiles/
 data/databases/
 data/product_pages.json
 data/spreadsheets/
+data/scraper_results/
+src/data/
 inventory/  # Legacy inventory folder if it still exists
 
 # Sensitive configuration files
