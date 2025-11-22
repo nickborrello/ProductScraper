@@ -53,9 +53,12 @@ class ResultCollector:
             "data": result_data
         }
 
-    def save_session(self) -> Path:
+    def save_session(self, metadata: dict[str, Any] | None = None) -> Path:
         """
         Save current session results to JSON file.
+        
+        Args:
+            metadata: Optional metadata dictionary (e.g., Price data keyed by SKU)
 
         Returns:
             Path to the saved JSON file
@@ -68,6 +71,7 @@ class ResultCollector:
             "timestamp": datetime.now().isoformat(),
             "scrapers": list(self.results.keys()),
             "total_results": sum(len(skus) for skus in self.results.values()),
+            "metadata": metadata or {},  # Store metadata (e.g., Price data)
             "results": self.results
         }
         

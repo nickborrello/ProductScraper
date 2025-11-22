@@ -99,11 +99,16 @@ class ScraperBrowser:
             self.driver.maximize_window()
         except Exception as e:
             print(f"[WEB] [{site_name}] Failed to set window size: {e}")
+        
+        # PERFORMANCE OPTIMIZATION: Add small implicit wait for dynamic content
+        # Works with eager page load to catch late-loading elements
+        # Explicit waits in workflow_executor still take precedence
+        self.driver.implicitly_wait(2)  # 2 seconds for dynamic elements
 
         is_ci = os.getenv("CI") == "true"
         print(
             f"[WEB] [{site_name}] Browser initialized in {init_time:.2f}s "
-            f"(headless={headless}, devtools={self.devtools_config.enabled}, CI={is_ci}, size=1920x1080)"
+            f"(headless={headless}, devtools={self.devtools_config.enabled}, CI={is_ci}, size=1920x1080, page_load=eager)"
         )
 
     def __getattr__(self, name):

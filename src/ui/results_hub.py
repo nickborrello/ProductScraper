@@ -582,6 +582,11 @@ class ResultsHub(QWidget):
         refresh_btn = QPushButton("🔄 Refresh List")
         refresh_btn.clicked.connect(self.load_session_history)
         sidebar_layout.addWidget(refresh_btn)
+        
+        delete_btn = QPushButton("🗑️ Delete Session")
+        delete_btn.setProperty("class", "danger")
+        delete_btn.clicked.connect(self.delete_selected_session)
+        sidebar_layout.addWidget(delete_btn)
 
         splitter.addWidget(sidebar_widget)
 
@@ -605,6 +610,12 @@ class ResultsHub(QWidget):
         self.consolidate_btn.clicked.connect(self.enter_consolidation_mode)
         self.consolidate_btn.setEnabled(False)
         header_layout.addWidget(self.consolidate_btn)
+        
+        self.export_excel_btn = QPushButton("📊 Export to Excel")
+        self.export_excel_btn.setProperty("class", "secondary")
+        self.export_excel_btn.clicked.connect(self.export_to_excel)
+        self.export_excel_btn.setEnabled(False)
+        header_layout.addWidget(self.export_excel_btn)
         
         self.import_db_btn = QPushButton("📥 Import to DB")
         self.import_db_btn.setProperty("class", "success")
@@ -701,6 +712,7 @@ class ResultsHub(QWidget):
             self.update_table()
             self.consolidate_btn.setEnabled(True)
             self.import_db_btn.setEnabled(True)
+            self.export_excel_btn.setEnabled(True)
             self.status_label.setText(f"Loaded {len(self.consolidated_data)} unique SKUs")
             
         except Exception as e:
@@ -727,6 +739,9 @@ class ResultsHub(QWidget):
         # Pivot data by SKU
         sku_map = {}
         
+        # Extract price metadata if available
+        price_data = self.session_data.get("metadata", {}).get("price", {})
+        
         for scraper_name, scraper_data in raw_results.items():
             for sku, item_data in scraper_data.items():
                 # Extract actual data payload
@@ -735,6 +750,7 @@ class ResultsHub(QWidget):
                 if sku not in sku_map:
                     sku_map[sku] = {
                         "sku": sku,
+                        "price": price_data.get(sku, ""),  # Attach preserved Price
                         "scrapers": {}
                     }
                 
@@ -758,7 +774,7 @@ class ResultsHub(QWidget):
             return
 
         # Define columns
-        columns = ["SKU", "Sources", "Name", "Brand", "Status"]
+        columns = ["SKU", "Price", "Sources", "Name", "Brand", "Status"]
 
         self.table.setColumnCount(len(columns))
         self.table.setHorizontalHeaderLabels(columns)
@@ -809,10 +825,11 @@ class ResultsHub(QWidget):
                 status = "⏳ Needs Consolidation"
             
             self.table.setItem(row_idx, 0, QTableWidgetItem(str(sku)))
-            self.table.setItem(row_idx, 1, QTableWidgetItem(sources))
-            self.table.setItem(row_idx, 2, QTableWidgetItem(name))
-            self.table.setItem(row_idx, 3, QTableWidgetItem(brand))
-            self.table.setItem(row_idx, 4, QTableWidgetItem(status))
+            self.table.setItem(row_idx, 1, QTableWidgetItem(item.get("price", "")))
+            self.table.setItem(row_idx, 2, QTableWidgetItem(sources))
+            self.table.setItem(row_idx, 3, QTableWidgetItem(name))
+            self.table.setItem(row_idx, 4, QTableWidgetItem(brand))
+            self.table.setItem(row_idx, 5, QTableWidgetItem(status))
 
         # Resize columns
         header = self.table.horizontalHeader()
@@ -1013,3 +1030,116 @@ class ResultsHub(QWidget):
         
         conn.commit()
         conn.close()
+    
+    def export_to_excel(self):
+        """Export products to ShopSite-compatible Excel file."""
+        if not self.consolidated_data:
+            QMessageBox.warning(self, "No Data", "No session data loaded to export.")
+            return
+        
+        default_filename = f"products_export_{self.get_timestamp()}.xlsx"
+        file_path, _ = QFileDialog.getSaveFileName(
+            self, "Export to Excel", default_filename, "Excel Files (*.xlsx)"
+        )
+        
+        if not file_path:
+            return
+        
+        try:
+            from openpyxl import Workbook
+            from openpyxl.styles import Font, PatternFill
+            
+            wb = Workbook()
+            ws = wb.active
+            ws.title = "Products"
+            headers = ["SKU", "Name", "Brand", "Weight", "Image URLs", "Price"]
+            ws.append(headers)
+            
+            header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+            header_font = Font(bold=True, color="FFFFFF")
+            for cell in ws[1]:
+                cell.fill = header_fill
+                cell.font = header_font
+            
+            for item in self.consolidated_data:
+                sku = item["sku"]
+                consolidated = next((p for p in self.consolidated_products if p["sku"] == sku), None)
+                
+                if consolidated:
+                    fields = consolidated["fields"]
+                    name = fields.get("Name", {}).get("value", "")
+                    brand = fields.get("Brand", {}).get("value", "")
+                    weight = fields.get("Weight", {}).get("value", "")
+                    images_data = fields.get("Images", {}).get("value", [])
+                    image_urls = ", ".join([img if isinstance(img, str) else img.get("url", "") for img in images_data]) if isinstance(images_data, list) else str(images_data or "")
+                    price = item.get("price", "")  # Get preserved Price from metadata
+                else:
+                    name, brand, weight, image_urls, price = "", "", "", "", item.get("price", "")
+                    for scraper_data in item["scrapers"].values():
+                        if not name: name = scraper_data.get("Name", "")
+                        if not brand: brand = scraper_data.get("Brand", "")
+                        if not weight: weight = scraper_data.get("Weight", "")
+                        if not image_urls:
+                            imgs = scraper_data.get("Images", [])
+                            if isinstance(imgs, list) and imgs:
+                                image_urls = ", ".join([img if isinstance(img, str) else img.get("url", "") for img in imgs])
+                        if name and brand and weight and image_urls: break
+                ws.append([sku, name, brand, weight, image_urls, price])
+            
+            for column in ws.columns:
+                max_length = max(len(str(cell.value)) for cell in column)
+                ws.column_dimensions[column[0].column_letter].width = min(max_length + 2, 50)
+            
+            wb.save(file_path)
+            QMessageBox.information(self, "Success", f"Exported {len(self.consolidated_data)} products to:\\n{file_path}")
+        except ImportError:
+            QMessageBox.critical(self, "Missing Dependency", "openpyxl library is required.\\nInstall with: pip install openpyxl")
+        except Exception as e:
+            QMessageBox.critical(self, "Export Failed", f"Error: {e}")
+    
+    def get_timestamp(self):
+        """Get current timestamp for filename."""
+        from datetime import datetime
+        return datetime.now().strftime("%Y%m%d_%H%M%S")
+    
+    def delete_selected_session(self):
+        """Delete the currently selected session file."""
+        selected_item = self.history_list.currentItem()
+        if not selected_item:
+            QMessageBox.warning(self, "No Selection", "Please select a session to delete.")
+            return
+        
+        file_path = selected_item.data(Qt.ItemDataRole.UserRole)
+        session_name = selected_item.text()
+        
+        # Confirmation dialog
+        reply = QMessageBox.question(
+            self,
+            "Confirm Delete",
+            f"Are you sure you want to delete this session?\n\n{session_name}\n\nThis action cannot be undone.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+        
+        if reply == QMessageBox.StandardButton.Yes:
+            try:
+                import os
+                os.remove(file_path)
+                
+                # Clear current session if it was the deleted one
+                if self.current_session_file == file_path:
+                    self.current_session_file = None
+                    self.session_data = {}
+                    self.consolidated_data = []
+                    self.session_title.setText("Select a session to view results")
+                    self.table.setRowCount(0)
+                    self.consolidate_btn.setEnabled(False)
+                    self.import_db_btn.setEnabled(False)
+                    self.export_excel_btn.setEnabled(False)
+                
+                # Refresh the list
+                self.load_session_history()
+                QMessageBox.information(self, "Success", f"Session deleted successfully.")
+                
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to delete session: {e}")

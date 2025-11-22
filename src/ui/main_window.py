@@ -61,13 +61,13 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(5)
 
-        # App Logo/Title
+        # App Logo/Title - Removed per user request
         title_container = QFrame()
         title_container.setStyleSheet("background-color: transparent; padding: 20px;")
         title_layout = QHBoxLayout(title_container)
-        title_label = QLabel("ProductScraper")
-        title_label.setStyleSheet("font-size: 20px; font-weight: bold; color: #FFFFFF;")
-        title_layout.addWidget(title_label)
+        # title_label = QLabel("ProductScraper")  # Removed
+        # title_label.setStyleSheet("font-size: 20px; font-weight: bold; color: #FFFFFF;")
+        # title_layout.addWidget(title_label)
         layout.addWidget(title_container)
 
         # Navigation Buttons

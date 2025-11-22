@@ -79,8 +79,21 @@ def run_scraping(file_path: str, selected_sites: list[str] | None = None, log_ca
         from src.scrapers.sku_loader import SKULoader
         
         loader = SKULoader()
-        skus = loader.load(file_path)
+        records = loader.load_with_context(file_path)
+        skus = [r["SKU"] for r in records]
+        
+        # Extract Price metadata for preservation
+        price_metadata = {}
+        for record in records:
+            sku = record.get("SKU", "")
+            # Check for Price in various column names
+            price = record.get("Price", record.get("LIST_PRICE", record.get("price", "")))
+            if price:
+                price_metadata[sku] = price
+        
         log(f"📊 Loaded {len(skus)} SKUs from {file_path}", "INFO")
+        if price_metadata:
+            log(f"💰 Found prices for {len(price_metadata)} products", "INFO")
         
         if not skus:
             log("❌ No SKUs found in Excel file", "ERROR")
@@ -270,7 +283,7 @@ def run_scraping(file_path: str, selected_sites: list[str] | None = None, log_ca
     # Save results to JSON file
     log("\n💾 Saving results to JSON file...", "INFO")
     try:
-        json_file = collector.save_session()
+        json_file = collector.save_session(metadata={"price": price_metadata})
         log(f"✅ Results saved to: {json_file}", "INFO")
         
         # Display collection stats
