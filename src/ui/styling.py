@@ -169,6 +169,19 @@ STYLESHEET = f"""
     QTableWidget::item {{
         padding: 5px;
     }}
+    
+    /* Buttons inside tables (Actions) */
+    QTableWidget QPushButton {{
+        background-color: {PRIMARY_COLOR};
+        color: #FFFFFF;
+        border: none;
+        border-radius: 4px;
+        padding: 4px 8px;
+        font-weight: bold;
+    }}
+    QTableWidget QPushButton:hover {{
+        background-color: {ACCENT_COLOR};
+    }}
 
     /* Scrollbars */
     QScrollBar:vertical {{
