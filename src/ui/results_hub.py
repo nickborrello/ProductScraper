@@ -845,26 +845,59 @@ class ResultsHub(QWidget):
         self.table.setColumnCount(len(columns))
         self.table.setHorizontalHeaderLabels(columns)
 
-        # Set column resize modes
-        header = self.table.horizontalHeader()
-        header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)  # SKU
-        header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)  # Price
-        header.setSectionResizeMode(
-            2, QHeaderView.ResizeMode.Interactive
-        )  # Images - interactive with max width
-        header.setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)  # Name - expands
-        header.setSectionResizeMode(4, QHeaderView.ResizeMode.ResizeToContents)  # Brand
-        header.setSectionResizeMode(5, QHeaderView.ResizeMode.ResizeToContents)  # Status
-        header.setSectionResizeMode(
-            6, QHeaderView.ResizeMode.Interactive
-        )  # Actions - interactive with fixed width
+                # Set column resize modes
 
-        # Set reasonable widths for interactive columns
-        header.resizeSection(2, 200)  # Images column default 200px
-        header.resizeSection(6, 100)  # Actions column default 100px
+                header = self.table.horizontalHeader()
 
-        # Set maximum widths for interactive columns
-        header.setMaximumSectionSize(300)  # Global max for all sections
+                
+
+                # 0: SKU - Content based
+
+                header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+
+                
+
+                # 1: Price - Content based
+
+                header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+
+                
+
+                # 2: Images - Fixed width, interactive
+
+                header.setSectionResizeMode(2, QHeaderView.ResizeMode.Interactive)
+
+                header.resizeSection(2, 150)
+
+                
+
+                # 3: Name - Takes remaining space
+
+                header.setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)
+
+                
+
+                # 4: Brand - Fixed width, interactive
+
+                header.setSectionResizeMode(4, QHeaderView.ResizeMode.Interactive)
+
+                header.resizeSection(4, 150)
+
+                
+
+                # 5: Status - Fixed width
+
+                header.setSectionResizeMode(5, QHeaderView.ResizeMode.Interactive)
+
+                header.resizeSection(5, 100)
+
+                
+
+                # 6: Actions - Fixed width
+
+                header.setSectionResizeMode(6, QHeaderView.ResizeMode.Fixed)
+
+                header.resizeSection(6, 120)
 
         # Filter data
         filtered_data = []
