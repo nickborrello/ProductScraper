@@ -224,37 +224,38 @@ class ConsolidationWidget(QWidget):
         content_layout.addWidget(right_widget)
         layout.addLayout(content_layout)
 
-                # Action buttons at bottom
-                button_layout = QHBoxLayout()
+        # Action buttons at bottom
+        button_layout = QHBoxLayout()
+
+        back_btn = QPushButton("← Back to Results")
+        back_btn.setProperty("class", "secondary")
+        back_btn.clicked.connect(self.reject)
+        button_layout.addWidget(back_btn)
+
+        # Navigation buttons (if in queue mode)
+        is_queue_mode = self.consolidation_queue and len(self.consolidation_queue) > 1
         
-                back_btn = QPushButton("← Back to Results")
-                back_btn.setProperty("class", "secondary")
-                back_btn.clicked.connect(self.reject)
-                button_layout.addWidget(back_btn)
-        
-                # Navigation buttons (if in queue mode)
-                is_queue_mode = self.consolidation_queue and len(self.consolidation_queue) > 1
-                
-                if is_queue_mode:
-                    prev_btn = QPushButton("← Previous")
-                    prev_btn.setProperty("class", "secondary")
-                    prev_btn.clicked.connect(self.go_to_previous)
-                    if self.current_index == 0:
-                        prev_btn.setEnabled(False)
-                    button_layout.addWidget(prev_btn)
-        
-                    next_btn = QPushButton("Next →")
-                    next_btn.setProperty("class", "primary")
-                    next_btn.clicked.connect(self.go_to_next)
-                    if self.current_index >= len(self.consolidation_queue) - 1:
-                        next_btn.setText("Finish")
-                    button_layout.addWidget(next_btn)
-        
-                button_layout.addStretch()
-        
-                # Only show explicit Save button in single mode (Queue mode uses Next/Finish)
-                if not is_queue_mode:
-                    save_btn = QPushButton("💾 Save && Close")            save_btn.setProperty("class", "success")
+        if is_queue_mode:
+            prev_btn = QPushButton("← Previous")
+            prev_btn.setProperty("class", "secondary")
+            prev_btn.clicked.connect(self.go_to_previous)
+            if self.current_index == 0:
+                prev_btn.setEnabled(False)
+            button_layout.addWidget(prev_btn)
+
+            next_btn = QPushButton("Next →")
+            next_btn.setProperty("class", "primary")
+            next_btn.clicked.connect(self.go_to_next)
+            if self.current_index >= len(self.consolidation_queue) - 1:
+                next_btn.setText("Finish")
+            button_layout.addWidget(next_btn)
+
+        button_layout.addStretch()
+
+        # Only show explicit Save button in single mode (Queue mode uses Next/Finish)
+        if not is_queue_mode:
+            save_btn = QPushButton("💾 Save && Close")
+            save_btn.setProperty("class", "success")
             save_btn.clicked.connect(self.save_and_close)
             button_layout.addWidget(save_btn)
 
