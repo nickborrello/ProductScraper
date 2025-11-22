@@ -25,69 +25,69 @@ logger = logging.getLogger(__name__)
 SIGNIFICANT_DELAY_THRESHOLD = 0.1
 
 
-class AntiDetectionConfig:
+from pydantic import BaseModel, Field
+
+
+class AntiDetectionConfig(BaseModel):
     """Configuration for anti-detection modules."""
 
-    def __init__(
-        self,
-        enable_captcha_detection: bool = True,
-        enable_rate_limiting: bool = True,
-        enable_human_simulation: bool = True,
-        enable_session_rotation: bool = True,
-        enable_blocking_handling: bool = True,
-        captcha_selectors: list[str] | None = None,
-        blocking_selectors: list[str] | None = None,
-        rate_limiting_selectors: list[str] | None = None,
-        rate_limiting_text_patterns: list[str] | None = None,
-        rate_limit_min_delay: float = 1.0,
-        rate_limit_max_delay: float = 5.0,
-        human_simulation_enabled: bool = True,
-        session_rotation_interval: int = 100,
-        max_retries_on_detection: int = 3,
-        captcha_solver_config: CaptchaSolverConfig | None = None,
-    ):
-        self.enable_captcha_detection = enable_captcha_detection
-        self.enable_rate_limiting = enable_rate_limiting
-        self.enable_human_simulation = human_simulation_enabled
-        self.enable_session_rotation = enable_session_rotation
-        self.enable_blocking_handling = enable_blocking_handling
-        self.captcha_selectors = captcha_selectors or [
+    enable_captcha_detection: bool = Field(True, description="Enable CAPTCHA detection")
+    enable_rate_limiting: bool = Field(True, description="Enable rate limiting")
+    enable_human_simulation: bool = Field(True, description="Enable human behavior simulation")
+    enable_session_rotation: bool = Field(True, description="Enable session rotation")
+    enable_blocking_handling: bool = Field(True, description="Enable blocking page handling")
+    captcha_selectors: list[str] = Field(
+        default_factory=lambda: [
             "[class*='captcha']",
             "[id*='captcha']",
             "[class*='recaptcha']",
             "[id*='recaptcha']",
             ".g-recaptcha",
             "#captcha-container",
-        ]
-        self.blocking_selectors = blocking_selectors or [
+        ],
+        description="CSS selectors for CAPTCHA detection",
+    )
+    blocking_selectors: list[str] = Field(
+        default_factory=lambda: [
             "[class*='blocked']",
             "[id*='blocked']",
             "[class*='banned']",
             "[id*='banned']",
             "[class*='access-denied']",
             "[id*='access-denied']",
-        ]
-        self.rate_limiting_selectors = rate_limiting_selectors or [
+        ],
+        description="CSS selectors for blocking detection",
+    )
+    rate_limiting_selectors: list[str] = Field(
+        default_factory=lambda: [
             "[class*='rate-limit']",
             "[id*='rate-limit']",
             "[class*='throttle']",
             "[id*='throttle']",
             "[class*='too-many-requests']",
             "[id*='too-many-requests']",
-        ]
-        self.rate_limiting_text_patterns = rate_limiting_text_patterns or [
+        ],
+        description="CSS selectors for rate limiting detection",
+    )
+    rate_limiting_text_patterns: list[str] = Field(
+        default_factory=lambda: [
             r"rate limit",
             r"too many requests",
             r"throttl",
             r"please wait",
             r"temporary.*block",
             r"429",
-        ]
-        self.rate_limit_min_delay = rate_limit_min_delay
-        self.rate_limit_max_delay = rate_limit_max_delay
-        self.session_rotation_interval = session_rotation_interval
-        self.max_retries_on_detection = max_retries_on_detection
-        self.captcha_solver_config = captcha_solver_config or CaptchaSolverConfig()
+        ],
+        description="Regex patterns for rate limiting detection",
+    )
+    rate_limit_min_delay: float = Field(1.0, description="Minimum delay for rate limiting")
+    rate_limit_max_delay: float = Field(5.0, description="Maximum delay for rate limiting")
+    human_simulation_enabled: bool = Field(True, description="Enable human simulation (legacy alias)")
+    session_rotation_interval: int = Field(100, description="Requests before session rotation")
+    max_retries_on_detection: int = Field(3, description="Max retries on detection")
+    captcha_solver_config: CaptchaSolverConfig = Field(
+        default_factory=CaptchaSolverConfig, description="CAPTCHA solver configuration"
+    )
 
 
 class AntiDetectionManager:

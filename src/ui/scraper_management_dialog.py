@@ -1,15 +1,17 @@
+import json
 import os
 from pathlib import Path
 from typing import Any
 
 import yaml  # type: ignore
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QDialog,
     QFormLayout,
+    QFrame,
     QGroupBox,
     QHBoxLayout,
     QHeaderView,
@@ -20,6 +22,7 @@ from PyQt6.QtWidgets import (
     QListWidgetItem,
     QMessageBox,
     QPushButton,
+    QScrollArea,
     QSpinBox,
     QSplitter,
     QTableWidget,
@@ -465,6 +468,71 @@ class AddScraperDialog(QDialog):
             QMessageBox.critical(self, "Error", f"Failed to create scraper: {e!s}")
 
 
+class WorkflowStepCard(QFrame):
+    """A visual card representing a workflow step."""
+
+    edit_clicked = pyqtSignal(object)  # Emits self
+    delete_clicked = pyqtSignal(object)  # Emits self
+
+    def __init__(self, step: WorkflowStep, index: int, parent=None):
+        super().__init__(parent)
+        self.step = step
+        self.index = index
+        self.setProperty("class", "card")  # Use style class if defined
+        self.setFrameStyle(QFrame.Shape.StyledPanel | QFrame.Shadow.Raised)
+        self.setStyleSheet("""
+            WorkflowStepCard {
+                background-color: #2d2d2d;
+                border: 1px solid #3d3d3d;
+                border-radius: 5px;
+                margin-bottom: 5px;
+            }
+            QLabel {
+                color: #e0e0e0;
+            }
+        """)
+        self.setup_ui()
+
+    def setup_ui(self):
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(10)
+
+        # Action Name (Left)
+        action_label = QLabel(f"<b>{self.step.action.upper()}</b>")
+        action_label.setFixedWidth(120)
+        layout.addWidget(action_label)
+
+        # Parameters (Middle)
+        params_str = json.dumps(self.step.params)
+        # Truncate if too long
+        if len(params_str) > 60:
+            params_str = params_str[:57] + "..."
+        
+        params_label = QLabel(params_str)
+        params_label.setStyleSheet("color: #aaaaaa;")
+        layout.addWidget(params_label, 1) # Stretch to fill space
+
+        # Buttons (Right)
+        btn_layout = QHBoxLayout()
+        btn_layout.setSpacing(5)
+
+        edit_btn = QPushButton("✏️")
+        edit_btn.setFixedSize(30, 30)
+        edit_btn.setToolTip("Edit Step")
+        edit_btn.clicked.connect(lambda: self.edit_clicked.emit(self))
+        btn_layout.addWidget(edit_btn)
+
+        delete_btn = QPushButton("🗑️")
+        delete_btn.setFixedSize(30, 30)
+        delete_btn.setToolTip("Delete Step")
+        delete_btn.setProperty("class", "danger") # if supported
+        delete_btn.clicked.connect(lambda: self.delete_clicked.emit(self))
+        btn_layout.addWidget(delete_btn)
+
+        layout.addLayout(btn_layout)
+
+
 class EditScraperDialog(QDialog):
     """Dialog for editing an existing scraper configuration."""
 
@@ -638,40 +706,57 @@ class EditScraperDialog(QDialog):
         tab = QWidget()
         layout = QVBoxLayout(tab)
 
-        # List widget for steps
-        self.workflow_list = QListWidget()
-        self.workflow_list.setDragDropMode(QListWidget.DragDropMode.InternalMove)
+        # Scroll Area for Cards
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        
+        # Container for the card layout
+        self.workflow_container = QWidget()
+        self.workflow_layout = QVBoxLayout(self.workflow_container)
+        self.workflow_layout.setSpacing(10)
+        self.workflow_layout.setContentsMargins(10, 10, 10, 10)
+        self.workflow_layout.addStretch() # Push cards to top
+        
+        scroll.setWidget(self.workflow_container)
+        layout.addWidget(scroll)
 
-        for step in self.config.workflows:
-            self.add_workflow_item(step)
-
-        layout.addWidget(self.workflow_list)
+        # Initial population
+        self.refresh_workflow_list()
 
         # Buttons
         btn_layout = QHBoxLayout()
         self.add_step_btn = QPushButton("+ Add Step")
         self.add_step_btn.clicked.connect(self.add_workflow_step)
+        self.add_step_btn.setProperty("class", "success")
         btn_layout.addWidget(self.add_step_btn)
-
-        self.edit_step_btn = QPushButton("✏️ Edit Step")
-        self.edit_step_btn.clicked.connect(self.edit_workflow_step)
-        btn_layout.addWidget(self.edit_step_btn)
-
-        self.remove_step_btn = QPushButton("- Remove Step")
-        self.remove_step_btn.clicked.connect(self.remove_workflow_step)
-        btn_layout.addWidget(self.remove_step_btn)
 
         btn_layout.addStretch()
         layout.addLayout(btn_layout)
 
         return tab
 
-    def add_workflow_item(self, step: WorkflowStep):
-        """Add a workflow step to the list."""
-        item_text = f"{step.action.upper()}: {step.params}"
-        item = QListWidgetItem(item_text)
-        item.setData(Qt.ItemDataRole.UserRole, step)  # Store the step object
-        self.workflow_list.addItem(item)
+    def refresh_workflow_list(self):
+        """Re-render the workflow list as cards."""
+        # Clear existing items (except the stretch at the end)
+        # Note: takeAt(0) removes from start. 
+        # We need to be careful not to remove the stretch if we want to keep it, 
+        # or just re-add it. Re-adding is easier.
+        
+        # Clear everything
+        while self.workflow_layout.count():
+            item = self.workflow_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+        
+        # Re-populate
+        for i, step in enumerate(self.config.workflows):
+            card = WorkflowStepCard(step, i)
+            card.edit_clicked.connect(self.edit_workflow_step_card)
+            card.delete_clicked.connect(self.delete_workflow_step_card)
+            self.workflow_layout.addWidget(card)
+            
+        self.workflow_layout.addStretch()
 
     def add_workflow_step(self):
         """Add a new workflow step."""
@@ -700,22 +785,15 @@ class EditScraperDialog(QDialog):
                 params = {"field": "", "selector": ""}
 
             step = WorkflowStep(action=action, params=params)
-            self.add_workflow_item(step)
-            self.edit_workflow_step(self.workflow_list.count() - 1)
+            self.config.workflows.append(step)
+            self.refresh_workflow_list()
+            
+            # Auto-open edit dialog for the new step
+            self.edit_workflow_step_card(self.workflow_layout.itemAt(self.workflow_layout.count()-2).widget())
 
-    def edit_workflow_step(self, index=None):
-        """Edit the selected workflow step."""
-        if index is None or isinstance(index, bool):
-            current_row = self.workflow_list.currentRow()
-            if current_row < 0:
-                return
-        else:
-            current_row = index
-
-        item = self.workflow_list.item(current_row)
-        step = item.data(Qt.ItemDataRole.UserRole)
-
-        # Simple input dialog for JSON params editing (improvement opportunity: dedicated form)
+    def edit_workflow_step_card(self, card: WorkflowStepCard):
+        """Edit the workflow step associated with the card."""
+        step = card.step
         import json
 
         current_params = json.dumps(step.params)
@@ -731,16 +809,22 @@ class EditScraperDialog(QDialog):
             try:
                 new_params = json.loads(new_params_str)
                 step.params = new_params
-                item.setData(Qt.ItemDataRole.UserRole, step)
-                item.setText(f"{step.action.upper()}: {step.params}")
+                self.refresh_workflow_list() # Refresh to show updated params
             except json.JSONDecodeError:
                 QMessageBox.warning(self, "Error", "Invalid JSON format for parameters.")
 
-    def remove_workflow_step(self):
-        """Remove selected workflow step."""
-        current_row = self.workflow_list.currentRow()
-        if current_row >= 0:
-            self.workflow_list.takeItem(current_row)
+    def delete_workflow_step_card(self, card: WorkflowStepCard):
+        """Remove the workflow step associated with the card."""
+        reply = QMessageBox.question(
+            self,
+            "Confirm Delete",
+            f"Delete this '{card.step.action}' step?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        )
+        
+        if reply == QMessageBox.StandardButton.Yes:
+            self.config.workflows.pop(card.index)
+            self.refresh_workflow_list()
 
     def create_yaml_tab(self):
         """Create the raw YAML editor tab."""
@@ -765,8 +849,11 @@ class EditScraperDialog(QDialog):
     def update_yaml_from_config(self):
         """Generate YAML from current config object and set to editor."""
         try:
+            # Use Pydantic's model_dump() to serialize everything, including nested models
+            config_dict = self.config.model_dump()
+            
             yaml_content = yaml.safe_dump(
-                self.config.model_dump(), default_flow_style=False, sort_keys=False
+                config_dict, default_flow_style=False, sort_keys=False
             )
             self.yaml_editor.setPlainText(yaml_content)
         except Exception as e:
@@ -793,9 +880,7 @@ class EditScraperDialog(QDialog):
                 self.add_selector_row(selector)
                 
             # Refresh Workflows
-            self.workflow_list.clear()
-            for step in self.config.workflows:
-                self.add_workflow_item(step)
+            self.refresh_workflow_list()
                 
             QMessageBox.information(self, "Success", "UI updated from YAML content.")
             
@@ -836,12 +921,8 @@ class EditScraperDialog(QDialog):
                     )
                 )
 
-        # 3. Workflows
-        workflows = []
-        for i in range(self.workflow_list.count()):
-            item = self.workflow_list.item(i)
-            step = item.data(Qt.ItemDataRole.UserRole)
-            workflows.append(step)
+        # 3. Workflows - self.config.workflows is maintained live by the card actions
+        workflows = self.config.workflows
 
         # Create new config (preserving other fields like login/anti_detection from original)
         return ScraperConfig(
