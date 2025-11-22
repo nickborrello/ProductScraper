@@ -845,59 +845,33 @@ class ResultsHub(QWidget):
         self.table.setColumnCount(len(columns))
         self.table.setHorizontalHeaderLabels(columns)
 
-                # Set column resize modes
+        # Set column resize modes
+        header = self.table.horizontalHeader()
 
-                header = self.table.horizontalHeader()
+        # 0: SKU - Content based
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
 
-                
+        # 1: Price - Content based
+        header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
 
-                # 0: SKU - Content based
+        # 2: Images - Fixed width, interactive
+        header.setSectionResizeMode(2, QHeaderView.ResizeMode.Interactive)
+        header.resizeSection(2, 150)
 
-                header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        # 3: Name - Takes remaining space
+        header.setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)
 
-                
+        # 4: Brand - Fixed width, interactive
+        header.setSectionResizeMode(4, QHeaderView.ResizeMode.Interactive)
+        header.resizeSection(4, 150)
 
-                # 1: Price - Content based
+        # 5: Status - Fixed width
+        header.setSectionResizeMode(5, QHeaderView.ResizeMode.Interactive)
+        header.resizeSection(5, 100)
 
-                header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
-
-                
-
-                # 2: Images - Fixed width, interactive
-
-                header.setSectionResizeMode(2, QHeaderView.ResizeMode.Interactive)
-
-                header.resizeSection(2, 150)
-
-                
-
-                # 3: Name - Takes remaining space
-
-                header.setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)
-
-                
-
-                # 4: Brand - Fixed width, interactive
-
-                header.setSectionResizeMode(4, QHeaderView.ResizeMode.Interactive)
-
-                header.resizeSection(4, 150)
-
-                
-
-                # 5: Status - Fixed width
-
-                header.setSectionResizeMode(5, QHeaderView.ResizeMode.Interactive)
-
-                header.resizeSection(5, 100)
-
-                
-
-                # 6: Actions - Fixed width
-
-                header.setSectionResizeMode(6, QHeaderView.ResizeMode.Fixed)
-
-                header.resizeSection(6, 120)
+        # 6: Actions - Fixed width
+        header.setSectionResizeMode(6, QHeaderView.ResizeMode.Fixed)
+        header.resizeSection(6, 120)
 
         # Filter data
         filtered_data = []
