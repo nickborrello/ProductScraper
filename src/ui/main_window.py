@@ -21,6 +21,7 @@ from PyQt6.QtWidgets import (
 from src.core.settings_manager import settings
 from src.ui.results_hub import ResultsHub
 from src.ui.styling import apply_dark_theme
+from src.ui.views.builder_view import BuilderView
 from src.ui.views.dashboard_view import DashboardView
 from src.ui.views.scraper_view import ScraperView
 from src.ui.views.settings_view import SettingsView
@@ -83,8 +84,9 @@ class MainWindow(QMainWindow):
 
         self.add_nav_button("Dashboard", "📊", 0, layout)
         self.add_nav_button("Scraper", "🕸️", 1, layout)
-        self.add_nav_button("Results", "🗄️", 2, layout)
-        self.add_nav_button("Settings", "⚙️", 3, layout)
+        self.add_nav_button("Builder", "🛠️", 2, layout)
+        self.add_nav_button("Results", "🗄️", 3, layout)
+        self.add_nav_button("Settings", "⚙️", 4, layout)
 
         layout.addStretch()
 
@@ -128,11 +130,15 @@ class MainWindow(QMainWindow):
         self.scraper_view.cancel_scraping_signal.connect(self.cancel_scraping_worker)
         self.content_area.addWidget(self.scraper_view)
 
-        # 2: Results Hub (formerly Data/ProductViewer)
+        # 2: Builder
+        self.builder_view = BuilderView()
+        self.content_area.addWidget(self.builder_view)
+
+        # 3: Results Hub (formerly Data/ProductViewer)
         self.results_hub = ResultsHub()
         self.content_area.addWidget(self.results_hub)
 
-        # 3: Settings
+        # 4: Settings
         self.settings_view = SettingsView()
         self.content_area.addWidget(self.settings_view)
 
