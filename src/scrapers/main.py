@@ -71,22 +71,17 @@ def run_scraping(file_path: str, selected_sites: list[str] | None = None, log_ca
         return
 
     log(f"📋 Available scrapers: {', '.join(available_sites)}")
-
-    # Filter to only passing scrapers if the file exists
-    passing_file = os.path.join(project_root, "data", "passing_scrapers.json")
-    if os.path.exists(passing_file):
-        try:
-            import json
-
-            with open(passing_file) as f:
-                passing_scrapers = json.load(f)
-            # Normalize names for comparison
-            passing_normalized = [s.lower().replace(" ", "") for s in passing_scrapers]
-            scrapers = [s for s in scrapers if s.lower().replace(" ", "") in passing_normalized]
-        except Exception as e:
-            print(f"Warning: Could not load passing scrapers file: {e}")
-
-    return scrapers
+    
+    # TODO: Implement actual scraping logic here
+    # The modular YAML-based scraper system needs to:
+    # 1. Load scraper configs from config_dir
+    # 2. Read SKUs from the Excel file at file_path
+    # 3. Execute scrapers on those SKUs
+    # 4. Save results to database
+    
+    log("⚠️ Scraping implementation pending - modular system not yet complete", "WARNING")
+    log(f"Would scrape file: {file_path}", "INFO")
+    log(f"Using scrapers: {', '.join(available_sites)}", "INFO")
 
 
 # Legacy compatibility - these functions are deprecated

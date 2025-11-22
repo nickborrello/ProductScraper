@@ -194,7 +194,7 @@ def get_product_pages() -> list[str]:
 
     """
 
-    pages_file = Path(__file__).parent.parent.parent.parent / "src" / "data" / "product_pages.json"
+    pages_file = Path(__file__).parent.parent.parent.parent / "data" / "product_pages.json"
 
     try:
         with open(pages_file, encoding="utf-8") as f:
