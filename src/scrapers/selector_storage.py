@@ -61,7 +61,7 @@ class SelectorData:
 class SelectorStorage:
     """JSON-based storage for CSS selectors with confidence scoring."""
 
-    def __init__(self, storage_path: str = "src/data/selectors.json"):
+    def __init__(self, storage_path: str = "data/selectors.json"):
         self.storage_path = Path(storage_path)
         self.storage_path.parent.mkdir(parents=True, exist_ok=True)
         self.data: dict[str, dict[str, SelectorData]] = {}
@@ -181,7 +181,7 @@ class SelectorStorage:
 class SelectorManager:
     """High-level manager for selector learning, retrieval, and validation."""
 
-    def __init__(self, storage_path: str = "src/data/selectors.json"):
+    def __init__(self, storage_path: str = "data/selectors.json"):
         self.storage = SelectorStorage(storage_path)
 
     def learn_selector(

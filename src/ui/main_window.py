@@ -102,11 +102,16 @@ class MainWindow(QMainWindow):
         # Update button states
         for i, btn in enumerate(self.nav_buttons):
             btn.setChecked(i == index)
+        
+        # Refresh dashboard when switching to it
+        if index == 0:
+            self.refresh_dashboard()
 
     def init_views(self):
         # 0: Dashboard
         self.dashboard_view = DashboardView()
         self.dashboard_view.btn_scrape.clicked.connect(lambda: self.switch_view(1))
+        self.dashboard_view.btn_refresh.clicked.connect(self.refresh_dashboard)
         self.content_area.addWidget(self.dashboard_view)
 
         # 1: Scraper
@@ -157,8 +162,12 @@ class MainWindow(QMainWindow):
         self.scraper_view.on_scraping_finished()
         self.scraper_view.log_message("Scraping process finished.", "SUCCESS")
         
-        # Refresh dashboard stats if needed
-        # self.dashboard_view.update_stats(...)
+        # Refresh dashboard stats after scraping
+        self.refresh_dashboard()
+    
+    def refresh_dashboard(self):
+        """Refresh the dashboard stats."""
+        self.dashboard_view.refresh_stats()
 
     def on_scraping_error(self, error_info):
         exc_type, exc_value, exc_traceback = error_info

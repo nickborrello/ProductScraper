@@ -78,7 +78,7 @@ class FailureAnalytics:
         self,
         max_records: int = 10000,
         retention_days: int = 30,
-        data_dir: str = "src/data/analytics",
+        data_dir: str = "data/analytics",
     ):
         """
         Initialize the failure analytics system.

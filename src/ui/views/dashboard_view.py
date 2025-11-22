@@ -1,3 +1,6 @@
+import os
+import sqlite3
+from pathlib import Path
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QPushButton, QGridLayout
 )
@@ -6,7 +9,14 @@ from PyQt6.QtCore import Qt
 class DashboardView(QWidget):
     def __init__(self):
         super().__init__()
+        
+        # Database path setup
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
+        self.db_path = Path(project_root) / "data" / "databases" / "products.db"
+        
         self.init_ui()
+        self.refresh_stats()  # Load initial stats
 
     def init_ui(self):
         layout = QVBoxLayout(self)
@@ -84,7 +94,44 @@ class DashboardView(QWidget):
         
         return card
 
+    def refresh_stats(self):
+        """Load and update stats from the database."""
+        # Check if database exists
+        if not self.db_path.exists():
+            self.update_stats(0, "No database")
+            return
+        
+        try:
+            # Connect to database
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            # Get total products
+            cursor.execute("SELECT COUNT(*) FROM products")
+            total_products = cursor.fetchone()[0]
+            
+            # Get last update date
+            cursor.execute("SELECT MAX(last_updated) FROM products")
+            last_update_raw = cursor.fetchone()[0]
+            
+            # Format last update
+            if last_update_raw:
+                # Extract just the date part if it's a datetime string
+                last_update = last_update_raw.split()[0] if ' ' in last_update_raw else last_update_raw
+            else:
+                last_update = "Never"
+            
+            conn.close()
+            
+            # Update the UI
+            self.update_stats(total_products, last_update)
+            
+        except Exception as e:
+            print(f"Error refreshing dashboard stats: {e}")
+            self.update_stats(0, "Error")
+    
     def update_stats(self, total_products, last_update):
+        """Update the stat card displays."""
         # Find the value label in the card layout (index 1)
         self.total_products_card.layout().itemAt(1).widget().setText(str(total_products))
         self.last_update_card.layout().itemAt(1).widget().setText(last_update)

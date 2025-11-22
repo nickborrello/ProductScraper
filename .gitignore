@@ -51,13 +51,13 @@ Thumbs.db
 *.log
 
 # Database and large data files
-src/data/adaptive_retry_*.json
-src/data/retry_history_*.json
-src/data/analytics/
-src/data/browser_profiles/
-src/data/databases/
+data/adaptive_retry_*.json
+data/retry_history_*.json
+data/analytics/
+data/browser_profiles/
 data/databases/
-src/data/product_pages.json
+data/product_pages.json
+data/spreadsheets/
 inventory/  # Legacy inventory folder if it still exists
 
 # Sensitive configuration files

@@ -21,16 +21,16 @@ class TaxonomyManager:
             db_path: Path to SQLite database
         """
         if taxonomy_file is None:
-            # Default: src/data/taxonomy.json relative to project root
+            # Default: data/taxonomy.json relative to project root
             script_dir = Path(__file__).parent.parent.parent.parent
-            self.taxonomy_file = script_dir / "src" / "data" / "taxonomy.json"
+            self.taxonomy_file = script_dir / "data" / "taxonomy.json"
         else:
             self.taxonomy_file = Path(taxonomy_file)
 
         if db_path is None:
             # Default database path
             script_dir = Path(__file__).parent.parent.parent.parent
-            self.db_path = script_dir / "src" / "data" / "databases" / "products.db"
+            self.db_path = script_dir / "data" / "databases" / "products.db"
         else:
             self.db_path = Path(db_path)
 

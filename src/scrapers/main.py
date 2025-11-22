@@ -19,13 +19,16 @@ import os
 from src.core.database.refresh import refresh_database_from_xml
 
 
-def run_scraping(file_path: str, selected_sites: list[str] | None = None, **kwargs) -> None:
+def run_scraping(file_path: str, selected_sites: list[str] | None = None, log_callback=None, status_callback=None, progress_callback=None, **kwargs) -> None:
     """
     Run scraping using the new modular scraper system.
 
     Args:
         file_path: Path to Excel file containing SKUs to scrape
         selected_sites: List of site names to scrape (optional)
+        log_callback: Optional callback for logging messages
+        status_callback: Optional callback for status updates
+        progress_callback: Optional callback for progress updates
         **kwargs: Additional arguments passed to individual scrapers
     """
     print("🚀 Starting scraping with new modular scraper system...")
@@ -34,12 +37,18 @@ def run_scraping(file_path: str, selected_sites: list[str] | None = None, **kwar
     def log(msg, level="INFO"):
         print(f"[{level}] {msg}")
         if log_callback:
-            log_callback.emit(msg, level)
+            try:
+                log_callback.emit(msg, level)
+            except AttributeError:
+                log_callback(msg, level)
             
     # Helper for status updates
     def update_status(msg):
         if status_callback:
-            status_callback.emit(msg)
+            try:
+                status_callback.emit(msg)
+            except AttributeError:
+                status_callback(msg)
 
     # Load available scraper configurations
     config_dir = os.path.join(project_root, "src", "scrapers", "configs")

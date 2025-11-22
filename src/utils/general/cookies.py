@@ -5,14 +5,14 @@ import pickle
 
 
 def save_cookies(driver, filename):
-    os.makedirs("src/data/cookies", exist_ok=True)
-    filepath = os.path.join("src/data", "cookies", filename)
+    os.makedirs("data/cookies", exist_ok=True)
+    filepath = os.path.join("data", "cookies", filename)
     with open(filepath, "wb") as f:
         pickle.dump(driver.get_cookies(), f)
 
 
 def load_cookies(driver, filename, domain_url):
-    filepath = os.path.join("src/data", "cookies", filename)
+    filepath = os.path.join("data", "cookies", filename)
     if not os.path.exists(filepath):
         return False
     try:
