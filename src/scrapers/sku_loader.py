@@ -99,18 +99,36 @@ class SKULoader:
             # Read Excel file
             df = pd.read_excel(file_path)
 
-            # Check if SKU column exists
-            if self.sku_column not in df.columns:
-                available_cols = ", ".join(df.columns)
-                raise ValueError(
-                    f"SKU column '{self.sku_column}' not found. Available columns: {available_cols}"
-                )
+            # Try to find SKU column - check common variants
+            sku_column = None
+            common_sku_names = ["SKU", "SKU_NO", "sku", "sku_no", "Sku", "SKU NO", "sku no"]
+            
+            for col_name in common_sku_names:
+                if col_name in df.columns:
+                    sku_column = col_name
+                    break
+            
+            # If not found, use the configured column name
+            if sku_column is None:
+                if self.sku_column in df.columns:
+                    sku_column = self.sku_column
+                else:
+                    available_cols = ", ".join(df.columns)
+                    raise ValueError(
+                        f"SKU column not found. Tried: {', '.join(common_sku_names)}. "
+                        f"Available columns: {available_cols}"
+                    )
 
             # Convert to list of dicts
             records = df.to_dict("records")
 
             # Filter out rows without SKU
-            records = [r for r in records if pd.notna(r.get(self.sku_column))]
+            records = [r for r in records if pd.notna(r.get(sku_column))]
+
+            # Normalize SKU column name to "SKU" for consistency
+            for record in records:
+                if sku_column != "SKU":
+                    record["SKU"] = record.pop(sku_column)
 
             # Convert all values to strings and strip whitespace
             for record in records:

@@ -94,3 +94,28 @@ class ScraperConfig(BaseModel):
         None, description="Data validation and no-results configuration"
     )
     test_skus: list[str] | None = Field(None, description="List of SKUs to use for testing")
+    
+    def requires_login(self) -> bool:
+        """Check if this scraper requires authentication/login.
+        
+        Returns:
+            True if login is required, False otherwise
+        """
+        # Check if login config is explicitly defined
+        if self.login is not None:
+            return True
+        
+        # Check workflow steps for login-related actions
+        login_keywords = {"login", "authenticate", "sign_in", "signin", "password", "username"}
+        for step in self.workflows:
+            action_lower = step.action.lower()
+            if any(keyword in action_lower for keyword in login_keywords):
+                return True
+            
+            # Check params for credential-related fields
+            if step.params:
+                param_str = str(step.params).lower()
+                if any(keyword in param_str for keyword in login_keywords):
+                    return True
+        
+        return False
