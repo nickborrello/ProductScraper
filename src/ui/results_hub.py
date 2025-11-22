@@ -103,6 +103,13 @@ class ConsolidationWidget(QWidget):
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(15)
 
+        # Initialize thumbnail layout early to avoid AttributeError
+        self.thumbnail_container = QWidget()
+        self.thumbnail_layout = QHBoxLayout(self.thumbnail_container)
+        self.thumbnail_layout.setSpacing(10)
+        self.thumbnail_layout.setContentsMargins(5, 5, 5, 5)
+        self.thumbnail_layout.addStretch()
+
         # Title with progress
         if self.consolidation_queue:
             progress_text = f"Product {self.current_index + 1} of {len(self.consolidation_queue)}"
@@ -201,11 +208,7 @@ class ConsolidationWidget(QWidget):
         thumbnail_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         thumbnail_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
-        self.thumbnail_container = QWidget()
-        self.thumbnail_layout = QHBoxLayout(self.thumbnail_container)
-        self.thumbnail_layout.setSpacing(10)
-        self.thumbnail_layout.setContentsMargins(5, 5, 5, 5)
-        self.thumbnail_layout.addStretch()
+        # thumbnail_container initialized at top of create_ui
 
         thumbnail_scroll.setWidget(self.thumbnail_container)
         right_layout.addWidget(thumbnail_scroll)
@@ -688,8 +691,8 @@ class ResultsHub(QWidget):
 
         # Install custom delegate for better text editing on Name and Brand columns
         text_delegate = LargeTextDelegate()
-        self.table.setItemDelegateForColumn(3, text_delegate)  # Name column
-        self.table.setItemDelegateForColumn(4, text_delegate)  # Brand column
+        self.table.setItemDelegateForColumn(2, text_delegate)  # Name column
+        self.table.setItemDelegateForColumn(3, text_delegate)  # Brand column
 
         content_layout.addWidget(self.table)
 
@@ -816,7 +819,7 @@ class ResultsHub(QWidget):
             return
 
         # Define columns
-        columns = ["SKU", "Price", "Sources", "Name", "Brand", "Status"]
+        columns = ["SKU", "Price", "Name", "Brand", "Status"]
 
         self.table.setColumnCount(len(columns))
         self.table.setHorizontalHeaderLabels(columns)
@@ -846,7 +849,7 @@ class ResultsHub(QWidget):
 
         for row_idx, item in enumerate(filtered_data):
             sku = item["sku"]
-            sources = ", ".join(item["scrapers"].keys())
+            # sources = ", ".join(item["scrapers"].keys()) # Removed
 
             # Get name and brand from first available source
             name = ""
@@ -877,17 +880,13 @@ class ResultsHub(QWidget):
             item_price.setFlags(item_price.flags() ^ Qt.ItemFlag.ItemIsEditable)
             self.table.setItem(row_idx, 1, item_price)
 
-            item_sources = QTableWidgetItem(sources)
-            item_sources.setFlags(item_sources.flags() ^ Qt.ItemFlag.ItemIsEditable)
-            self.table.setItem(row_idx, 2, item_sources)
-
             # Name and Brand are editable
-            self.table.setItem(row_idx, 3, QTableWidgetItem(name))
-            self.table.setItem(row_idx, 4, QTableWidgetItem(brand))
+            self.table.setItem(row_idx, 2, QTableWidgetItem(name))
+            self.table.setItem(row_idx, 3, QTableWidgetItem(brand))
 
             item_status = QTableWidgetItem(status)
             item_status.setFlags(item_status.flags() ^ Qt.ItemFlag.ItemIsEditable)
-            self.table.setItem(row_idx, 5, item_status)
+            self.table.setItem(row_idx, 4, item_status)
 
         # Resize columns
         header = self.table.horizontalHeader()
@@ -918,12 +917,12 @@ class ResultsHub(QWidget):
         for product in self.consolidated_data:
             if product["sku"] == sku:
                 # Update based on column
-                if col == 3:  # Name
+                if col == 2:  # Name
                     # Update in first available scraper
                     for scraper_data in product["scrapers"].values():
                         scraper_data["Name"] = new_value
                         break
-                elif col == 4:  # Brand
+                elif col == 3:  # Brand
                     for scraper_data in product["scrapers"].values():
                         scraper_data["Brand"] = new_value
                         break
@@ -931,8 +930,8 @@ class ResultsHub(QWidget):
 
     def on_product_double_clicked(self, row, col):
         """Handle double-click on product row - only trigger consolidation on SKU or Status columns."""
-        # Allow editing for Name (col 3) and Brand (col 4)
-        if col in [3, 4]:
+        # Allow editing for Name (col 2) and Brand (col 3)
+        if col in [2, 3]:
             return  # Let the edit happen
 
         # For other columns (SKU, Sources, Status), trigger consolidation
