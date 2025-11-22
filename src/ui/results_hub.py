@@ -177,13 +177,7 @@ class ConsolidationWidget(QWidget):
         self.image_source_combo.currentIndexChanged.connect(self.on_image_source_changed)
         right_layout.addWidget(self.image_source_combo)
 
-        # Pre-select if we have a previous image selection
-        if "Images" in self.selections:
-            saved_scraper = self.selections["Images"]
-            for i in range(self.image_source_combo.count()):
-                if self.image_source_combo.itemData(i) == saved_scraper:
-                    self.image_source_combo.setCurrentIndex(i)
-                    break
+        # Pre-select moved to after thumbnail_layout init to avoid AttributeError
 
         # Main image preview
         self.main_image_label = QLabel("Select an image source to preview")
@@ -216,6 +210,14 @@ class ConsolidationWidget(QWidget):
         thumbnail_scroll.setWidget(self.thumbnail_container)
         right_layout.addWidget(thumbnail_scroll)
 
+        # Pre-select if we have a previous image selection (Now safe to trigger signal)
+        if "Images" in self.selections:
+            saved_scraper = self.selections["Images"]
+            for i in range(self.image_source_combo.count()):
+                if self.image_source_combo.itemData(i) == saved_scraper:
+                    self.image_source_combo.setCurrentIndex(i)
+                    break
+        
         right_layout.addStretch()
 
         content_layout.addWidget(right_widget)
@@ -225,7 +227,10 @@ class ConsolidationWidget(QWidget):
         button_layout = QHBoxLayout()
 
         # Navigation buttons (if in queue mode)
-        if self.consolidation_queue and len(self.consolidation_queue) > 1:
+        # Navigation buttons (if in queue mode)
+        is_queue_mode = self.consolidation_queue and len(self.consolidation_queue) > 1
+        
+        if is_queue_mode:
             prev_btn = QPushButton("← Previous")
             prev_btn.setProperty("class", "secondary")
             prev_btn.clicked.connect(self.go_to_previous)
@@ -247,10 +252,12 @@ class ConsolidationWidget(QWidget):
         cancel_btn.clicked.connect(self.reject)
         button_layout.addWidget(cancel_btn)
 
-        save_btn = QPushButton("💾 Save")
-        save_btn.setProperty("class", "success")
-        save_btn.clicked.connect(self.save_consolidated)
-        button_layout.addWidget(save_btn)
+        # Only show explicit Save button in single mode (Queue mode uses Next/Finish)
+        if not is_queue_mode:
+            save_btn = QPushButton("💾 Save & Close")
+            save_btn.setProperty("class", "success")
+            save_btn.clicked.connect(self.save_and_close)
+            button_layout.addWidget(save_btn)
 
         layout.addLayout(button_layout)
 
@@ -497,6 +504,11 @@ class ConsolidationWidget(QWidget):
         if self.results_hub:
             self.results_hub.on_consolidation_saved(self.get_consolidated_data())
 
+    def save_and_close(self):
+        """Save and exit consolidation."""
+        self.save_consolidated()
+        self.reject()
+
     def reject(self):
         """Cancel consolidation."""
         if self.results_hub:
@@ -518,7 +530,11 @@ class ConsolidationWidget(QWidget):
             self.reject()
 
     def go_to_previous(self):
-        """Move to previous product without saving."""
+        """Move to previous product (auto-saving current)."""
+        # Auto-save current product
+        if self.selections:
+            self.save_consolidated()
+
         if self.results_hub and self.current_index > 0:
             self.results_hub.consolidation_index = self.current_index - 1
             prev_sku = self.consolidation_queue[self.current_index - 1]["sku"]
@@ -672,8 +688,8 @@ class ResultsHub(QWidget):
 
         # Install custom delegate for better text editing on Name and Brand columns
         text_delegate = LargeTextDelegate()
-        self.table.setItemDelegateForColumn(2, text_delegate)  # Name column
-        self.table.setItemDelegateForColumn(3, text_delegate)  # Brand column
+        self.table.setItemDelegateForColumn(3, text_delegate)  # Name column
+        self.table.setItemDelegateForColumn(4, text_delegate)  # Brand column
 
         content_layout.addWidget(self.table)
 
@@ -852,12 +868,26 @@ class ResultsHub(QWidget):
             else:
                 status = "⏳ Needs Consolidation"
 
-            self.table.setItem(row_idx, 0, QTableWidgetItem(str(sku)))
-            self.table.setItem(row_idx, 1, QTableWidgetItem(item.get("price", "")))
-            self.table.setItem(row_idx, 2, QTableWidgetItem(sources))
+            # Create items with read-only flags for non-editable columns
+            item_sku = QTableWidgetItem(str(sku))
+            item_sku.setFlags(item_sku.flags() ^ Qt.ItemFlag.ItemIsEditable)
+            self.table.setItem(row_idx, 0, item_sku)
+
+            item_price = QTableWidgetItem(item.get("price", ""))
+            item_price.setFlags(item_price.flags() ^ Qt.ItemFlag.ItemIsEditable)
+            self.table.setItem(row_idx, 1, item_price)
+
+            item_sources = QTableWidgetItem(sources)
+            item_sources.setFlags(item_sources.flags() ^ Qt.ItemFlag.ItemIsEditable)
+            self.table.setItem(row_idx, 2, item_sources)
+
+            # Name and Brand are editable
             self.table.setItem(row_idx, 3, QTableWidgetItem(name))
             self.table.setItem(row_idx, 4, QTableWidgetItem(brand))
-            self.table.setItem(row_idx, 5, QTableWidgetItem(status))
+
+            item_status = QTableWidgetItem(status)
+            item_status.setFlags(item_status.flags() ^ Qt.ItemFlag.ItemIsEditable)
+            self.table.setItem(row_idx, 5, item_status)
 
         # Resize columns
         header = self.table.horizontalHeader()
@@ -888,12 +918,12 @@ class ResultsHub(QWidget):
         for product in self.consolidated_data:
             if product["sku"] == sku:
                 # Update based on column
-                if col == 2:  # Name
+                if col == 3:  # Name
                     # Update in first available scraper
                     for scraper_data in product["scrapers"].values():
                         scraper_data["Name"] = new_value
                         break
-                elif col == 3:  # Brand
+                elif col == 4:  # Brand
                     for scraper_data in product["scrapers"].values():
                         scraper_data["Brand"] = new_value
                         break
@@ -901,8 +931,8 @@ class ResultsHub(QWidget):
 
     def on_product_double_clicked(self, row, col):
         """Handle double-click on product row - only trigger consolidation on SKU or Status columns."""
-        # Allow editing for Name (col 2) and Brand (col 3)
-        if col in [2, 3]:
+        # Allow editing for Name (col 3) and Brand (col 4)
+        if col in [3, 4]:
             return  # Let the edit happen
 
         # For other columns (SKU, Sources, Status), trigger consolidation

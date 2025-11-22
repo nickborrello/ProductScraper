@@ -68,6 +68,19 @@ class ValidationConfig(BaseModel):
     )
 
 
+class NormalizationRule(BaseModel):
+    """Rule for normalizing extracted data."""
+
+    field: str = Field(..., description="Name of the field to normalize")
+    action: str = Field(
+        ...,
+        description="Normalization action (e.g., 'title_case', 'remove_prefix', 'trim')",
+    )
+    params: dict[str, Any] = Field(
+        default_factory=dict, description="Parameters for the action"
+    )
+
+
 class ScraperConfig(BaseModel):
     """Main configuration for a scraper."""
 
@@ -80,6 +93,9 @@ class ScraperConfig(BaseModel):
     )
     workflows: list[WorkflowStep] = Field(
         default_factory=list, description="List of workflow steps"
+    )
+    normalization: list[NormalizationRule] | None = Field(
+        None, description="List of normalization rules"
     )
     login: LoginConfig | None = Field(None, description="Login configuration if required")
     timeout: int = Field(30, description="Default timeout in seconds")

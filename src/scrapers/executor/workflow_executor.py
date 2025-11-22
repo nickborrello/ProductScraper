@@ -173,6 +173,10 @@ class WorkflowExecutor:
                 logger.info(f"Step {i}/{len(self.config.workflows)}: Completed {step.action}")
 
             logger.info(f"Workflow execution completed for: {self.config.name}")
+            
+            # Apply normalization rules
+            self.apply_normalization()
+
             return {
                 "success": True,
                 "results": self.results,
@@ -1385,3 +1389,47 @@ class WorkflowExecutor:
     def get_results(self) -> dict[str, Any]:
         """Get the current execution results."""
         return self.results.copy()
+    def apply_normalization(self):
+        """Apply normalization rules to extracted results."""
+        if not self.config.normalization:
+            return
+
+        for rule in self.config.normalization:
+            field = rule.field
+            if field in self.results:
+                value = self.results[field]
+                if isinstance(value, str):
+                    if rule.action == "title_case":
+                        self.results[field] = value.title()
+                    elif rule.action == "lowercase":
+                        self.results[field] = value.lower()
+                    elif rule.action == "uppercase":
+                        self.results[field] = value.upper()
+                    elif rule.action == "trim":
+                        self.results[field] = value.strip()
+                    elif rule.action == "remove_prefix":
+                        prefix = rule.params.get("prefix", "")
+                        if prefix and value.startswith(prefix):
+                            self.results[field] = value[len(prefix):].strip()
+                    elif rule.action == "extract_weight":
+                        # Extract number and unit, convert to lbs
+                        import re
+
+                        # Match number (int or float) followed by optional unit
+                        # Handles: "5 lbs", "5.5kg", "Weight: 10 oz", etc.
+                        match = re.search(
+                            r"(\d+(?:\.\d+)?)\s*(lbs?|lb|oz|kg|g)?", value, re.IGNORECASE
+                        )
+                        if match:
+                            weight = float(match.group(1))
+                            unit = (match.group(2) or "lb").lower()
+
+                            if unit in ["oz"]:
+                                weight = weight / 16.0
+                            elif unit in ["kg"]:
+                                weight = weight * 2.20462
+                            elif unit in ["g"]:
+                                weight = weight * 0.00220462
+
+                            # Format to 2 decimal places
+                            self.results[field] = f"{weight:.2f}"
