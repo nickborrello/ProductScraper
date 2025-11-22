@@ -1,3 +1,4 @@
+import json
 import os
 from pathlib import Path
 from typing import Any
@@ -6,6 +7,8 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
     QDialog,
+    QFormLayout,
+    QFrame,
     QGroupBox,
     QHBoxLayout,
     QLabel,
@@ -13,6 +16,8 @@ from PyQt6.QtWidgets import (
     QListWidgetItem,
     QMessageBox,
     QPushButton,
+    QScrollArea,
+    QSizePolicy,
     QSplitter,
     QTextEdit,
     QVBoxLayout,
@@ -23,6 +28,60 @@ from src.scrapers.models.config import ScraperConfig
 from src.scrapers.parser.yaml_parser import ScraperConfigParser
 from src.ui.scraper_builder_dialog import ScraperBuilderDialog
 from src.ui.scraper_management_dialog import EditScraperDialog
+
+
+class InfoCard(QFrame):
+    """A simple styled information card."""
+    def __init__(self, title: str, content: str | list[tuple[str, str]], parent=None):
+        super().__init__(parent)
+        self.setProperty("class", "card")
+        self.setStyleSheet("""
+            InfoCard {
+                background-color: #252525;
+                border: 1px solid #333333;
+                border-radius: 5px;
+            }
+            QLabel.title {
+                font-weight: bold;
+                color: #3B8ED0;
+                font-size: 14px;
+            }
+            QLabel.label {
+                color: #B0B0B0;
+                font-weight: bold;
+            }
+            QLabel.value {
+                color: #E0E0E0;
+            }
+        """)
+        
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(10)
+        
+        # Title
+        title_lbl = QLabel(title)
+        title_lbl.setProperty("class", "title")
+        layout.addWidget(title_lbl)
+        
+        # Content
+        if isinstance(content, str):
+            content_lbl = QLabel(content)
+            content_lbl.setProperty("class", "value")
+            content_lbl.setWordWrap(True)
+            layout.addWidget(content_lbl)
+        elif isinstance(content, list):
+            # Grid of label-value pairs
+            grid = QFormLayout()
+            grid.setSpacing(5)
+            for label, value in content:
+                l_widget = QLabel(f"{label}:")
+                l_widget.setProperty("class", "label")
+                v_widget = QLabel(str(value))
+                v_widget.setProperty("class", "value")
+                v_widget.setWordWrap(True)
+                grid.addRow(l_widget, v_widget)
+            layout.addLayout(grid)
 
 
 class BuilderView(QWidget):
@@ -118,14 +177,26 @@ class BuilderView(QWidget):
         header.setFont(QFont("Arial", 12, QFont.Weight.Bold))
         layout.addWidget(header)
 
-        # Details text area
-        self.details_text = QTextEdit()
-        self.details_text.setReadOnly(True)
-        self.details_text.setFont(QFont("Consolas", 10))
-        layout.addWidget(self.details_text)
+        # Scroll area for details
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        
+        # Container for cards
+        self.details_container = QWidget()
+        self.details_layout = QVBoxLayout(self.details_container)
+        self.details_layout.setSpacing(15)
+        self.details_layout.setContentsMargins(5, 5, 5, 5)
+        self.details_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        
+        scroll.setWidget(self.details_container)
+        layout.addWidget(scroll)
 
         # Placeholder text
-        self.details_text.setPlainText("Select a scraper to view its configuration details.")
+        self.placeholder_label = QLabel("Select a scraper to view its configuration details.")
+        self.placeholder_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.placeholder_label.setStyleSheet("color: #888; font-size: 14px; margin-top: 50px;")
+        self.details_layout.addWidget(self.placeholder_label)
 
         return panel
 
@@ -141,9 +212,6 @@ class BuilderView(QWidget):
             if not config_files:
                 self.status_label.setText(
                     "No scraper configurations found. Click 'Build New Scraper' to create one."
-                )
-                self.details_text.setPlainText(
-                    "No scrapers available. Create your first scraper configuration."
                 )
                 return
 
@@ -190,56 +258,83 @@ class BuilderView(QWidget):
             scraper_name = selected_items[0].text().replace("📄 ", "").replace("❌ ", "")
             self.show_scraper_details(scraper_name)
         else:
-            self.details_text.setPlainText("Select a scraper to view its configuration details.")
+            # Show placeholder
+            self.clear_details()
+            self.details_layout.addWidget(self.placeholder_label)
+            self.placeholder_label.show()
+
+    def clear_details(self):
+        """Clear the details container."""
+        while self.details_layout.count():
+            item = self.details_layout.takeAt(0)
+            if item.widget():
+                item.widget().hide() 
+                item.widget().deleteLater()
 
     def show_scraper_details(self, scraper_name):
-        """Show details for the selected scraper."""
+        """Show details for the selected scraper as cards."""
         if scraper_name not in self.scraper_configs:
-            self.details_text.setPlainText(
-                f"Configuration for '{scraper_name}' could not be loaded."
-            )
+            self.clear_details()
+            error_lbl = QLabel(f"Configuration for '{scraper_name}' could not be loaded.")
+            error_lbl.setStyleSheet("color: red;")
+            self.details_layout.addWidget(error_lbl)
             return
 
         config_data = self.scraper_configs[scraper_name]
         config: ScraperConfig = config_data["config"]
         file_path = config_data["file_path"]
 
-        # Build details text
-        separator = "=" * 50
-        details = f"""
-Scraper Configuration: {config.name}
-{separator}
+        self.clear_details()
 
-📁 File: {file_path}
-🌐 Base URL: {config.base_url}
-⏱️  Timeout: {config.timeout} seconds
-🔄 Retries: {config.retries}
+        # 1. General Info Card
+        general_info = [
+            ("File", str(file_path.name)),
+            ("Base URL", config.base_url),
+            ("Timeout", f"{config.timeout}s"),
+            ("Retries", str(config.retries)),
+        ]
+        self.details_layout.addWidget(InfoCard("General Settings", general_info))
 
-📋 Selectors ({len(config.selectors)}):
-"""
+        # 2. Selectors Card
+        selectors_info = []
+        for sel in config.selectors:
+            info = f"'{sel.selector}'"
+            if sel.attribute:
+                info += f" → {sel.attribute}"
+            if sel.multiple:
+                info += " [Multi]"
+            selectors_info.append((sel.name, info))
+        
+        if not selectors_info:
+            selectors_info = [("None", "No selectors defined")]
+            
+        self.details_layout.addWidget(InfoCard(f"Selectors ({len(config.selectors)})", selectors_info))
 
-        for selector in config.selectors:
-            details += f"  • {selector.name}: '{selector.selector}'"
-            if selector.attribute:
-                details += f" → {selector.attribute}"
-            if selector.multiple:
-                details += " (multiple)"
-            details += "\n"
+        # 3. Workflows Card
+        workflows_info = []
+        for i, step in enumerate(config.workflows, 1):
+            # Format params nicely
+            param_str = json.dumps(step.params)
+            if len(param_str) > 50:
+                param_str = param_str[:47] + "..."
+            workflows_info.append((f"Step {i} ({step.action.upper()})", param_str))
+            
+        if not workflows_info:
+            workflows_info = [("None", "No workflow steps defined")]
 
-        details += f"\n⚙️ Workflows ({len(config.workflows)}):\n"
-        for i, workflow in enumerate(config.workflows, 1):
-            details += f"  {i}. {workflow.action}: {workflow.params}\n"
+        self.details_layout.addWidget(InfoCard(f"Workflow Steps ({len(config.workflows)})", workflows_info))
 
-        if config.login is not None:
-            details += "\n🔐 Login Configuration:\n"
-            details += f"  URL: {config.login.url}\n"
-            details += f"  Username field: {config.login.username_field}\n"
-            details += f"  Password field: {config.login.password_field}\n"
-            details += f"  Submit button: {config.login.submit_button}\n"
-            if config.login.success_indicator:
-                details += f"  Success indicator: {config.login.success_indicator}\n"
+        # 4. Login Card (if exists)
+        if config.login:
+            login_info = [
+                ("URL", config.login.url),
+                ("User Field", config.login.username_field),
+                ("Pass Field", config.login.password_field),
+                ("Submit Btn", config.login.submit_button),
+            ]
+            self.details_layout.addWidget(InfoCard("Login Configuration", login_info))
 
-        self.details_text.setPlainText(details)
+        self.details_layout.addStretch()
 
     def build_scraper(self):
         """Open the AI Scraper Builder Wizard."""
@@ -266,6 +361,7 @@ Scraper Configuration: {config.name}
         dialog = EditScraperDialog(config_data["config"], config_data["file_path"], self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             self.load_scrapers()  # Refresh the list
+            self.show_scraper_details(scraper_name) # Refresh details view
 
     def delete_selected_scraper(self):
         """Delete the selected scraper."""
@@ -292,6 +388,9 @@ Scraper Configuration: {config.name}
                         self, "Success", f"Scraper '{scraper_name}' has been deleted."
                     )
                     self.load_scrapers()  # Refresh the list
+                    self.clear_details()
+                    self.details_layout.addWidget(self.placeholder_label)
+                    self.placeholder_label.show()
                 else:
                     QMessageBox.warning(self, "Error", f"Scraper '{scraper_name}' not found.")
             except Exception as e:
