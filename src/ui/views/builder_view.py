@@ -192,13 +192,18 @@ class BuilderView(QWidget):
         scroll.setWidget(self.details_container)
         layout.addWidget(scroll)
 
-        # Placeholder text
-        self.placeholder_label = QLabel("Select a scraper to view its configuration details.")
-        self.placeholder_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.placeholder_label.setStyleSheet("color: #888; font-size: 14px; margin-top: 50px;")
-        self.details_layout.addWidget(self.placeholder_label)
+        # Show initial placeholder
+        self.show_placeholder()
 
         return panel
+
+    def show_placeholder(self):
+        """Show the placeholder text in the details panel."""
+        self.clear_details()
+        placeholder = QLabel("Select a scraper to view its configuration details.")
+        placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        placeholder.setStyleSheet("color: #888; font-size: 14px; margin-top: 50px;")
+        self.details_layout.addWidget(placeholder)
 
     def load_scrapers(self):
         """Load all scraper configurations."""
@@ -259,9 +264,7 @@ class BuilderView(QWidget):
             self.show_scraper_details(scraper_name)
         else:
             # Show placeholder
-            self.clear_details()
-            self.details_layout.addWidget(self.placeholder_label)
-            self.placeholder_label.show()
+            self.show_placeholder()
 
     def clear_details(self):
         """Clear the details container."""
@@ -388,9 +391,7 @@ class BuilderView(QWidget):
                         self, "Success", f"Scraper '{scraper_name}' has been deleted."
                     )
                     self.load_scrapers()  # Refresh the list
-                    self.clear_details()
-                    self.details_layout.addWidget(self.placeholder_label)
-                    self.placeholder_label.show()
+                    self.show_placeholder()
                 else:
                     QMessageBox.warning(self, "Error", f"Scraper '{scraper_name}' not found.")
             except Exception as e:
