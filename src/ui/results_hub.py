@@ -706,7 +706,8 @@ class ResultsHub(QWidget):
         self.table = QTableWidget()
         self.table.setAlternatingRowColors(True)
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.table.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
+        self.table.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.table.cellDoubleClicked.connect(self.on_product_double_clicked)
 
         content_layout.addWidget(self.table)
