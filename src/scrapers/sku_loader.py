@@ -43,15 +43,28 @@ class SKULoader:
             # Read Excel file
             df = pd.read_excel(file_path)
 
-            # Check if SKU column exists
-            if self.sku_column not in df.columns:
-                available_cols = ", ".join(df.columns)
-                raise ValueError(
-                    f"SKU column '{self.sku_column}' not found. Available columns: {available_cols}"
-                )
+            # Try to find SKU column - check common variants
+            sku_column = None
+            common_sku_names = ["SKU", "SKU_NO", "sku", "sku_no", "Sku", "SKU NO", "sku no"]
+            
+            for col_name in common_sku_names:
+                if col_name in df.columns:
+                    sku_column = col_name
+                    break
+            
+            # If not found, use the configured column name
+            if sku_column is None:
+                if self.sku_column in df.columns:
+                    sku_column = self.sku_column
+                else:
+                    available_cols = ", ".join(df.columns)
+                    raise ValueError(
+                        f"SKU column not found. Tried: {', '.join(common_sku_names)}. "
+                        f"Available columns: {available_cols}"
+                    )
 
             # Extract SKUs and convert to strings
-            skus = df[self.sku_column].dropna().astype(str).tolist()
+            skus = df[sku_column].dropna().astype(str).tolist()
 
             # Remove any empty strings
             skus = [sku.strip() for sku in skus if sku.strip()]

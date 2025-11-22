@@ -35,12 +35,13 @@ def run_scraping(file_path: str, selected_sites: list[str] | None = None, log_ca
 
     # Helper for logging
     def log(msg, level="INFO"):
-        print(f"[{level}] {msg}")
+        formatted_msg = f"[{level}] {msg}"
+        print(formatted_msg)
         if log_callback:
             try:
-                log_callback.emit(msg, level)
+                log_callback.emit(formatted_msg)
             except AttributeError:
-                log_callback(msg, level)
+                log_callback(formatted_msg)
             
     # Helper for status updates
     def update_status(msg):
@@ -93,10 +94,10 @@ def run_scraping(file_path: str, selected_sites: list[str] | None = None, log_ca
     update_status("Loading scraper configurations...")
     from src.scrapers.parser import ScraperConfigParser
     from src.scrapers.executor.workflow_executor import WorkflowExecutor
-    from src.scrapers.result_storage import ResultStorage
+    from src.scrapers.result_collector import ResultCollector
     
     parser = ScraperConfigParser()
-    storage = ResultStorage()
+    collector = ResultCollector()  # Collect results instead of saving to DB
     configs = []
     
     for site_name in available_sites:
@@ -157,13 +158,18 @@ def run_scraping(file_path: str, selected_sites: list[str] | None = None, log_ca
                 if result.get("success"):
                     extracted_data = result.get("results", {})
                     
-                    # Save to database
-                    if storage.save(sku, config.name, extracted_data):
+                    # Check if we actually found product data (not just "no results")
+                    has_data = any(extracted_data.get(field) for field in ["Name", "Brand", "Price", "Weight"])
+                    
+                    if has_data:
+                        # Add to collector (JSON storage)
+                        collector.add_result(sku, config.name, extracted_data)
                         successful_results += 1
-                        log(f"✅ [{config.name}] Successfully scraped and saved SKU: {sku}", "INFO")
+                        log(f"✅ [{config.name}] Successfully scraped SKU: {sku}", "INFO")
                     else:
+                        # SKU not found on this site - skip (per user requirement #4)
+                        log(f"⚠️ [{config.name}] No data found for SKU: {sku}", "WARNING")
                         failed_results += 1
-                        log(f"⚠️ [{config.name}] Scraped but failed to save SKU: {sku}", "WARNING")
                 else:
                     failed_results += 1
                     log(f"❌ [{config.name}] Failed to scrape SKU: {sku}", "ERROR")
@@ -189,6 +195,21 @@ def run_scraping(file_path: str, selected_sites: list[str] | None = None, log_ca
             log(f"⚠️ Error closing browser for {config.name}: {e}", "WARNING")
         
         log(f"✅ Completed scraper: {config.name}", "INFO")
+    
+    # Save results to JSON file
+    log("\n💾 Saving results to JSON file...", "INFO")
+    try:
+        json_file = collector.save_session()
+        log(f"✅ Results saved to: {json_file}", "INFO")
+        
+        # Display collection stats
+        stats = collector.get_stats()
+        log(f"\n📊 Results Summary:", "INFO")
+        log(f"   Unique SKUs found: {stats['total_unique_skus']}", "INFO")
+        log(f"   Total scraper results: {stats['total_results']}", "INFO")
+        log(f"   SKUs found on multiple sites: {stats['skus_found_on_multiple_sites']}", "INFO")
+    except Exception as e:
+        log(f"❌ Failed to save results: {e}", "ERROR")
     
     # Final summary
     log(f"\n{'='*60}", "INFO")
