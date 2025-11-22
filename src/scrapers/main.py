@@ -19,7 +19,15 @@ import os
 from src.core.database.refresh import refresh_database_from_xml
 
 
-def run_scraping(file_path: str, selected_sites: list[str] | None = None, log_callback=None, status_callback=None, progress_callback=None, scraper_workers: dict[str, int] | None = None, **kwargs) -> None:
+def run_scraping(
+    file_path: str,
+    selected_sites: list[str] | None = None,
+    log_callback=None,
+    status_callback=None,
+    progress_callback=None,
+    scraper_workers: dict[str, int] | None = None,
+    **kwargs,
+) -> None:
     """
     Run scraping using the new modular scraper system.
 
@@ -43,7 +51,7 @@ def run_scraping(file_path: str, selected_sites: list[str] | None = None, log_ca
                 log_callback.emit(formatted_msg)
             except AttributeError:
                 log_callback(formatted_msg)
-            
+
     # Helper for status updates
     def update_status(msg):
         if status_callback:
@@ -73,16 +81,16 @@ def run_scraping(file_path: str, selected_sites: list[str] | None = None, log_ca
         return
 
     log(f"📋 Available scrapers: {', '.join(available_sites)}")
-    
+
     # Load SKUs from Excel file
     update_status("Loading SKUs from Excel file...")
     try:
         from src.scrapers.sku_loader import SKULoader
-        
+
         loader = SKULoader()
         records = loader.load_with_context(file_path)
         skus = [r["SKU"] for r in records]
-        
+
         # Extract Price metadata for preservation
         price_metadata = {}
         for record in records:
@@ -91,34 +99,34 @@ def run_scraping(file_path: str, selected_sites: list[str] | None = None, log_ca
             price = record.get("Price", record.get("LIST_PRICE", record.get("price", "")))
             if price:
                 price_metadata[sku] = price
-        
+
         log(f"📊 Loaded {len(skus)} SKUs from {file_path}", "INFO")
         if price_metadata:
             log(f"💰 Found prices for {len(price_metadata)} products", "INFO")
-        
+
         if not skus:
             log("❌ No SKUs found in Excel file", "ERROR")
             return
-            
+
     except Exception as e:
         log(f"❌ Failed to load Excel file: {e}", "ERROR")
         return
-    
+
     # Load scraper configurations
     update_status("Loading scraper configurations...")
     from src.scrapers.executor.workflow_executor import WorkflowExecutor
     from src.scrapers.parser import ScraperConfigParser
     from src.scrapers.result_collector import ResultCollector
-    
+
     parser = ScraperConfigParser()
     collector = ResultCollector()  # Collect results instead of saving to DB
     configs = []
-    
+
     for site_name in available_sites:
         # Convert site name back to filename
         config_filename = site_name.lower().replace(" ", "_") + ".yaml"
         config_path = os.path.join(config_dir, config_filename)
-        
+
         if os.path.exists(config_path):
             try:
                 config = parser.load_from_file(config_path)
@@ -128,25 +136,29 @@ def run_scraping(file_path: str, selected_sites: list[str] | None = None, log_ca
                 log(f"⚠️ Failed to load {config_filename}: {e}", "WARNING")
         else:
             log(f"⚠️ Config file not found: {config_filename}", "WARNING")
-    
+
     if not configs:
         log("❌ No valid scraper configurations loaded", "ERROR")
         return
-    
+
     # Execute scraping
     total_operations = len(configs) * len(skus)
     completed_operations = 0
     successful_results = 0
     failed_results = 0
-    
-    log(f"🚀 Starting scraping: {len(configs)} scrapers × {len(skus)} SKUs = {total_operations} operations", "INFO")
-    
+
+    log(
+        f"🚀 Starting scraping: {len(configs)} scrapers × {len(skus)} SKUs = {total_operations} operations",
+        "INFO",
+    )
+
     import math
     from concurrent.futures import ThreadPoolExecutor, as_completed
+
     from src.core.settings_manager import settings
-    
+
     max_workers = settings.get("max_workers", 2)
-    
+
     # If scraper_workers provided (from GUI), calculate total needed
     if scraper_workers:
         total_requested_workers = sum(scraper_workers.get(c.name, 1) for c in configs)
@@ -157,33 +169,33 @@ def run_scraping(file_path: str, selected_sites: list[str] | None = None, log_ca
             log(f"   Increased max_workers to {max_workers} to match request", "INFO")
     else:
         log(f"⚙️ Using max {max_workers} concurrent workers (Automatic allocation)", "INFO")
-    
+
     # Allocation Strategy: Explicit User Control
     tasks = []
     workers_used = 0
-    
+
     for config in configs:
         # Get requested workers for this scraper (default to 1)
         count = 1
         if scraper_workers and config.name in scraper_workers:
             count = scraper_workers[config.name]
-            
+
         if count > 1:
             # Split SKUs for this scraper
             chunk_size = math.ceil(len(skus) / count)
-            sku_chunks = [skus[i:i + chunk_size] for i in range(0, len(skus), chunk_size)]
-            
+            sku_chunks = [skus[i : i + chunk_size] for i in range(0, len(skus), chunk_size)]
+
             log(f"⚡ {config.name}: {len(sku_chunks)} workers (SKU splitting enabled)", "INFO")
-            
+
             for i, chunk in enumerate(sku_chunks):
-                tasks.append((config, chunk, f"W{i+1}"))
+                tasks.append((config, chunk, f"W{i + 1}"))
                 workers_used += 1
         else:
             # Single worker
             tasks.append((config, skus, "Main"))
             workers_used += 1
             log(f"⚡ {config.name}: 1 worker (sequential)", "INFO")
-    
+
     log(f"📊 Total active workers: {workers_used}", "INFO")
 
     def process_scraper(args):
@@ -191,22 +203,22 @@ def run_scraping(file_path: str, selected_sites: list[str] | None = None, log_ca
         config, target_skus, worker_id = args
         scraper_success = 0
         scraper_failed = 0
-        
+
         prefix = f"[{config.name}:{worker_id}]"
-        
-        log(f"\n{'='*60}", "INFO")
+
+        log(f"\n{'=' * 60}", "INFO")
         log(f"📌 Starting scraper: {config.name} ({worker_id}) - {len(target_skus)} SKUs", "INFO")
-        log(f"{'='*60}", "INFO")
-        
+        log(f"{'=' * 60}", "INFO")
+
         update_status(f"Running {config.name} ({worker_id})...")
-        
+
         # Initialize executor for this scraper
         try:
             executor = WorkflowExecutor(config, headless=True)
         except Exception as e:
             log(f"❌ {prefix} Failed to initialize: {e}", "ERROR")
             return 0, len(target_skus)
-        
+
         # Process each SKU
         batch_size = 10
         for idx, sku in enumerate(target_skus, 1):
@@ -228,31 +240,37 @@ def run_scraping(file_path: str, selected_sites: list[str] | None = None, log_ca
                     log(f"❌ {prefix} Failed to restart browser: {e}", "ERROR")
                     pass
 
-            update_status(f"{config.name} ({worker_id}): Processing SKU {idx}/{len(target_skus)} ({sku})")
-            
+            update_status(
+                f"{config.name} ({worker_id}): Processing SKU {idx}/{len(target_skus)} ({sku})"
+            )
+
             try:
                 # Execute workflow with SKU context
                 result = executor.execute_workflow(
                     context={"sku": sku},
-                    quit_browser=False  # Reuse browser for efficiency
+                    quit_browser=False,  # Reuse browser for efficiency
                 )
-                
+
                 if result.get("success"):
                     extracted_data = result.get("results", {})
-                    
+
                     # Check if we actually found product data (not just "no results")
-                    has_data = any(extracted_data.get(field) for field in ["Name", "Brand", "Price", "Weight"])
-                    
+                    has_data = any(
+                        extracted_data.get(field) for field in ["Name", "Brand", "Price", "Weight"]
+                    )
+
                     if has_data:
                         # Add to collector (JSON storage)
                         collector.add_result(sku, config.name, extracted_data)
                         scraper_success += 1
-                        
+
                         # Log product details (Price is from input file, not scraped)
                         name = extracted_data.get("Name", "N/A")
                         brand = extracted_data.get("Brand", "N/A")
                         weight = extracted_data.get("Weight", "N/A")
-                        log(f"✅ {prefix} Found: {name} | Brand: {brand} | Weight: {weight}", "INFO")
+                        log(
+                            f"✅ {prefix} Found: {name} | Brand: {brand} | Weight: {weight}", "INFO"
+                        )
                     else:
                         # SKU not found on this site - skip (per user requirement #4)
                         log(f"⚠️ {prefix} No data found for SKU: {sku}", "WARNING")
@@ -260,11 +278,11 @@ def run_scraping(file_path: str, selected_sites: list[str] | None = None, log_ca
                 else:
                     scraper_failed += 1
                     log(f"❌ {prefix} Failed to scrape SKU: {sku}", "ERROR")
-                    
+
             except Exception as e:
                 scraper_failed += 1
                 log(f"❌ {prefix} Error scraping SKU {sku}: {e}", "ERROR")
-            
+
             # Update progress (thread-safe way needed ideally, but simple increment works for rough progress)
             nonlocal completed_operations
             completed_operations += 1
@@ -274,14 +292,14 @@ def run_scraping(file_path: str, selected_sites: list[str] | None = None, log_ca
                     progress_callback.emit(progress_pct)
                 except AttributeError:
                     progress_callback(progress_pct)
-        
+
         # Cleanup browser for this scraper
         try:
             if executor.browser:
                 executor.browser.quit()
         except Exception as e:
             log(f"⚠️ {prefix} Error closing browser: {e}", "WARNING")
-        
+
         log(f"✅ Completed task: {config.name} ({worker_id})", "INFO")
         return scraper_success, scraper_failed
 
@@ -289,7 +307,7 @@ def run_scraping(file_path: str, selected_sites: list[str] | None = None, log_ca
     with ThreadPoolExecutor(max_workers=max_workers) as thread_executor:
         # Submit all tasks
         futures = [thread_executor.submit(process_scraper, task) for task in tasks]
-        
+
         for future in as_completed(futures):
             try:
                 s_success, s_failed = future.result()
@@ -297,13 +315,13 @@ def run_scraping(file_path: str, selected_sites: list[str] | None = None, log_ca
                 failed_results += s_failed
             except Exception as exc:
                 log(f"❌ Scraper task generated an exception: {exc}", "ERROR")
-    
+
     # Save results to JSON file
     log("\n💾 Saving results to JSON file...", "INFO")
     try:
         json_file = collector.save_session(metadata={"price": price_metadata})
         log(f"✅ Results saved to: {json_file}", "INFO")
-        
+
         # Display collection stats
         stats = collector.get_stats()
         log("\n📊 Results Summary:", "INFO")
@@ -312,16 +330,16 @@ def run_scraping(file_path: str, selected_sites: list[str] | None = None, log_ca
         log(f"   SKUs found on multiple sites: {stats['skus_found_on_multiple_sites']}", "INFO")
     except Exception as e:
         log(f"❌ Failed to save results: {e}", "ERROR")
-    
+
     # Final summary
-    log(f"\n{'='*60}", "INFO")
+    log(f"\n{'=' * 60}", "INFO")
     log("🏁 SCRAPING COMPLETE", "INFO")
-    log(f"{'='*60}", "INFO")
+    log(f"{'=' * 60}", "INFO")
     log(f"📊 Total operations: {total_operations}", "INFO")
     log(f"✅ Successful: {successful_results}", "INFO")
     log(f"❌ Failed: {failed_results}", "INFO")
-    log(f"📈 Success rate: {(successful_results/total_operations*100):.1f}%", "INFO")
-    
+    log(f"📈 Success rate: {(successful_results / total_operations * 100):.1f}%", "INFO")
+
     update_status("Scraping complete!")
 
 

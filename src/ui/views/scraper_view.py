@@ -130,6 +130,24 @@ class ScraperView(QWidget):
         scraper_layout = QVBoxLayout(scraper_group)
         scraper_layout.addWidget(QLabel("<b>2. Scrapers</b>"))
 
+        # Header Row
+        header_row = QWidget()
+        header_layout = QHBoxLayout(header_row)
+        header_layout.setContentsMargins(0, 0, 0, 0)
+        header_layout.setSpacing(5)
+
+        lbl_scraper = QLabel("Scraper")
+        lbl_scraper.setStyleSheet("font-weight: bold; color: #888;")
+        header_layout.addWidget(lbl_scraper, 1)
+
+        lbl_workers = QLabel("Workers")
+        lbl_workers.setStyleSheet("font-weight: bold; color: #888;")
+        lbl_workers.setFixedWidth(60)  # Match spinbox width
+        lbl_workers.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        header_layout.addWidget(lbl_workers, 0)
+
+        scraper_layout.addWidget(header_row)
+
         # Container for scraper checkboxes and spinboxes
         self.scraper_container = QWidget()
         self.scraper_layout_inner = QVBoxLayout(self.scraper_container)
@@ -328,7 +346,8 @@ class ScraperView(QWidget):
                     spinbox.setRange(1, 10)
                     spinbox.setValue(1)  # Default 1 worker
                     spinbox.setFixedWidth(60)
-                    spinbox.setPrefix("W:")
+                    # spinbox.setPrefix("W:") # Removed per user request
+                    spinbox.setAlignment(Qt.AlignmentFlag.AlignCenter)
                     spinbox.setToolTip(f"Number of workers for {config.name}")
                     row_layout.addWidget(spinbox, 0)  # Stretch factor 0
 

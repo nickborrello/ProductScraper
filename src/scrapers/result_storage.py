@@ -24,9 +24,10 @@ class ResultStorage:
             # Default to project data/databases/products.db
             # Use absolute path to avoid issues with working directory
             import os
+
             project_root = Path(__file__).parent.parent.parent
             db_path = project_root / "data" / "databases" / "products.db"
-            
+
             # Ensure the directory exists
             db_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -45,16 +46,16 @@ class ResultStorage:
             True if save successful, False otherwise
         """
         import time
-        
+
         # Try up to 3 times in case database is temporarily locked
         max_retries = 3
         for attempt in range(max_retries):
             try:
                 # Use timeout to avoid indefinite waiting
                 # isolation_level=None enables autocommit mode for better concurrency
-                conn = sqlite3.connect(str(self.db_path), timeout=30.0, isolation_level='DEFERRED')
+                conn = sqlite3.connect(str(self.db_path), timeout=30.0, isolation_level="DEFERRED")
                 cursor = conn.cursor()
-                
+
                 # Enable WAL mode for concurrent access (only needs to be done once)
                 cursor.execute("PRAGMA journal_mode=WAL")
                 cursor.execute("PRAGMA busy_timeout=30000")  # 30 second timeout
@@ -81,17 +82,14 @@ class ResultStorage:
                     values = [v for k, v in data.items() if k != "SKU"]
                     values.append(sku)  # For WHERE clause
 
-                    cursor.execute(
-                        f"UPDATE products SET {set_clause} WHERE SKU = ?",
-                        values
-                    )
+                    cursor.execute(f"UPDATE products SET {set_clause} WHERE SKU = ?", values)
                 else:
                     # Insert new product
                     columns = ", ".join(data.keys())
                     placeholders = ", ".join("?" * len(data))
                     cursor.execute(
                         f"INSERT INTO products ({columns}) VALUES ({placeholders})",
-                        list(data.values())
+                        list(data.values()),
                     )
 
                 conn.commit()
@@ -110,7 +108,7 @@ class ResultStorage:
             except Exception as e:
                 print(f"[ERROR] Failed to save results for SKU {sku}: {e}")
                 return False
-        
+
         return False
 
     def _format_images(self, images: Any) -> str:

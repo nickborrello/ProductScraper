@@ -99,6 +99,7 @@ class WorkflowExecutor:
         # Initialize browser
         try:
             import uuid
+
             self.browser = create_browser(
                 site_name=self.config.name,
                 headless=headless,
@@ -156,9 +157,9 @@ class WorkflowExecutor:
         """
         try:
             logger.info(f"Starting workflow execution for: {self.config.name}")
-            self.results = {} # Reset results for new run
-            self.workflow_stopped = False # Reset stop flag for new run
-            
+            self.results = {}  # Reset results for new run
+            self.workflow_stopped = False  # Reset stop flag for new run
+
             # Merge context into results so they are available
             if context:
                 self.results.update(context)
@@ -186,7 +187,9 @@ class WorkflowExecutor:
             if quit_browser and self.browser:
                 self.browser.quit()
 
-    def execute_steps(self, steps: list[Any], context: dict[str, Any] | None = None) -> dict[str, Any]:
+    def execute_steps(
+        self, steps: list[Any], context: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """
         Execute specific workflow steps.
 
@@ -225,7 +228,7 @@ class WorkflowExecutor:
         """Substitute variables in text using context."""
         if not context or not isinstance(text, str):
             return text
-        
+
         try:
             # Only format if it looks like it has placeholders
             if "{" in text and "}" in text:
@@ -248,7 +251,7 @@ class WorkflowExecutor:
         """
         action = step.action.lower()
         params = step.params.copy() if step.params else {}
-        
+
         # Perform variable substitution on string parameters
         if context:
             for key, value in params.items():

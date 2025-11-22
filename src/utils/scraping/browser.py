@@ -99,7 +99,7 @@ class ScraperBrowser:
             self.driver.maximize_window()
         except Exception as e:
             print(f"[WEB] [{site_name}] Failed to set window size: {e}")
-        
+
         # PERFORMANCE OPTIMIZATION: Add small implicit wait for dynamic content
         # Works with eager page load to catch late-loading elements
         # Explicit waits in workflow_executor still take precedence

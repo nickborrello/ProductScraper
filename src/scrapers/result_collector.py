@@ -29,7 +29,7 @@ class ResultCollector:
 
         self.output_dir = Path(output_dir).resolve()
         self.output_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Current session results
         self.session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.results: dict[str, dict[str, Any]] = {}  # {scraper_name: {sku: result}}
@@ -45,18 +45,18 @@ class ResultCollector:
         """
         if scraper_name not in self.results:
             self.results[scraper_name] = {}
-        
+
         self.results[scraper_name][sku] = {
             "sku": sku,
             "scraper": scraper_name,
             "timestamp": datetime.now().isoformat(),
-            "data": result_data
+            "data": result_data,
         }
 
     def save_session(self, metadata: dict[str, Any] | None = None) -> Path:
         """
         Save current session results to JSON file.
-        
+
         Args:
             metadata: Optional metadata dictionary (e.g., Price data keyed by SKU)
 
@@ -64,7 +64,7 @@ class ResultCollector:
             Path to the saved JSON file
         """
         output_file = self.output_dir / f"scrape_session_{self.session_id}.json"
-        
+
         # Prepare output structure
         output_data = {
             "session_id": self.session_id,
@@ -72,12 +72,12 @@ class ResultCollector:
             "scrapers": list(self.results.keys()),
             "total_results": sum(len(skus) for skus in self.results.values()),
             "metadata": metadata or {},  # Store metadata (e.g., Price data)
-            "results": self.results
+            "results": self.results,
         }
-        
+
         with open(output_file, "w", encoding="utf-8") as f:
             json.dump(output_data, f, indent=2, ensure_ascii=False)
-        
+
         return output_file
 
     def get_results_by_sku(self, sku: str) -> dict[str, Any]:
@@ -116,17 +116,17 @@ class ResultCollector:
             Dictionary with stats
         """
         all_skus = self.get_all_skus()
-        
+
         # Count how many scrapers found each SKU
         sku_coverage = {}
         for sku in all_skus:
             sku_results = self.get_results_by_sku(sku)
             sku_coverage[sku] = len(sku_results)
-        
+
         return {
             "total_unique_skus": len(all_skus),
             "total_results": sum(len(skus) for skus in self.results.values()),
             "scrapers_used": list(self.results.keys()),
             "skus_found_on_multiple_sites": sum(1 for count in sku_coverage.values() if count > 1),
-            "skus_not_found": sum(1 for count in sku_coverage.values() if count == 0)
+            "skus_not_found": sum(1 for count in sku_coverage.values() if count == 0),
         }

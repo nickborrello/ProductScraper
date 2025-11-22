@@ -2,29 +2,37 @@ import os
 import sys
 from typing import Any
 
-from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtGui import QIcon, QAction
+from PyQt6.QtCore import QSize, Qt
+from PyQt6.QtGui import QAction, QIcon
 from PyQt6.QtWidgets import (
-    QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QPushButton, 
-    QStackedWidget, QLabel, QFrame, QMessageBox, QApplication
+    QApplication,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QMainWindow,
+    QMessageBox,
+    QPushButton,
+    QStackedWidget,
+    QVBoxLayout,
+    QWidget,
 )
 
+# Import core logic (kept from original file)
+from src.core.settings_manager import settings
+from src.ui.results_hub import ResultsHub
 from src.ui.styling import apply_dark_theme
 from src.ui.views.dashboard_view import DashboardView
 from src.ui.views.scraper_view import ScraperView
 from src.ui.views.settings_view import SettingsView
-from src.ui.results_hub import ResultsHub
-from src.ui.widgets import Worker, LogViewer
+from src.ui.widgets import LogViewer, Worker
 
-# Import core logic (kept from original file)
-from src.core.settings_manager import settings
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("ProductScraper - Professional Edition")
         self.setMinimumSize(1280, 800)
-        
+
         # Apply theme
         apply_dark_theme(QApplication.instance())
 
@@ -40,7 +48,7 @@ class MainWindow(QMainWindow):
 
         # Sidebar
         self.create_sidebar()
-        
+
         # Content Area
         self.content_area = QStackedWidget()
         self.content_area.setObjectName("content_area")
@@ -48,7 +56,7 @@ class MainWindow(QMainWindow):
 
         # Initialize Views
         self.init_views()
-        
+
         # Set default view
         self.switch_view(0)
 
@@ -56,7 +64,7 @@ class MainWindow(QMainWindow):
         self.sidebar = QWidget()
         self.sidebar.setObjectName("sidebar")
         self.sidebar.setFixedWidth(180)
-        
+
         layout = QVBoxLayout(self.sidebar)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(5)
@@ -64,7 +72,7 @@ class MainWindow(QMainWindow):
         # App Logo/Title - Removed per user request
         title_container = QFrame()
         title_container.setStyleSheet("background-color: transparent; padding: 20px;")
-        title_layout = QHBoxLayout(title_container)
+        # title_layout = QHBoxLayout(title_container)
         # title_label = QLabel("ProductScraper")  # Removed
         # title_label.setStyleSheet("font-size: 20px; font-weight: bold; color: #FFFFFF;")
         # title_layout.addWidget(title_label)
@@ -72,14 +80,14 @@ class MainWindow(QMainWindow):
 
         # Navigation Buttons
         self.nav_buttons = []
-        
+
         self.add_nav_button("Dashboard", "📊", 0, layout)
         self.add_nav_button("Scraper", "🕸️", 1, layout)
         self.add_nav_button("Results", "🗄️", 2, layout)
         self.add_nav_button("Settings", "⚙️", 3, layout)
-        
+
         layout.addStretch()
-        
+
         # Version Info
         version_label = QLabel("v2.0.0")
         version_label.setStyleSheet("color: #666; padding: 10px; font-size: 12px;")
@@ -98,11 +106,11 @@ class MainWindow(QMainWindow):
 
     def switch_view(self, index):
         self.content_area.setCurrentIndex(index)
-        
+
         # Update button states
         for i, btn in enumerate(self.nav_buttons):
             btn.setChecked(i == index)
-        
+
         # Refresh dashboard when switching to it
         if index == 0:
             self.refresh_dashboard()
@@ -129,50 +137,55 @@ class MainWindow(QMainWindow):
         self.content_area.addWidget(self.settings_view)
 
     # Worker Logic (Adapted from original)
-    def start_scraping_worker(self, file_path, selected_scrapers=None, items_to_scrape=None, scraper_workers=None):
+    def start_scraping_worker(
+        self, file_path, selected_scrapers=None, items_to_scrape=None, scraper_workers=None
+    ):
         import threading
+
         from src.scrapers.main import run_scraping
-        
+
         self.scraper_view.log_message(f"Starting scrape for {file_path}...", "INFO")
         if selected_scrapers:
-            self.scraper_view.log_message(f"Selected scrapers: {', '.join(selected_scrapers)}", "INFO")
-        
+            self.scraper_view.log_message(
+                f"Selected scrapers: {', '.join(selected_scrapers)}", "INFO"
+            )
+
         # Create stop event
         self.stop_event = threading.Event()
-        
+
         # Create worker
         self.worker = Worker(
-            run_scraping, 
+            run_scraping,
             file_path=file_path,
             selected_sites=selected_scrapers,
             items_to_scrape=items_to_scrape,
             scraper_workers=scraper_workers,
-            stop_event=self.stop_event
+            stop_event=self.stop_event,
         )
-        
+
         # Connect signals
         self.worker.signals.log.connect(self.scraper_view.log_message)
         self.worker.signals.progress.connect(self.scraper_view.update_progress)
         self.worker.signals.status.connect(self.scraper_view.update_status)
         self.worker.signals.finished.connect(self.on_scraping_finished)
         self.worker.signals.error.connect(self.on_scraping_error)
-        
+
         self.worker.start()
 
     def cancel_scraping_worker(self):
         if self.worker and self.worker.isRunning():
             self.scraper_view.log_message("Cancelling...", "WARNING")
-            if hasattr(self, 'stop_event'):
+            if hasattr(self, "stop_event"):
                 self.stop_event.set()
             self.worker.cancel()
 
     def on_scraping_finished(self):
         self.scraper_view.on_scraping_finished()
         self.scraper_view.log_message("Scraping process finished.", "SUCCESS")
-        
+
         # Refresh dashboard stats after scraping
         self.refresh_dashboard()
-    
+
     def refresh_dashboard(self):
         """Refresh the dashboard stats."""
         self.dashboard_view.refresh_stats()
@@ -180,4 +193,4 @@ class MainWindow(QMainWindow):
     def on_scraping_error(self, error_info):
         exc_type, exc_value, exc_traceback = error_info
         self.scraper_view.log_message(f"Error: {exc_value}", "ERROR")
-        self.scraper_view.on_scraping_finished() # Reset UI state
+        self.scraper_view.on_scraping_finished()  # Reset UI state

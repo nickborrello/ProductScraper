@@ -4,8 +4,9 @@ SKU Loader Module
 Loads SKUs from Excel files for scraping operations.
 """
 
-import pandas as pd
 from pathlib import Path
+
+import pandas as pd
 
 
 class SKULoader:
@@ -46,12 +47,12 @@ class SKULoader:
             # Try to find SKU column - check common variants
             sku_column = None
             common_sku_names = ["SKU", "SKU_NO", "sku", "sku_no", "Sku", "SKU NO", "sku no"]
-            
+
             for col_name in common_sku_names:
                 if col_name in df.columns:
                     sku_column = col_name
                     break
-            
+
             # If not found, use the configured column name
             if sku_column is None:
                 if self.sku_column in df.columns:
@@ -102,12 +103,12 @@ class SKULoader:
             # Try to find SKU column - check common variants
             sku_column = None
             common_sku_names = ["SKU", "SKU_NO", "sku", "sku_no", "Sku", "SKU NO", "sku no"]
-            
+
             for col_name in common_sku_names:
                 if col_name in df.columns:
                     sku_column = col_name
                     break
-            
+
             # If not found, use the configured column name
             if sku_column is None:
                 if self.sku_column in df.columns:

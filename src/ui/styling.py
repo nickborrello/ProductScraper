@@ -1,18 +1,18 @@
 from PyQt6.QtWidgets import QApplication
 
 # Professional Modern Dark Theme Palette
-DARK_BG = "#121212"         # Main background (very dark gray/black)
-SIDEBAR_BG = "#1E1E1E"      # Sidebar background
-CARD_BG = "#252525"         # Card/Container background
-BORDER_COLOR = "#333333"    # Subtle borders
-PRIMARY_COLOR = "#3B8ED0"   # Primary Action Blue
-ACCENT_COLOR = "#64B5F6"    # Lighter Blue for accents
-TEXT_PRIMARY = "#FFFFFF"    # Main text
+DARK_BG = "#121212"  # Main background (very dark gray/black)
+SIDEBAR_BG = "#1E1E1E"  # Sidebar background
+CARD_BG = "#252525"  # Card/Container background
+BORDER_COLOR = "#333333"  # Subtle borders
+PRIMARY_COLOR = "#3B8ED0"  # Primary Action Blue
+ACCENT_COLOR = "#64B5F6"  # Lighter Blue for accents
+TEXT_PRIMARY = "#FFFFFF"  # Main text
 TEXT_SECONDARY = "#B0B0B0"  # Subtitles/Labels
-SUCCESS_COLOR = "#4CAF50"   # Green
-WARNING_COLOR = "#FF9800"   # Orange
-ERROR_COLOR = "#EF5350"     # Red
-HOVER_COLOR = "#333333"     # Hover state for list items/buttons
+SUCCESS_COLOR = "#4CAF50"  # Green
+WARNING_COLOR = "#FF9800"  # Orange
+ERROR_COLOR = "#EF5350"  # Red
+HOVER_COLOR = "#333333"  # Hover state for list items/buttons
 
 STYLESHEET = f"""
     /* Global Reset */
@@ -226,6 +226,7 @@ STYLESHEET = f"""
         border-color: {ACCENT_COLOR};
     }}
 """
+
 
 def apply_dark_theme(app: QApplication):
     """Apply a global dark theme to the application."""
