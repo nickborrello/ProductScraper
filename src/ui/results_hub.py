@@ -215,6 +215,9 @@ class ConsolidationWidget(QWidget):
                 if self.image_source_combo.itemData(i) == saved_scraper:
                     self.image_source_combo.setCurrentIndex(i)
                     break
+        # Auto-select if only one source exists
+        elif len(self.scrapers) == 1 and self.image_source_combo.count() > 1:
+            self.image_source_combo.setCurrentIndex(1)
 
         right_layout.addStretch()
 
@@ -311,6 +314,10 @@ class ConsolidationWidget(QWidget):
             saved_value = self.selections.get(f"{field_name}_value")
             if saved_value:
                 combo.setEditText(str(saved_value))
+
+        # Auto-select if only one source exists and no previous selection
+        elif len(self.scrapers) == 1 and combo.count() > 1:
+            combo.setCurrentIndex(1)
 
         layout.addLayout(options_layout)
 
