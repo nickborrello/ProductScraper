@@ -286,6 +286,10 @@ class WorkflowExecutor:
                 action_instance = action_class(self)
                 action_instance.execute(params)
             # Fallback for legacy actions not yet migrated or unknown actions
+            elif action == "navigate":
+                self._action_navigate(params)
+            elif action == "extract_single":
+                self._action_extract_single(params)
             elif action == "detect_captcha":
                 self._action_detect_captcha(params)
             elif action == "handle_blocking":

@@ -59,6 +59,8 @@ def mock_browser():
     browser = Mock()
     browser.driver = Mock()
     browser.quit = Mock()
+    browser.get = Mock()
+    browser.check_http_status = Mock(return_value=200)
     return browser
 
 
