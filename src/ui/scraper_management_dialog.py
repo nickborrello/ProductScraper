@@ -459,7 +459,7 @@ class AddScraperDialog(QDialog):
             QMessageBox.information(
                 self,
                 "Success",
-                f"New scraper '{name}' has been created!\n\nFile: {file_path}\n\n" 
+                f"New scraper '{name}' has been created!\n\nFile: {file_path}\n\n"
                 "You can now edit it to add selectors and workflows.",
             )
             self.accept()
@@ -508,10 +508,10 @@ class WorkflowStepCard(QFrame):
         # Truncate if too long
         if len(params_str) > 60:
             params_str = params_str[:57] + "..."
-        
+
         params_label = QLabel(params_str)
         params_label.setStyleSheet("color: #aaaaaa;")
-        layout.addWidget(params_label, 1) # Stretch to fill space
+        layout.addWidget(params_label, 1)  # Stretch to fill space
 
         # Buttons (Right)
         btn_layout = QHBoxLayout()
@@ -526,7 +526,7 @@ class WorkflowStepCard(QFrame):
         delete_btn = QPushButton("🗑️")
         delete_btn.setFixedSize(30, 30)
         delete_btn.setToolTip("Delete Step")
-        delete_btn.setProperty("class", "danger") # if supported
+        delete_btn.setProperty("class", "danger")  # if supported
         delete_btn.clicked.connect(lambda: self.delete_clicked.emit(self))
         btn_layout.addWidget(delete_btn)
 
@@ -678,7 +678,9 @@ class EditScraperDialog(QDialog):
         self.selectors_table.setItem(row, 1, selector_item)
 
         # Attribute
-        attr_text = selector_config.attribute if selector_config and selector_config.attribute else "text"
+        attr_text = (
+            selector_config.attribute if selector_config and selector_config.attribute else "text"
+        )
         attr_item = QTableWidgetItem(attr_text)
         self.selectors_table.setItem(row, 2, attr_item)
 
@@ -710,14 +712,14 @@ class EditScraperDialog(QDialog):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        
+
         # Container for the card layout
         self.workflow_container = QWidget()
         self.workflow_layout = QVBoxLayout(self.workflow_container)
         self.workflow_layout.setSpacing(10)
         self.workflow_layout.setContentsMargins(10, 10, 10, 10)
-        self.workflow_layout.addStretch() # Push cards to top
-        
+        self.workflow_layout.addStretch()  # Push cards to top
+
         scroll.setWidget(self.workflow_container)
         layout.addWidget(scroll)
 
@@ -739,23 +741,23 @@ class EditScraperDialog(QDialog):
     def refresh_workflow_list(self):
         """Re-render the workflow list as cards."""
         # Clear existing items (except the stretch at the end)
-        # Note: takeAt(0) removes from start. 
-        # We need to be careful not to remove the stretch if we want to keep it, 
+        # Note: takeAt(0) removes from start.
+        # We need to be careful not to remove the stretch if we want to keep it,
         # or just re-add it. Re-adding is easier.
-        
+
         # Clear everything
         while self.workflow_layout.count():
             item = self.workflow_layout.takeAt(0)
             if item.widget():
                 item.widget().deleteLater()
-        
+
         # Re-populate
         for i, step in enumerate(self.config.workflows):
             card = WorkflowStepCard(step, i)
             card.edit_clicked.connect(self.edit_workflow_step_card)
             card.delete_clicked.connect(self.delete_workflow_step_card)
             self.workflow_layout.addWidget(card)
-            
+
         self.workflow_layout.addStretch()
 
     def add_workflow_step(self):
@@ -787,9 +789,11 @@ class EditScraperDialog(QDialog):
             step = WorkflowStep(action=action, params=params)
             self.config.workflows.append(step)
             self.refresh_workflow_list()
-            
+
             # Auto-open edit dialog for the new step
-            self.edit_workflow_step_card(self.workflow_layout.itemAt(self.workflow_layout.count()-2).widget())
+            self.edit_workflow_step_card(
+                self.workflow_layout.itemAt(self.workflow_layout.count() - 2).widget()
+            )
 
     def edit_workflow_step_card(self, card: WorkflowStepCard):
         """Edit the workflow step associated with the card."""
@@ -809,7 +813,7 @@ class EditScraperDialog(QDialog):
             try:
                 new_params = json.loads(new_params_str)
                 step.params = new_params
-                self.refresh_workflow_list() # Refresh to show updated params
+                self.refresh_workflow_list()  # Refresh to show updated params
             except json.JSONDecodeError:
                 QMessageBox.warning(self, "Error", "Invalid JSON format for parameters.")
 
@@ -821,7 +825,7 @@ class EditScraperDialog(QDialog):
             f"Delete this '{card.step.action}' step?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
         )
-        
+
         if reply == QMessageBox.StandardButton.Yes:
             self.config.workflows.pop(card.index)
             self.refresh_workflow_list()
@@ -838,7 +842,7 @@ class EditScraperDialog(QDialog):
         self.update_yaml_from_config()
 
         layout.addWidget(self.yaml_editor)
-        
+
         # Add a button to update UI from YAML (bi-directional sync)
         sync_btn = QPushButton("Update UI from YAML")
         sync_btn.clicked.connect(self.update_config_from_yaml)
@@ -851,10 +855,8 @@ class EditScraperDialog(QDialog):
         try:
             # Use Pydantic's model_dump() to serialize everything, including nested models
             config_dict = self.config.model_dump()
-            
-            yaml_content = yaml.safe_dump(
-                config_dict, default_flow_style=False, sort_keys=False
-            )
+
+            yaml_content = yaml.safe_dump(config_dict, default_flow_style=False, sort_keys=False)
             self.yaml_editor.setPlainText(yaml_content)
         except Exception as e:
             self.yaml_editor.setPlainText(f"Error generating YAML: {e!s}")
@@ -864,26 +866,26 @@ class EditScraperDialog(QDialog):
         try:
             yaml_text = self.yaml_editor.toPlainText()
             new_config = self.parser.load_from_string(yaml_text)
-            
+
             # Update internal config
             self.config = new_config
-            
+
             # Refresh UI elements
             self.name_edit.setText(self.config.name)
             self.url_edit.setText(self.config.base_url)
             self.timeout_spin.setValue(self.config.timeout)
             self.retries_spin.setValue(self.config.retries)
-            
+
             # Refresh Selectors
             self.selectors_table.setRowCount(0)
             for selector in self.config.selectors:
                 self.add_selector_row(selector)
-                
+
             # Refresh Workflows
             self.refresh_workflow_list()
-                
+
             QMessageBox.information(self, "Success", "UI updated from YAML content.")
-            
+
         except Exception as e:
             QMessageBox.warning(self, "Error", f"Failed to parse YAML: {e}")
 
@@ -902,7 +904,7 @@ class EditScraperDialog(QDialog):
             sel_item = self.selectors_table.item(row, 1)
             attr_item = self.selectors_table.item(row, 2)
             chk_widget = self.selectors_table.cellWidget(row, 3)
-            
+
             if name_item and sel_item:
                 # Get checkbox state
                 is_multiple = False
@@ -917,7 +919,7 @@ class EditScraperDialog(QDialog):
                         name=name_item.text(),
                         selector=sel_item.text(),
                         attribute=attr_item.text() if attr_item else "text",
-                        multiple=is_multiple
+                        multiple=is_multiple,
                     )
                 )
 
@@ -937,17 +939,17 @@ class EditScraperDialog(QDialog):
             http_status=self.config.http_status,
             validation=self.config.validation,
             test_skus=self.config.test_skus,
-            normalization=self.config.normalization
+            normalization=self.config.normalization,
         )
 
     def save_changes(self):
         """Save the changes to the configuration file."""
         try:
             # Check if user was editing raw YAML last
-            if self.tab_widget.currentIndex() == 3: # Raw YAML tab
-                 # Optional: prompt to sync? or just trust get_updated_config?
-                 # For safety, let's prioritize the UI state unless user explicitly synced.
-                 pass
+            if self.tab_widget.currentIndex() == 3:  # Raw YAML tab
+                # Optional: prompt to sync? or just trust get_updated_config?
+                # For safety, let's prioritize the UI state unless user explicitly synced.
+                pass
 
             new_config = self.get_updated_config()
 

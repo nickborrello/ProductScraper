@@ -32,6 +32,7 @@ from src.ui.scraper_management_dialog import EditScraperDialog
 
 class InfoCard(QFrame):
     """A simple styled information card."""
+
     def __init__(self, title: str, content: str | list[tuple[str, str]], parent=None):
         super().__init__(parent)
         self.setProperty("class", "card")
@@ -54,16 +55,16 @@ class InfoCard(QFrame):
                 color: #E0E0E0;
             }
         """)
-        
+
         layout = QVBoxLayout(self)
         layout.setContentsMargins(15, 15, 15, 15)
         layout.setSpacing(10)
-        
+
         # Title
         title_lbl = QLabel(title)
         title_lbl.setProperty("class", "title")
         layout.addWidget(title_lbl)
-        
+
         # Content
         if isinstance(content, str):
             content_lbl = QLabel(content)
@@ -181,14 +182,14 @@ class BuilderView(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        
+
         # Container for cards
         self.details_container = QWidget()
         self.details_layout = QVBoxLayout(self.details_container)
         self.details_layout.setSpacing(15)
         self.details_layout.setContentsMargins(5, 5, 5, 5)
         self.details_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        
+
         scroll.setWidget(self.details_container)
         layout.addWidget(scroll)
 
@@ -271,7 +272,7 @@ class BuilderView(QWidget):
         while self.details_layout.count():
             item = self.details_layout.takeAt(0)
             if item.widget():
-                item.widget().hide() 
+                item.widget().hide()
                 item.widget().deleteLater()
 
     def show_scraper_details(self, scraper_name):
@@ -307,11 +308,13 @@ class BuilderView(QWidget):
             if sel.multiple:
                 info += " [Multi]"
             selectors_info.append((sel.name, info))
-        
+
         if not selectors_info:
             selectors_info = [("None", "No selectors defined")]
-            
-        self.details_layout.addWidget(InfoCard(f"Selectors ({len(config.selectors)})", selectors_info))
+
+        self.details_layout.addWidget(
+            InfoCard(f"Selectors ({len(config.selectors)})", selectors_info)
+        )
 
         # 3. Workflows Card
         workflows_info = []
@@ -321,11 +324,13 @@ class BuilderView(QWidget):
             if len(param_str) > 50:
                 param_str = param_str[:47] + "..."
             workflows_info.append((f"Step {i} ({step.action.upper()})", param_str))
-            
+
         if not workflows_info:
             workflows_info = [("None", "No workflow steps defined")]
 
-        self.details_layout.addWidget(InfoCard(f"Workflow Steps ({len(config.workflows)})", workflows_info))
+        self.details_layout.addWidget(
+            InfoCard(f"Workflow Steps ({len(config.workflows)})", workflows_info)
+        )
 
         # 4. Login Card (if exists)
         if config.login:
@@ -364,7 +369,7 @@ class BuilderView(QWidget):
         dialog = EditScraperDialog(config_data["config"], config_data["file_path"], self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             self.load_scrapers()  # Refresh the list
-            self.show_scraper_details(scraper_name) # Refresh details view
+            self.show_scraper_details(scraper_name)  # Refresh details view
 
     def delete_selected_scraper(self):
         """Delete the selected scraper."""

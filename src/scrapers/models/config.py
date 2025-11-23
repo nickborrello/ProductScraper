@@ -76,9 +76,7 @@ class NormalizationRule(BaseModel):
         ...,
         description="Normalization action (e.g., 'title_case', 'remove_prefix', 'trim')",
     )
-    params: dict[str, Any] = Field(
-        default_factory=dict, description="Parameters for the action"
-    )
+    params: dict[str, Any] = Field(default_factory=dict, description="Parameters for the action")
 
 
 class ScraperConfig(BaseModel):

@@ -82,7 +82,9 @@ class AntiDetectionConfig(BaseModel):
     )
     rate_limit_min_delay: float = Field(1.0, description="Minimum delay for rate limiting")
     rate_limit_max_delay: float = Field(5.0, description="Maximum delay for rate limiting")
-    human_simulation_enabled: bool = Field(True, description="Enable human simulation (legacy alias)")
+    human_simulation_enabled: bool = Field(
+        True, description="Enable human simulation (legacy alias)"
+    )
     session_rotation_interval: int = Field(100, description="Requests before session rotation")
     max_retries_on_detection: int = Field(3, description="Max retries on detection")
     captcha_solver_config: CaptchaSolverConfig = Field(

@@ -5,26 +5,26 @@ from PyQt6.QtWidgets import QApplication
 # Focuses on content hierarchy, readability, and a professional "command center" aesthetic.
 
 # --- Color Palette Definitions ---
-PRIMARY_BG = "#09090b"      # Main window background (Rich Black)
-SIDEBAR_BG = "#18181b"      # Sidebar background (Zinc-900)
-CARD_BG = "#27272a"         # Card/Container background (Zinc-800)
-SURFACE_BG = "#3f3f46"      # Inputs, elevated surfaces (Zinc-700)
+PRIMARY_BG = "#09090b"  # Main window background (Rich Black)
+SIDEBAR_BG = "#18181b"  # Sidebar background (Zinc-900)
+CARD_BG = "#27272a"  # Card/Container background (Zinc-800)
+SURFACE_BG = "#3f3f46"  # Inputs, elevated surfaces (Zinc-700)
 
-PRIMARY_COLOR = "#2563eb"   # Main Action Blue (Royal Blue)
-PRIMARY_HOVER = "#3b82f6"   # Lighter Blue for hover states
-SECONDARY_COLOR = "#71717a" # Secondary actions (Zinc-500)
-ACCENT_COLOR = "#8b5cf6"    # Violet accent for highlights
+PRIMARY_COLOR = "#2563eb"  # Main Action Blue (Royal Blue)
+PRIMARY_HOVER = "#3b82f6"  # Lighter Blue for hover states
+SECONDARY_COLOR = "#71717a"  # Secondary actions (Zinc-500)
+ACCENT_COLOR = "#8b5cf6"  # Violet accent for highlights
 
-SUCCESS_COLOR = "#10b981"   # Emerald Green
-WARNING_COLOR = "#f59e0b"   # Amber Orange
-ERROR_COLOR = "#ef4444"     # Rose Red
+SUCCESS_COLOR = "#10b981"  # Emerald Green
+WARNING_COLOR = "#f59e0b"  # Amber Orange
+ERROR_COLOR = "#ef4444"  # Rose Red
 
-TEXT_PRIMARY = "#f4f4f5"    # Main text (Zinc-100)
+TEXT_PRIMARY = "#f4f4f5"  # Main text (Zinc-100)
 TEXT_SECONDARY = "#a1a1aa"  # Secondary text/labels (Zinc-400)
-TEXT_TERTIARY = "#52525b"   # Disabled/Placeholder text (Zinc-600)
+TEXT_TERTIARY = "#52525b"  # Disabled/Placeholder text (Zinc-600)
 
-BORDER_COLOR = "#3f3f46"    # Subtle borders (Zinc-700)
-HOVER_COLOR = "#3f3f46"     # General hover state background
+BORDER_COLOR = "#3f3f46"  # Subtle borders (Zinc-700)
+HOVER_COLOR = "#3f3f46"  # General hover state background
 
 STYLESHEET = f"""
     /* --- Global Reset & Typography --- */

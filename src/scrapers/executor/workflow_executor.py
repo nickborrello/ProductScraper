@@ -173,7 +173,7 @@ class WorkflowExecutor:
                 logger.info(f"Step {i}/{len(self.config.workflows)}: Completed {step.action}")
 
             logger.info(f"Workflow execution completed for: {self.config.name}")
-            
+
             # Apply normalization rules
             self.apply_normalization()
 
@@ -1393,6 +1393,7 @@ class WorkflowExecutor:
     def get_results(self) -> dict[str, Any]:
         """Get the current execution results."""
         return self.results.copy()
+
     def apply_normalization(self):
         """Apply normalization rules to extracted results."""
         if not self.config.normalization:
@@ -1414,7 +1415,7 @@ class WorkflowExecutor:
                     elif rule.action == "remove_prefix":
                         prefix = rule.params.get("prefix", "")
                         if prefix and value.startswith(prefix):
-                            self.results[field] = value[len(prefix):].strip()
+                            self.results[field] = value[len(prefix) :].strip()
                     elif rule.action == "extract_weight":
                         # Extract number and unit, convert to lbs
                         import re
