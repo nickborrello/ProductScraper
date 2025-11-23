@@ -854,33 +854,21 @@ class ResultsHub(QWidget):
         self.table.setColumnCount(len(columns))
         self.table.setHorizontalHeaderLabels(columns)
 
-        # Set column resize modes
+        # Resize columns
         header = self.table.horizontalHeader()
-
-        # 0: SKU - Content based
-        header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
-
-        # 1: Price - Content based
-        header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
-
-        # 2: Images - Fixed width, interactive
-        header.setSectionResizeMode(2, QHeaderView.ResizeMode.Interactive)
-        header.resizeSection(2, 150)
-
-        # 3: Name - Takes remaining space
-        header.setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)
-
-        # 4: Brand - Fixed width, interactive
-        header.setSectionResizeMode(4, QHeaderView.ResizeMode.Interactive)
-        header.resizeSection(4, 150)
-
-        # 5: Status - Fixed width
-        header.setSectionResizeMode(5, QHeaderView.ResizeMode.Interactive)
-        header.resizeSection(5, 100)
-
-        # 6: Actions - Fixed width
-        header.setSectionResizeMode(6, QHeaderView.ResizeMode.Fixed)
-        header.resizeSection(6, 120)
+        header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
+        
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents) # SKU
+        header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents) # Price
+        header.setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)            # Images
+        self.table.setColumnWidth(2, 60)
+        
+        header.setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)          # Name
+        header.setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)          # Brand
+        
+        header.setSectionResizeMode(5, QHeaderView.ResizeMode.ResizeToContents) # Status
+        header.setSectionResizeMode(6, QHeaderView.ResizeMode.Fixed)            # Actions
+        self.table.setColumnWidth(6, 80)
 
         # Filter data
         filtered_data = []
@@ -904,86 +892,128 @@ class ResultsHub(QWidget):
 
         # Populate rows
         self.table.setRowCount(len(filtered_data))
+        
+        # Block signals during update to prevent on_cell_edited from firing
+        self.table.blockSignals(True)
 
         for row_idx, item in enumerate(filtered_data):
             sku = item["sku"]
-            # sources = ", ".join(item["scrapers"].keys()) # Removed
+            
+            # Get name and brand
+            name = ""
+            brand = ""
+            # Try to get from consolidated first
+            is_cons = self.is_consolidated(sku)
+            if is_cons:
+                cons_prod = next((p for p in self.consolidated_products if p["sku"] == sku), None)
+                if cons_prod:
+                    name = cons_prod["fields"].get("Name", {}).get("value", "")
+                    brand = cons_prod["fields"].get("Brand", {}).get("value", "")
+            
+            # Fallback to scraper data
+            if not name or not brand:
+                for scraper_data in item["scrapers"].values():
+                    if not name and scraper_data.get("Name"):
+                        name = scraper_data.get("Name")
+                    if not brand and scraper_data.get("Brand"):
+                        brand = scraper_data.get("Brand")
+                    if name and brand:
+                        break
 
-            # Get name and brand - only show if single source, otherwise placeholder
-            num_sources = len(item["scrapers"])
-            if num_sources == 1:
-                # Single source - show the values
-                scraper_data = next(iter(item["scrapers"].values()))
-                name = scraper_data.get("Name", "")
-                brand = scraper_data.get("Brand", "")
-            else:
-                # Multiple sources - show placeholders
-                name = f"Multiple sources ({num_sources})"
-                brand = f"Multiple sources ({num_sources})"
+            # Status
+            status = "Verified" if is_cons else "Pending"
 
-            # Check if verified/consolidated override exists
-            is_consolidated = sku in [p["sku"] for p in self.consolidated_products]
-            if is_consolidated:
-                # Retrieve the consolidated values for display
-                cons_prod = next(p for p in self.consolidated_products if p["sku"] == sku)
-                fields = cons_prod["fields"]
-                if "Name" in fields:
-                    name = fields["Name"]["value"]
-                if "Brand" in fields:
-                    brand = fields["Brand"]["value"]
-
-            # Get price
-            price = item.get("price", "")
-
-            # Get images string
-            if is_consolidated:
-                cons_prod = next(p for p in self.consolidated_products if p["sku"] == sku)
-                imgs = cons_prod["fields"].get("Images", {}).get("value", [])
-                count = len(imgs) if isinstance(imgs, list) else 0
-                images_str = f"{count} images"
-            elif num_sources == 1:
-                # Single source - show the images count
-                scraper_data = next(iter(item["scrapers"].values()))
+            # Image count
+            image_count = 0
+            for scraper_data in item["scrapers"].values():
                 imgs = scraper_data.get("Images", [])
-                count = len(imgs) if isinstance(imgs, list) else 0
-                images_str = f"{count} images"
-            else:
-                # Multiple sources - show placeholder
-                images_str = f"Multiple sources ({num_sources})"
+                if isinstance(imgs, list):
+                    image_count += len(imgs)
 
-            # Determine status
-            status = "Consolidated" if is_consolidated else "Pending"
+            # SKU (Read-only)
+            item_sku = QTableWidgetItem(str(sku))
+            item_sku.setFlags(item_sku.flags() ^ Qt.ItemFlag.ItemIsEditable)
+            self.table.setItem(row_idx, 0, item_sku)
 
-            # Create action button
-            action_btn = QPushButton("Edit" if is_consolidated else "Consolidate")
-            action_btn.clicked.connect(lambda checked, s=sku: self.consolidate_product(s))
-            action_widget = QWidget()
-            action_layout = QHBoxLayout(action_widget)
-            action_layout.addWidget(action_btn)
-            action_layout.setContentsMargins(0, 0, 0, 0)
+            # Price (Read-only)
+            item_price = QTableWidgetItem(item.get("price", ""))
+            item_price.setFlags(item_price.flags() ^ Qt.ItemFlag.ItemIsEditable)
+            self.table.setItem(row_idx, 1, item_price)
 
-            # Set table items
-            self.table.setItem(row_idx, 0, QTableWidgetItem(sku))
-            self.table.setItem(row_idx, 1, QTableWidgetItem(price))
-            self.table.setItem(row_idx, 2, QTableWidgetItem(images_str))
+            # Images (Read-only)
+            item_images = QTableWidgetItem(str(image_count))
+            item_images.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            item_images.setFlags(item_images.flags() ^ Qt.ItemFlag.ItemIsEditable)
+            self.table.setItem(row_idx, 2, item_images)
+
+            # Name (Editable)
             self.table.setItem(row_idx, 3, QTableWidgetItem(name))
+
+            # Brand (Editable)
             self.table.setItem(row_idx, 4, QTableWidgetItem(brand))
 
-            status_item = QTableWidgetItem(status)
-            if status == "Pending":
-                status_item.setForeground(Qt.GlobalColor.red)
-            else:
-                status_item.setForeground(Qt.GlobalColor.green)
-            self.table.setItem(row_idx, 5, status_item)
+            # Status (Read-only)
+            item_status = QTableWidgetItem(status)
+            item_status.setFlags(item_status.flags() ^ Qt.ItemFlag.ItemIsEditable)
+            self.table.setItem(row_idx, 5, item_status)
 
-            self.table.setCellWidget(row_idx, 6, action_widget)
+            # Edit button
+            edit_btn = QPushButton("Edit")
+            edit_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            edit_btn.clicked.connect(lambda checked, s=sku: self.consolidate_product(s, force=True))
+            self.table.setCellWidget(row_idx, 6, edit_btn)
+            
+        self.table.blockSignals(False)
+
+    def on_cell_edited(self, row, col):
+        """Handle cell edit to update consolidated data."""
+        # Get the edited item
+        item = self.table.item(row, col)
+        if not item:
+            return
+
+        # Get SKU from first column
+        sku_item = self.table.item(row, 0)
+        if not sku_item:
+            return
+
+        sku = sku_item.text()
+        new_value = item.text()
+
+        # Update consolidated_data
+        for product in self.consolidated_data:
+            if product["sku"] == sku:
+                # Update based on column
+                if col == 3:  # Name
+                    for scraper_data in product["scrapers"].values():
+                        scraper_data["Name"] = new_value
+                        break
+                elif col == 4:  # Brand
+                    for scraper_data in product["scrapers"].values():
+                        scraper_data["Brand"] = new_value
+                        break
+                break
+        
+        # Update consolidated_products if exists
+        for cons_prod in self.consolidated_products:
+            if cons_prod["sku"] == sku:
+                if col == 3 and "Name" in cons_prod["fields"]:
+                    cons_prod["fields"]["Name"]["value"] = new_value
+                elif col == 4 and "Brand" in cons_prod["fields"]:
+                    cons_prod["fields"]["Brand"]["value"] = new_value
+                break
 
     def on_product_double_clicked(self, row, col):
-        """Handle double-click on product row - trigger consolidation."""
+        """Handle double-click on product row."""
+        # Allow editing for Name (col 3) and Brand (col 4)
+        if col in [3, 4]:
+            return
+
+        # For other columns, trigger consolidation
         sku_item = self.table.item(row, 0)
         if sku_item:
             sku = sku_item.text()
-            self.consolidate_product(sku)
+            self.consolidate_product(sku, force=True)
 
     def enter_consolidation_mode(self):
         """Enter consolidation mode - iterate through ALL unconsolidated products."""

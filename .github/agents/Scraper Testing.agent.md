@@ -22,20 +22,19 @@ You are a SCRAPER TESTING AGENT. You orchestrate the testing of all scraper conf
 For each scraper config:
 
 ### 2A. Test Scraper
-1. Run the regular test: `python scripts/test_scrapers.py --scraper <scraper_name>`
+1. Run the regular test: `python scripts/run_scraper_tests.py --scraper <scraper_name>`
 
-2. Run the no-results test: `python scripts/test_scrapers.py --no-results <scraper_name>`
+2. Run the no-results test: `python scripts/run_scraper_tests.py --scraper <scraper_name> --no-results`
 
 3. **Analyze Test Output**:
-   - Parse the output from both tests to check for failures.
-   - A failure can be a script error, a workflow execution failure, or a data quality failure (indicated by `data_quality_issues` in the output).
-   - For the no-results test, a timeout or failure to properly detect "no results" is also considered a failure.
+   - Check the exit code from both tests. A non-zero exit code indicates a failure.
+   - Parse the `pytest` output to find the specific `AssertionError` or Exception that caused the failure.
 
-4. If both tests pass (i.e., no errors and no data quality issues):
+4. If both tests pass (zero exit code):
    - Mark the scraper as "successful" and proceed to the next one.
 
-5. If either test fails:
-   - **Extract Failure Details**: From the test output, identify the specific reason for failure (e.g., "error: TimeoutException", "data_quality_issues: ['Missing field: Images']").
+5. If either test fails (non-zero exit code):
+   - **Extract Failure Details**: From the `pytest` test output, identify the specific reason for failure (e.g., "E   selenium.common.exceptions.TimeoutException", "E   AssertionError: Data quality check failed").
    - Proceed to **Phase 2B: Repair Failed Scraper**.
 
 ### 2B. Repair Failed Scraper

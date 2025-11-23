@@ -342,6 +342,37 @@ class TestScraperIntegration:
             "mazuri",
         ],
     )
+    def test_scraper_no_results_parametrized(self, tester, scraper_name):
+        """Test the 'no results' handling for individual scrapers with parametrization."""
+        if os.getenv("CI") == "true" and scraper_name in {"orgill", "petfoodex", "phillips"}:
+            pytest.skip(f"Skipping {scraper_name} in CI (requires login)")
+
+        # Use a standardized fake SKU that should never exist
+        fake_sku = "AUTOMATEDTEST-NONEXISTENT-SKU-12345"
+        
+        # Run the scraper with the fake SKU
+        result = tester.run_scraper_locally(scraper_name, [fake_sku], headless=True)
+
+        # The primary success condition is that the scraper ran and correctly identified 'no results'.
+        assert result["success"] is True, f"Expected scraper '{scraper_name}' to report success for a handled 'no results' scenario."
+
+        # There should be exactly one product record containing the no_results_found flag.
+        assert len(result["products"]) == 1, f"Expected 1 product record for a 'no results' test, but found {len(result['products'])}."
+        
+        product_record = result["products"][0]
+        assert product_record.get("no_results_found") is True, f"Expected the product record for '{scraper_name}' to have 'no_results_found' set to True."
+        assert product_record.get("SKU") == fake_sku, "The SKU in the product record should match the fake SKU used for the test."
+
+    @pytest.mark.integration
+    @pytest.mark.parametrize(
+        "scraper_name",
+        [
+            "amazon",  # Most reliable for testing
+            "central_pet",
+            "coastal",
+            "mazuri",
+        ],
+    )
     def test_scraper_execution_parametrized(self, tester, scraper_name):
         """Test running individual scrapers with parametrization."""
         # Skip login-requiring scrapers in CI

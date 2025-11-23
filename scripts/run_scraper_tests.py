@@ -24,7 +24,7 @@ PROJECT_ROOT = Path(__file__).parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from tests.integration.test_scraper_integration import ScraperIntegrationTester
+from tests.e2e.test_scrapers_e2e import ScraperIntegrationTester
 
 
 def main():
@@ -59,6 +59,9 @@ Examples:
         "--timeout", type=int, default=300, help="Test timeout in seconds (default: 300)"
     )
     parser.add_argument("--list", action="store_true", help="List available scrapers and exit")
+    parser.add_argument(
+        "--no-results", action="store_true", help="Run the 'no results' test for the scraper(s)"
+    )
 
     args = parser.parse_args()
 
@@ -102,7 +105,7 @@ Examples:
 
     # Build pytest arguments
     pytest_args: list[str] = [
-        "tests/integration/test_scraper_integration.py",
+        "tests/e2e/test_scrapers_e2e.py",
         "--tb=short",
     ]
 
@@ -112,7 +115,12 @@ Examples:
     if args.coverage:
         pytest_args.extend(["--cov=src", "--cov-report=term-missing"])
 
-    # Note: timeout is handled by individual test methods, not pytest globally
+    # Determine which test to run
+    test_name = (
+        "test_scraper_no_results_parametrized"
+        if args.no_results
+        else "test_scraper_execution_parametrized"
+    )
 
     if args.scraper:
         # Validate scraper exists
@@ -130,16 +138,18 @@ Examples:
             return 1
 
         # Run specific scraper tests
-        pytest_args.extend(["-k", f"test_scraper_execution_parametrized and {args.scraper}"])
+        pytest_args.extend(["-k", f"{test_name} and {args.scraper}"])
 
     elif args.all:
-        # Run all integration tests
-        pytest_args.extend(["-k", "integration"])
+        # Run all integration tests for the chosen test type
+        pytest_args.extend(["-k", f"{test_name}"])
 
     # Print execution info
     print(f"Running scraper tests with headless={headless}")
     if args.scraper:
         print(f"Target scraper: {args.scraper}")
+    if args.no_results:
+        print("Test mode: No Results")
     print(f"Pytest command: {' '.join(pytest_args)}")
     print()
 

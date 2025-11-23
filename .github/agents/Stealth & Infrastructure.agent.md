@@ -4,8 +4,7 @@ tools:
   [
     "edit",
     "run_shell_command",
-    "read_file",
-    "run_shell_command"
+    "read_file"
   ]
 model: Grok Code Fast 1 (copilot)
 ---

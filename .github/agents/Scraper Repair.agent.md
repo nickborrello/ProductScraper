@@ -40,8 +40,8 @@ When repairing a scraper, your goal is to extract the following key pieces of pr
 1.  **Identify Target:** The user will provide the name of the scraper to repair (e.g., `amazon`).
 2.  **Locate Configuration:** Find the corresponding YAML file (e.g., `src/scrapers/configs/amazon.yaml`).
 3.  **Run Initial Test:**
-    - Execute the scraper test script using `runCommands`: `python scripts/test_scrapers.py --scrapers <scraper_name>`
-    - Analyze the output for errors. Key errors to look for: `TimeoutException`, `NoSuchElementException`, `WorkflowExecutionError`, verification failures.
+    - Execute the scraper test script using `runCommands`: `python scripts/run_scraper_tests.py --scraper <scraper_name>`
+    - Analyze the output for a `pytest` failure (non-zero exit code) and parse the logs for assertion errors or exceptions.
 4.  **Analyze Results:**
     - If the test passes, proceed to **Phase 4: No-Results Scenario Testing**.
     - If the test fails, parse the logs to identify the error type and the failing workflow step.
@@ -50,11 +50,11 @@ When repairing a scraper, your goal is to extract the following key pieces of pr
 
 This is an iterative loop. You will repeat this phase until a fix is verified.
 
-1.  **Formulate Hypothesis:** Based on the error, determine the likely cause.
+1.  **Formulate Hypothesis:** Based on the `pytest` error, determine the likely cause.
 
-    - _`TimeoutException` / `NoSuchElementException`:_ A selector for a `wait_for`, `click`, or `extract` action is likely broken or outdated.
-    - _`WorkflowExecutionError` (Verification Failed):_ The scraper is extracting the wrong data. This could be due to clicking the wrong link or using an incorrect selector for extraction or verification.
-    - _Other `WorkflowExecutionError`:_ Could be a login failure, an unexpected popup, or a structural change requiring a new workflow step.
+    - _`E   selenium.common.exceptions.TimeoutException`:_ A selector for a `wait_for`, `click`, or `extract` action is likely broken or outdated.
+    - _`E   AssertionError`:_ The scraper is extracting the wrong data, or a data quality check failed. This could be due to clicking the wrong link or using an incorrect selector for extraction.
+    - _Other Exceptions:__ Could be a login failure, an unexpected popup, or a structural change requiring a new workflow step.
 
 2.  **Gather Live Page Data:**
 
@@ -78,32 +78,23 @@ This is an iterative loop. You will repeat this phase until a fix is verified.
     - Use `edit` to update the scraper's YAML file with the new selector or workflow step.
     - Ensure your changes are precise and maintain valid YAML syntax.
 2.  **Verify Fix:**
-    - Re-run the test script from Phase 1: `python scripts/test_scrapers.py --scrapers <scraper_name>`.
+    - Re-run the test script from Phase 1: `python scripts/run_scraper_tests.py --scraper <scraper_name>`.
 3.  **Evaluate:**
 
-    - **If successful:** The hypothesis was correct. The primary scraping logic is likely fixed.
+    - **If successful (zero exit code):** The hypothesis was correct. The primary scraping logic and data quality are now fixed. Proceed to **Phase 4: No-Results Scenario Testing**.
 
-      - **Perform Data Quality Check:**
-
-        - Construct the path to the temporary JSON file: `C:\\Users\\thoma\\.gemini\\tmp\\b6cfd077d07088cbb8f0b0fe5e521ba6ec0fdcb8c0b7958250599134be8de46d/scraper_results_<scraper_name>.json`.
-        - Read the content of this JSON file using `read_file`.
-        - Parse the JSON content and verify that "Name", "Brand", and "Images" fields are present and not empty.
-        - If these fields are present and not empty, the data quality check passes.
-
-      - If data quality check passes, proceed to **Phase 4: No-Results Scenario Testing**.
-
-    - **If still failing or data quality check fails:** The hypothesis was incorrect, or the data quality is insufficient.
+    - **If still failing (non-zero exit code):** The hypothesis was incorrect.
       - Revert the change to the YAML file.
-      - Record the failed attempt (e.g., "tried selector 'div.new-price' for 'price', but it still failed with Timeout" or "Data quality check failed: missing 'Images' field"). This prevents retrying the same failed fix.
+      - Record the failed attempt (e.g., "tried selector 'div.new-price' for 'price', but it still failed with Timeout"). This prevents retrying the same failed fix.
       - Go back to **Phase 2: Failure Analysis & Debugging** to formulate a new hypothesis.
 
 #### Phase 4: No-Results Scenario Testing
 
 1.  **Run No-Results Test:**
-    - Execute the test script with the `--no-results` flag: `python scripts/test_scrapers.py --scrapers <scraper_name> --no-results`.
+    - Execute the test script with the `--no-results` flag: `python scripts/run_scraper_tests.py --scraper <scraper_name> --no-results`.
 2.  **Analyze and Repair (if needed):**
-    - If the test fails, it means the `no_results_selectors` or `no_results_text_patterns` in the YAML's `validation` section are wrong.
-    - Use the DevTools tool to inspect a no-results URL (using a SKU that is guaranteed to return no results, e.g., `99999999999999`).
+    - If the test fails (non-zero exit code), it means the `no_results_selectors` or `no_results_text_patterns` in the YAML's `validation` section are wrong.
+    - Use the DevTools tool to inspect a no-results URL (using a SKU that is guaranteed to return no results, e.g., `AUTOMATEDTEST-NONEXISTENT-SKU-12345`).
     - Analyze the resulting DOM to find the correct text or element indicating no results were found.
     - Update the `validation` section in the YAML file using `edit`.
     - Re-run the no-results test to confirm the fix.
@@ -114,4 +105,4 @@ This is an iterative loop. You will repeat this phase until a fix is verified.
     - The scraper that was repaired.
     - The initial errors found.
     - The final changes made to the configuration file using the `changes` tool.
-    - Confirmation that all tests (normal and no-results) are now passing and that the data quality check for "Name", "Brand", and "Images" has been successfully met.
+    - Confirmation that all tests (normal and no-results) are now passing.
